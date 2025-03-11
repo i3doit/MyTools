@@ -86,6 +86,34 @@
             margin-left: 15px;
         }
 
+        .history-item {
+            background: #fff;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .history-date {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .history-passwords {
+            display: grid;
+            gap: 8px;
+        }
+
+        .history-pwd {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -131,7 +159,12 @@
         <button onclick="generatePasswords()">生成密码</button>
         
         <div class="password-list" id="passwordList"></div>
-        <div class="history-pagination" id="pagination"></div>
+        
+        <div class="history-section" style="margin-top: 30px; border-top: 2px solid #ddd; padding-top: 20px;">
+            <h3>生成历史（共 <span id="totalHistory">0</span> 条）</h3>
+            <div id="historyList"></div>
+            <div class="history-pagination" id="pagination"></div>
+        </div>
     </div>
 
     <footer style="text-align: center; margin-top: 20px; color: #666;">
@@ -140,8 +173,11 @@
 
     <script>
         let history = JSON.parse(localStorage.getItem('passwordHistory') || '[]')
+        let currentPage = 1
+        const itemsPerPage = 10
         
         function generatePassword(length, chars) {
+            if(chars.length === 0) return ''
             return Array.from({length}, () => 
                 chars[Math.floor(Math.random() * chars.length)]
             ).join('')
@@ -159,7 +195,7 @@
                 .map(el => chars[el.value]).join('')
             
             if(document.getElementById('exclude-check').checked) {
-                const exclude = new Set(document.getElementById('exclude-input').value)
+                const exclude = new Set(document.getElementById('exclude-input').value.split(''))
                 selected = selected.split('').filter(c => !exclude.has(c)).join('')
             }
             
@@ -182,12 +218,13 @@
         }
 
         function generatePasswords() {
-            const length = document.getElementById('length').value
+            const length = parseInt(document.getElementById('length').value)
             const chars = getChars()
+            const count = parseInt(document.getElementById('count').value)
             
             if(chars.length === 0) return alert('请至少选择一种字符类型')
             
-            const passwords = Array.from({length: document.getElementById('count').value}, () => 
+            const passwords = Array.from({length: count}, () => 
                 generatePassword(length, chars)
             )
             
@@ -196,7 +233,7 @@
                     <span>${pwd}</span>
                     <div>
                         <span class="strength" style="color:${getStrengthColor(calculateStrength(pwd))}">
-                            ${calculateStrength(pwd)}
+                            ${calculateStrength(pwd)} (约${estimateCrackTime(pwd)})
                         </span>
                         <button class="copy-btn" onclick="copyPassword('${pwd}')">复制</button>
                     </div>
@@ -205,13 +242,40 @@
             
             document.getElementById('passwordList').innerHTML = html
             
-            // 保存到历史记录
             history.unshift({
                 passwords,
-                date: new Date().toLocaleString()
+                date: new Date().toLocaleString('zh-CN', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                })
             })
+            
             localStorage.setItem('passwordHistory', JSON.stringify(history))
             updatePagination()
+        }
+
+        function estimateCrackTime(password) {
+            const charsetSize = getChars().length
+            const entropy = Math.log2(Math.pow(charsetSize, password.length))
+            
+            if(entropy < 28) return "瞬间破解"
+            if(entropy < 35) return "几小时"
+            if(entropy < 60) return "数年"
+            return "上百年"
+        }
+
+        function getStrengthColor(strength) {
+            const colors = {
+                '弱': '#e74c3c',
+                '中': '#f1c40f',
+                '强': '#2ecc71',
+                '极强': '#27ae60'
+            }
+            return colors[strength]
         }
 
         function copyPassword(text) {
@@ -220,24 +284,84 @@
             })
         }
 
-        // 分页功能实现
-        let currentPage = 1
-        const itemsPerPage = 10
-        
         function updatePagination() {
+            document.getElementById('totalHistory').textContent = history.length
             const totalPages = Math.ceil(history.length / itemsPerPage)
             let paginationHTML = ''
-            
-            if(totalPages <= 7) {
+            const maxVisible = 5
+
+            if(totalPages <= maxVisible + 2) {
                 paginationHTML = Array.from({length: totalPages}, (_,i) => 
                     `<button onclick="changePage(${i+1})" ${i+1 === currentPage?'class="active"':''}>${i+1}</button>`
                 ).join('')
             } else {
-                // 显示逻辑...
+                let start = Math.max(2, currentPage - 1)
+                let end = Math.min(totalPages - 1, currentPage + 1)
+                
+                paginationHTML = `
+                    <button onclick="changePage(1)" class="${currentPage ===1?'active':''}"}>1</button>`
+
+                if(start > 2) paginationHTML += `<span>...</span>`
+                
+                for(let i=start; i<=end; i++){
+                    paginationHTML += `<button 
+                        onclick="changePage(${i})" 
+                        class="${i === currentPage?'active':''}"}
+                    >${i}</button>`
+                }
+
+                if(end < totalPages -1) paginationHTML += `<span>...</span>`
+                paginationHTML += `
+                    <button 
+                        onclick="changePage(${totalPages})" 
+                        class="${totalPages === currentPage?'active':''}"
+                    >${totalPages}</button>`
             }
-            
+
+            paginationHTML = `
+                <button onclick="changePage(${currentPage-1})" ${currentPage ===1?'disabled':''}>‹上一页</button>
+                ${paginationHTML}
+                <button onclick="changePage(${currentPage+1})" ${currentPage === totalPages?'disabled':''}>下一页›</button>
+            `
+
             document.getElementById('pagination').innerHTML = paginationHTML
+            showHistoryPage()
         }
 
-        // 其他辅助函数...
-        document.getElementById('exclude-check').addEventListener('change',
+        function changePage(page) {
+            const totalPages = Math.ceil(history.length / itemsPerPage)
+            currentPage = Math.max(1, Math.min(page, totalPages))
+            updatePagination()
+        }
+
+        function showHistoryPage() {
+            const start = (currentPage-1)*itemsPerPage
+            const end = start + itemsPerPage
+            const currentItems = history.slice(start, end)
+            
+            const historyHTML = currentItems.map(item => `
+                <div class="history-item">
+                    <div class="history-date">${item.date}</div>
+                    <div class="history-passwords">
+                        ${item.passwords.map(p => `
+                            <div class="history-pwd">
+                                <span>${p}</span>
+                                <button class="copy-btn" onclick="copyPassword('${p}')">复制</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`
+            ).join('')
+            
+            document.getElementById('historyList').innerHTML = historyHTML
+        }
+
+        document.getElementById('exclude-check').addEventListener('change', function() {
+            document.getElementById('exclude-input').disabled = !this.checked
+            if(!this.checked) document.getElementById('exclude-input').value = ''
+        })
+
+        updatePagination()
+    </script>
+</body>
+</html>
