@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>国际手机号码生成器</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #d1f2d4, #a8e6ad);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            padding: 8px;
+            border: 2px solid #4CAF50;
+            border-radius: 4px;
+            flex: 1;
+        }
+
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .pagination {
+            margin: 20px 0;
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        .export-controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        select {
+            padding: 8px;
+            border: 2px solid #4CAF50;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2 style="color: #2e7d32;">国际手机号码生成器</h2>
+            <div class="controls">
+                <input type="text" id="country" placeholder="输入国家名称">
+                <button onclick="generateNumbers()">生成号码</button>
+                <button onclick="resetAll()">重置</button>
+            </div>
+        </div>
+
+        <div id="results">
+            <table>
+                <thead>
+                    <tr>
+                        <th>国家</th>
+                        <th>国际缩写</th>
+                        <th>区号</th>
+                        <th>手机号码</th>
+                    </tr>
+                </thead>
+                <tbody id="dataBody"></tbody>
+            </table>
+            <div class="pagination" id="pagination"></div>
+        </div>
+
+        <div class="export-controls">
+            <select id="exportFormat">
+                <option value="excel">Excel</option>
+                <option value="pdf">PDF</option>
+                <option value="txt">TXT</option>
+                <option value="csv">CSV</option>
+            </select>
+            <button onclick="exportData()">导出</button>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let allData = [];
+
+        const countryData = {
+            '中国': { code: '+86', iso: 'CN', generate: () => `18${Math.random().toString().slice(2,11)}`},
+            '美国': { code: '+1', iso: 'US', generate: () => `555${Math.random().toString().slice(2,9)}`},
+            '英国': { code: '+44', iso: 'GB', generate: () => `7${Math.random().toString().slice(2,11)}`},
+            // 可以继续添加更多国家...
+        };
+
+        function generateNumbers() {
+            const country = document.getElementById('country').value.trim();
+            if (!countryData[country]) {
+                alert('暂不支持该国家');
+                return;
+            }
+
+            const data = countryData[country];
+            allData.push({
+                country,
+                iso: data.iso,
+                code: data.code,
+                number: data.generate()
+            });
+
+            currentPage = 1;
+            renderTable();
+            renderPagination();
+        }
+
+        function renderTable() {
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const tbody = document.getElementById('dataBody');
+            tbody.innerHTML = '';
+
+            allData.slice(start, end).forEach(item => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${item.country}</td>
+                        <td>${item.iso}</td>
+                        <td>${item.code}</td>
+                        <td>${item.number}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(allData.length / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            for (let i = 1; i <= totalPages; i++) {
+                pagination.innerHTML += `
+                    <button 
+                        style="${i === currentPage ? 'background: #2e7d32' : ''}" 
+                        onclick="changePage(${i})">
+                        ${i}
+                    </button>
+                `;
+            }
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderTable();
+        }
+
+        function resetAll() {
+            allData = [];
+            currentPage = 1;
+            renderTable();
+            renderPagination();
+        }
+
+        function exportData() {
+            const format = document.getElementById('exportFormat').value;
+            // 这里需要实现具体的导出逻辑
+            alert(`导出${format.toUpperCase()}功能需要后端支持或第三方库实现`);
+        }
+    </script>
+</body>
+</html>
