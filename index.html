@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>艾兜兜儿的AI博客</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url('background.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .sidebar {
+            width: 20%;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .main-content {
+            width: 80%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .nav-item {
+            margin: 10px 0;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .nav-item:hover {
+            color: #4CAF50;
+        }
+        .grid {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .grid-item {
+            width: calc(16.66% - 20px);
+            margin: 10px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            box-sizing: border-box;
+            text-align: center;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .grid-item img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .pagination button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+        }
+        .pagination button:hover {
+            background-color: #45a049;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        .footer a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 768px) {
+            .sidebar, .main-content {
+                width: 100%;
+            }
+            .grid-item {
+                width: calc(50% - 20px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="nav-item">热门AI工具 (15)</div>
+            <div class="nav-item">最新收录 (10)</div>
+            <div class="nav-item">AI写作工具 (8)</div>
+            <div class="nav-item">AI图像 (12)</div>
+            <div class="nav-item">AI视频 (5)</div>
+            <div class="nav-item">AI搜索引擎 (7)</div>
+            <div class="nav-item">AI训练模型 (9)</div>
+            <div class="nav-item">AI开发平台 (6)</div>
+            <div class="nav-item">AI提示库 (11)</div>
+            <div class="nav-item">AI学习网站 (14)</div>
+        </div>
+        <div class="main-content">
+            <div class="grid">
+                <!-- 示例数据 -->
+                <div class="grid-item">
+                    <img src="https://via.placeholder.com/80" alt="工具1">
+                    <div>工具1</div>
+                    <div>一句话简介</div>
+                </div>
+                <div class="grid-item">
+                    <img src="https://via.placeholder.com/80" alt="工具2">
+                    <div>工具2</div>
+                    <div>一句话简介</div>
+                </div>
+                <!-- 更多豆腐块 -->
+            </div>
+            <div class="pagination">
+                <button>上一页</button>
+                <button>1</button>
+                <button>2</button>
+                <button>下一页</button>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        由 艾兜兜儿 用 <a href="https://mp.weixin.qq.com/s/Tx7MbtPEqbzBT61arZx07g" target="_blank">DeepSeek</a> 1分钟生成，你也可以去尝试制作
+    </div>
+</body>
+</html>
