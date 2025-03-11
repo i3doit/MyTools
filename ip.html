@@ -140,6 +140,96 @@
             '美国': { code: '+1', iso: 'US', generate: () => `555${Math.random().toString().slice(2,9)}`},
             '英国': { code: '+44', iso: 'GB', generate: () => `7${Math.random().toString().slice(2,11)}`},
             // 可以继续添加更多国家...
+
+            // 在原有countryData对象中扩展以下内容：
+
+  
+            // 中国大陆（不同运营商号段）
+            '中国': {
+                code: '+86',
+                iso: 'CN',
+                generate: () => {
+                const prefixes = ['130', '131', '132', '133', '135', '136', '137', '138', '139', '150', '151', '152', '157', '158', '159', '165', '170', '178', '182', '183', '184', '187', '188', '198'];
+                return prefix[Math.floor(Math.random() * prefixes.length)] + 
+                    Math.random().toString().slice(2, 10).padEnd(8, '0').slice(0,8);
+                }
+            },
+
+            // 美国（不同地区区号）
+            '美国': {
+                code: '+1',
+                iso: 'US',
+                generate: () => {
+                const areaCodes = ['212','310','312','404','415','503','713','800','808','818','917'];
+                return `(${areaCodes[Math.floor(Math.random() * areaCodes.length)]}) ` +
+                    `${Math.floor(Math.random()*900)+100}-` +
+                    `${Math.floor(Math.random()*9000)+1000}`;
+                }
+            },
+
+            // 日本（不同运营商格式）
+            '日本': {
+                code: '+81',
+                iso: 'JP', 
+                generate: () => {
+                const types = [
+                    () => `090-${Math.random().toString().slice(2,11)}`, // 手机
+                    () => `03-${Math.floor(Math.random()*9000)+1000}-${Math.floor(Math.random()*9000)+1000}`, // 东京固话
+                    () => `06-${Math.floor(Math.random()*9000)+1000}-${Math.floor(Math.random()*9000)+1000}`  // 大阪固话
+                ];
+                return types[Math.floor(Math.random() * types.length)]();
+                }
+            },
+
+            // 德国（含国家代码变体）
+            '德国': {
+                code: '+49',
+                iso: 'DE',
+                generate: () => {
+                const mobilePrefix = ['0151','0152','0157','0159','0160','0170','0171','0175','0176','0177','0178'];
+                return mobilePrefix[Math.floor(Math.random() * mobilePrefix.length)] + 
+                    '/' + 
+                    Math.random().toString().slice(2,9).padEnd(7,'0');
+                }
+            },
+
+            // 印度（复杂区域代码）
+            '印度': {
+                code: '+91',
+                iso: 'IN',
+                generate: () => {
+                const metroCodes = ['11','22','33','44','20','40'];
+                return `(${metroCodes[Math.floor(Math.random() * metroCodes.length)]}) ` +
+                    `${Math.floor(Math.random()*9000)+1000} ` +
+                    `${Math.floor(Math.random()*9000)+1000}`;
+                }
+            }
+            };
+
+            // 修改generateNumbers函数实现批量生成（需合并到原函数）
+            function generateNumbers() {
+            const country = document.getElementById('country').value.trim();
+            if (!countryData[country]) {
+                alert('暂不支持该国家');
+                return;
+            }
+
+            const data = countryData[country];
+            // 修改此处生成10个号码 ↓
+            for(let i=0; i<10; i++){
+                allData.push({
+                country,
+                iso: data.iso,
+                code: data.code,
+                number: data.generate()
+                });
+            }
+            // 修改结束 ↑
+
+            currentPage = 1;
+            renderTable();
+            renderPagination();
+
         };
 
         function generateNumbers() {
