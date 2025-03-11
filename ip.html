@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能IP生成系统</title>
+    <style>
+        :root {
+            --primary-color: #88d17d;
+            --bg-color: #f0fff0;
+            --danger-color: #ff6b6b;
+            --info-color: #4fc3f7;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin: 2rem 0;
+            color: #2c5f2d;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        input, button {
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input {
+            flex: 1 1 200px;
+            min-width: 150px;
+            border: 2px solid var(--primary-color);
+        }
+
+        button {
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: opacity 0.3s;
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .page-item {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .page-item.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .page-dots {
+            padding: 0 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 768px) {
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            
+            .button-group button {
+                flex: 1 1 calc(33% - 10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌐 智能IP生成系统</h1>
+        </header>
+
+        <div class="input-group">
+            <input list="regions" placeholder="输入国家/地区" id="regionInput">
+            <datalist id="regions">
+                <option value="中国">
+                <option value="美国">
+                <option value="日本">
+                <option value="德国">
+            </datalist>
+        </div>
+
+        <div class="button-group">
+            <button style="background:var(--info-color)" onclick="fetchIPs()">抓取IP段</button>
+            <button style="background:var(--primary-color)" onclick="generateIP()">生成IP</button>
+            <button style="background:var(--danger-color)" onclick="clearInput()">清空</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>来源</th>
+                    <th>IP地址</th>
+                    <th>地区</th>
+                    <th>生成时间</th>
+                </tr>
+            </thead>
+            <tbody id="ipList"></tbody>
+        </table>
+
+        <div class="pagination" id="pagination"></div>
+
+        <footer>
+            <p>由 艾兜兜儿 用DeepSeek 1分钟生成，<a href="https://mp.weixin.qq.com/s/Tx7MbtPEqbzBT61arZx07g" target="_blank">你也可以去尝试制作</a></p>
+        </footer>
+    </div>
+
+    <!-- 抓取结果弹窗 -->
+    <div class="modal" id="fetchModal">
+        <div class="modal-content">
+            <h3>已抓取IP段</h3>
+            <ul id="fetchResult"></ul>
+            <button onclick="closeModal('fetchModal')">关闭</button>
+        </div>
+    </div>
+
+    <!-- IP信息弹窗 -->
+    <div class="modal" id="ipModal">
+        <div class="modal-content">
+            <h3>IP归属地信息</h3>
+            <p>IP地址：<span id="modalIp"></span></p>
+            <p>归属地：<span id="modalLocation"></span></p>
+            <button onclick="closeModalWithCopy('ipModal')">关闭并复制</button>
+        </div>
+    </div>
+
+    <script>
+        let history = JSON.parse(localStorage.getItem('ipHistory')) || []
+        let currentPage = 1
+        const pageSize = 10
+        let totalPages = 1
+        let fetchedIPs = {}
+        let currentIP = ''
+
+        // 国家IP段数据库
+        const ipRanges = {
+            '中国': [{ start: [36,0,0,0], end: [36,255,255,255] }],
+            '美国': [{ start: [8,0,0,0], end: [8,255,255,255] }],
+            '日本': [{ start: [110,0,0,0], end: [110,255,255,255] }],
+            '德国': [{ start: [46,0,0,0], end: [46,255,255,255] }]
+        }
+
+        async function fetchIPs() {
+            const region = document.getElementById('regionInput').value.trim()
+            if (!region) return alert('请先选择国家/地区')
+            
+            try {
+                // 模拟API请求
+                await new Promise(resolve => setTimeout(resolve, 500))
+                
+                fetchedIPs[region] = fetchedIPs[region] || []
+                const newIPs = generateIPRange(region)
+                fetchedIPs[region].push(...newIPs)
+                
+                // 显示抓取结果
+                document.getElementById('fetchResult').innerHTML = 
+                    newIPs.map(ip => `<li>${ip}</li>`).join('')
+                showModal('fetchModal')
+            } catch (error) {
+                alert('抓取失败: ' + error.message)
+            }
+        }
+
+        function generateIP() {
+            const region = document.getElementById('regionInput').value.trim() || '随机'
+            let ip = ''
+            
+            if (fetchedIPs[region]?.length > 0) {
+                ip = fetchedIPs[region][Math.floor(Math.random()*fetchedIPs[region].length)]
+            } else if (ipRanges[region]) {
+                ip = generateRegionalIP(region)
+            } else {
+                ip = Array.from({length:4}, () => Math.floor(Math.random()*256)).join('.')
+            }
+
+            const date = new Date().toLocaleString()
+            history.unshift({ ip, region, date, source: fetchedIPs[region] ? '抓取生成' : '随机生成' })
+            updateStorage()
+            renderList()
+        }
+
+        // 分页功能
+        function updatePagination() {
+            totalPages = Math.ceil(history.length / pageSize)
+            let paginationHTML = ''
+            const maxVisiblePages = 5
+            
+            // 生成数字分页
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages/2))
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
+            
+            if(totalPages > maxVisiblePages) {
+                if(endPage - startPage < maxVisiblePages - 1) {
+                    startPage = endPage - maxVisiblePages + 1
+                }
+            }
+
+            // 首页和前半部分
+            if(startPage > 1) {
+                paginationHTML += `<div class="page-item" onclick="changePage(1)">1</div>`
+                if(startPage > 2) paginationHTML += `<div class="page-dots">...</div>`
+            }
+
+            // 中间页码
+            for(let i = startPage; i <= endPage; i++) {
+                paginationHTML += `
+                    <div class="page-item ${i === currentPage ? 'active' : ''}" 
+                         onclick="changePage(${i})">${i}</div>
+                `
+            }
+
+            // 后半部分和尾页
+            if(endPage < totalPages) {
+                if(endPage < totalPages - 1) paginationHTML += `<div class="page-dots">...</div>`
+                paginationHTML += `<div class="page-item" onclick="changePage(${totalPages})">${totalPages}</div>`
+            }
+
+            document.getElementById('pagination').innerHTML = paginationHTML
+        }
+
+        // IP归属地查询
+        async function showIPInfo(ip) {
+            currentIP = ip
+            const modal = document.getElementById('ipModal')
+            const modalIp = document.getElementById('modalIp')
+            const modalLocation = document.getElementById('modalLocation')
+            
+            try {
+                // 使用ipapi.co的API查询归属地
+                const response = await fetch(`https://ipapi.co/${ip}/json/`)
+                const data = await response.json()
+                
+                modalIp.textContent = ip
+                modalLocation.textContent = `${data.country_name} ${data.region} ${data.city}`
+                showModal('ipModal')
+            } catch (error) {
+                alert('查询失败: ' + error.message)
+            }
+        }
+
+        // 辅助函数
+        function changePage(page) {
+            currentPage = Math.max(1, Math.min(page, totalPages))
+            renderList()
+        }
+
+        function renderList() {
+            const start = (currentPage - 1) * pageSize
+            const items = history.slice(start, start + pageSize)
+            
+            document.getElementById('ipList').innerHTML = items.map(item => `
+                <tr onclick="showIPInfo('${item.ip}')">
+                    <td>${item.source}</td>
+                    <td>${item.ip}</td>
+                    <td>${item.region}</td>
+                    <td>${item.date}</td>
+                </tr>
+            `).join('')
+            
+            updatePagination()
+        }
+
+        function showModal(id) {
+            document.getElementById(id).style.display = 'flex'
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none'
+        }
+
+        function closeModalWithCopy(id) {
+            navigator.clipboard.writeText(currentIP)
+            closeModal(id)
+        }
+
+        function generateRegionalIP(region) {
+            const range = ipRanges[region][0]
+            return range.start.map((s, i) => 
+                s + Math.floor(Math.random()*(range.end[i]-s+1))
+            ).join('.')
+        }
+
+        function generateIPRange(region) {
+            return Array(10).fill().map(() => generateRegionalIP(region))
+        }
+
+        function clearInput() {
+            document.getElementById('regionInput').value = ''
+        }
+
+        function updateStorage() {
+            localStorage.setItem('ipHistory', JSON.stringify(history))
+        }
+
+        // 初始化
+        renderList()
+    </script>
+</body>
+</html>
