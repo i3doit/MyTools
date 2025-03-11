@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="keywords" content="5 分钟，用 DeepSeek 生成学生点名答题积分统计系统，你也可以去尝试制作，非常强大">
+    <title>初中生物理课堂点名积分系统</title>
+    <link rel="icon" href="http://istester.com/file.php?f=202103/f_39a5bd3eb49b5cc1a623606b11932123&t=png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #e0f7e0; /* 生机盎然的绿色背景 */
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        h1 {
+            text-align: center;
+            color: #2e7d32;
+            margin: 20px 0;
+        }
+        .container {
+            flex: 1;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .name-display {
+            font-size: 2em;
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .controls button {
+            font-size: 1.2em;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #4caf50;
+            color: #fff;
+        }
+        .controls button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .rankings {
+            margin-top: 30px;
+        }
+        .rankings table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .rankings th, .rankings td {
+            padding: 10px;
+            text-align: left;
+        }
+        .rankings th {
+            background-color: #4caf50;
+            color: #fff;
+        }
+        .rankings tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .rankings tr.negative {
+            background-color: #ffebee; /* 红色背景 */
+        }
+        .rankings .gold::after {
+            content: " 🥇";
+        }
+        .rankings .silver::after {
+            content: " 🥈";
+        }
+        .rankings .bronze::after {
+            content: " 🥉";
+        }
+        .tips {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 1.2em;
+            animation: fadeOut 3s forwards; /* 延长至 3 秒 */
+        }
+        .tips.correct {
+            background-color: #c8e6c9; /* 喜庆的绿色 */
+            color: #2e7d32;
+        }
+        .tips.error {
+            background-color: #ffcdd2; /* 警示的红色 */
+            color: #c62828;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        footer {
+            text-align: center;
+            padding: 10px;
+            background-color: #4caf50;
+            color: #fff;
+            margin-top: auto;
+        }
+        footer a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 600px) {
+            .controls button {
+                font-size: 1em;
+                padding: 8px 16px;
+                margin: 5px;
+            }
+            .name-display {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>初中生物理课堂点名积分系统</h1>
+        <div class="controls">
+            <button id="startStop">开始出题</button>
+            <button id="correct" disabled>回答正确</button>
+            <button id="wrong" disabled>回答错误</button>
+            <button id="reset">积分重置</button>
+        </div>
+        <div class="name-display" id="nameDisplay">来,点击开始出题,回答正确积分+1,错误积分-1</div>
+        <div class="rankings">
+            <h2>积分排行榜</h2>
+            <table id="rankingsTable">
+                <thead>
+                    <tr>
+                        <th>排名</th>
+                        <th>姓名</th>
+                        <th>积分</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 排行榜数据动态生成 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <footer>
+	<a href="https://pan.quark.cn/s/2113b71b2c08" target="_blank">(系统源码地址 + 使用 DeepSeek 的提示词，点这领取，免费)</a>
+        <br>
+	<a href="https://t.zsxq.com/iNm3w" target="_blank">由 IDO老徐 用 DeepSeek 5 分钟生成，你也可以去尝试制作</a>
+    </footer>
+
+    <script>
+        // 学生姓名列表
+        const students = [
+            "王浩然", "李思琪", "张宇航", "刘子涵", "陈雨桐", "赵俊杰", "杨紫萱", "黄梓豪", "周诗雅", "吴佳琪",
+            "徐子轩", "孙梦瑶", "胡俊熙", "朱欣怡", "高天佑", "林婉婷", "何俊杰", "郭梓涵", "马欣然", "罗浩宇",
+            "梁梦琪", "宋子豪", "郑雅婷", "谢俊豪", "韩雨菲", "冯宇轩", "邓欣妍", "曹子睿", "彭梦瑶", "曾浩轩",
+            "肖梓彤", "田俊杰", "董诗涵", "袁子豪", "潘雨欣", "于浩然", "蒋梦琪", "蔡俊熙", "余雅婷", "杜子轩",
+            "丁欣怡", "魏浩宇", "程雨桐", "沈俊杰", "卢梦瑶", "汪子涵", "钟欣妍", "赖俊豪", "白雨菲", "石宇轩",
+            "熊梓涵", "侯俊杰", "秦梦琪", "江子豪", "史雨欣", "顾浩然", "段欣怡", "谭浩宇", "廖雨桐", "尹俊熙",
+            "黎梦瑶", "常子轩", "武欣妍", "康俊豪", "贺雨菲", "倪宇轩", "严梓彤", "温俊杰", "文梦琪", "柯子豪",
+            "詹雨欣", "庞浩然", "陶欣怡", "邹浩宇", "邱雨桐", "孟俊熙", "龙梦瑶", "万子轩", "段欣妍", "雷俊豪",
+            "汤雨菲", "江宇轩", "牛梓涵", "章俊杰", "吕梦琪", "任子豪", "向雨欣", "乔浩然", "赖欣怡", "邵浩宇",
+            "熊雨桐", "贾俊熙", "侯梦瑶", "谭子轩", "邹欣妍", "邱俊豪", "黎雨菲", "万宇轩", "雷梓彤", "汤俊杰"
+        ];
+
+        // 初三物理题目库
+        const questions = [
+            "什么是牛顿第一定律？", "电流的单位是什么？", "光的传播速度是多少？", "什么是功？", "什么是电阻？",
+            "什么是电压？", "什么是功率？", "什么是能量守恒定律？", "什么是摩擦力？", "什么是重力？",
+            "什么是浮力？", "什么是压强？", "什么是机械能？", "什么是热传递？", "什么是波长？",
+            "什么是频率？", "什么是振幅？", "什么是电路？", "什么是串联电路？", "什么是并联电路？",
+            "什么是电磁感应？", "什么是磁场？", "什么是电场？", "什么是电荷？", "什么是电容器？",
+            "什么是变压器？", "什么是发电机？", "什么是电动机？", "什么是半导体？", "什么是导体？",
+            "什么是绝缘体？", "什么是光的折射？", "什么是光的反射？", "什么是光的衍射？", "什么是光的干涉？",
+            "什么是光的偏振？", "什么是光的色散？", "什么是光的全反射？", "什么是光的粒子性？", "什么是光的波动性？",
+            "什么是光的波粒二象性？", "什么是光的量子化？", "什么是光的电磁波？", "什么是光的电磁场？", "什么是光的电磁波谱？",
+            "什么是光的电磁波频率？", "什么是光的电磁波波长？", "什么是光的电磁波速度？", "什么是光的电磁波能量？", "什么是光的电磁波功率？",
+            "什么是光的电磁波强度？", "什么是光的电磁波振幅？", "极光的原理是什么？", "什么是光的电磁波偏振？", "什么是光的电磁波干涉？",
+            "什么是光的电磁波衍射？", "什么是光的电磁波折射？", "什么是光的电磁波反射？", "什么是光的电磁波全反射？", "什么是光的电磁波色散？",
+            "什么是光的电磁波量子化？", "什么是光的电磁波粒子性？", "什么是光的电磁波波动性？", "什么是光的电磁波波粒二象性？", "什么是光的电磁波电磁场？",
+            "什么是光的电磁波电磁波谱？", "什么是光的电磁波电磁波频率？", "什么是光的电磁波电磁波波长？", "什么是光的电磁波电磁波速度？", "什么是光的电磁波电磁波能量？",
+            "什么是光的电磁波电磁波功率？", "什么是光的电磁波电磁波强度？", "什么是光的电磁波电磁波振幅？", "什么是光的电磁波电磁波相位？", "什么是光的电磁波电磁波偏振？",
+            "什么是光的电磁波电磁波干涉？", "什么是光的电磁波电磁波衍射？", "什么是光的电磁波电磁波折射？", "什么是光的电磁波电磁波反射？", "什么是光的电磁波电磁波全反射？",
+            "什么是光的电磁波电磁波色散？", "什么是光的电磁波电磁波量子化？", "什么是光的电磁波电磁波粒子性？", "什么是光的电磁波电磁波波动性？", "什么是光的电磁波电磁波波粒二象性？"
+        ];
+
+        // 初始化学生积分
+        let scores = {};
+        students.forEach(student => {
+            scores[student] = localStorage.getItem(student) ? parseInt(localStorage.getItem(student)) : 0;
+        });
+
+        // DOM 元素
+        const nameDisplay = document.getElementById('nameDisplay');
+        const startStopBtn = document.getElementById('startStop');
+        const correctBtn = document.getElementById('correct');
+        const wrongBtn = document.getElementById('wrong');
+        const resetBtn = document.getElementById('reset');
+        const rankingsTable = document.getElementById('rankingsTable').getElementsByTagName('tbody')[0];
+
+        let isRolling = false;
+        let currentStudent = null;
+
+        // 开始/停止滚动
+        startStopBtn.addEventListener('click', () => {
+            isRolling = !isRolling;
+            startStopBtn.textContent = isRolling ? '暂停' : '开始滚动';
+            correctBtn.disabled = isRolling;
+            wrongBtn.disabled = isRolling;
+            if (isRolling) {
+                rollName();
+            } else {
+                currentStudent = students[Math.floor(Math.random() * students.length)];
+                nameDisplay.textContent = `${currentStudent}：${questions[Math.floor(Math.random() * questions.length)]}`;
+                // 恢复正确/错误按钮的点击状态
+                correctBtn.disabled = false;
+                wrongBtn.disabled = false;
+            }
+        });
+
+        // 滚动名字
+        function rollName() {
+            if (isRolling) {
+                const randomIndex = Math.floor(Math.random() * students.length);
+                nameDisplay.textContent = students[randomIndex];
+                setTimeout(rollName, 100);
+            }
+        }
+
+        // 处理正确
+        correctBtn.addEventListener('click', () => {
+            scores[currentStudent]++;
+            localStorage.setItem(currentStudent, scores[currentStudent]);
+            showTips(`恭喜 ${currentStudent} 同学，积分 + 1`, 'correct');
+            updateRankings();
+            // 点击后禁用按钮
+            correctBtn.disabled = true;
+            wrongBtn.disabled = true;
+        });
+
+        // 处理错误
+        wrongBtn.addEventListener('click', () => {
+            scores[currentStudent]--;
+            localStorage.setItem(currentStudent, scores[currentStudent]);
+            showTips(`${currentStudent} 同学 要加油学习哦，回答错了，积分 - 1`, 'error');
+            updateRankings();
+            // 点击后禁用按钮
+            correctBtn.disabled = true;
+            wrongBtn.disabled = true;
+        });
+
+        // 显示提示
+        function showTips(message, type) {
+            const tips = document.createElement('div');
+            tips.className = `tips ${type}`;
+            tips.textContent = message;
+            document.body.appendChild(tips);
+            setTimeout(() => tips.remove(), 3000); // 延长至 3 秒
+        }
+
+        // 更新排行榜
+        function updateRankings() {
+            rankingsTable.innerHTML = '';
+            // 排序规则：正分 > 负数 > 0 分
+            const sortedStudents = Object.keys(scores).sort((a, b) => {
+                if (scores[a] > 0 && scores[b] <= 0) return -1;
+                if (scores[a] <= 0 && scores[b] > 0) return 1;
+                if (scores[a] < 0 && scores[b] >= 0) return -1;
+                if (scores[a] >= 0 && scores[b] < 0) return 1;
+                return scores[b] - scores[a];
+            });
+            sortedStudents.forEach((student, index) => {
+                const row = rankingsTable.insertRow();
+                row.className = scores[student] < 0 ? 'negative' : '';
+                row.insertCell().textContent = index + 1;
+                row.insertCell().textContent = student;
+                row.insertCell().textContent = scores[student];
+                if (index === 0) row.cells[1].classList.add('gold');
+                if (index === 1) row.cells[1].classList.add('silver');
+                if (index === 2) row.cells[1].classList.add('bronze');
+            });
+        }
+
+ 	// 重置积分（注释掉原功能，改为提示）
+        resetBtn.addEventListener('click', () => {
+            showTips('这个是IDO老徐给大家提供的演示系统，避免积分全部被清零,重置功能关闭,不可用', 'error');
+            setTimeout(() => tips.remove(), 3000); // 延长至 3 秒
+        });
+
+        // 初始化排行榜
+        updateRankings();
+
+    </script>
+</body>
+</html>
