@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta keywords="1 分钟，用 DeepSeek 生成小学生课堂英语单词抽査系统，你也可以去尝试制作，非常强大">
+    <title>小学英语单词抽查系统</title>
+    <link rel="icon" href="http://istester.com/file.php?f=202103/f39a5bd3eb49b5cc1a623606b11932123&t=png">
+    <style>
+        :root {
+            --main-color: #98FB98;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background: var(--main-color) url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABVJREFUeNpi/M/wn4EIwMjIyAQIMACiOQN7Uqj69AAAAABJRU5ErkJggg==');
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        #wordDisplay {
+            font-size: 24px;
+            line-height: 2;
+            margin: 30px 0;
+            min-height: 180px;
+            background: rgba(255,255,255,0.8);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 25px;
+            font-size: 18px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            transition: 0.3s;
+        }
+        
+        button:hover {
+            opacity: 0.8;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            max-width: 90%;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 14px;
+        }
+        /* 随机抽单词系统样式 */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>小学英语单词随机抽查系统</h2>
+        <div id="wordDisplay"></div>
+        <div class="buttons">
+            <button onclick="toggleRoll()" id="startBtn">开始随机抽查</button>
+            <button onclick="showAnswer()" id="showBtn" disabled>查看单词英文</button>
+        </div>
+    </div>
+
+    <div id="answerModal" class="modal">
+        <div id="answerContent"></div>
+        <div style="margin-top: 20px; text-align: right;">
+            <button onclick="closeModal()">关闭弹窗</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        <a href="http://istester.com/page/566.html" target="_blank">由 IDO老徐 用DeepSeek 1分钟生成，你也可以去尝试制作</a>
+    </div>
+
+<script>
+// 包含小学阶段常用200+单词（简略示例）
+const vocabulary = [
+    {en: 'apple', cn: '苹果', pron: 'ˈæpl'},
+    {en: 'book', cn: '书', pron: 'bʊk'},
+    {en: 'cat', cn: '猫', pron: 'kæt'},
+    // 更多单词...
+    // 实际使用时请补全200+个单词
+];
+
+let intervalId = null;
+let currentWords = [];
+
+function toggleRoll() {
+    const btn = document.getElementById('startBtn');
+    if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+        btn.textContent = '开始随机抽查';
+        document.getElementById('showBtn').disabled = false;
+    } else {
+        btn.textContent = '暂停抽查';
+        document.getElementById('showBtn').disabled = true;
+        intervalId = setInterval(() => {
+            currentWords = getRandomWords(6);
+            displayChinese();
+        }, 100);
+    }
+}
+
+function getRandomWords(n) {
+    return [...vocabulary].sort(() => 0.5 - Math.random()).slice(0, n);
+}
+
+function displayChinese() {
+    const display = document.getElementById('wordDisplay');
+    display.innerHTML = currentWords.map(w => w.cn).join('<br>');
+}
+
+function showAnswer() {
+    const content = currentWords.map(w => 
+        `${w.cn} - ${w.en} [${w.pron}]`
+    ).join('<br>');
+    document.getElementById('answerContent').innerHTML = content;
+    document.getElementById('answerModal').style.display = 'block';
+    
+    // 读音功能（需浏览器支持）
+    if ('speechSynthesis' in window) {
+        currentWords.forEach(word => {
+            const msg = new SpeechSynthesisUtterance(word.en);
+            window.speechSynthesis.speak(msg);
+        });
+    }
+}
+
+function closeModal() {
+    document.getElementById('answerModal').style.display = 'none';
+}
+
+// 初始化加载足够多的单词（实际使用需补全）
+// 本示例仅为演示结构，实际需填充200+个单词数据
+</script>
+</body>
+</html>
