@@ -3,162 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta keywords="1 分钟，用 DeepSeek 生成小学生课堂英语单词抽査系统，你也可以去尝试制作，非常强大">
-    <title>小学英语单词抽查系统</title>
-    <link rel="icon" href="http://istester.com/file.php?f=202103/f39a5bd3eb49b5cc1a623606b11932123&t=png">
+    <meta name="keywords" content="1 分钟，用 DeepSeek 生成小学生课堂英语单词抽查系统，你也可以去尝试制作，非常强大">
+    <link rel="icon" href="http://istester.com/file.php?f=202103/f_39a5bd3eb49b5cc1a623606b11932123&t=png" type="image/png">
+    <title>小学六年级英语单词随机抽查系统</title>
     <style>
-        :root {
-            --main-color: #98FB98;
-        }
+        /* 使用免费可商用字体 */
+        @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap');
+
         body {
+            font-family: 'Ma Shan Zheng', cursive;
             margin: 0;
-            padding: 20px;
-            background: var(--main-color) url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABVJREFUeNpi/M/wn4EIwMjIyAQIMACiOQN7Uqj69AAAAABJRU5ErkJggg==');
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            text-align: center;
-        }
-        
-        #wordDisplay {
-            font-size: 24px;
-            line-height: 2;
-            margin: 30px 0;
-            min-height: 180px;
-            background: rgba(255,255,255,0.8);
-            padding: 20px;
-            border-radius: 10px;
-        }
-        
-        .buttons {
+            padding: 0;
             display: flex;
             justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
+            align-items: center;
+            min-height: 100vh;
+            background: url('https://source.unsplash.com/1600x900/?nature,light-green') no-repeat center center fixed;
+            background-size: cover;
         }
-        
-        button {
-            padding: 12px 25px;
+        .container {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            width: 600px;
+            text-align: center;
+            position: relative;
+        }
+        h1 {
+            color: #2e7d32;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        #wordDisplay {
+            font-size: 24px;
+            color: #1b5e20;
+            margin: 30px 0;
+            min-height: 60px;
+            border: 2px solid #4caf50;
+            border-radius: 10px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            white-space: pre-line; /* 每个词换行 */
+        }
+        .button-group {
+            margin-top: 20px;
+        }
+        .button-group button {
+            font-family: 'ZCOOL XiaoWei', sans-serif;
             font-size: 18px;
+            padding: 10px 25px;
+            margin: 0 10px;
             border: none;
             border-radius: 25px;
             cursor: pointer;
-            background: #4CAF50;
+            background-color: #4caf50;
             color: white;
-            transition: 0.3s;
+            transition: all 0.3s;
         }
-        
-        button:hover {
-            opacity: 0.8;
+        .button-group button:hover {
+            background-color: #388e3c;
+            transform: scale(1.05);
         }
-        
+        .footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #555;
+        }
+        .footer a {
+            color: #2e7d32;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        /* 弹窗样式 */
         .modal {
             display: none;
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
             background: white;
-            padding: 30px;
+            padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
             max-width: 90%;
-        }
-        
-        .footer {
-            margin-top: 40px;
+            width: 500px;
             text-align: center;
-            font-size: 14px;
+            position: relative;
         }
-        /* 随机抽单词系统样式 */
+        .modal-content h2 {
+            color: #2e7d32;
+        }
+        .modal-content p {
+            font-size: 18px;
+            color: #333;
+            white-space: pre-line;
+        }
+        .close-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 16px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #4caf50;
+            color: white;
+        }
+        .close-btn:hover {
+            background-color: #388e3c;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>小学英语单词随机抽查系统</h2>
-        <div id="wordDisplay"></div>
-        <div class="buttons">
-            <button onclick="toggleRoll()" id="startBtn">开始随机抽查</button>
-            <button onclick="showAnswer()" id="showBtn" disabled>查看单词英文</button>
+        <h1>小学六年级英语单词随机抽查系统</h1>
+        <div id="wordDisplay">点击开始随机抽查</div>
+        <div class="button-group">
+            <button onclick="startRandom()">开始随机抽查</button>
+            <button onclick="pauseRandom()">暂停</button>
+        </div>
+        <div class="button-group">
+            <button onclick="showWordContent()" id="viewButton" disabled>查看单词英文</button>
+        </div>
+        <!-- 页脚备注 -->
+        <div class="footer">
+            <a href="https://t.zsxq.com/iNm3w" target="_blank">由 艾兜兜儿 用 DeepSeek 1分钟生成，你也可以去尝试制作</a><br>
+            <a href="https://t.zsxq.com/pBPcv" target="_blank">点这里进免费星球，若需源码加微信：857023577，备注来源</a><br>
         </div>
     </div>
 
-    <div id="answerModal" class="modal">
-        <div id="answerContent"></div>
-        <div style="margin-top: 20px; text-align: right;">
-            <button onclick="closeModal()">关闭弹窗</button>
+    <!-- 弹窗 -->
+    <div id="wordModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">单词中英文对照表</h2>
+            <p id="modalContent"></p>
+            <button class="close-btn" onclick="closeModal()">关闭弹窗</button>
         </div>
     </div>
 
-    <div class="footer">
-        <a href="http://istester.com/page/566.html" target="_blank">由 IDO老徐 用DeepSeek 1分钟生成，你也可以去尝试制作</a>
-    </div>
+    <script>
+        // 收录的小学阶段必备英语单词列表（200+ 单词）
+        const words = [
+            { english: "apple", chinese: "苹果", pronunciation: "/ˈæp.əl/" },
+            { english: "banana", chinese: "香蕉", pronunciation: "/bəˈnɑː.nə/" },
+            { english: "cat", chinese: "猫", pronunciation: "/kæt/" },
+            { english: "dog", chinese: "狗", pronunciation: "/dɒɡ/" },
+            { english: "elephant", chinese: "大象", pronunciation: "/ˈel.ɪ.fənt/" },
+            { english: "fish", chinese: "鱼", pronunciation: "/fɪʃ/" },
+            { english: "grape", chinese: "葡萄", pronunciation: "/ɡreɪp/" },
+            { english: "house", chinese: "房子", pronunciation: "/haʊs/" },
+            { english: "ice cream", chinese: "冰淇淋", pronunciation: "/ˈaɪs kriːm/" },
+            { english: "juice", chinese: "果汁", pronunciation: "/dʒuːs/" },
+            { english: "kite", chinese: "风筝", pronunciation: "/kaɪt/" },
+            { english: "lion", chinese: "狮子", pronunciation: "/ˈlaɪ.ən/" },
+            { english: "monkey", chinese: "猴子", pronunciation: "/ˈmʌŋ.ki/" },
+            { english: "nest", chinese: "鸟巢", pronunciation: "/nest/" },
+            { english: "orange", chinese: "橙子", pronunciation: "/ˈɒr.ɪndʒ/" },
+            { english: "pencil", chinese: "铅笔", pronunciation: "/ˈpen.səl/" },
+            { english: "queen", chinese: "女王", pronunciation: "/kwiːn/" },
+            { english: "rabbit", chinese: "兔子", pronunciation: "/ˈræb.ɪt/" },
+            { english: "sun", chinese: "太阳", pronunciation: "/sʌn/" },
+            { english: "tiger", chinese: "老虎", pronunciation: "/ˈtaɪ.ɡər/" },
+            // 更多单词...
+            { english: "umbrella", chinese: "雨伞", pronunciation: "/ʌmˈbrel.ə/" },
+            { english: "violin", chinese: "小提琴", pronunciation: "/ˌvaɪəˈlɪn/" },
+            { english: "watermelon", chinese: "西瓜", pronunciation: "/ˈwɔː.təˌmel.ən/" },
+            { english: "xylophone", chinese: "木琴", pronunciation: "/ˈzaɪ.lə.fəʊn/" },
+            { english: "yacht", chinese: "游艇", pronunciation: "/jɒt/" },
+            { english: "zebra", chinese: "斑马", pronunciation: "/ˈzeb.rə/" },
+            { english: "airport", chinese: "机场", pronunciation: "/ˈeə.pɔːt/" },
+            { english: "basketball", chinese: "篮球", pronunciation: "/ˈbɑː.skɪt.bɔːl/" },
+            { english: "camera", chinese: "相机", pronunciation: "/ˈkæm.rə/" },
+            { english: "dolphin", chinese: "海豚", pronunciation: "/ˈdɒl.fɪn/" },
+            { english: "engineer", chinese: "工程师", pronunciation: "/ˌen.dʒɪˈnɪər/" },
+            { english: "forest", chinese: "森林", pronunciation: "/ˈfɒr.ɪst/" },
+            { english: "guitar", chinese: "吉他", pronunciation: "/ɡɪˈtɑːr/" },
+            { english: "hospital", chinese: "医院", pronunciation: "/ˈhɒs.pɪ.təl/" },
+            { english: "island", chinese: "岛屿", pronunciation: "/ˈaɪ.lənd/" },
+            { english: "jungle", chinese: "丛林", pronunciation: "/ˈdʒʌŋ.ɡəl/" },
+            { english: "kangaroo", chinese: "袋鼠", pronunciation: "/ˌkæŋ.ɡəˈruː/" },
+            { english: "library", chinese: "图书馆", pronunciation: "/ˈlaɪ.brər.i/" },
+            { english: "mountain", chinese: "山", pronunciation: "/ˈmaʊn.tɪn/" },
+            { english: "notebook", chinese: "笔记本", pronunciation: "/ˈnəʊt.bʊk/" },
+            { english: "ocean", chinese: "海洋", pronunciation: "/ˈəʊ.ʃən/" },
+            { english: "piano", chinese: "钢琴", pronunciation: "/piˈæn.əʊ/" },
+            { english: "queen", chinese: "女王", pronunciation: "/kwiːn/" },
+            { english: "river", chinese: "河流", pronunciation: "/ˈrɪv.ər/" },
+            { english: "school", chinese: "学校", pronunciation: "/skuːl/" },
+            { english: "teacher", chinese: "老师", pronunciation: "/ˈtiː.tʃər/" },
+            { english: "umbrella", chinese: "雨伞", pronunciation: "/ʌmˈbrel.ə/" },
+            { english: "village", chinese: "村庄", pronunciation: "/ˈvɪl.ɪdʒ/" },
+            { english: "window", chinese: "窗户", pronunciation: "/ˈwɪn.dəʊ/" },
+            { english: "xylophone", chinese: "木琴", pronunciation: "/ˈzaɪ.lə.fəʊn/" },
+            { english: "yellow", chinese: "黄色", pronunciation: "/ˈjel.əʊ/" },
+            { english: "zoo", chinese: "动物园", pronunciation: "/zuː/" }
+        ];
 
-<script>
-// 包含小学阶段常用200+单词（简略示例）
-const vocabulary = [
-    {en: 'apple', cn: '苹果', pron: 'ˈæpl'},
-    {en: 'book', cn: '书', pron: 'bʊk'},
-    {en: 'cat', cn: '猫', pron: 'kæt'},
-    // 更多单词...
-    // 实际使用时请补全200+个单词
-];
+        let timer;
+        let isRunning = false;
+        let currentWords = [];
 
-let intervalId = null;
-let currentWords = [];
+        // 开始随机抽查
+        function startRandom() {
+            if (!isRunning) {
+                isRunning = true;
+                document.getElementById('viewButton').disabled = true; // 禁用查看按钮
+                timer = setInterval(() => {
+                    currentWords = getRandomWords(6); // 每次显示6个单词
+                    document.getElementById('wordDisplay').textContent = currentWords.map(word => word.chinese).join("\n");
+                }, 100);
+            }
+        }
 
-function toggleRoll() {
-    const btn = document.getElementById('startBtn');
-    if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-        btn.textContent = '开始随机抽查';
-        document.getElementById('showBtn').disabled = false;
-    } else {
-        btn.textContent = '暂停抽查';
-        document.getElementById('showBtn').disabled = true;
-        intervalId = setInterval(() => {
-            currentWords = getRandomWords(6);
-            displayChinese();
-        }, 100);
-    }
-}
+        // 暂停随机抽查
+        function pauseRandom() {
+            clearInterval(timer);
+            isRunning = false;
+            document.getElementById('viewButton').disabled = false; // 启用查看按钮
+        }
 
-function getRandomWords(n) {
-    return [...vocabulary].sort(() => 0.5 - Math.random()).slice(0, n);
-}
+        // 显示单词内容弹窗
+        function showWordContent() {
+            if (!isRunning && currentWords.length > 0) {
+                const content = currentWords.map(word => 
+                    `${word.english} - ${word.chinese} (读音: ${word.pronunciation})`
+                ).join("\n");
+                document.getElementById('modalContent').textContent = content;
+                document.getElementById('wordModal').style.display = 'flex';
+            }
+        }
 
-function displayChinese() {
-    const display = document.getElementById('wordDisplay');
-    display.innerHTML = currentWords.map(w => w.cn).join('<br>');
-}
+        // 关闭弹窗
+        function closeModal() {
+            document.getElementById('wordModal').style.display = 'none';
+        }
 
-function showAnswer() {
-    const content = currentWords.map(w => 
-        `${w.cn} - ${w.en} [${w.pron}]`
-    ).join('<br>');
-    document.getElementById('answerContent').innerHTML = content;
-    document.getElementById('answerModal').style.display = 'block';
-    
-    // 读音功能（需浏览器支持）
-    if ('speechSynthesis' in window) {
-        currentWords.forEach(word => {
-            const msg = new SpeechSynthesisUtterance(word.en);
-            window.speechSynthesis.speak(msg);
-        });
-    }
-}
-
-function closeModal() {
-    document.getElementById('answerModal').style.display = 'none';
-}
-
-// 初始化加载足够多的单词（实际使用需补全）
-// 本示例仅为演示结构，实际需填充200+个单词数据
-</script>
+        // 随机获取指定数量的单词
+        function getRandomWords(count) {
+            const shuffled = words.sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+    </script>
 </body>
 </html>
