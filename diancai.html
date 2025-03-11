@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="keywords" content="10 分钟，用 DeepSeek 生成《家庭成员点餐系统》，你也可以去尝试制作，非常强大">
+    <link rel="icon" href="http://istester.com/file.php?f=202103/f_39a5bd3eb49b5cc1a623606b11932123&t=png" type="image/png">
+    <title>家庭成员点餐系统 - 艾兜兜儿&DeepSeek</title>
+     <p class="tip">这个系统，免费提供使用，数据只存在你的本地，在其他设备看不到，放心用</p>
+    <style>
+
+
+	/* 提示语样式 */
+.header .tip {
+    color: #666;
+    font-size: 14px;
+    background: #E8F5E9;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+    text-align: center;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid var(--light-green);
+}	
+
+
+        :root {
+            --main-green: #4CAF50;
+            --light-green: #8BC34A;
+            --background: #F1F8E9;
+        }
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background);
+            min-height: 100vh;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: var(--main-green);
+            font-size: 28px;
+            margin: 0;
+        }
+        .header p {
+            color: #666;
+            font-size: 16px;
+            margin: 5px 0;
+        }
+        .category-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .category-nav button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--main-green);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: background 0.3s, transform 0.2s;
+        }
+        .category-nav button:hover {
+            background: var(--light-green);
+            transform: translateY(-2px);
+        }
+        #dish-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        .dish-card {
+            background: white;
+            border: 1px solid var(--light-green);
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .dish-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
+            margin: 0;
+        }
+        .dish-card p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .dish-card.selected {
+            border: 2px solid var(--main-green);
+            background: #E8F5E9;
+        }
+        .order-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .order-form button, .order-form select, .order-form input {
+            background: var(--main-green);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            cursor: pointer;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: background 0.3s, transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+        }
+        .order-form button:hover, .order-form select:hover, .order-form input:hover {
+            background: var(--light-green);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        .order-form select, .order-form input {
+            background: white;
+            color: var(--main-green);
+            border: 2px solid var(--main-green);
+            padding: 10px 20px;
+        }
+        .order-form select:hover, .order-form input:hover {
+            background: #E8F5E9;
+            color: var(--main-green);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+        }
+        .modal-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .modal-content p {
+            margin: 0;
+            font-size: 16px;
+            text-align: left;
+        }
+        #record-page {
+            display: none;
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            width: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        #record-page h2 {
+            color: var(--main-green);
+            margin-bottom: 20px;
+        }
+        #record-page .record-item {
+            background: white;
+            border: 1px solid var(--light-green);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        #record-page .record-item h3 {
+            color: var(--main-green);
+            margin: 0 0 10px;
+        }
+        #record-page .record-item p {
+            margin: 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .floating-record {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            background: var(--main-green);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .floating-record:hover {
+            background: var(--light-green);
+        }
+        @media (max-width: 768px) {
+            .category-nav button {
+                flex: 1 1 45%;
+                margin: 5px;
+            }
+            #dish-container {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+            .order-form {
+                flex-direction: column;
+            }
+            .order-form button, .order-form select, .order-form input {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+
+
+
+	// iii
+	/* 底部浮窗样式 */
+.footer-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #ffffff;
+    padding: 10px 20px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.footer-content label {
+    font-size: 14px;
+    color: #333;
+}
+
+.footer-content input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.footer-content .submit-btn {
+    padding: 8px 20px;
+    background: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s ease;
+}
+
+.footer-content .submit-btn:hover {
+    background: var(--primary-hover-color);
+}
+
+
+
+
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 页面置顶系统名和欢迎语 -->
+    <div class="header">
+        <h1>家庭点餐系统</h1>
+        <p id="welcome-message"></p>
+    </div>
+
+    <!-- 分类导航 -->
+    <div class="category-nav">
+        <button data-category="all">🍽️ 全部</button>
+        <button data-category="hot">🔥 热菜</button>
+        <button data-category="vegetable">🥦 素菜</button>
+        <button data-category="soup">🍲 汤羹</button>
+        <button data-category="staple">🍚 主食</button>
+        <button data-category="kid">👶 儿童餐</button>
+    </div>
+
+    <!-- 菜品展示 -->
+    <div id="dish-container"></div>
+
+    <!-- 点餐表单 -->
+    <div class="order-form">
+        <select id="member" required>
+            <option value="">👨‍👩‍👧‍👦 选择身份</option>
+            <option>👨‍👦 爸爸</option>
+            <option>👩‍👧 妈妈</option>
+            <option>👴 爷爷</option>
+            <option>👵 奶奶</option>
+            <option>👦 大宝</option>
+            <option>👧 二宝</option>
+            <option>🧒 三宝</option>
+            <option>👶 四宝</option>
+        </select>
+        <input type="date" id="order-date" value="">
+        <button onclick="submitOrder()">🍽️ 提交点餐</button>
+    </div>
+
+    <!-- 确认弹窗 -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content">
+            <h3>确认点餐</h3>
+            <p>请问确认是如下餐品吗？</p>
+            <div id="confirm-dishes"></div>
+            <button onclick="confirmOrder()">是的，下单</button>
+            <button onclick="closeModal()">我再看看</button>
+        </div>
+    </div>
+
+    <!-- 点单记录内嵌页 -->
+    <div id="record-page">
+        <h2>📋 点单记录</h2>
+        <div id="record-list"></div>
+        <button onclick="closeRecordPage()">关闭</button>
+    </div>
+
+    <!-- 点单记录浮层 -->
+    <div class="floating-record" onclick="showRecords()">
+        📋 点单记录
+    </div>
+
+
+<!-- 页面底部备注 -->
+<div style="text-align: center; margin-top: 20px; font-size: 14px; color: #666;">
+	<a href="https://pan.quark.cn/s/620efd40fbed" target="_blank">(系统源码地址 + 使用 DeepSeek 的提示词，点这领取，免费)</a>
+	<br>
+	<a href="https://t.zsxq.com/Qv8KA" target="_blank">点这进免费社群,了解艾兜兜儿每天在忙什么</a>
+        <br>
+	<a href="https://t.zsxq.com/G2AqB" target="_blank">点这里你也能用 DeepSeek 10 分钟开发完成，不需要自己写代码，欢迎去尝试制作</a>
+</div>
+
+    <script>
+        // 菜品数据
+
+const dishes = [
+    // 热菜（35道）
+    { name: "鱼香肉丝", category: "hot", practice: "里脊切丝→泡椒豆瓣酱炒香→笋丝木耳翻炒→勾芡", rating: 4.5 },
+    { name: "红烧肉", category: "hot", practice: "五花肉焯水→糖色炒制→砂锅炖1.5小时（加腐乳增香）", rating: 5 },
+    { name: "宫保鸡丁", category: "hot", practice: "鸡腿肉丁滑油→干辣椒花椒爆香→花生米回锅", rating: 4 },
+    { name: "麻婆豆腐", category: "hot", practice: "嫩豆腐切块→牛肉末炒香→郫县豆瓣+花椒粉炖煮", rating: 4.5 },
+    { name: "糖醋排骨", category: "hot", practice: "排骨焯水→冰糖炒糖色→醋:酱油=2:1→小火收汁", rating: 4.5 },
+    { name: "回锅肉", category: "hot", practice: "五花肉煮至七分熟→切片煸炒→豆瓣酱+青蒜爆香", rating: 4.5 },
+    { name: "水煮肉片", category: "hot", practice: "牛肉片+豆芽+辣椒油", rating: 4 },
+    { name: "红烧带鱼", category: "hot", practice: "带鱼煎黄→糖醋汁焖", rating: 4 },
+    { name: "土豆烧牛肉", category: "hot", practice: "高压锅压20分钟→收汁", rating: 4.5 },
+    { name: "木须肉", category: "hot", practice: "鸡蛋+木耳+黄瓜片炒制", rating: 4 },
+    { name: "辣子鸡丁", category: "hot", practice: "鸡丁炸酥→干辣椒爆炒", rating: 4 },
+    { name: "干锅花菜", category: "hot", practice: "花菜焯水→五花肉煸油→豆瓣酱+干辣椒爆炒", rating: 4 },
+    { name: "酸菜鱼", category: "hot", practice: "鱼片腌制→酸菜炒香→加骨汤煮沸→鱼片烫熟", rating: 4.5 },
+    { name: "清蒸鲈鱼", category: "hot", practice: "鱼身划刀→葱姜垫底→水开后蒸8分钟→淋热油+蒸鱼豉油", rating: 5 },
+    { name: "干锅肥肠", category: "hot", practice: "肥肠焯水→辣椒+洋葱爆炒", rating: 4 },
+    { name: "红烧狮子头", category: "hot", practice: "肉馅+淀粉搓圆→油炸定型→红烧炖煮", rating: 4.5 },
+    { name: "啤酒鸭", category: "hot", practice: "鸭肉焯水→啤酒+香料炖煮", rating: 4 },
+    { name: "酱爆茄子", category: "hot", practice: "茄子炸软→豆瓣酱+蒜末爆炒", rating: 4 },
+    { name: "香菇炖鸡", category: "hot", practice: "鸡肉焯水→香菇+红枣炖煮", rating: 4.5 },
+    { name: "干锅土豆片", category: "hot", practice: "土豆片煎黄→五花肉+辣椒爆炒", rating: 4 },
+    { name: "香辣虾", category: "hot", practice: "虾炸酥→辣椒+花椒爆炒", rating: 4.5 },
+    { name: "红烧鸡翅", category: "hot", practice: "鸡翅煎黄→糖醋汁焖", rating: 4.5 },
+    { name: "青椒肉丝", category: "hot", practice: "里脊切丝→青椒爆炒", rating: 4 },
+    { name: "干锅排骨", category: "hot", practice: "排骨炸酥→辣椒+洋葱爆炒", rating: 4.5 },
+    { name: "红烧猪蹄", category: "hot", practice: "猪蹄焯水→糖色炒制→炖煮1小时", rating: 4.5 },
+    { name: "酸辣白菜", category: "hot", practice: "白菜+陈醋+干辣椒爆炒", rating: 4 },
+    { name: "红烧豆腐", category: "hot", practice: "豆腐煎黄→豆瓣酱+蒜末爆炒", rating: 4 },
+    { name: "干锅牛蛙", category: "hot", practice: "牛蛙炸酥→辣椒+洋葱爆炒", rating: 4.5 },
+    { name: "红烧鱼块", category: "hot", practice: "鱼块煎黄→糖醋汁焖", rating: 4 },
+    { name: "干锅鸡翅", category: "hot", practice: "鸡翅炸酥→辣椒+洋葱爆炒", rating: 4.5 },
+    { name: "红烧牛腩", category: "hot", practice: "牛腩焯水→糖色炒制→炖煮1.5小时", rating: 4.5 },
+    { name: "干锅虾", category: "hot", practice: "虾炸酥→辣椒+洋葱爆炒", rating: 4.5 },
+    { name: "红烧排骨", category: "hot", practice: "排骨焯水→糖色炒制→炖煮1小时", rating: 4.5 },
+    { name: "干锅肥牛", category: "hot", practice: "肥牛焯水→辣椒+洋葱爆炒", rating: 4.5 },
+    { name: "红烧鸡块", category: "hot", practice: "鸡块焯水→糖色炒制→炖煮1小时", rating: 4.5 },
+
+
+    // 汤羹（15道）
+    { name: "玉米排骨汤", category: "soup", practice: "排骨焯水→玉米胡萝卜炖1小时→盐最后放", rating: 5 },
+    { name: "番茄牛腩煲", category: "soup", practice: "牛腩高压锅压20分钟→番茄炒出沙→混合炖煮", rating: 4.5 },
+    { name: "莲藕排骨汤", category: "soup", practice: "排骨+莲藕+花生米慢炖1.5小时", rating: 4.5 },
+    { name: "紫菜蛋花汤", category: "soup", practice: "紫菜+蛋液+香油", rating: 4 },
+    { name: "冬瓜丸子汤", category: "soup", practice: "肉丸+冬瓜+胡椒粉", rating: 4 },
+    { name: "黄豆猪蹄汤", category: "soup", practice: "猪蹄焯水+黄豆炖", rating: 4.5 },
+    { name: "海带排骨汤", category: "soup", practice: "排骨焯水+海带炖", rating: 4 },
+    { name: "番茄鸡蛋汤", category: "soup", practice: "番茄炒出沙+蛋液", rating: 4 },
+    { name: "鲫鱼豆腐汤", category: "soup", practice: "鲫鱼煎黄+豆腐炖", rating: 4.5 },
+    { name: "老鸭汤", category: "soup", practice: "老鸭焯水+枸杞炖", rating: 4.5 },
+    { name: "山药排骨汤", category: "soup", practice: "排骨焯水+山药炖", rating: 4.5 },
+    { name: "鸡蛋黄瓜汤", category: "soup", practice: "黄瓜切片+蛋液", rating: 4 },
+    { name: "菌菇鸡汤", category: "soup", practice: "鸡肉焯水+菌菇炖", rating: 4.5 },
+    { name: "萝卜牛腩汤", category: "soup", practice: "牛腩焯水+萝卜炖", rating: 4.5 },
+    { name: "菠菜蛋花汤", category: "soup", practice: "菠菜焯水+蛋液", rating: 4 },
+
+    // 主食（15道）
+    { name: "葱油拌面", category: "staple", practice: "小葱炸至焦黄→面条过冷水→淋葱油+生抽", rating: 5 },
+    { name: "三鲜煎饺", category: "staple", practice: "虾仁+鸡蛋+韭菜馅→水煎法（冰花脆底）", rating: 4 },
+    { name: "扬州炒饭", category: "staple", practice: "隔夜米饭+火腿丁+虾仁+豌豆翻炒", rating: 4.5 },
+    { name: "卤肉饭", category: "staple", practice: "五花肉+香菇+卤蛋", rating: 4.5 },
+    { name: "手擀面", category: "staple", practice: "自制面条+臊子", rating: 4 },
+    { name: "韭菜盒子", category: "staple", practice: "韭菜+鸡蛋+粉丝", rating: 4 },
+    { name: "鸡蛋炒饭", category: "staple", practice: "隔夜米饭+鸡蛋翻炒", rating: 4 },
+    { name: "肉夹馍", category: "staple", practice: "卤肉+馍", rating: 4.5 },
+    { name: "葱油饼", category: "staple", practice: "面粉+葱花煎制", rating: 4 },
+    { name: "牛肉炒面", category: "staple", practice: "牛肉+面条翻炒", rating: 4.5 },
+    { name: "鸡蛋灌饼", category: "staple", practice: "面粉+鸡蛋煎制", rating: 4 },
+    { name: "肉丝炒面", category: "staple", practice: "肉丝+面条翻炒", rating: 4 },
+    { name: "葱油花卷", category: "staple", practice: "面粉+葱花蒸制", rating: 4 },
+    { name: "鸡蛋饼", category: "staple", practice: "面粉+鸡蛋煎制", rating: 4 },
+    { name: "肉末炒饭", category: "staple", practice: "肉末+米饭翻炒", rating: 4 },
+
+   // 凉菜与儿童餐（15道）
+    { name: "可乐鸡翅", category: "kid", practice: "鸡翅煎至金黄→可乐没过→收汁至浓稠（甜口版）", rating: 5 },
+    { name: "芝士焗红薯", category: "kid", practice: "红薯蒸熟压泥→铺马苏里拉→烤箱200℃10分钟", rating: 4.5 },
+    { name: "肉饼蒸蛋", category: "kid", practice: "肉末铺底→鸡蛋液蒸制→淋香油", rating: 3.5 },
+    { name: "糖醋里脊", category: "kid", practice: "里脊肉炸酥→糖醋汁裹", rating: 4.5 },
+    { name: "番茄鸡蛋饼", category: "kid", practice: "面粉+鸡蛋+番茄丁煎", rating: 4 },
+    { name: "土豆泥", category: "kid", practice: "土豆蒸熟+牛奶+黑胡椒", rating: 4 },
+    { name: "鸡蛋布丁", category: "kid", practice: "鸡蛋+牛奶+糖蒸制", rating: 4 },
+    { name: "水果沙拉", category: "kid", practice: "水果切块+酸奶", rating: 4 },
+    { name: "炸鸡翅", category: "kid", practice: "鸡翅腌制→裹粉油炸", rating: 4.5 },
+    { name: "鸡蛋卷", category: "kid", practice: "鸡蛋液煎制→卷起", rating: 4 },
+    { name: "香蕉派", category: "kid", practice: "香蕉+手抓饼煎制", rating: 4 },
+    { name: "炸薯条", category: "kid", practice: "土豆切条→油炸", rating: 4.5 },
+    { name: "水果酸奶", category: "kid", practice: "水果切块+酸奶", rating: 4 },
+    { name: "鸡蛋三明治", category: "kid", practice: "鸡蛋+吐司+沙拉酱", rating: 4 },
+    { name: "炸虾球", category: "kid", practice: "虾仁裹粉油炸", rating: 4.5 }
+];
+
+
+
+
+
+
+        // 欢迎语随机列表
+        const welcomeMessages = [
+            "欢迎使用家庭点餐系统，今天想吃点什么呢？",
+            "美味佳肴，一键点餐，快来试试吧！",
+            "让每一餐都充满家的味道，开始点餐吧！",
+            "健康美味，从点餐开始，今天想吃什么？",
+            "轻松点餐，快乐用餐，欢迎回来！"
+        ];
+
+        // 系统核心功能
+        class OrderSystem {
+            constructor() {
+                this.selectedDishes = new Set();
+                this.orders = JSON.parse(localStorage.getItem('orders')) || [];
+                this.init();
+            }
+
+            init() {
+                this.renderDishes();
+                this.initCategoryNav();
+                this.initDate();
+                this.initWelcomeMessage();
+            }
+
+            renderDishes(category = 'all') {
+                const container = document.getElementById('dish-container');
+                if (container) {
+                    container.innerHTML = dishes
+                        .filter(dish => category === 'all' || dish.category === category)
+                        .map(dish => `
+                            <div class="dish-card" data-name="${dish.name}" onclick="toggleDish('${dish.name}')">
+                                <h3>🍽️ ${dish.name}</h3>
+                                <p>${dish.practice}</p>
+                                <p>推荐指数：${'★'.repeat(Math.floor(dish.rating)) + '☆'.repeat(Math.ceil(dish.rating - Math.floor(dish.rating)))}</p>
+                            </div>
+                        `)
+                        .join('');
+                }
+            }
+
+            initCategoryNav() {
+                document.querySelectorAll('.category-nav button').forEach(button => {
+                    button.addEventListener('click', () => this.renderDishes(button.dataset.category));
+                });
+            }
+
+            initDate() {
+                const dateElem = document.getElementById('current-date');
+                if (dateElem) {
+                    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                    dateElem.textContent = new Date().toLocaleDateString('zh-CN', options);
+                }
+                document.getElementById('order-date').value = new Date().toISOString().split('T')[0];
+            }
+
+            initWelcomeMessage() {
+                const welcomeMessageElem = document.getElementById('welcome-message');
+                if (welcomeMessageElem) {
+                    const welcomeMessage = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+                    welcomeMessageElem.textContent = welcomeMessage;
+                }
+            }
+
+            saveOrder(member, date, dishes) {
+                this.orders.push({ member, date, dishes });
+                localStorage.setItem('orders', JSON.stringify(this.orders));
+            }
+
+            getMonthlyRecords() {
+                const currentMonth = new Date().getMonth();
+                return this.orders.filter(order => new Date(order.date).getMonth() === currentMonth);
+            }
+        }
+
+        // 全局函数
+        function toggleDish(name) {
+            const dishCard = document.querySelector(`.dish-card[data-name="${name}"]`);
+            if (dishCard) {
+                dishCard.classList.toggle('selected');
+                if (dishCard.classList.contains('selected')) {
+                    orderSystem.selectedDishes.add(name);
+                } else {
+                    orderSystem.selectedDishes.delete(name);
+                }
+            }
+        }
+
+        function submitOrder() {
+            const member = document.getElementById('member').value;
+            const date = document.getElementById('order-date').value;
+            if (!member || !date || orderSystem.selectedDishes.size === 0) {
+                alert('请选择身份、日期和菜品！');
+                return;
+            }
+            const confirmModal = document.getElementById('confirm-modal');
+            const confirmDishes = document.getElementById('confirm-dishes');
+            if (confirmModal && confirmDishes) {
+                const confirmText = Array.from(orderSystem.selectedDishes).map(dish => `<p>🍽️ ${dish}</p>`).join('');
+                confirmDishes.innerHTML = confirmText;
+                confirmModal.style.display = 'block';
+            }
+        }
+
+        function confirmOrder() {
+            const member = document.getElementById('member').value;
+            const date = document.getElementById('order-date').value;
+            if (member && date && orderSystem.selectedDishes.size > 0) {
+                orderSystem.saveOrder(member, date, Array.from(orderSystem.selectedDishes));
+                orderSystem.selectedDishes.clear();
+                document.querySelectorAll('.dish-card.selected').forEach(card => card.classList.remove('selected'));
+                closeModal();
+                alert("点餐成功，坐等出餐哟！");
+            }
+        }
+
+        function closeModal() {
+            const confirmModal = document.getElementById('confirm-modal');
+            if (confirmModal) {
+                confirmModal.style.display = 'none';
+            }
+        }
+
+        function showRecords() {
+            const recordPage = document.getElementById('record-page');
+            if (recordPage) {
+                const records = orderSystem.getMonthlyRecords();
+                const groupedRecords = {};
+
+                // 按点单人分类
+                records.forEach(record => {
+                    if (!groupedRecords[record.member]) {
+                        groupedRecords[record.member] = [];
+                    }
+                    groupedRecords[record.member].push(record);
+                });
+
+                // 渲染记录
+                const recordList = document.getElementById('record-list');
+                if (recordList) {
+                    recordList.innerHTML = Object.keys(groupedRecords).map(member => `
+                        <div class="record-item">
+                            <h3>${member}</h3>
+                            ${groupedRecords[member].map(record => `
+                                <p>📅 ${record.date}: ${record.dishes.join('、')}</p>
+                            `).join('')}
+                        </div>
+                    `).join('');
+                }
+
+                recordPage.style.display = 'block';
+            }
+        }
+
+        function closeRecordPage() {
+            const recordPage = document.getElementById('record-page');
+            if (recordPage) {
+                recordPage.style.display = 'none';
+            }
+        }
+
+
+        // 初始化系统
+        const orderSystem = new OrderSystem();
+
+    
+    </script>
+</body>
+</html>
