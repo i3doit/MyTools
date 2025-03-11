@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能密码生成器</title>
+    <style>
+        :root {
+            --primary-color: #27AE60;
+            --bg-color: #E8F5E9;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #a8e6cf 0%, #dcedc1 100%);
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.9);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .control-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .password-list {
+            margin-top: 20px;
+            border-top: 2px solid #ddd;
+            padding-top: 20px;
+        }
+
+        .password-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .history-pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .copy-btn {
+            background: #2ecc71;
+            margin-left: 10px;
+        }
+
+        .strength {
+            font-weight: bold;
+            margin-left: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .password-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="control-group">
+            <div>
+                <label>字符类型：</label>
+                <label><input type="checkbox" checked class="char-type" value="lower"> 小写字母</label>
+                <label><input type="checkbox" checked class="char-type" value="upper"> 大写字母</label>
+                <label><input type="checkbox" checked class="char-type" value="number"> 数字</label>
+                <label><input type="checkbox" checked class="char-type" value="symbol"> 特殊字符</label>
+            </div>
+            <div>
+                <label>排除字符：<input type="checkbox" id="exclude-check"></label>
+                <input type="text" id="exclude-input" placeholder="A342u" disabled>
+            </div>
+            <div>
+                <label>密码长度：
+                    <select id="length">
+                        ${Array.from({length: 100}, (_,i) => `<option value="${i+1}" ${i+1===8?'selected':''}>${i+1}位</option>`).join('')}
+                    </select>
+                </label>
+            </div>
+            <div>
+                <label>生成数量：
+                    <select id="count">
+                        ${Array.from({length: 99}, (_,i) => `<option value="${i+1}">${i+1}个</option>`).join('')}
+                    </select>
+                </label>
+            </div>
+        </div>
+        <button onclick="generatePasswords()">生成密码</button>
+        
+        <div class="password-list" id="passwordList"></div>
+        <div class="history-pagination" id="pagination"></div>
+    </div>
+
+    <footer style="text-align: center; margin-top: 20px; color: #666;">
+        <p>由 <a href="https://mp.weixin.qq.com/s/Tx7MbtPEqbzBT61arZx07g" target="_blank">艾兜兜儿</a> 用DeepSeek 1分钟生成，你也可以去尝试制作</p>
+    </footer>
+
+    <script>
+        let history = JSON.parse(localStorage.getItem('passwordHistory') || '[]')
+        
+        function generatePassword(length, chars) {
+            return Array.from({length}, () => 
+                chars[Math.floor(Math.random() * chars.length)]
+            ).join('')
+        }
+
+        function getChars() {
+            const chars = {
+                lower: 'abcdefghijklmnopqrstuvwxyz',
+                upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                number: '0123456789',
+                symbol: '!@#$%&*'
+            }
+            
+            let selected = Array.from(document.querySelectorAll('.char-type:checked'))
+                .map(el => chars[el.value]).join('')
+            
+            if(document.getElementById('exclude-check').checked) {
+                const exclude = new Set(document.getElementById('exclude-input').value)
+                selected = selected.split('').filter(c => !exclude.has(c)).join('')
+            }
+            
+            return selected
+        }
+
+        function calculateStrength(password) {
+            const hasLower = /[a-z]/.test(password)
+            const hasUpper = /[A-Z]/.test(password)
+            const hasNumber = /[0-9]/.test(password)
+            const hasSymbol = /[!@#$%&*]/.test(password)
+            const typesCount = [hasLower, hasUpper, hasNumber, hasSymbol].filter(Boolean).length
+            
+            let strength = '弱'
+            if(password.length > 12 && typesCount === 4) strength = '极强'
+            else if(password.length > 10 && typesCount >= 3) strength = '强'
+            else if(password.length >= 8 && typesCount >= 2) strength = '中'
+            
+            return strength
+        }
+
+        function generatePasswords() {
+            const length = document.getElementById('length').value
+            const chars = getChars()
+            
+            if(chars.length === 0) return alert('请至少选择一种字符类型')
+            
+            const passwords = Array.from({length: document.getElementById('count').value}, () => 
+                generatePassword(length, chars)
+            )
+            
+            const html = passwords.map(pwd => `
+                <div class="password-item">
+                    <span>${pwd}</span>
+                    <div>
+                        <span class="strength" style="color:${getStrengthColor(calculateStrength(pwd))}">
+                            ${calculateStrength(pwd)}
+                        </span>
+                        <button class="copy-btn" onclick="copyPassword('${pwd}')">复制</button>
+                    </div>
+                </div>`
+            ).join('')
+            
+            document.getElementById('passwordList').innerHTML = html
+            
+            // 保存到历史记录
+            history.unshift({
+                passwords,
+                date: new Date().toLocaleString()
+            })
+            localStorage.setItem('passwordHistory', JSON.stringify(history))
+            updatePagination()
+        }
+
+        function copyPassword(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('已复制到剪贴板')
+            })
+        }
+
+        // 分页功能实现
+        let currentPage = 1
+        const itemsPerPage = 10
+        
+        function updatePagination() {
+            const totalPages = Math.ceil(history.length / itemsPerPage)
+            let paginationHTML = ''
+            
+            if(totalPages <= 7) {
+                paginationHTML = Array.from({length: totalPages}, (_,i) => 
+                    `<button onclick="changePage(${i+1})" ${i+1 === currentPage?'class="active"':''}>${i+1}</button>`
+                ).join('')
+            } else {
+                // 显示逻辑...
+            }
+            
+            document.getElementById('pagination').innerHTML = paginationHTML
+        }
+
+        // 其他辅助函数...
+        document.getElementById('exclude-check').addEventListener('change',
