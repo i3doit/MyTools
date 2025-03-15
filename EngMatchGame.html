@@ -235,6 +235,8 @@
             // 关闭时同时隐藏蒙版
             document.getElementById('overlay').style.display = 'none';
         }
+        
+        
 
         // 其他游戏逻辑（与之前实现的selectCard、checkMatch等功能保持一致）
         // ...（因篇幅限制，完整游戏逻辑请参考前次回答的核心代码）...
@@ -332,7 +334,8 @@
             modal.style.display = 'block';
             overlay.style.display = 'block';
     
-            const savedUser = localStorage.getItem('wordGameData') ? JSON.parse(localStorage.getItem('wordGameData')).username : null;
+            //隐藏 const savedUser = localStorage.getItem('wordGameData') ? JSON.parse(localStorage.getItem('wordGameData')).username : null;
+            const savedUser = getSavedUsername(); // 使用安全方法
             
             if (savedUser && savedUser !== '游客') {
                 // 新增：自动关闭弹窗和蒙版
@@ -348,6 +351,31 @@
                 modal.style.display = 'block';
             }
         }
+        
+        // 获取用户名的安全方法
+        function getSavedUsername() {
+            try {
+                const savedData = localStorage.getItem('wordGameData');
+                if (!savedData) return '游客'; // 默认值
+                
+                const parsedData = JSON.parse(savedData);
+                
+                // 验证数据有效性
+                if (
+                    parsedData?.username &&
+                    typeof parsedData.username === 'string' &&
+                    parsedData.username.trim().length > 0
+                ) {
+                    return parsedData.username.trim();
+                }
+                
+                return '游客';
+            } catch (error) {
+                console.warn('加载存档时发生错误:', error);
+                return '游客';
+            }
+        }
+        
         // 启动游戏
         initGame();
         startTimer();
