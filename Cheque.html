@@ -176,8 +176,8 @@
         <div class="input-group">
             <input type="number" id="amount" placeholder="输入阿拉伯数字金额（如：12345.67）" step="0.01">
             <div class="button-group">
-                <button onclick="convert()" class="convert-btn">立即转换</button>
-                <button class="reset-btn" onclick="resetInput()">重置输入</button>
+                <button onclick="convert()" class="convert-btn">转换</button>
+                <button class="reset-btn" onclick="resetInput()">重置</button>
             </div>
         </div>
 
@@ -297,7 +297,7 @@
             }
 
             // 组合结果
-            let finalResult = 'RMB：' + result.replace(/零+/g, '零').replace(/零$/, '') + '元';
+            let finalResult = '¥' + result.replace(/零+/g, '零').replace(/零$/, '') + '元';
             if (decimalStr) {
                 finalResult += decimalStr;
             } else {
