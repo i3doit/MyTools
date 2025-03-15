@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>支票金额转换器-艾兜兜儿</title>
+    <title>支票金额转换器</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet">
     <style>
         * {
@@ -35,30 +35,43 @@
 
         .input-group {
             display: flex;
+            flex-direction: column;
             gap: 10px;
             margin: 20px 0;
         }
 
         input {
-            flex: 1;
+            width: 100%;
             padding: 12px;
             border: 2px solid #81c784;
             border-radius: 5px;
             font-size: 16px;
         }
 
+        .button-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
         button {
+            flex: 1;
             background: #81c784;
             color: white;
             border: none;
-            padding: 12px 25px;
+            padding: 12px;
             border-radius: 5px;
             cursor: pointer;
             transition: 0.3s;
+            font-size: 16px;
+        }
+
+        button.reset {
+            background: #ef5350;
         }
 
         button:hover {
-            background: #66bb6a;
+            opacity: 0.9;
         }
 
         table {
@@ -130,12 +143,8 @@
         }
 
         @media (max-width: 768px) {
-            .input-group {
+            .button-group {
                 flex-direction: column;
-            }
-            
-            button {
-                width: 100%;
             }
         }
     </style>
@@ -145,9 +154,11 @@
         <h1>支票金额转换器</h1>
         
         <div class="input-group">
-            <input type="number" id="amount" placeholder="输入阿拉伯数字金额">
-            <button onclick="convert()">转换</button>
-            <button onclick="resetInput()" style="background:#ef5350">重置</button>
+            <input type="number" id="amount" placeholder="输入阿拉伯数字金额（如：12345.67）" step="0.01">
+            <div class="button-group">
+                <button onclick="convert()">立即转换</button>
+                <button class="reset" onclick="resetInput()">重置输入</button>
+            </div>
         </div>
 
         <table>
@@ -158,14 +169,10 @@
                     <th>生成时间</th>
                 </tr>
             </thead>
-            <tbody id="results">
-                <!-- 数据动态生成 -->
-            </tbody>
+            <tbody id="results"></tbody>
         </table>
 
-        <div class="pagination" id="pagination">
-            <!-- 分页动态生成 -->
-        </div>
+        <div class="pagination" id="pagination"></div>
 
         <div class="stats">
             <span>今日访问量：<span id="todayCount">0</span></span>
@@ -187,44 +194,34 @@
         let currentPage = 1;
         const pageSize = 10;
 
-        // 访问统计功能
-        async function initStatistics() {
-            const ip = await getIP();
-            const today = new Date().toDateString();
-            
-            // 更新总访问量
-            let total = parseInt(localStorage.getItem('totalVisits')) || 0;
-            localStorage.setItem('totalVisits', ++total);
-            
-            // 更新今日访问量
-            let visits = JSON.parse(localStorage.getItem('dailyVisits')) || {};
-            if (!visits[today]) visits[today] = new Set();
-            visits[today].add(ip);
-            localStorage.setItem('dailyVisits', JSON.stringify(visits));
-            
-            // 显示统计
-            document.getElementById('todayCount').textContent = visits[today].size;
-            document.getElementById('totalCount').textContent = total;
+        // 中文数字映射
+        const chnNumChar = ["零","壹","贰","叁","肆","伍","陆","柒","捌","玖"];
+        const chnUnitChar = ["","拾","佰","仟","万","拾","佰","仟","亿","拾","佰","仟"];
+
+        // 英文数字映射
+        const engUnits = ['', 'Thousand', 'Million', 'Billion'];
+        const engOnes = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine'];
+        const engTeens = ['Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+        const engTens = ['','Ten','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+
+        // 初始化统计
+        window.onload = async () => {
+            await updateStatistics();
+            renderTable();
+            renderPagination();
         }
 
-        // 获取IP地址
-        async function getIP() {
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                return data.ip;
-            } catch {
-                return 'unknown';
-            }
-        }
-
-        // 转换功能
+        // 转换主函数
         function convert() {
-            const amount = document.getElementById('amount').value;
-            if(!amount) return showToast('请输入金额');
+            const input = document.getElementById('amount').value.trim();
+            if(!input) return showToast('请输入有效金额');
             
-            const chn = toChinese(amount);
-            const eng = toEnglish(amount);
+            const num = parseFloat(input);
+            if(isNaN(num)) return showToast('输入格式错误');
+            if(num >= 1e12) return showToast('金额过大（最大1万亿）');
+
+            const chn = convertToChinese(num);
+            const eng = convertToEnglish(num);
             const time = new Date().toLocaleString();
             
             records.unshift({ chn, eng, time });
@@ -233,18 +230,134 @@
             currentPage = 1;
             renderTable();
             renderPagination();
+            resetInput();
         }
 
-        // 中文大写转换
-        function toChinese(num) {
-            // 实现转换逻辑...
-            return '人民币壹万贰仟叁佰肆拾伍元整';
+        // 完整中文转换逻辑
+        function convertToChinese(num) {
+            let integer = Math.floor(num);
+            let decimal = Math.round((num - integer) * 100);
+            let result = '';
+            let unitPos = 0;
+            let zeroCount = 0;
+
+            // 处理整数部分
+            if (integer === 0) {
+                result = chnNumChar[0];
+            } else {
+                while (integer > 0) {
+                    let section = integer % 10000;
+                    if (section === 0) {
+                        zeroCount++;
+                    } else {
+                        if (zeroCount > 0) {
+                            result = chnNumChar[0] + result;
+                            zeroCount = 0;
+                        }
+                        result = sectionToChinese(section) + chnUnitChar[unitPos] + result;
+                    }
+                    integer = Math.floor(integer / 10000);
+                    unitPos += 4;
+                }
+                // 处理万/亿单位
+                if (result.indexOf('万') === -1 && result.length > 4) {
+                    result = result.replace(/(亿)千/g, '$1零千').replace(/亿万/g, '亿');
+                }
+            }
+
+            // 处理小数部分
+            let decimalStr = '';
+            if (decimal > 0) {
+                decimalStr += chnNumChar[Math.floor(decimal / 10)] + '角';
+                if (decimal % 10 !== 0) {
+                    decimalStr += chnNumChar[decimal % 10] + '分';
+                }
+            }
+
+            // 组合结果
+            let finalResult = '人民币' + result.replace(/零+/g, '零').replace(/零$/, '') + '元';
+            if (decimalStr) {
+                finalResult += decimalStr;
+            } else {
+                finalResult += '整';
+            }
+            return finalResult.replace(/^人民币零+/, '人民币');
+
+            function sectionToChinese(section) {
+                let str = '';
+                let unit = 0;
+                let lastNum = 0;
+                while (section > 0) {
+                    let v = section % 10;
+                    if (v === 0) {
+                        if (lastNum !== 0) str = chnNumChar[v] + str;
+                    } else {
+                        str = chnNumChar[v] + chnUnitChar[unit] + str;
+                    }
+                    lastNum = v;
+                    section = Math.floor(section / 10);
+                    unit++;
+                }
+                return str;
+            }
         }
 
-        // 英文大写转换
-        function toEnglish(num) {
-            // 实现转换逻辑...
-            return 'SAY US DOLLARS TWELVE THOUSAND THREE HUNDRED AND FORTY-FIVE ONLY';
+        // 完整英文转换逻辑
+        function convertToEnglish(num) {
+            let integer = Math.floor(num);
+            let cents = Math.round((num - integer) * 100);
+            let result = '';
+
+            if (integer === 0) {
+                result = 'Zero';
+            } else {
+                let unitIndex = 0;
+                while (integer > 0) {
+                    let chunk = integer % 1000;
+                    if (chunk !== 0) {
+                        result = convertChunk(chunk) + engUnits[unitIndex] + ' ' + result;
+                    }
+                    integer = Math.floor(integer / 1000);
+                    unitIndex++;
+                }
+            }
+
+            // 处理美分
+            let centStr = '';
+            if (cents > 0) {
+                centStr = `and ${cents.toString().padStart(2, '0')}/100`;
+            }
+
+            // 组合结果
+            let finalResult = `SAY US DOLLARS ${result.trim()} ${centStr} ONLY`
+                .replace(/\s+/g, ' ')
+                .replace(/ ONLY$/, '')
+                .trim();
+
+            return finalResult + ' ONLY';
+
+            function convertChunk(n) {
+                let str = '';
+                const hundred = Math.floor(n / 100);
+                const remainder = n % 100;
+
+                if (hundred > 0) {
+                    str += engOnes[hundred] + ' Hundred ';
+                }
+
+                if (remainder >= 20) {
+                    str += engTens[Math.floor(remainder / 10)] + ' ';
+                    if (remainder % 10 > 0) {
+                        str += engOnes[remainder % 10] + ' ';
+                    }
+                } else if (remainder >= 10) {
+                    str += engTeens[remainder - 10] + ' ';
+                } else if (remainder > 0) {
+                    str += engOnes[remainder] + ' ';
+                }
+
+                return str;
+            }
         }
 
         // 渲染表格
@@ -285,31 +398,54 @@
             document.getElementById('pagination').innerHTML = pagination.join('');
         }
 
-        // 复制功能
+        // 统计功能
+        async function updateStatistics() {
+            const ip = await getIP();
+            const today = new Date().toDateString();
+            
+            // 更新总访问量
+            let total = parseInt(localStorage.getItem('totalVisits')) || 0;
+            localStorage.setItem('totalVisits', ++total);
+            
+            // 更新今日访问量
+            let visits = JSON.parse(localStorage.getItem('dailyVisits')) || {};
+            if (!visits[today]) visits[today] = new Set();
+            if (!visits[today].has(ip)) {
+                visits[today].add(ip);
+                localStorage.setItem('dailyVisits', JSON.stringify(visits));
+            }
+            
+            // 显示统计
+            document.getElementById('todayCount').textContent = visits[today].size;
+            document.getElementById('totalCount').textContent = total;
+        }
+
+        // 其他功能
+        async function getIP() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip;
+            } catch {
+                return 'unknown';
+            }
+        }
+
         function copyText(text) {
             navigator.clipboard.writeText(text).then(() => {
                 showToast('复制成功！');
             });
         }
 
-        // 重置输入
         function resetInput() {
             document.getElementById('amount').value = '';
         }
 
-        // 提示条
         function showToast(msg) {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
             toast.style.display = 'block';
             setTimeout(() => toast.style.display = 'none', 2000);
-        }
-
-        // 初始化
-        window.onload = () => {
-            initStatistics();
-            renderTable();
-            renderPagination();
         }
 
         // 分页控制
