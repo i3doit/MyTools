@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>支票金额转换器</title>
+    <title>支票金额转换器-艾兜兜儿</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet">
     <style>
         * {
@@ -278,7 +278,7 @@
             }
 
             // 组合结果
-            let finalResult = '人民币' + result.replace(/零+/g, '零').replace(/零$/, '') + '元';
+            let finalResult = 'RMB：' + result.replace(/零+/g, '零').replace(/零$/, '') + '元';
             if (decimalStr) {
                 finalResult += decimalStr;
             } else {
@@ -332,7 +332,7 @@
             }
 
             // 组合结果
-            let finalResult = `SAY US DOLLARS ${result.trim()} ${centStr} ONLY`
+            let finalResult = ` ${result.trim()} ${centStr} ONLY`
                 .replace(/\s+/g, ' ')
                 .replace(/ ONLY$/, '')
                 .trim();
