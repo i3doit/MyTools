@@ -20,9 +20,21 @@
             font-family: 'ZCOOL KuaiLe', cursive;
             color: #2d3436;
         }
-
-        /* 用户弹窗 */
-        #userModal {
+        /* 新增蒙版css样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(3px);
+            z-index: 1000;
+            display: none;
+        }
+  
+        /* 用户弹窗，修改为双重选择器 */
+        #userModal.modal-box {  /* 同时匹配id和class */
             position: fixed;
             top: 50%;
             left: 50%;
@@ -32,7 +44,8 @@
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.1);
             text-align: center;
-            z-index: 1000;
+            z-index: 1001;       /* 增加层级 */
+            display: none;       /* 初始隐藏 */
         }
 
         #userInput {
@@ -144,8 +157,11 @@
     </style>
 </head>
 <body>
+    <!-- 新增蒙版层 -->
+    <div id="overlay" class="modal-overlay"></div>
+
     <!-- 用户弹窗 -->
-    <div id="userModal" style="display: none;">
+    <div id="userModal" class="modal-box">
         <h2>欢迎来到单词连连看</h2>
         <input type="text" id="userInput" placeholder="请输入您的名字" maxlength="10">
         <button onclick="startGame()">开始游戏</button>
@@ -216,6 +232,8 @@
             loadGameState();
             initGame();
             startTimer();
+            // 关闭时同时隐藏蒙版
+            document.getElementById('overlay').style.display = 'none';
         }
 
         // 其他游戏逻辑（与之前实现的selectCard、checkMatch等功能保持一致）
@@ -308,11 +326,19 @@
         // 页面加载时检测用户
         window.onload = function() {
             const modal = document.getElementById('userModal');
-            const savedUser = localStorage.getItem('wordGameData') 
-                ? JSON.parse(localStorage.getItem('wordGameData')).username 
-                : null;
+            const overlay = document.getElementById('overlay');//新增一行
+            
+        // 强制显示蒙版和弹窗
+            modal.style.display = 'block';
+            overlay.style.display = 'block';
+    
+            const savedUser = localStorage.getItem('wordGameData') ? JSON.parse(localStorage.getItem('wordGameData')).username : null;
             
             if (savedUser && savedUser !== '游客') {
+                // 新增：自动关闭弹窗和蒙版
+                modal.style.display = 'none';
+                overlay.style.display = 'none';
+                //下面不变
                 gameState.username = savedUser;
                 document.getElementById('username').textContent = savedUser;
                 loadGameState();
