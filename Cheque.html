@@ -80,7 +80,10 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            border: 2px solid #4CAF50; /* 外边框：2px粗的绿色实线 */
+            border-radius: 8px;       /* 圆角边框 */
+            overflow: hidden;         /* 隐藏内部溢出圆角 */
+            margin: 20px 0;          /* 外间距 */
         }
 
         th, td {
@@ -92,6 +95,12 @@
 
         th {
             background-color: #e8f5e9;
+            border: 1px solid #81C784; /* 内部细边框 */
+            background: #E8F5E9;      /* 浅绿背景 */
+        }
+        /* 普通单元格 */
+        td {
+          border: 1px solid #C8E6C9; /* 浅色内边框 */
         }
 
         .pagination {
@@ -175,6 +184,9 @@
                 font-size: 13px;
                 margin: 6px 0;
             }
+            table {
+                border-width: 1px;      /* 小屏幕边框变细 */
+              }
         }
         
 
