@@ -98,14 +98,20 @@
         }
 
         th {
-            background-color: #e8f5e9;
+            background-color: #2e7d32;  /* 原颜色#e8f5e9改为深绿色 */
             border: 1px solid #81C784; /* 内部细边框 */
             background: #E8F5E9;      /* 浅绿背景 */
+            color: white;               /* 新增文字白色 */
+            padding: 12px;              /* (调整内边距 */
         }
+
         /* 普通单元格 */
         td {
-          border: 1px solid #C8E6C9; /* 浅色内边框 */
+            border: 1px solid #C8E6C9; /* 浅色内边框 */
+            padding: 12px;              /* 原padding值可能需要调整 */
+            border-bottom: 1px solid #c8e6c9; /* 添加底部边框 */
         }
+        
 
         .pagination {
             display: flex;
@@ -113,6 +119,21 @@
             gap: 5px;
             margin: 20px 0;
         }
+        /* 斑马条纹 */
+        tr:nth-child(even) {            /* 偶数行 */
+            background-color: #f8fff8;  /* 浅绿色背景 */
+        }
+        
+        tr:nth-child(odd) {             /* 奇数行 */
+            background-color: white;    /* 白色背景 */
+        }
+        
+        /* 悬停效果 */
+        tr:hover {
+            background-color: #e8f5e9 !important;  /* 悬停时浅绿色 */
+            cursor: pointer;                       /* 显示手型光标 */
+        }
+        
 
         .page-item {
             padding: 5px 12px;
@@ -246,7 +267,14 @@
                     <th>生成时间</th>
                 </tr>
             </thead>
-            <tbody id="results"></tbody>
+            <tbody id="results">
+                <tr>                <!-- 白色背景 -->
+                  <td>...</td>
+                </tr>
+                <tr>                <!-- 浅绿背景 -->
+                  <td>...</td>
+                </tr>
+            </tbody>
         </table>
 
         <div class="pagination" id="pagination">
