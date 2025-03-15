@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>儿童英文打字练习-艾兜兜儿</title>
+    <style>
+        body {
+            font-family: "Comic Sans MS", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #e0f7d0 0%, #b2e6b0 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        #word-container {
+            font-size: 2em;
+            margin: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 10px;
+            min-height: 120px;
+            word-break: break-word;
+        }
+
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(13, 1fr);
+            gap: 5px;
+            padding: 10px;
+            background: #c0e0b0;
+            border-radius: 10px;
+            margin: 20px auto;
+        }
+
+        .key {
+            background: white;
+            border: 2px solid #80a070;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+
+        .correct { color: #009900; }
+        .wrong { color: #ff0000; }
+
+        #footer {
+            margin-top: auto;
+            padding: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .keyboard {
+                grid-template-columns: repeat(8, 1fr);
+            }
+            #word-container {
+                font-size: 1.5em;
+            }
+            .key {
+                padding: 6px;
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="word-container"></div>
+        
+        <div class="keyboard" id="keyboard"></div>
+        
+        <div id="footer">
+            <a href="#" style="color:#338833;text-decoration:none;">艾兜兜儿</a>
+        </div>
+    </div>
+
+    <script>
+        const words = ["apple", "happy", "sunny", "panda", "green", 
+                      "smile", "cloud", "fruit", "water", "music"];
+        const sentences = [
+            "I love coding",
+            "Hello world",
+            "Good morning",
+            "Happy learning",
+            "Nice to meet you"
+        ];
+
+        let currentText = "";
+        let currentIndex = 0;
+
+        function initKeyboard() {
+            const keyboardLayout = [
+                ["q","w","e","r","t","y","u","i","o","p"],
+                ["a","s","d","f","g","h","j","k","l"],
+                ["z","x","c","v","b","n","m"]
+            ];
+
+            const keyboard = document.getElementById("keyboard");
+            keyboard.innerHTML = "";
+
+            keyboardLayout.forEach(row => {
+                row.forEach(key => {
+                    const keyDiv = document.createElement("div");
+                    keyDiv.className = "key";
+                    keyDiv.textContent = key;
+                    keyDiv.addEventListener("click", () => handleInput(key));
+                    keyboard.appendChild(keyDiv);
+                });
+                keyboard.appendChild(document.createElement("div")).style.gridColumn = "1 / -1";
+            });
+        }
+
+        function generateNewText() {
+            currentIndex = 0;
+            const useWords = Math.random() > 0.5;
+            currentText = useWords ? 
+                shuffle([...words]).slice(0,10).join(" ") :
+                shuffle([...sentences]).slice(0,5).join("  ");
+            
+            const wordContainer = document.getElementById("word-container");
+            wordContainer.innerHTML = currentText.split("").map((c, i) => 
+                `<span data-index="${i}">${c}</span>`
+            ).join("");
+        }
+
+        function handleInput(inputChar) {
+            const chars = document.querySelectorAll("#word-container span");
+            if (currentIndex >= chars.length) return;
+
+            const targetChar = chars[currentIndex].textContent.toLowerCase();
+            if (inputChar.toLowerCase() === targetChar) {
+                chars[currentIndex].classList.add("correct");
+                currentIndex++;
+                if (currentIndex === chars.length) {
+                    setTimeout(generateNewText, 1000);
+                }
+            } else {
+                chars[currentIndex].classList.add("wrong");
+                setTimeout(() => 
+                    chars[currentIndex].classList.remove("wrong"), 200);
+            }
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            initKeyboard();
+            generateNewText();
+            
+            document.addEventListener("keydown", (e) => {
+                if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
+                    handleInput(e.key);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
