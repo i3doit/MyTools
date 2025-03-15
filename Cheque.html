@@ -299,7 +299,7 @@
             }
 
             // 组合结果
-            let finalResult = '¥' + result.replace(/零+/g, '零').replace(/零$/, '') + '元';
+            let finalResult = '' + result.replace(/零+/g, '零').replace(/零$/, '') + '元';
             if (decimalStr) {
                 finalResult += decimalStr;
             } else {
