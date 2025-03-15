@@ -50,16 +50,16 @@
 
         .button-group {
             display: flex;
-            gap: 10px;
+            gap: 8px;/* 缩小按钮间距 */ 
             width: 100%;
         }
 
         button {
-            flex: 1;
+            flex: 1;/* 主按钮保持自适应*/ 
             background: #81c784;
             color: white;
             border: none;
-            padding: 12px;
+            padding: 12px 15px;/*调整内边距*/
             border-radius: 5px;
             cursor: pointer;
             transition: 0.3s;
@@ -68,6 +68,7 @@
 
         button.reset {
             background: #ef5350;
+            flex：0 1 120px；/* 重置按钮固定宽度 */
         }
 
         button:hover {
@@ -230,7 +231,7 @@
             currentPage = 1;
             renderTable();
             renderPagination();
-            resetInput();
+            //resetInput();
         }
 
         // 完整中文转换逻辑
