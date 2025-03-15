@@ -168,7 +168,8 @@
                 flex: none;
             }
             .bottom-link-box {
-                padding: 10px 15px;
+                margin: 20px 15px;
+                padding: 10px;
             }
             .bottom-link-box a {
                 font-size: 13px;
@@ -176,38 +177,16 @@
             }
         }
         
-        /* 底部代码框样式 */
-        .code-box {
-          position: fixed;
-          bottom: 20px;
-          left: 20px;
-          right: 20px;
-          border: 2px solid #4CAF50; /* 方框颜色 */
-          padding: 15px;
-          background: #f8f9fa;
-          text-align: left; /* 文字左对齐 */
-          border-radius: 8px; /* 圆角 */
-          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-          max-width: 600px; /* 最大宽度 */
-          margin: 0 auto;
-        }
-        
-        /* 代码内容样式 */
-        .code-content {
-          font-family: 'Courier New', monospace;
-          white-space: pre-wrap; /* 保留换行 */
-          overflow-x: auto;
-        }
+
         /* 底部链接容器样式 */
         .bottom-link-box {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 15px 20px;
-            background: #f8f9fa;
-            border-top: 2px solid #4CAF50;  /* 顶部边框 */
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            /*position: fixed;*/
+            margin: 30px auto 20px;  /* 上下边距 */
+            padding: 15px;
+            max-width: 1000px;       /* 与表格同宽 */
+            border: 2px solid #81c784; /* 浅绿色边框 */
+            border-radius: 8px;      /* 圆角 */
+            background: #f8fff8;     /* 浅绿背景 */
             text-align: left;
         }
         
@@ -216,18 +195,18 @@
             display: block;  /* 每个链接独占一行 */
             color: #2e7d32;
             text-decoration: none;
-            margin: 8px 0;
-            font-size: 14px;
+            margin: 10px 0;
+            padding: 5px 10px;
+            /*font-size: 14px;*/
             transition: 0.3s;
         }
         
         /* 悬停效果 */
         .bottom-link-box a:hover {
-            color: #45a049;
+            background: #e8f5e9;    /* 悬停浅绿背景 */
             transform: translateX(5px);
         }
 
-        
 
     </style>
 </head>
@@ -264,6 +243,10 @@
         </div>
     </div>
     
+    <!-- 原有分页代码 -->
+    <div class="pagination" id="pagination"></div>
+    
+    <!-- 新增链接容器 -->
     <div class="bottom-link-box">
         <a href="https://t.zsxq.com/iNm3w" target="_blank">❶ 用 DeepSeek 1分钟生成，你也可去尝试制作</a>
         <a href="https://mp.weixin.qq.com/s/Tx7MbtPEqbzBT61arZx07g" target="_blank">❷ 公众号：艾兜兜儿，支持AI智能回复，欢迎体验。</a>
