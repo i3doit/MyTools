@@ -135,6 +135,12 @@
             animation: fade 2s;
             display: none;
         }
+        .total-count {
+            margin-left: 15px;
+            color: #666;
+            line-height: 34px;
+        }
+
 
         @keyframes fade {
             0% {opacity: 0;}
@@ -148,6 +154,7 @@
                 flex-direction: column;
             }
         }
+        
     </style>
 </head>
 <body>
@@ -398,9 +405,9 @@
                 if(end < total) pagination.push(`<span class="page-item">...</span>`);
                 
                 pagination.push(`<span class="page-item" onclick="nextPage()">›</span>`);
-                 pagination.push(`<span class="total-count">共 ${totalItems} 条</span>`);
+                 
             }
-            
+            pagination.push(`<span class="total-count">共 ${totalItems} 条</span>`);
             document.getElementById('pagination').innerHTML = pagination.join('');
         }
 
