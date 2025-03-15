@@ -173,7 +173,9 @@
             <tbody id="results"></tbody>
         </table>
 
-        <div class="pagination" id="pagination"></div>
+        <div class="pagination" id="pagination"></
+                <span class="total-count">共 0 条</span> <!-- 添加这行 -->
+        div>
 
         <div class="stats">
             <span>今日访问量：<span id="todayCount">0</span></span>
@@ -193,7 +195,7 @@
         // 初始化存储
         let records = JSON.parse(localStorage.getItem('conversionRecords')) || [];
         let currentPage = 1;
-        const pageSize = 10;
+        const pageSize = 5;
 
         // 中文数字映射
         const chnNumChar = ["零","壹","贰","叁","肆","伍","陆","柒","捌","玖"];
@@ -379,6 +381,8 @@
         // 分页功能
         function renderPagination() {
             const total = Math.ceil(records.length / pageSize);
+            const totalItems = records.length; // 新增
+
             let pagination = [];
             
             if(total > 1) {
@@ -394,6 +398,7 @@
                 if(end < total) pagination.push(`<span class="page-item">...</span>`);
                 
                 pagination.push(`<span class="page-item" onclick="nextPage()">›</span>`);
+                 pagination.push(`<span class="total-count">共 ${totalItems} 条</span>`);
             }
             
             document.getElementById('pagination').innerHTML = pagination.join('');
