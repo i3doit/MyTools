@@ -79,16 +79,20 @@
 
         table {
             width: 100%;
-            border-collapse: collapse;
             border: 2px solid #4CAF50; /* 外边框：2px粗的绿色实线 */
             border-radius: 8px;       /* 圆角边框 */
             overflow: hidden;         /* 隐藏内部溢出圆角 */
-            margin: 20px 0;          /* 外间距 */
+            borderpius: 6px;           /* 圆角 */
+            overflow: hidden;             /* 隐藏内部元素溢出圆角 */
+            border-collapse: collapse;    /* 合并边框 */
+            margin: 20px 0;              /* 外间距 */
+            
         }
 
         th, td {
             padding: 12px;
             border-bottom: 1px solid #ddd;
+            border: 1px solid #c8e6c9;   /* 内部细边框颜色 */
             text-align: left;
             cursor: pointer;
         }
