@@ -50,8 +50,8 @@
 
         .button-group {
             display: flex;
-            gap: 8px;/* 缩小按钮间距 */ 
-            width: 100%;
+            gap: 10px;/* 缩小按钮间距 */ 
+            margin-top: 15px;
         }
 
         button {
@@ -140,7 +140,15 @@
             color: #666;
             line-height: 34px;
         }
-
+        .convert-btn {
+            flex: 3;  /* 转换按钮占3份宽度 */
+            background: #4CAF50; /* 绿色强调色 */
+        }
+        
+        .reset-btn {
+            flex: 2;  /* 重置按钮占2份宽度 */
+            background: #f44336; /* 红色强调色 */
+        }
 
         @keyframes fade {
             0% {opacity: 0;}
@@ -153,6 +161,10 @@
             .button-group {
                 flex-direction: column;
             }
+             .convert-btn, .reset-btn {
+                width: 100%;
+                flex: none;
+            }
         }
         
     </style>
@@ -164,8 +176,8 @@
         <div class="input-group">
             <input type="number" id="amount" placeholder="输入阿拉伯数字金额（如：12345.67）" step="0.01">
             <div class="button-group">
-                <button onclick="convert()">立即转换</button>
-                <button class="reset" onclick="resetInput()">重置输入</button>
+                <button onclick="convert()" class="convert-btn">立即转换</button>
+                <button class="reset-btn" onclick="resetInput()">重置输入</button>
             </div>
         </div>
 
