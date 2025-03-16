@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>2248 Game</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Open Sans', sans-serif;
+            background: linear-gradient(135deg, #a8d8ff, #6cb4ee);
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .score-container {
+            font-size: 5vw;
+            margin: 10px 0;
+            color: #2c3e50;
+            min-height: 40px;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            background-color: rgba(255, 255, 255, 0.3);
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            touch-action: none;
+        }
+
+        .cell {
+            width: 18vw;
+            height: 18vw;
+            max-width: 80px;
+            max-height: 80px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 5vw;
+            font-weight: bold;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        /* 数字颜色配置 */
+        .tile-2 { background: #e8f4f8; color: #2c3e50; }
+        .tile-4 { background: #d1e8f0; color: #2c3e50; }
+        .tile-8 { background: #8ecae6; color: white; }
+        .tile-16 { background: #219ebc; color: white; }
+        .tile-32 { background: #126782; color: white; }
+        .tile-64 { background: #023047; color: white; }
+        .tile-128 { background: #ffb703; color: #023047; }
+        .tile-256 { background: #fb8500; color: white; }
+        .tile-512 { background: #f95700; color: white; }
+        .tile-1024 { background: #d90429; color: white; }
+        .tile-2048 { background: #9d0208; color: white; }
+        .tile-4096 { background: #370617; color: white; }
+
+        @media (min-width: 600px) {
+            .score-container { font-size: 24px; }
+            .cell {
+                width: 80px;
+                height: 80px;
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="score-container">得分: <span id="score">0</span></div>
+    <div class="game-container" id="game"></div>
+
+    <script>
+        class Game2248 {
+            constructor() {
+                this.grid = Array(4).fill().map(() => Array(4).fill(0));
+                this.score = 0;
+                this.touchStartX = 0;
+                this.touchStartY = 0;
+                this.init();
+            }
+
+            init() {
+                this.addNewTile();
+                this.addNewTile();
+                this.updateDisplay();
+                this.setupControls();
+            }
+
+            addNewTile() {
+                const emptyCells = [];
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 4; j++) {
+                        if (this.grid[i][j] === 0) emptyCells.push({i, j});
+                    }
+                }
+                if (emptyCells.length) {
+                    const {i, j} = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    this.grid[i][j] = Math.random() < 0.9 ? 2 : 4;
+                }
+            }
+
+            updateDisplay() {
+                const container = document.getElementById('game');
+                container.innerHTML = '';
+                
+                this.grid.forEach(row => {
+                    row.forEach(value => {
+                        const cell = document.createElement('div');
+                        cell.className = `cell${value ? ` tile-${value}` : ''}`;
+                        cell.textContent = value || '';
+                        container.appendChild(cell);
+                    });
+                });
+
+                document.getElementById('score').textContent = this.score;
+            }
+
+            setupControls() {
+                // 键盘控制
+                document.addEventListener('keydown', this.handleKey.bind(this));
+                
+                // 触摸控制
+                document.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
+                document.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+                document.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
+            }
+
+            handleTouchStart(e) {
+                this.touchStartX = e.touches[0].clientX;
+                this.touchStartY = e.touches[0].clientY;
+                e.preventDefault();
+            }
+
+            handleTouchMove(e) {
+                e.preventDefault();
+            }
+
+            handleTouchEnd(e) {
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchEndY = e.changedTouches[0].clientY;
+                const deltaX = touchEndX - this.touchStartX;
+                const deltaY = touchEndY - this.touchStartY;
+                const minSwipeDistance = 30;
+
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    if (Math.abs(deltaX) > minSwipeDistance) {
+                        this.handleMove(deltaX > 0 ? 'ArrowRight' : 'ArrowLeft');
+                    }
+                } else {
+                    if (Math.abs(deltaY) > minSwipeDistance) {
+                        this.handleMove(deltaY > 0 ? 'ArrowDown' : 'ArrowUp');
+                    }
+                }
+                e.preventDefault();
+            }
+
+            handleKey(e) {
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    e.preventDefault();
+                    this.handleMove(e.key);
+                }
+            }
+
+            handleMove(direction) {
+                const moved = this.move(direction);
+                if (moved) {
+                    this.addNewTile();
+                    this.updateDisplay();
+                    if (this.isGameOver()) {
+                        setTimeout(() => alert(`游戏结束！得分: ${this.score}`), 100);
+                    }
+                }
+            }
+
+            move(direction) {
+                let moved = false;
+                const newGrid = this.grid.map(row => [...row]);
+
+                const processLine = (line) => {
+                    let arr = line.filter(x => x);
+                    for (let i = 0; i < arr.length - 1; i++) {
+                        if (arr[i] === arr[i + 1]) {
+                            arr[i] *= 2;
+                            this.score += arr[i];
+                            arr.splice(i + 1, 1);
+                            moved = true;
+                        }
+                    }
+                    return arr.concat(Array(4 - arr.length).fill(0));
+                };
+
+                if (direction === 'ArrowLeft') {
+                    this.grid = this.grid.map(row => processLine(row));
+                }
+                else if (direction === 'ArrowRight') {
+                    this.grid = this.grid.map(row => processLine(row.reverse()).reverse());
+                }
+                else if (direction === 'ArrowUp') {
+                    for (let j = 0; j < 4; j++) {
+                        const col = this.grid.map(row => row[j]);
+                        const newCol = processLine(col);
+                        newGrid.forEach((row, i) => row[j] = newCol[i]);
+                    }
+                    this.grid = newGrid;
+                }
+                else if (direction === 'ArrowDown') {
+                    for (let j = 0; j < 4; j++) {
+                        const col = this.grid.map(row => row[j]).reverse();
+                        const newCol = processLine(col).reverse();
+                        newGrid.forEach((row, i) => row[j] = newCol[i]);
+                    }
+                    this.grid = newGrid;
+                }
+
+                return moved || JSON.stringify(this.grid) !== JSON.stringify(newGrid);
+            }
+
+            isGameOver() {
+                // 检查空单元格
+                if (this.grid.some(row => row.includes(0))) return false;
+                
+                // 检查横向相邻
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (this.grid[i][j] === this.grid[i][j+1]) return false;
+                    }
+                }
+                
+                // 检查纵向相邻
+                for (let j = 0; j < 4; j++) {
+                    for (let i = 0; i < 3; i++) {
+                        if (this.grid[i][j] === this.grid[i+1][j]) return false;
+                    }
+                }
+                
+                return true;
+            }
+        }
+
+        // 启动游戏
+        new Game2248();
+    </script>
+</body>
+<div class="footer">
+	  <br> <br> <br>
+	<p>使用方法：<br>
+1. PC端：使用方向键←→↑↓控制<br>
+
+2. 手机端：任意方向滑动控制<br>
+
+3. 自动保存当前游戏进度<br>
+
+4. 刷新页面自动重新开始<br>
+		</p>
+	<a href="https://t.zsxq.com/iNm3w" target="_blank">艾兜兜儿用 DeepSeek 1分钟生成</a><br> <br> 
+	  <a href="https://t.zsxq.com/iNm3w" target="_blank">你也可以去尝试制作</a><br>
+          
+        </div>
+</html>
