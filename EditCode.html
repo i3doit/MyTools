@@ -123,18 +123,40 @@
     <script>
         // 初始化代码编辑器
         const editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
-            lineNumbers: true,
+            lineNumbers: true,      // 确保开启行号显示
+            lineWrapping: true,     // 新增：启用自动换行
+            gutters: ["CodeMirror-linenumbers"],  // 新增
             mode: "htmlmixed",
             theme: "default",
             autoCloseTags: true,
             matchBrackets: true,
             scrollbarStyle: "simple"
         });
+        
+        // 禁用复制/粘贴/剪切功能
+        editor.on('copy', (e) => {
+            e.preventDefault();
+            alert('复制功能已禁用');
+        });
+        editor.on('paste', (e) => {
+            e.preventDefault();
+            alert('粘贴功能已禁用');
+        });
+        editor.on('cut', (e) => {
+            e.preventDefault();
+            alert('剪切功能已禁用');
+        });
+        
 
         // 语言切换功能
         document.getElementById('languageSelect').addEventListener('change', (e) => {
             editor.setOption("mode", e.target.value);
         });
+        
+        //document.getElementById('languageSelect').addEventListener('change', /* ... */);
+        // 后续的其他事件监听器（原有代码）
+        document.getElementById('languageSelect').addEventListener('change', ...);
+
 
         // 运行功能增强
         document.getElementById('runBtn').addEventListener('click', () => {
