@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能代码编辑器</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&family=Noto+Sans+SC:wght@300;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        body {
+            background-color: #f0fff0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2c662d;
+            margin-bottom: 15px;
+            font-size: 2.5em;
+        }
+
+        .editor-container {
+            position: relative;
+            border: 2px solid #a1cca1;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .language-selector {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #a1cca1;
+            background: white;
+        }
+
+        .CodeMirror {
+            height: 500px;
+            font-family: 'Inconsolata', monospace;
+            font-size: 16px;
+            background-color: rgba(255,255,255,0.9);
+            padding-top: 40px;
+        }
+
+        .button-group {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        @media (max-width: 768px) {
+            .CodeMirror {
+                height: 300px;
+                font-size: 14px;
+            }
+            
+            button {
+                padding: 10px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>智能代码编辑器</h1>
+            <p>支持多语言代码编辑，实时预览与智能识别</p>
+        </div>
+        
+        <div class="editor-container">
+            <select class="language-selector" id="languageSelect">
+                <option value="htmlmixed">HTML</option>
+                <option value="css">CSS</option>
+                <option value="javascript">JavaScript</option>
+                <option value="application/json">JSON</option>
+            </select>
+            <textarea id="codeEditor"></textarea>
+        </div>
+        
+        <div class="button-group">
+            <button id="formatBtn" style="background:#4CAF50;color:white">格式化</button>
+            <button id="runBtn" style="background:#2196F3;color:white">运行</button>
+            <button id="clearBtn" style="background:#f44336;color:white">清空</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/javascript/javascript.min.js"></script>
+
+    <script>
+        // 初始化代码编辑器
+        const editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+            lineNumbers: true,
+            mode: "htmlmixed",
+            theme: "default",
+            autoCloseTags: true,
+            matchBrackets: true,
+            scrollbarStyle: "simple"
+        });
+
+        // 语言切换功能
+        document.getElementById('languageSelect').addEventListener('change', (e) => {
+            editor.setOption("mode", e.target.value);
+        });
+
+        // 运行功能增强
+        document.getElementById('runBtn').addEventListener('click', () => {
+            const code = editor.getValue();
+            const language = document.getElementById('languageSelect').value;
+            const newWindow = window.open('', '_blank');
+            
+            try {
+                newWindow.document.write(createPreviewContent(code, language));
+                newWindow.document.close();
+            } catch (error) {
+                newWindow.document.write(`<pre style="color:red">执行错误: ${error}</pre>`);
+            }
+        });
+
+        // 创建预览内容
+        function createPreviewContent(code, language) {
+            switch(language) {
+                case 'htmlmixed':
+                    return `<html><body>${code}</body></html>`;
+                case 'css':
+                    return `<html><style>${code}</style><body>样式已加载</body></html>`;
+                case 'javascript':
+                    return `<html><body><script>try{${code}}catch(e){console.error(e)}<\/script></body></html>`;
+                case 'application/json':
+                    return `<html><body><pre>${JSON.stringify(JSON.parse(code), null, 2)}</pre></body></html>`;
+                default:
+                    return code;
+            }
+        }
+
+        // 格式化功能
+        document.getElementById('formatBtn').addEventListener('click', () => {
+            const totalLines = editor.lineCount();
+            editor.autoFormatRange({line:0, ch:0}, {line: totalLines});
+        });
+
+        // 清空功能
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            editor.setValue('');
+        });
+    </script>
+</body>
+</html>
