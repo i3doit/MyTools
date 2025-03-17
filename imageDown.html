@@ -2,148 +2,202 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>图片下载系统</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <title>图片下载系统-艾兜兜儿</title>
+    <link href="https://cdn.staticfile.net/lxgw-wenkai/1.7.0/lxgw-wenkai-screen-webfont/style.css" rel="stylesheet">
     <style>
-        :root {
-            --spring-green: #8BC34A;
-            --light-green: #C5E1A5;
-            --deep-green: #558B2F;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "LXGW WenKai Screen", sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, var(--spring-green), var(--light-green));
+            background: #f0fff0;
             min-height: 100vh;
-            font-family: 'Noto Sans SC', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 2rem;
-            margin: 0;
+            justify-content: center;
         }
 
         .container {
+            width: 600px;
+            padding: 30px;
             background: rgba(255, 255, 255, 0.9);
-            padding: 2rem;
             border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 80%;
-            max-width: 600px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
         }
 
-        .download-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+        h1 {
+            text-align: center;
+            color: #2c5f2d;
+            margin-bottom: 30px;
+            font-size: 32px;
         }
 
-        input[type="url"] {
+        .input-group {
+            margin: 20px 0;
+        }
+
+        input, select, button {
+            width: 100%;
             padding: 12px;
-            border: 2px solid var(--deep-green);
+            margin: 8px 0;
+            border: 1px solid #ccc;
             border-radius: 8px;
             font-size: 16px;
-            width: 100%;
-            box-sizing: border-box;
+        }
+
+        input::placeholder {
+            color: #999;
         }
 
         button {
-            background: var(--deep-green);
+            background: #2c5f2d;
             color: white;
-            padding: 12px 24px;
             border: none;
-            border-radius: 8px;
             cursor: pointer;
-            font-size: 16px;
-            transition: transform 0.2s;
+            transition: background 0.3s;
         }
 
         button:hover {
-            transform: translateY(-2px);
+            background: #1e401f;
         }
 
-        .message {
-            margin-top: 1rem;
-            padding: 1rem;
+        .folder-input {
+            position: relative;
+        }
+
+        #folderPath {
+            padding-right: 120px;
+        }
+
+        .folder-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 110px;
+            margin: 8px 0;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
             border-radius: 8px;
+            background: #ff4444;
+            color: white;
+            animation: fade 2.5s;
             display: none;
         }
 
-        .success {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .error {
-            background: #f8d7da;
-            color: #721c24;
+        @keyframes fade {
+            0%,100% { opacity: 0; }
+            20%,80% { opacity: 1; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>图片下载系统 🌸</h1>
-        <form class="download-form" method="post">
-            <input type="url" name="image_url" 
-                   placeholder="输入图片地址（如：https://example.com/image.jpg）" 
-                   required>
-            <button type="submit">下载图片</button>
-        </form>
-        <div id="message" class="message"></div>
+        <h1>图片下载系统</h1>
+        
+        <div class="input-group">
+            <input type="text" id="imageUrl" placeholder="请输入要下载的图片地址">
+        </div>
+
+        <div class="input-group folder-input">
+            <input type="text" id="folderPath" placeholder="未选择保存文件夹" readonly>
+            <button type="button" class="folder-btn" onclick="document.getElementById('folderPicker').click()">
+                选择文件夹
+            </button>
+            <input type="file" id="folderPicker" webkitdirectory hidden>
+        </div>
+
+        <div class="input-group">
+            <select id="format">
+                <option value="auto">自动检测格式</option>
+                <option value="jpg">.jpg</option>
+                <option value="jpeg">.jpeg</option>
+                <option value="png">.png</option>
+                <option value="svg">.svg</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <button onclick="downloadImage()">下载图片</button>
+            <button onclick="resetForm()" style="background: #666; margin-top: 10px;">重置</button>
+        </div>
     </div>
 
-    <?php
-    if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $imageUrl = $_POST['image_url'];
-        $uploadDir = 'downloads/';
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        
-        if (!filter_var($imageUrl, FILTER_VALIDATE_URL)) {
-            showMessage('无效的URL地址', 'error');
-            exit;
-        }
+    <div class="toast" id="toast"></div>
 
-        // 创建下载目录
-        if (!file_exists($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
+    <script>
+        const imageFormats = ['jpg', 'jpeg', 'png', 'svg'];
+        let selectedFolder = null;
 
-        // 获取图片信息
-        try {
-            $headers = get_headers($imageUrl, 1);
-            if (!isset($headers['Content-Type']) || !in_array($headers['Content-Type'], $allowedTypes)) {
-                showMessage('仅支持下载JPEG、PNG和GIF格式的图片', 'error');
-                exit;
+        // 处理文件夹选择
+        document.getElementById('folderPicker').addEventListener('change', function(e) {
+            selectedFolder = e.target.files[0]?.webkitRelativePath.split('/')[0];
+            document.getElementById('folderPath').value = selectedFolder || '';
+        });
+
+        // 格式自动检测
+        document.getElementById('imageUrl').addEventListener('input', function() {
+            const ext = this.value.split('.').pop().toLowerCase();
+            if (imageFormats.includes(ext)) {
+                document.getElementById('format').value = ext;
+            }
+        });
+
+        async function downloadImage() {
+            const url = document.getElementById('imageUrl').value;
+            const format = document.getElementById('format').value;
+            const fileName = url.split('/').pop().split('?')[0];
+            let ext = format === 'auto' ? fileName.split('.').pop() : format;
+
+            // 校验图片格式
+            if (!imageFormats.some(f => url.toLowerCase().endsWith(`.${f}`))) {
+                showToast('请输入有效的图片地址！');
+                return;
             }
 
-            $imageData = file_get_contents($imageUrl);
-            if ($imageData === false) {
-                showMessage('无法下载图片', 'error');
-                exit;
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                
+                if (selectedFolder) {
+                    // 实际需要服务器配合保存，这里保持浏览器直接下载
+                    const link = document.createElement('a');
+                    link.download = `${fileName.split('.')[0]}.${ext}`;
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                } else {
+                    const link = document.createElement('a');
+                    link.download = `${fileName.split('.')[0]}.${ext}`;
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                }
+            } catch (error) {
+                showToast('下载失败，请检查地址有效性！');
             }
-
-            // 生成安全文件名
-            $filename = uniqid() . '.' . pathinfo($imageUrl, PATHINFO_EXTENSION);
-            $savePath = $uploadDir . $filename;
-
-            if (file_put_contents($savePath, $imageData)) {
-                showMessage("图片已成功保存到：$savePath", 'success');
-            } else {
-                showMessage('文件保存失败，请检查目录权限', 'error');
-            }
-
-        } catch (Exception $e) {
-            showMessage('下载过程中出现错误：' . $e->getMessage(), 'error');
         }
-    }
 
-    function showMessage($text, $type) {
-        echo "<script>
-            const msg = document.getElementById('message');
-            msg.innerHTML = '$text';
-            msg.className = 'message $type';
-            msg.style.display = 'block';
-        </script>";
-    }
-    ?>
+        function resetForm() {
+            document.getElementById('imageUrl').value = '';
+            document.getElementById('folderPath').value = '';
+            document.getElementById('format').value = 'auto';
+            selectedFolder = null;
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2500);
+        }
+    </script>
 </body>
 </html>
