@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Typing Practice Game</title>
     <style>
-    /* 源CSS代码 */
         body {
             margin: 0;
             padding: 20px;
-            background-color: #e8ffe8;
+            background-color: #e8f5e9;
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
+            touch-action: manipulation;
         }
 
         .container {
@@ -28,40 +28,47 @@
 
         .controls {
             display: flex;
-            justify-content: center;
             gap: 10px;
+            justify-content: center;
             margin: 10px 0;
+            flex-wrap: wrap;
         }
 
         button {
             padding: 8px 16px;
             cursor: pointer;
             background-color: #4CAF50;
-            color: white;
             border: none;
+            color: white;
             border-radius: 4px;
+            min-width: 100px;
         }
 
         canvas {
-            background-color: #f0fff0;
-            border: 2px solid #4CAF50;
+            background-color: rgba(255, 255, 255, 0.8);
             border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             width: 100%;
             height: 400px;
+            touch-action: none;
         }
 
-        .stats {
+        .score-container {
             display: flex;
+            gap: 20px;
             justify-content: center;
-            gap: 30px;
             margin: 10px 0;
         }
 
-        .score {
-            padding: 5px 15px;
-            border-radius: 5px;
-            background-color: #4CAF50;
-            color: white;
+        .score-box {
+            padding: 8px 16px;
+            background-color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .negative {
+            background-color: #ffcdd2;
         }
 
         .feedback-boxes {
@@ -74,259 +81,236 @@
         .feedback-box {
             flex: 1;
             height: 100px;
-            border: 2px solid;
             padding: 10px;
+            border-radius: 4px;
             overflow-y: auto;
         }
 
         #correctBox {
-            border-color: #4CAF50;
-            color: #4CAF50;
+            background-color: #c8e6c9;
+            color: #2e7d32;
         }
 
         #errorBox {
-            border-color: #ff4444;
-            color: #ff4444;
+            background-color: #ffcdd2;
+            color: #c62828;
         }
 
-        input[type="range"] {
-            width: 150px;
-        }
-                /* 新增Toast样式 */
         .toast {
             position: fixed;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: bold;
-            opacity: 0;
-            transition: opacity 0.3s;
+            padding: 10px 20px;
+            border-radius: 4px;
+            display: none;
             z-index: 1000;
         }
-        .toast.show {
-            opacity: 1;
+
+        .toast-success {
+            background-color: #c8e6c9;
+            color: #2e7d32;
         }
-        .toast.correct {
-            background: #4CAF50;
-            color: white;
+
+        .toast-error {
+            background-color: #ffcdd2;
+            color: #c62828;
         }
-        .toast.error {
-            background: #ff4444;
-            color: white;
+
+        /* 移动端虚拟键盘支持 */
+        #virtualInput {
+            position: absolute;
+            opacity: 0;
+            height: 0;
+            width: 0;
         }
-   /* 补充原有样式 */
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>Typing Practice Game</h1>
-            <div class="stats">
-                <div>⭐ Current Score: <span id="currentScore" class="score">0</span></div>
-                <div>🏆 High Score: <span id="highScore" class="score">0</span></div>
+            <div class="score-container">
+                <div class="score-box">🏆 Current: <span id="currentScore">0</span></div>
+                <div class="score-box">🎖️ Best: <span id="bestScore">0</span></div>
             </div>
             <div class="controls">
                 <button id="startBtn">Start Game</button>
-                <button id="pauseBtn">Pause/Resume</button>
+                <button id="pauseBtn">Pause</button>
                 <button id="resetBtn">Reset</button>
-                <div>
-                    Speed: <input type="range" id="speed" min="1" max="10" value="5">
-                    <span id="speedValue">5</span>
-                </div>
+            </div>
+            <div>
+                <label>Speed Level: <span id="speedValue">5</span></label>
+                <input type="range" id="speedControl" min="1" max="10" value="5">
             </div>
         </div>
 
         <canvas id="gameCanvas"></canvas>
+        <input type="text" id="virtualInput" autocapitalize="none">
 
         <div class="feedback-boxes">
-            <div id="correctBox" class="feedback-box">Correct:</div>
-            <div id="errorBox" class="feedback-box">Errors:</div>
+            <div id="correctBox" class="feedback-box"></div>
+            <div id="errorBox" class="feedback-box"></div>
         </div>
+
+        <div id="toast" class="toast"></div>
     </div>
-    <!-- 新增Toast容器 -->
-    <div id="toastContainer"></div>
 
     <script>
-    
-            // 新增Toast功能
-        function showToast(message, isCorrect) {
-            const toast = document.createElement('div');
-            toast.className = `toast ${isCorrect ? 'correct' : 'error'} show`;
-            toast.textContent = message;
-            
-            document.getElementById('toastContainer').appendChild(toast);
-            
-            setTimeout(() => {
-                toast.remove();
-            }, 1000);
-        }
-
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const virtualInput = document.getElementById('virtualInput');
+        let letters = [];
+        let score = 0;
+        let bestScore = localStorage.getItem('bestScore') || 0;
+        let animationId = null;
+        let isPlaying = false;
+        let isPaused = false;
         
-        let gameState = {
-            active: false,
-            paused: false,
-            letters: [],
-            score: 0,
-            highScore: localStorage.getItem('highScore') || 0,
-            speed: 5
-        };
-
-        // Canvas sizing
-        // 确保Canvas完全清除
-        function resizeCanvas() {
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // 初始化Canvas尺寸
+        function initCanvas() {
+            canvas.width = Math.min(window.innerWidth * 0.9, 800);
+            canvas.height = 400;
         }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        initCanvas();
+        window.addEventListener('resize', initCanvas);
 
-        // Game controls
-        // 完善开始按钮状态
+        // 速度控制
+        const speedControl = document.getElementById('speedControl');
+        speedControl.addEventListener('input', () => {
+            document.getElementById('speedValue').textContent = speedControl.value;
+        });
+
+        // 字母对象
+        class Letter {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = 0;
+                this.char = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+                this.color = `hsl(${Math.random() * 360}, 70%, 50%)`;
+                this.speed = (parseInt(speedControl.value) * 0.5 + 1) * 0.5;
+            }
+        }
+
+        // 游戏主循环
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (!isPaused) {
+                // 生成新字母
+                if (Math.random() < 0.05) {
+                    letters.push(new Letter());
+                }
+
+                // 更新字母位置
+                letters.forEach((letter, index) => {
+                    letter.y += letter.speed;
+                    ctx.fillStyle = letter.color;
+                    ctx.font = '24px Arial';
+                    ctx.fillText(letter.char, letter.x, letter.y);
+
+                    // 字母到达底部
+                    if (letter.y > canvas.height) {
+                        letters.splice(index, 1);
+                        updateScore(-2);
+                        document.getElementById('errorBox').innerHTML += `${letter.char} `;
+                        showToast(`Missed: -2`, 'error');
+                    }
+                });
+            }
+            
+            if (isPlaying) {
+                animationId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // 得分更新
+        function updateScore(value) {
+            score += value;
+            document.getElementById('currentScore').textContent = score;
+            const currentScoreBox = document.getElementById('currentScore').parentElement;
+            currentScoreBox.classList.toggle('negative', score < 0);
+            
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('bestScore', bestScore);
+                document.getElementById('bestScore').textContent = bestScore;
+            }
+        }
+
+        // Toast提示
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 1000);
+        }
+
+        // 输入处理
+        function handleInput(e) {
+            if (!isPlaying || isPaused) return;
+            
+            const char = e.key.toUpperCase();
+            const index = letters.findIndex(letter => letter.char === char);
+            
+            if (index !== -1) {
+                letters.splice(index, 1);
+                updateScore(10);
+                document.getElementById('correctBox').innerHTML += `${char} `;
+                showToast(`Correct: +10`, 'success');
+            } else {
+                updateScore(-5);
+                showToast(`Wrong: -5`, 'error');
+            }
+            
+            // 移动端输入后保持焦点
+            virtualInput.value = '';
+            virtualInput.focus();
+        }
+
+        // 事件监听
+        document.addEventListener('keydown', handleInput);
+        canvas.addEventListener('touchstart', () => virtualInput.focus());
+
+        // 按钮控制
         document.getElementById('startBtn').addEventListener('click', () => {
-            if (!gameState.active) {
-                gameState.active = true;
-                this.disabled = true;
+            if (!isPlaying) {
+                isPlaying = true;
+                isPaused = false;
+                virtualInput.focus();
                 gameLoop();
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('pauseBtn').textContent = 'Pause';
             }
         });
 
         document.getElementById('pauseBtn').addEventListener('click', () => {
-            gameState.paused = !gameState.paused;
+            if (!isPlaying) return;
+            
+            isPaused = !isPaused;
+            document.getElementById('pauseBtn').textContent = isPaused ? 'Resume' : 'Pause';
+            if (!isPaused) {
+                virtualInput.focus();
+            }
         });
 
-        // 补充重置功能
         document.getElementById('resetBtn').addEventListener('click', () => {
-            // 清空反馈框
-            document.getElementById('correctBox').innerHTML = 'Correct:';
-            document.getElementById('errorBox').innerHTML = 'Errors:';
-            
-            // 重置其他状态
-            gameState.active = false;
-            gameState.paused = false;
-            gameState.letters = [];
-            gameState.score = 0;
-            updateScore();
-            
-            // 启用开始按钮
-            document.getElementById('startBtn').disabled = false;
-        });
-
-        // Speed control
-        document.getElementById('speed').addEventListener('input', (e) => {
-            gameState.speed = e.target.value;
-            document.getElementById('speedValue').textContent = e.target.value;
-        });
-
-        // Keyboard input
-        // 完善键盘事件处理
-        document.addEventListener('keydown', (e) => {
-            if (!gameState.active || gameState.paused) return;
-            
-            const char = e.key.toUpperCase();
-            if (!letters.includes(char)) return;
-
-            const index = gameState.letters.findIndex(l => l.char === char);
-            
-            if (index > -1) {
-                gameState.score += 10;
-                showToast(`Correct: ${char} (+10)`, true);
-                updateFeedback(char, true);
-                gameState.letters.splice(index, 1);
-            } else {
-                gameState.score -= 5;
-                showToast(`Wrong: ${char} (-5)`, false);
-                updateFeedback(char, false);
-            }
-            
-            updateScore();
-        });
-
-
-        function createLetter() {
-            return {
-                x: Math.random() * (canvas.width - 30),
-                y: 0,
-                char: letters[Math.floor(Math.random() * letters.length)],
-                color: `hsl(${Math.random() * 360}, 70%, 50%)`,
-                 speed: gameState.speed * 0.5 + 1  // 修正速度计算公式
-            };
-        }
-/*
-             // 优化字母更新逻辑（改用反向遍历）
-        function gameLoop() {
-            if (!gameState.active || gameState.paused) return;
-
+            cancelAnimationFrame(animationId);
+            isPlaying = false;
+            isPaused = false;
+            score = 0;
+            letters = [];
+            updateScore(0);
+            document.getElementById('correctBox').innerHTML = '';
+            document.getElementById('errorBox').innerHTML = '';
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').textContent = 'Pause';
+        });
 
-            // 添加新字母
-            if (Math.random() < 0.05) {
-                gameState.letters.push(createLetter());
-            }
-
-            // 反向遍历避免索引问题
-            for (let i = gameState.letters.length - 1; i >= 0; i--) {
-                const letter = gameState.letters[i];
-                letter.y += letter.speed;
-
-                // 绘制字母
-                ctx.fillStyle = letter.color;
-                ctx.font = '24px Arial';
-                ctx.fillText(letter.char, letter.x, letter.y);
-
-                // 检测是否到底部
-                if (letter.y > canvas.height) {
-                    gameState.letters.splice(i, 1);
-                    gameState.score -= 2;
-                    updateScore();
-                    updateFeedback(letter.char, false, true);
-                    showToast(`Missed: ${letter.char} (-2)`, false);
-                }
-            }
-
-            requestAnimationFrame(gameLoop);
-        }
-
-        function updateScore() {
-            document.getElementById('currentScore').textContent = gameState.score;
-            if (gameState.score < 0) {
-                document.getElementById('currentScore').style.backgroundColor = '#ff4444';
-            } else {
-                document.getElementById('currentScore').style.backgroundColor = '#4CAF50';
-            }
-
-            if (gameState.score > gameState.highScore) {
-                gameState.highScore = gameState.score;
-                localStorage.setItem('highScore', gameState.highScore);
-                document.getElementById('highScore').textContent = gameState.highScore;
-            }
-        }
-
-        function updateFeedback(char, isCorrect, isMissed = false) {
-            const box = document.getElementById(isCorrect ? 'correctBox' : 'errorBox');
-            const span = document.createElement('span');
-            span.textContent = char + ' ';
-            span.style.color = isCorrect ? '#4CAF50' : '#ff4444';
-            if (isMissed) span.style.textDecoration = 'line-through';
-            box.appendChild(span);
-            
-            // Auto-scroll
-            box.scrollTop = box.scrollHeight;
-        }
-
-        // Initialize high score
-        document.getElementById('highScore').textContent = gameState.highScore;
+        // 初始化最高分
+        document.getElementById('bestScore').textContent = bestScore;
     </script>
 </body>
 </html>
