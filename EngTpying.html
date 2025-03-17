@@ -171,8 +171,8 @@
 
     <script>
         // 新增游戏控制参数
-        const MAX_LETTERS = 10;
-        const MIN_LETTERS = 5;
+        const MAX_LETTERS = 5;
+        const MIN_LETTERS = 3;
         const GAME_DURATION = 60; // 60秒倒计时
 
         const canvas = document.getElementById('gameCanvas');
@@ -186,25 +186,33 @@
         let isPaused = false;
         
         // 修改速度计算公式
-        const getSpeed = () => (parseInt(speedControl.value) * 0.3 + 0.5) * 0.3;
-
+        //const getSpeed = () => (parseInt(speedControl.value) * 0.3 + 0.5) * 0.3;
+        const getSpeed = () => (parseInt(speedControl.value) * 0.2 + 0.5) * 0.2;
         // 新增游戏状态变量
         let gameTimer;
         let remainingTime = GAME_DURATION;
         let letterInterval;
         
          // 修改字母生成逻辑
-        function generateLetters() {
-            letterInterval = setInterval(() => {
-                if (letters.length < MIN_LETTERS) {
-                    const needed = Math.min(MAX_LETTERS - letters.length, 5);
-                    for (let i = 0; i < needed; i++) {
-                        letters.push(new Letter());
-                    }
-                }
-            }, 1500); // 每1.5秒检查补充字母
-        }
+        //function generateLetters() {
+            //letterInterval = setInterval(() => {
+                //if (letters.length < MIN_LETTERS) {
+                    //const needed = Math.min(MAX_LETTERS - letters.length, 5);
+                    //for (let i = 0; i < needed; i++) {
+                        //letters.push(new Letter());
+                  //  }
+             //   }
+          //  }, 1500); // 每1.5秒检查补充字母
+        //}
 
+     function generateLetters() {
+            if (letters.length < MAX_LETTERS) {
+                const needed = MAX_LETTERS - letters.length;
+                for (let i = 0; i < needed; i++) {
+                    letters.push(new Letter());
+                }
+            }
+        }
         
         // 初始化Canvas尺寸
         function initCanvas() {
@@ -234,17 +242,33 @@
         }
         
         // 新增倒计时功能
+        // function startTimer() {
+            //remainingTime = GAME_DURATION;
+            //document.getElementById('timer').textContent = remainingTime;
+            //
+            //gameTimer = setInterval(() => {
+                //if (!isPaused) {
+                    //remainingTime--;
+                    //document.getElementById('timer').textContent = remainingTime;
+                    //
+                    //if (remainingTime <= 0) {
+                        //endGame();
+        //           }
+             //   }
+          //  }, 1000);
+        //}
+        
+        // 修改倒计时逻辑
         function startTimer() {
-            remainingTime = GAME_DURATION;
-            document.getElementById('timer').textContent = remainingTime;
-            
             gameTimer = setInterval(() => {
                 if (!isPaused) {
                     remainingTime--;
                     document.getElementById('timer').textContent = remainingTime;
                     
                     if (remainingTime <= 0) {
-                        endGame();
+                        clearInterval(gameTimer);
+                        isPaused = true;
+                        handleGameEnd();
                     }
                 }
             }, 1000);
@@ -266,6 +290,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             if (!isPaused) {
+                generateLetters(); // 持续补充字母
                 // 生成新字母
                 if (Math.random() < 0.05) {
                     letters.push(new Letter());
@@ -282,7 +307,8 @@
                     if (letter.y > canvas.height) {
                         letters.splice(index, 1);
                         updateScore(-2);
-                        document.getElementById('errorBox').innerHTML += `${letter.char} `;
+                        //document.getElementById('errorBox').innerHTML += `${letter.char} `;
+                        addToBox('errorBox', letter.char);
                         showToast(`Missed: -2`, 'error');
                     }
                 });
@@ -292,7 +318,21 @@
                 animationId = requestAnimationFrame(gameLoop);
             }
         }
-
+       // 新增游戏结束处理
+        function handleGameEnd() {
+            const shouldContinue = confirm(`游戏结束！得分：${score}\n\n继续游戏吗？`);
+            if (shouldContinue) {
+                remainingTime = GAME_DURATION;
+                document.getElementById('timer').textContent = remainingTime;
+                isPaused = false;
+                startTimer();
+                virtualInput.focus();
+            } else {
+                isPlaying = false;
+                document.getElementById('startBtn').disabled = false;
+                virtualInput.blur();
+            }
+        }
         // 得分更新
         function updateScore(value) {
             score += value;
