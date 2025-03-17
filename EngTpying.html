@@ -124,6 +124,17 @@
             height: 0;
             width: 0;
         }
+        /* 保持原有样式不变，新增倒计时样式 */
+        .timer-box {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            background-color: rgba(255,255,255,0.9);
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -155,8 +166,15 @@
 
         <div id="toast" class="toast"></div>
     </div>
+    <!-- 保持原有HTML结构不变，新增倒计时显示 -->
+    <div class="timer-box">⏳ <span id="timer">60</span>s</div>
 
     <script>
+        // 新增游戏控制参数
+        const MAX_LETTERS = 10;
+        const MIN_LETTERS = 5;
+        const GAME_DURATION = 60; // 60秒倒计时
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const virtualInput = document.getElementById('virtualInput');
@@ -166,6 +184,27 @@
         let animationId = null;
         let isPlaying = false;
         let isPaused = false;
+        
+        // 修改速度计算公式
+        const getSpeed = () => (parseInt(speedControl.value) * 0.3 + 0.5) * 0.3;
+
+        // 新增游戏状态变量
+        let gameTimer;
+        let remainingTime = GAME_DURATION;
+        let letterInterval;
+        
+         // 修改字母生成逻辑
+        function generateLetters() {
+            letterInterval = setInterval(() => {
+                if (letters.length < MIN_LETTERS) {
+                    const needed = Math.min(MAX_LETTERS - letters.length, 5);
+                    for (let i = 0; i < needed; i++) {
+                        letters.push(new Letter());
+                    }
+                }
+            }, 1500); // 每1.5秒检查补充字母
+        }
+
         
         // 初始化Canvas尺寸
         function initCanvas() {
@@ -182,14 +221,44 @@
         });
 
         // 字母对象
+    
+        // 修改Letter类 字母对象
         class Letter {
             constructor() {
                 this.x = Math.random() * canvas.width;
                 this.y = 0;
                 this.char = String.fromCharCode(65 + Math.floor(Math.random() * 26));
                 this.color = `hsl(${Math.random() * 360}, 70%, 50%)`;
-                this.speed = (parseInt(speedControl.value) * 0.5 + 1) * 0.5;
+                this.speed = getSpeed(); // 使用新的速度计算
             }
+        }
+        
+        // 新增倒计时功能
+        function startTimer() {
+            remainingTime = GAME_DURATION;
+            document.getElementById('timer').textContent = remainingTime;
+            
+            gameTimer = setInterval(() => {
+                if (!isPaused) {
+                    remainingTime--;
+                    document.getElementById('timer').textContent = remainingTime;
+                    
+                    if (remainingTime <= 0) {
+                        endGame();
+                    }
+                }
+            }, 1000);
+        }
+        
+        function endGame() {
+            clearInterval(gameTimer);
+            clearInterval(letterInterval);
+            isPlaying = false;
+            virtualInput.blur();
+            
+            // 显示最终得分
+            alert(`游戏结束！最终得分：${score}`);
+            document.getElementById('startBtn').disabled = false;
         }
 
         // 游戏主循环
@@ -274,28 +343,46 @@
         canvas.addEventListener('touchstart', () => virtualInput.focus());
 
         // 按钮控制
+        // 修改开始游戏逻辑
         document.getElementById('startBtn').addEventListener('click', () => {
             if (!isPlaying) {
                 isPlaying = true;
                 isPaused = false;
+                remainingTime = GAME_DURATION;
                 virtualInput.focus();
+                setTimeout(() => virtualInput.click(), 100);
+                generateLetters(); // 改为新的字母生成方式
                 gameLoop();
+                startTimer();
                 document.getElementById('startBtn').disabled = true;
                 document.getElementById('pauseBtn').textContent = 'Pause';
             }
         });
-
+        
+        // 修改暂停逻辑
         document.getElementById('pauseBtn').addEventListener('click', () => {
             if (!isPlaying) return;
             
             isPaused = !isPaused;
             document.getElementById('pauseBtn').textContent = isPaused ? 'Resume' : 'Pause';
-            if (!isPaused) {
-                virtualInput.focus();
+            virtualInput.focus();
+            
+            if (isPaused) {
+                clearInterval(letterInterval);
+                clearInterval(gameTimer);
+            } else {
+                generateLetters();
+                startTimer();
             }
         });
-
+        
+        // 修改重置逻辑
         document.getElementById('resetBtn').addEventListener('click', () => {
+            clearInterval(gameTimer);
+            clearInterval(letterInterval);
+            remainingTime = GAME_DURATION;
+            document.getElementById('timer').textContent = remainingTime;
+            
             cancelAnimationFrame(animationId);
             isPlaying = false;
             isPaused = false;
