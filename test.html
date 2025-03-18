@@ -166,7 +166,7 @@
 
         <div class="input-group">
             <input type="text" id="savePath" 
-                   placeholder="请输入图片保存地址如：C:\Users\image（选填）">
+                   placeholder="下载图片另存为地址，如C:\Users\image（选填）">
         </div>
 
         <div class="button-group">
@@ -229,11 +229,14 @@
                         resolve(blob);
                     }, mimeType);
                 };
-                img.onerror = reject;
+                //img.onerror = reject;
+                img.onerror = function(e) {
+                reject(new Error('SVG加载失败，请检查地址有效性'));
+              };
                 img.src = svgUrl;
             });
         }
-
+        //修改下载函数中的fetch请求部分
         async function downloadImage() {
             const imageUrl = document.getElementById('imageUrl').value.trim();
             const saveFormat = document.getElementById('saveFormat').value;
@@ -246,16 +249,34 @@
             }
 
             try {
+                // 新增：创建带跨域属性的Image对象预检
+                const img = new Image();
+                img.crossOrigin = "Anonymous"; // 关键修改1：添加跨域属性
+                img.src = imageUrl;
+                
                 // 获取原始文件信息
-                const response = await fetch(imageUrl);
+                // 修改后的fetch请求（约第118行）
+                const response = await fetch(imageUrl, {
+                    mode: 'no-cors', // 关键修改2：设置请求模式
+                    headers: new Headers({
+                        'Origin': window.location.origin
+                    }),
+                    referrerPolicy: 'no-referrer-when-downgrade'
+                });
+                
                 const originalBlob = await response.blob();
                 const originalType = originalBlob.type;
                 
-                // 处理文件名和格式
+                // 原处理文件名和格式
                 let filename = imageUrl.split('/').pop().split(/[#?]/)[0];
                 let finalBlob = originalBlob;
                 let finalExt = filename.split('.').pop().toLowerCase();
-
+                 
+                // 新增响应状态检查
+                if (!response.ok) {
+                    throw new Error(`HTTP错误! 状态码: ${response.status}`);
+                }
+                
                 // 处理格式转换（SVG转换）
                 if (originalType === 'image/svg+xml' && saveFormat !== 'auto') {
                     showToast('🔄 正在转换SVG格式...', 1500);
@@ -285,8 +306,12 @@
                 showToast('✅ 图片下载成功！');
 
             } catch (error) {
-                console.error('下载失败:', error);
-                showToast('❌ 下载失败：' + error.message);
+                 console.error('完整错误日志:', error);
+                // 增强错误提示（约第154行）
+                const errorMsg = error.message.includes('Failed to fetch') ? 
+                    '跨域请求被拒绝，请尝试：\n1. 右键图片另存为\n2. 使用代理服务\n3. 联系图片站长开启CORS' : 
+                    `服务器响应：${error.message}`;
+                showToast('❌ ' + errorMsg);
             }
         }
 
