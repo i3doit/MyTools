@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片下载系统-艾兜兜儿</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* 保留原有样式不变 */
+        * {
+            box-sizing: border-box;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        body {
+            background-color: #e8f5e9;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            justify-content: center;/*新增*/
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            margin: auto;
+            padding: 30px;/*新增*/
+        }
+
+        h1 {
+            color: #2e7d32;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;/*新增*/
+            gap: 10px;/*新增*/
+            margin-bottom: 20px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #c8e6c9;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 16px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #81c784;
+        }
+        
+        /*新增*/
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #81C784;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        #downloadBtn {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        #clearBtn {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            background: #66BB6A;        /*新增*/
+        }
+        
+        /*新增：图片格式下拉框样式*/
+        .format-select {
+            margin-bottom: 20px;
+        }
+       /*新增：图片格式下拉框样式*/
+        select {
+            padding: 10px;
+            border: 2px solid #81C784;
+            border-radius: 6px;
+            background: white;
+        }
+        
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            input, select, button {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 图片下载系统</h1>
+        
+        <div class="input-group">
+            <input type="text" id="imageUrl" 
+                   placeholder="请输入要下载的图片地址(必填)"
+                   oninput="autoDetectFormat()">
+        </div>
+
+        <div class="input-group format-select">
+            <select id="saveFormat">
+                <option value="auto">自动检测格式（选填）</option>
+                <option value="jpg">JPG</option>
+                <option value="png">PNG</option>
+                <option value="jpeg">JPEG</option>
+                <option value="gif">GIF</option>
+                 <option value="svg">SVG</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="customName" 
+                   placeholder="请输入要替换的文案（选填）">
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="savePath" 
+                   placeholder="请输入图片保存地址如：C:\Users\image（选填）">
+        </div>
+
+        <div class="button-group">
+            <button id="downloadBtn" onclick="downloadImage()">📥 下载图片</button>
+            <button id="clearBtn" onclick="clearAll()">🔄 清空</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+              // 新增：自动检测并更新文件格式
+        function updateFormat() {
+            const url = document.getElementById('imageUrl').value;
+            const formatSelect = document.getElementById('saveFormat');
+            
+            // 从URL提取文件扩展名
+            const extension = url.split('.').pop().toLowerCase().split('?')[0];
+            if (['jpg', 'jpeg', 'png', 'svg'].includes(extension)) {
+                formatSelect.value = extension === 'jpg' ? 'jpeg' : extension;
+            }
+        }
+        
+        function showToast(message, duration=2000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, duration);
+        }
+
+        function autoDetectFormat() {
+            const url = document.getElementById('imageUrl').value;
+            const formatSelect = document.getElementById('saveFormat');
+            const extension = url.split('.').pop().split(/[#?]/)[0].toLowerCase();
+            
+            if (['jpg', 'png', 'jpeg', 'gif', 'svg'].includes(extension)) {
+                formatSelect.value = extension === 'svg' ? 'auto' : extension;
+            }
+        }
+
+        async function convertSVGToImage(svgUrl, format) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    let mimeType;
+                    switch(format) {
+                        case 'jpg':
+                        case 'jpeg':
+                            mimeType = 'image/jpeg';
+                            break;
+                        case 'png':
+                            mimeType = 'image/png';
+                            break;
+                        case 'gif':
+                            mimeType = 'image/gif';
+                            break;
+                        default:
+                            mimeType = 'image/png';
+                    }
+                    
+                    canvas.toBlob(blob => {
+                        resolve(blob);
+                    }, mimeType);
+                };
+                img.onerror = reject;
+                img.src = svgUrl;
+            });
+        }
+
+        async function downloadImage() {
+            const imageUrl = document.getElementById('imageUrl').value.trim();
+            const saveFormat = document.getElementById('saveFormat').value;
+            const customName = document.getElementById('customName').value.trim();
+            const savePath = document.getElementById('savePath').value.trim();
+
+            if (!imageUrl) {
+                showToast('⚠️ 请输入图片地址');
+                return;
+            }
+
+            try {
+                // 获取原始文件信息
+                const response = await fetch(imageUrl);
+                const originalBlob = await response.blob();
+                const originalType = originalBlob.type;
+                
+                // 处理文件名和格式
+                let filename = imageUrl.split('/').pop().split(/[#?]/)[0];
+                let finalBlob = originalBlob;
+                let finalExt = filename.split('.').pop().toLowerCase();
+
+                // 处理格式转换（SVG转换）
+                if (originalType === 'image/svg+xml' && saveFormat !== 'auto') {
+                    showToast('🔄 正在转换SVG格式...', 1500);
+                    finalBlob = await convertSVGToImage(imageUrl, saveFormat);
+                    finalExt = saveFormat;
+                } else if (saveFormat !== 'auto') {
+                    finalExt = saveFormat;
+                }
+
+                // 处理文件名
+                if (customName) {
+                    filename = customName + '.' + finalExt;
+                } else {
+                    filename = filename.replace(/\.[^/.]+$/, '') + '.' + finalExt;
+                }
+
+                // 创建下载
+                const url = window.URL.createObjectURL(finalBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                showToast('✅ 图片下载成功！');
+
+            } catch (error) {
+                console.error('下载失败:', error);
+                showToast('❌ 下载失败：' + error.message);
+            }
+        }
+
+        function clearAll() {
+            document.getElementById('imageUrl').value = '';
+            document.getElementById('saveFormat').value = 'auto';
+            document.getElementById('customName').value = '';
+            document.getElementById('savePath').value = '';
+            showToast('🔄 已重置所有设置');
+        }
+    </script>
+</body>
+</html>
