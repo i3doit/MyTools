@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>健康营养随机点餐系统</title>
+    <style>
+        /* 网页1样式改良 + 新增营养面板 */
+        body {
+            font-family: "微软雅黑", sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .user-panel {
+            background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .roulette-section {
+            text-align: center;
+            margin: 40px 0;
+        }
+        #roulette {
+            width: 300px;
+            height: 300px;
+            border: 3px solid #4CAF50;
+            border-radius: 50%;
+            margin: 20px auto;
+            position: relative;
+            overflow: hidden;
+            background: #fff;
+        }
+        .nutrition-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .nutrition-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        button {
+            background: #4CAF50;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 25px;
+            transition: all 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 用户信息面板 网页3商家端灵感 -->
+        <div class="user-panel">
+            <h2>👩⚕️ 用户健康档案</h2>
+            <p>BMI: 23.2 | 日需热量: 1300-1500kcal</p>
+            <p>推荐摄入：蛋白质78-94g | 膳食纤维≥25g</p>
+        </div>
+
+        <!-- 智能转盘区 网页2动画改良 -->
+        <div class="roulette-section">
+            <div id="roulette">点击生成今日餐单</div>
+            <button onclick="generateMeal()">🎯 生成今日餐单</button>
+        </div>
+
+        <!-- 过敏过滤 网页1复选框改良 -->
+        <div class="filter-section">
+            <h3>🚫 过敏食材过滤</h3>
+            <label><input type="checkbox" name="allergy" value="海鲜"> 海鲜</label>
+            <label><input type="checkbox" name="allergy" value="乳制品"> 乳制品
+            <!-- 共8类过敏源... -->
+        </div>
+
+        <!-- 营养分析面板 -->
+        <div class="nutrition-panel">
+            <div class="nutrition-card">
+                <h4>🔥 总热量</h4>
+                <p id="total-calories">0 kcal</p>
+            </div>
+            <div class="nutrition-card">
+                <h4>🥚 蛋白质</h4>
+                <p id="protein">0g</p>
+            </div>
+            <div class="nutrition-card">
+                <h4>🌾 膳食纤维</h4>
+                <p id="fiber">0g</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟数据库（需连接真实数据库）
+        const mealDB = {
+            breakfast: [
+                { name: "燕麦粥+水煮蛋+蓝莓", cal: 420, protein: 22, fiber: 6 },
+                { name: "全麦三明治+豆浆", cal: 450, protein: 25, fiber: 5 }
+            ],
+            lunch: [
+                { name: "藜麦饭+清蒸鲈鱼+西兰花", cal: 500, protein: 35, fiber: 9 },
+                { name: "糙米饭+香煎鸡胸+木耳", cal: 520, protein: 38, fiber: 8 }
+            ],
+            dinner: [
+                { name: "蒸南瓜+海带豆腐汤", cal: 300, protein: 18, fiber: 8 },
+                { name: "山药粥+白灼秋葵", cal: 320, protein: 15, fiber: 7 }
+            ]
+        };
+
+        function generateMeal() {
+            // 过滤过敏食材（网页1逻辑扩展）
+            const allergies = Array.from(document.querySelectorAll('input[name="allergy"]:checked'))
+                                 .map(el => el.value);
+
+            // 随机选择餐单（网页2算法改良）
+            const meal = {
+                breakfast: selectMeal('breakfast', allergies),
+                lunch: selectMeal('lunch', allergies),
+                dinner: selectMeal('dinner', allergies)
+            };
+
+            // 更新转盘显示
+            const roulette = document.getElementById('roulette');
+            roulette.innerHTML = `🍳 早餐：${meal.breakfast.name}<br>
+                                🥗 午餐：${meal.lunch.name}<br>
+                                🍲 晚餐：${meal.dinner.name}`;
+
+            // 更新营养面板（网页3数据分析扩展）
+            updateNutritionPanel(meal);
+        }
+
+        function selectMeal(type, allergies) {
+            const available = mealDB[type].filter(meal => 
+                !allergies.some(allergy => meal.name.includes(allergy))
+            );
+            return available[Math.floor(Math.random() * available.length)];
+        }
+
+        function updateNutritionPanel(meal) {
+            const total = ['cal', 'protein', 'fiber'].map(k => 
+                [meal.breakfast, meal.lunch, meal.dinner].reduce((sum, m) => sum + m[k], 0)
+            );
+            
+            document.getElementById('total-calories').textContent = `${total[0]} kcal`;
+            document.getElementById('protein').textContent = `${total[1]}g`;
+            document.getElementById('fiber').textContent = `${total[2]}g`;
+        }
+    </script>
+</body>
+</html>
