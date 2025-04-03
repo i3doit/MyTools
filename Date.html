@@ -46,16 +46,25 @@
         <h2>日期计算工具</h2>
         <div class="input-group">
             <input type="text" id="inputDate" placeholder="输入日期（格式：YYYY.MM.DD）">
+            <input type="date" id="inputDate">
             <input type="number" id="days" placeholder="输入天数" min="1" value="30">
         </div>
         <button onclick="calculateNewDate()">生成新日期</button>
+        <button onclick="clearAll()" style="background-color: #ff4444; margin-left: 10px;">清空</button>
+        <textarea id="resultArea" rows="4" cols="40" placeholder="结果将显示在这里" readonly></textarea>    
         <div id="result"></div>
     </div>
 
     <script>
+        function formatDateToLocal(date) {
+           return `${date.getFullYear()}.${(date.getMonth()+1).toString().padStart(2, '0')}.${date.getDate().toString().padStart(2, '0')}`;
+        }
+        
         function calculateNewDate() {
             const dateInput = document.getElementById('inputDate').value;
+            const dateInput = new Date(document.getElementById('inputDate').value);
             const daysToAdd = parseInt(document.getElementById('days').value);
+            const resultArea = document.getElementById('resultArea');
             const resultDiv = document.getElementById('result');
 
             // 验证日期格式
@@ -81,15 +90,26 @@
                 return;
             }
 
-            // 计算新日期
-            const newDate = new Date(originalDate);
-            newDate.setDate(newDate.getDate() + daysToAdd);
+            // 删除原有的日期验证逻辑
+           // 计算新日期
+           const newDate = new Date(dateInput);
+           newDate.setDate(newDate.getDate() + daysToAdd);    
 
+           const result = `原日期：${formatDateToLocal(dateInput)} + ${daysToAdd}天 = ${formatDateToLocal(newDate)}\n`;
+           resultArea.value = resultArea.value + result;
             // 格式化输出
             const formattedDate = `${newDate.getFullYear()}.${(newDate.getMonth()+1).toString().padStart(2, '0')}.${newDate.getDate().toString().padStart(2, '0')}`;
             
             resultDiv.innerHTML = `新日期：<span style="color: blue;">${formattedDate}</span>`;
             resultDiv.style.color = 'black';
+        }
+
+        // 清空
+        function clearAll() {
+
+           document.getElementById('inputDate').value = '';
+           document.getElementById('days').value = '30';
+           document.getElementById('resultArea').value = '';
         }
     </script>
 </body>
