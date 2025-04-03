@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>日期计算工具</title>
+    <style>
+        .container {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .input-group {
+            margin: 15px 0;
+        }
+
+        input, button {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>日期计算工具</h2>
+        <div class="input-group">
+            <input type="text" id="inputDate" placeholder="输入日期（格式：YYYY.MM.DD）">
+            <input type="number" id="days" placeholder="输入天数" min="1" value="30">
+        </div>
+        <button onclick="calculateNewDate()">生成新日期</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function calculateNewDate() {
+            const dateInput = document.getElementById('inputDate').value;
+            const daysToAdd = parseInt(document.getElementById('days').value);
+            const resultDiv = document.getElementById('result');
+
+            // 验证日期格式
+            const dateParts = dateInput.split('.');
+            if (dateParts.length !== 3 || dateInput.split('.').some(part => isNaN(part))) {
+                resultDiv.innerHTML = "错误：日期格式不正确（请使用YYYY.MM.DD格式）";
+                resultDiv.style.color = 'red';
+                return;
+            }
+
+            // 创建日期对象
+            const year = parseInt(dateParts[0](@ref);
+            const month = parseInt(dateParts[1](@ref) - 1; // 月份从0开始
+            const day = parseInt(dateParts[2](@ref);
+            const originalDate = new Date(year, month, day);
+
+            // 验证日期有效性
+            if (originalDate.getFullYear() !== year || 
+                originalDate.getMonth() !== month || 
+                originalDate.getDate() !== day) {
+                resultDiv.innerHTML = "错误：输入的日期不存在";
+                resultDiv.style.color = 'red';
+                return;
+            }
+
+            // 计算新日期
+            const newDate = new Date(originalDate);
+            newDate.setDate(newDate.getDate() + daysToAdd);
+
+            // 格式化输出
+            const formattedDate = `${newDate.getFullYear()}.${(newDate.getMonth()+1).toString().padStart(2, '0')}.${newDate.getDate().toString().padStart(2, '0')}`;
+            
+            resultDiv.innerHTML = `新日期：<span style="color: blue;">${formattedDate}</span>`;
+            resultDiv.style.color = 'black';
+        }
+    </script>
+</body>
+</html>
