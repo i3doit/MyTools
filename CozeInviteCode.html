@@ -1,1 +1,123 @@
-abc
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>数据同步展示</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f2f2f2; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 2s linear infinite; margin: 20px auto; }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>实时数据展示</h1>
+    <div id="loading" class="loader" style="display: none;"></div>
+    <div id="error" style="color: red; display: none;"></div>
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>标题</th>
+                <th>内容</th>
+                <th>创建时间</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <script>
+        // 配置参数
+        const API_URL = 'http://150.5.164.35:6006/list';
+        const SYNC_INTERVAL = 5000; // 5秒钟同步一次
+
+        async function fetchData() {
+            try {
+                showLoading();
+                const response = await fetch(API_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                renderTable(data);
+                hideError();
+            } catch (error) {
+                showError(`数据获取失败: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = ''; // 清空现有内容
+
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.id}</td>
+                    <td>${item.title}</td>
+                    <td>${item.content}</td>
+                    <td>${new Date(item.create_time).toLocaleString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        // 初始化加载数据
+        fetchData();
+        
+        // 设置定时同步
+        setInterval(fetchData, SYNC_INTERVAL);
+
+        // 错误处理
+        window.addEventListener('error', (e) => {
+            showError(`发生错误: ${e.message}`);
+        });
+    </script>
+
+    <!-- 跨域处理提示 -->
+    <div style="color: #666; margin-top: 20px;">
+        <h3>注意事项：</h3>
+        <p>如果遇到跨域问题(CORS)，需要通过以下方式之一解决：</p>
+        <ol>
+            <li>要求目标服务器设置允许跨域的HTTP头（Access-Control-Allow-Origin）</li>
+            <li>使用后端代理（推荐方案），示例PHP代理代码：
+                <pre>
+// get-data.php
+&lt;?php
+header('Content-Type: application/json');
+echo file_get_contents('http://150.5.164.35:6006/list');
+?&gt;
+                </pre>
+                然后将JavaScript中的API_URL改为'/get-data.php'
+            </li>
+        </ol>
+    </div>
+</body>
+</html>
