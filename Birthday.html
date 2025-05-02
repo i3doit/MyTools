@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>生日推测系统-艾兜兜儿</title>
+    <style>
+        body {
+            background-color: #f0fff0;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        input[type="number"] {
+            width: 120px;
+            padding: 8px;
+            margin: 0 10px;
+            border: 1px solid #6b8e23;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #6b8e23;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        button:hover {
+            background-color: #556b2f;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #6b8e23;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f5f5f5;
+        }
+    </style>
+    <script src="https://cdn.bootcdn.net/ajax/libs/lunar/1.6.7/lunar.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="input-group">
+            最小年龄：<input type="number" id="minAge" min="1" placeholder="最小年龄">
+            最大年龄：<input type="number" id="maxAge" min="1" placeholder="最大年龄">
+            <button onclick="generateDates()">获取出生日期</button>
+            <button onclick="resetAll()">重置</button>
+        </div>
+        
+        <table id="resultTable">
+            <thead>
+                <tr>
+                    <th>年龄范围</th>
+                    <th>公历生日</th>
+                    <th>农历生日</th>
+                    <th>生肖</th>
+                </tr>
+            </thead>
+            <tbody id="results">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function getRandomDate(year) {
+            const date = new Date(year, Math.floor(Math.random()*12), 1);
+            date.setDate(Math.floor(Math.random()*(new Date(year, date.getMonth()+1, 0).getDate())));
+            return date;
+        }
+
+        function generateDates() {
+            const minAge = parseInt(document.getElementById('minAge').value);
+            const maxAge = parseInt(document.getElementById('maxAge').value);
+            const currentYear = new Date().getFullYear();
+            const results = [];
+            
+            // 生成三种边界值
+            ['最小值', '中间值', '最大值'].forEach(type => {
+                const age = type === '最小值' ? minAge : 
+                          type === '最大值' ? maxAge : 
+                          Math.round((minAge + maxAge)/2);
+                
+                const solarDate = getRandomDate(currentYear - age);
+                const lunar = Lunar.fromDate(solarDate);
+                
+                results.push({
+                    ageRange: `${type}: ${age}岁`,
+                    solar: solarDate.toISOString().split('T')[0],
+                    lunar: lunar.getMonth() + '月' + lunar.getDay() + '日',
+                    zodiac: lunar.getYearZodiac()
+                });
+            });
+
+            // 保存和显示结果
+            saveAndDisplay(results);
+        }
+
+        function saveAndDisplay(newData) {
+            let history = JSON.parse(localStorage.getItem('birthdayHistory') || '[]');
+            history = [...history, ...newData];
+            localStorage.setItem('birthdayHistory', JSON.stringify(history));
+            
+            const tbody = document.getElementById('results');
+            tbody.innerHTML = '';
+            
+            newData.forEach(item => {
+                const row = `<tr>
+                    <td>${item.ageRange}</td>
+                    <td>${item.solar}</td>
+                    <td>${item.lunar}</td>
+                    <td>${item.zodiac}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function resetAll() {
+            localStorage.removeItem('birthdayHistory');
+            document.getElementById('minAge').value = '';
+            document.getElementById('maxAge').value = '';
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // 初始化时加载历史记录
+        window.onload = () => {
+            const history = JSON.parse(localStorage.getItem('birthdayHistory') || '[]');
+            history.forEach(item => {
+                const tbody = document.getElementById('results');
+                const row = `<tr>
+                    <td>${item.ageRange}</td>
+                    <td>${item.solar}</td>
+                    <td>${item.lunar}</td>
+                    <td>${item.zodiac}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        };
+    </script>
+</body>
+</html>
