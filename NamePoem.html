@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>姓名藏头诗生成器</title>
+    <style>
+        body {
+            background-color: #e9ffdb;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .container {
+            background-color: rgba(255,255,255,0.5);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
+        input, select, button {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #8ebf6f;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #8ebf6f;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #7da860;
+        }
+
+        .poems-container {
+            column-count: 2;
+            column-gap: 30px;
+        }
+
+        .poem {
+            background-color: rgba(255,255,255,0.8);
+            padding: 15px;
+            margin-bottom: 20px;
+            break-inside: avoid;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <input type="text" id="name" placeholder="请输入姓名" style="width: 200px;">
+            <select id="type">
+                <option value="藏头诗">藏头诗</option>
+                <option value="五言诗">五言诗</option>
+                <option value="七言诗">七言诗</option>
+            </select>
+            <button onclick="generatePoems()">题诗</button>
+            <button onclick="clearAll()">清空</button>
+        </div>
+        <div id="poems" class="poems-container"></div>
+    </div>
+
+    <script>
+        // 示例诗句库
+        const wordsPool = [
+            ["春风拂面笑", "夏雨润心田", "秋月寄相思", "冬雪兆丰年"],
+            ["明月照大江", "青山伴我行", "流水知音在", "白云故乡情"],
+            ["天地人和美", "日月同光辉", "山河添锦绣", "人间满春晖"],
+            ["书香传千古", "墨韵绘新篇", "诗心连广宇", "词意动云天"]
+        ];
+
+        function generatePoems() {
+            const name = document.getElementById('name').value.trim();
+            const type = document.getElementById('type').value;
+            const container = document.getElementById('poems');
+            container.innerHTML = '';
+
+            if (!name) {
+                alert("请输入姓名");
+                return;
+            }
+
+            for (let i = 0; i < 5; i++) {
+                const poemDiv = document.createElement('div');
+                poemDiv.className = 'poem';
+                poemDiv.innerHTML = generatePoem(name, type);
+                container.appendChild(poemDiv);
+            }
+        }
+
+        function generatePoem(name, type) {
+            const nameArr = name.split('');
+            let poem = [];
+            
+            for (let i = 0; i < 4; i++) { // 默认四句
+                let line = '';
+                if (type === '藏头诗') {
+                    line += nameArr[i % nameArr.length];
+                }
+                
+                const words = getRandomWords(type);
+                line += words[i % words.length];
+                
+                poem.push(`<p>${line}</p>`);
+            }
+            return poem.join('');
+        }
+
+        function getRandomWords(type) {
+            const randomSet = wordsPool[Math.floor(Math.random() * wordsPool.length)];
+            return randomSet.map(line => {
+                if (type === '五言诗') return line.substring(0, 5);
+                if (type === '七言诗') return line.substring(0, 7);
+                return line;
+            });
+        }
+
+        function clearAll() {
+            document.getElementById('name').value = '';
+            document.getElementById('poems').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
