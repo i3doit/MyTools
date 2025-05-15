@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>艺术签名在线设计</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            background-color: #e8f5e9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', '霞鹜文楷', sans-serif;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2e7d32;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] {
+            padding: 12px;
+            width: 300px;
+            max-width: 80%;
+            border: 2px solid #81c784;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background-color: #66bb6a;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #4caf50;
+        }
+
+        #signatureList {
+            margin-top: 30px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 15px;
+        }
+
+        .signature-item {
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .signature-item:hover {
+            transform: translateY(-3px);
+        }
+
+        footer {
+            margin-top: 40px;
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .input-group {
+                flex-direction: column;
+            }
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>艺术签名在线设计</h1>
+        <div class="input-group">
+            <input type="text" id="nameInput" placeholder="请输入您的姓名">
+            <button onclick="generateSignatures()">立即设计</button>
+            <button onclick="clearAll()" style="background-color: #ef5350">清空</button>
+        </div>
+        <div id="signatureList"></div>
+    </div>
+
+    <footer>
+        <a href="https://mp.weixin.qq.com/s/Tx7MbtPEqbzBT61arZx07g" target="_blank">
+            由 艾兜兜儿 用DeepSeek 1分钟生成，你也可以去尝试制作
+        </a>
+    </footer>
+
+    <script>
+        const styles = [
+            '正楷签', '行楷签', '行书签', '行草签', '草书签', 
+            '狂草签', '一笔签', '合文签', '防伪签', '仿英文',
+            '公文签', '商务签', '明星签', '英文签', '书法竖式', '时尚竖式'
+        ];
+
+        function generateSignatures() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (!name) return;
+
+            const isEnglish = /^[a-zA-Z\s]+$/.test(name);
+            const list = document.getElementById('signatureList');
+            list.innerHTML = '';
+
+            styles.forEach(style => {
+                const div = document.createElement('div');
+                div.className = 'signature-item';
+                div.innerHTML = `
+                    <div style="font-size: 24px; ${getStyle(style, isEnglish)}">
+                        ${name}
+                    </div>
+                    <div style="margin-top: 8px; color: #666">${style}</div>
+                `;
+                div.onclick = () => copySignature(name);
+                list.appendChild(div);
+            });
+        }
+
+        function getStyle(style, isEnglish) {
+            const baseStyle = 'font-family: ';
+            if (isEnglish) {
+                return style === '英文签' ? baseStyle + 'Brush Script MT, cursive' : 
+                       baseStyle + 'Arial, sans-serif';
+            }
+            // 中文样式处理
+            switch(style) {
+                case '行楷签': return baseStyle + "'霞鹜文楷', cursive";
+                case '草书签': return 'font-family: "Ma Shan Zheng", cursive';
+                default: return baseStyle + "'SimSun', serif";
+            }
+        }
+
+        function copySignature(text) {
+            navigator.clipboard.writeText(text);
+            alert('签名已复制！');
+        }
+
+        function clearAll() {
+            document.getElementById('nameInput').value = '';
+            document.getElementById('signatureList').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
