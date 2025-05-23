@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日期计算工具-艾兜兜儿-857023577</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #D0E8D6;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .input-group {
+            margin: 1rem 0;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        input[type="text"], input[type="number"] {
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 200px;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #calculateBtn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        #clearBtn {
+            background-color: #ff4444;
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 1rem;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 0.5rem;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="input-group">
+            <input type="text" id="dateInput" placeholder="输入日期（多种格式支持）">
+            <input type="number" id="daysInput" placeholder="输入加减天数">
+        </div>
+        <div class="input-group">
+            <button id="calculateBtn" onclick="calculate()">计算</button>
+            <button id="clearBtn" onclick="clearAll()">清空</button>
+        </div>
+        <table id="resultTable">
+            <thead>
+                <tr>
+                    <th>日期</th>
+                    <th>总天数</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function parseDate(input) {
+            const cleaned = input.replace(/[^0-9]/g, '');
+            if (cleaned.length !== 8) return null;
+            
+            const year = parseInt(cleaned.substr(0, 4));
+            const month = parseInt(cleaned.substr(4, 2)) - 1;
+            const day = parseInt(cleaned.substr(6, 2));
+            
+            const date = new Date(year, month, day);
+            return date;
+        }
+
+        function calculate() {
+            const dateInput = document.getElementById('dateInput').value;
+            const daysInput = parseInt(document.getElementById('daysInput').value) || 0;
+            
+            let baseDate = new Date();
+            if (dateInput) {
+                const parsedDate = parseDate(dateInput);
+                if (!parsedDate || isNaN(parsedDate)) {
+                    alert('日期格式错误');
+                    return;
+                }
+                baseDate = parsedDate;
+            }
+
+            const daysDifference = Math.floor((baseDate - new Date()) / (1000 * 60 * 60 * 24));
+            const totalDays = daysDifference + daysInput;
+
+            const resultTable = document.querySelector('#resultTable tbody');
+            const newRow = resultTable.insertRow();
+            
+            const dateCell = newRow.insertCell();
+            dateCell.textContent = baseDate.toLocaleDateString();
+            
+            const daysCell = newRow.insertCell();
+            daysCell.textContent = totalDays;
+        }
+
+        function clearAll() {
+            document.getElementById('dateInput').value = '';
+            document.getElementById('daysInput').value = '';
+            document.querySelector('#resultTable tbody').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
