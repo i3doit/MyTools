@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML转换工具 - 在线转PDF/Word/Excel/Markdown</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary: #4caf50;
+            --primary-light: #81c784;
+            --primary-dark: #388e3c;
+            --secondary: #ffb300;
+            --background: #f0f7f0;
+            --card-bg: #ffffff;
+            --text: #2e3a30;
+            --text-light: #5a665c;
+            --danger: #f44336;
+            --success: #4caf50;
+            --border: #c8e6c9;
+            --shadow: rgba(76, 175, 80, 0.15);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+            background-image: linear-gradient(135deg, #f0f7f0 0%, #e4f3e6 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            max-width: 700px;
+            margin: 0 auto;
+            font-weight: 300;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 20px var(--shadow);
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border);
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .editor-container {
+            margin-bottom: 25px;
+        }
+        
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 20px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .control-group {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--primary-dark);
+        }
+        
+        select, input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 16px;
+            background-color: white;
+        }
+        
+        .watermark-controls {
+            background: #f8fdf8;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px dashed var(--primary-light);
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+        }
+        
+        .color-picker {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .color-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #000000;
+            border: 2px solid var(--border);
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 14px 25px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--shadow);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #d32f2f;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.2);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+        
+        .switch-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .preview {
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            margin-top: 20px;
+            background-color: white;
+            overflow: auto;
+        }
+        
+        .watermark {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0.3;
+            font-size: 24px;
+            color: #333;
+            transform: rotate(-30deg);
+            z-index: 1000;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .feature {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            display: flex;
+            gap: 15px;
+        }
+        
+        .feature i {
+            color: var(--primary);
+            font-size: 24px;
+            min-width: 40px;
+        }
+        
+        .feature h3 {
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-file-export"></i> HTML格式转换工具</h1>
+            <p class="subtitle">将HTML内容一键转换为PDF、Word、Excel或Markdown格式，支持自定义水印，满足您的多样化需求</p>
+        </header>
+        
+        <main>
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-code"></i> HTML内容编辑</h2>
+                <div class="editor-container">
+                    <div class="editor-header">
+                        <label for="html-input">输入您的HTML代码：</label>
+                        <div class="sample-buttons">
+                            <button class="btn-secondary" id="sample-btn">
+                                <i class="fas fa-file-code"></i> 加载示例
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="html-input" placeholder="在此处粘贴或编写HTML代码...">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;示例文档&lt;/title&gt;
+    &lt;style&gt;
+        body { font-family: Arial, sans-serif; }
+        h1 { color: #2e7d32; }
+        .content { max-width: 800px; margin: 0 auto; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="content"&gt;
+        &lt;h1&gt;HTML转PDF示例文档&lt;/h1&gt;
+        &lt;p&gt;这是一个展示HTML转PDF功能的示例文档。&lt;/p&gt;
+        
+        &lt;h2&gt;项目列表&lt;/h2&gt;
+        &lt;ul&gt;
+            &lt;li&gt;项目一：HTML内容转换&lt;/li&gt;
+            &lt;li&gt;项目二：多种格式导出&lt;/li&gt;
+            &lt;li&gt;项目三：自定义水印功能&lt;/li&gt;
+        &lt;/ul&gt;
+        
+        &lt;h2&gt;数据表格&lt;/h2&gt;
+        &lt;table&gt;
+            &lt;tr&gt;
+                &lt;th&gt;产品名称&lt;/th&gt;
+                &lt;th&gt;价格&lt;/th&gt;
+                &lt;th&gt;库存&lt;/th&gt;
+            &lt;/tr&gt;
+            &lt;tr&gt;
+                &lt;td&gt;HTML转换器&lt;/td&gt;
+                &lt;td&gt;$49.99&lt;/td&gt;
+                &lt;td&gt;120&lt;/td&gt;
+            &lt;/tr&gt;
+            &lt;tr&gt;
+                &lt;td&gt;PDF生成器&lt;/td&gt;
+                &lt;td&gt;$29.99&lt;/td&gt;
+                &lt;td&gt;85&lt;/td&gt;
+            &lt;/tr&gt;
+        &lt;/table&gt;
+        
+        &lt;p&gt;&lt;strong&gt;注意：&lt;/strong&gt; 此文档仅用于演示目的。&lt;/p&gt;
+    &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;</textarea>
+                </div>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="format-select">导出文件格式：</label>
+                        <select id="format-select">
+                            <option value="pdf">PDF 文档 (.pdf)</option>
+                            <option value="html">HTML 文件 (.html)</option>
+                            <option value="word">Word 文档 (.doc)</option>
+                            <option value="excel">Excel 表格 (.xls)</option>
+                            <option value="markdown">Markdown 文件 (.md)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="filename-input">文件名：</label>
+                        <input type="text" id="filename-input" value="converted-document">
+                    </div>
+                </div>
+                
+                <div class="switch-label">
+                    <label for="watermark-toggle">添加水印：</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="watermark-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="watermark-controls" id="watermark-controls">
+                    <div>
+                        <label for="watermark-text">水印文字：</label>
+                        <input type="text" id="watermark-text" value="机密文件">
+                    </div>
+                    
+                    <div>
+                        <label for="watermark-position">水印位置：</label>
+                        <select id="watermark-position">
+                            <option value="center">居中</option>
+                            <option value="top-left">左上角</option>
+                            <option value="top-right">右上角</option>
+                            <option value="bottom-left">左下角</option>
+                            <option value="bottom-right">右下角</option>
+                            <option value="tiled">平铺（整个页面）</option>
+                        </select>
+                    </div>
+                    
+                    <div class="color-picker">
+                        <label>水印颜色：</label>
+                        <div class="color-preview" id="color-preview"></div>
+                        <input type="color" id="watermark-color" value="#333333">
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label for="watermark-opacity">透明度：</label>
+                        <input type="range" id="watermark-opacity" min="10" max="100" value="30">
+                        <span id="opacity-value">30%</span>
+                    </div>
+                </div>
+                
+                <div class="buttons">
+                    <button id="generate-btn" class="btn-primary">
+                        <i class="fas fa-file-export"></i> 生成文件
+                    </button>
+                    <button id="clear-btn" class="btn-danger">
+                        <i class="fas fa-trash-alt"></i> 清空内容
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-eye"></i> 内容预览</h2>
+                <div id="preview-container" class="preview"></div>
+            </div>
+            
+            <div class="feature-list">
+                <div class="feature">
+                    <i class="fas fa-file-pdf"></i>
+                    <div>
+                        <h3>PDF 导出</h3>
+                        <p>将HTML内容转换为高质量的PDF文档，保留原始布局和样式，适合打印和分享。</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-file-word"></i>
+                    <div>
+                        <h3>Word 导出</h3>
+                        <p>生成可编辑的Word文档(.doc)，方便在Microsoft Word中进一步编辑和格式化。</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-file-excel"></i>
+                    <div>
+                        <h3>Excel 导出</h3>
+                        <p>将HTML表格数据转换为Excel电子表格(.xls)，便于数据分析和处理。</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-file-code"></i>
+                    <div>
+                        <h3>Markdown 导出</h3>
+                        <p>将HTML内容转换为Markdown格式(.md)，简化内容并保持基本结构。</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-water"></i>
+                    <div>
+                        <h3>水印功能</h3>
+                        <p>自定义水印文字、位置、颜色和透明度，保护您的文档版权。</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-palette"></i>
+                    <div>
+                        <h3>护眼设计</h3>
+                        <p>采用春意盎然的绿色护眼色系，减轻长时间工作带来的视觉疲劳。</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>© 2023 HTML转换工具 | 免费在线HTML转PDF、Word、Excel和Markdown | 使用免费可商用字体</p>
+        </footer>
+    </div>
+
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const htmlInput = document.getElementById('html-input');
+            const formatSelect = document.getElementById('format-select');
+            const filenameInput = document.getElementById('filename-input');
+            const watermarkToggle = document.getElementById('watermark-toggle');
+            const watermarkControls = document.getElementById('watermark-controls');
+            const generateBtn = document.getElementById('generate-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const previewContainer = document.getElementById('preview-container');
+            const sampleBtn = document.getElementById('sample-btn');
+            const watermarkColor = document.getElementById('watermark-color');
+            const colorPreview = document.getElementById('color-preview');
+            const watermarkOpacity = document.getElementById('watermark-opacity');
+            const opacityValue = document.getElementById('opacity-value');
+            
+            // 初始化水印控制面板
+            watermarkControls.style.display = 'none';
+            
+            // 更新预览
+            function updatePreview() {
+                previewContainer.innerHTML = htmlInput.value;
+            }
+            
+            // 水印开关切换
+            watermarkToggle.addEventListener('change', function() {
+                watermarkControls.style.display = this.checked ? 'grid' : 'none';
+            });
+            
+            // 颜色选择器
+            watermarkColor.addEventListener('input', function() {
+                colorPreview.style.backgroundColor = this.value;
+            });
+            
+            // 透明度滑块
+            watermarkOpacity.addEventListener('input', function() {
+                opacityValue.textContent = this.value + '%';
+            });
+            
+            // 清空按钮
+            clearBtn.addEventListener('click', function() {
+                if (confirm('确定要清空所有内容吗？')) {
+                    htmlInput.value = '';
+                    filenameInput.value = 'converted-document';
+                    watermarkToggle.checked = false;
+                    watermarkControls.style.display = 'none';
+                    updatePreview();
+                }
+            });
+            
+            // 加载示例
+            sampleBtn.addEventListener('click', function() {
+                // 示例HTML内容已在textarea中预设
+                updatePreview();
+            });
+            
+            // 生成文件按钮
+            generateBtn.addEventListener('click', function() {
+                const htmlContent = htmlInput.value;
+                const format = formatSelect.value;
+                let filename = filenameInput.value.trim();
+                
+                if (!filename) {
+                    filename = 'converted-document';
+                }
+                
+                if (!htmlContent) {
+                    alert('请输入HTML内容！');
+                    return;
+                }
+                
+                // 根据选择的格式添加文件扩展名
+                let fullFilename = filename;
+                switch (format) {
+                    case 'pdf':
+                        fullFilename += '.pdf';
+                        generatePDF(htmlContent, fullFilename);
+                        break;
+                    case 'html':
+                        fullFilename += '.html';
+                        downloadHTML(htmlContent, fullFilename);
+                        break;
+                    case 'word':
+                        fullFilename += '.doc';
+                        downloadWord(htmlContent, fullFilename);
+                        break;
+                    case 'excel':
+                        fullFilename += '.xls';
+                        downloadExcel(htmlContent, fullFilename);
+                        break;
+                    case 'markdown':
+                        fullFilename += '.md';
+                        downloadMarkdown(htmlContent, fullFilename);
+                        break;
+                }
+            });
+            
+            // 输入变化时更新预览
+            htmlInput.addEventListener('input', updatePreview);
+            
+            // 初始预览
+            updatePreview();
+            
+            // 生成PDF函数
+            function generatePDF(htmlContent, filename) {
+                // 在实际应用中，这里会使用jsPDF和html2canvas库生成PDF
+                // 这里简化为模拟过程
+                alert(`正在生成PDF文件: ${filename}\n\n实际应用中，这里会调用jsPDF库将HTML转换为PDF。`);
+                
+                // 模拟下载
+                simulateDownload(filename);
+            }
+            
+            // 下载HTML函数
+            function downloadHTML(htmlContent, filename) {
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                downloadFile(url, filename);
+            }
+            
+            // 下载Word函数
+            function downloadWord(htmlContent, filename) {
+                // 在实际应用中，这里会使用docx库将HTML转换为Word文档
+                // 这里简化为模拟过程
+                alert(`正在生成Word文档: ${filename}\n\n实际应用中，这里会调用docx库将HTML转换为Word格式。`);
+                
+                // 模拟下载
+                simulateDownload(filename);
+            }
+            
+            // 下载Excel函数
+            function downloadExcel(htmlContent, filename) {
+                // 在实际应用中，这里会使用xlsx库提取表格数据并生成Excel
+                // 这里简化为模拟过程
+                alert(`正在生成Excel文件: ${filename}\n\n实际应用中，这里会调用xlsx库将HTML中的表格转换为Excel格式。`);
+                
+                // 模拟下载
+                simulateDownload(filename);
+            }
+            
+            // 下载Markdown函数
+            function downloadMarkdown(htmlContent, filename) {
+                // 在实际应用中，这里会使用turndown库将HTML转换为Markdown
+                // 这里简化为模拟过程
+                alert(`正在生成Markdown文件: ${filename}\n\n实际应用中，这里会调用turndown库将HTML转换为Markdown格式。`);
+                
+                // 模拟下载
+                simulateDownload(filename);
+            }
+            
+            // 模拟文件下载
+            function simulateDownload(filename) {
+                alert(`文件 ${filename} 已生成并开始下载！`);
+                
+                // 在实际应用中，这里会创建一个下载链接并触发点击
+                /*
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                */
+            }
+        });
+    </script>
+</body>
+</html>
