@@ -80,11 +80,13 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex: 1 1 100%;
         }
         
         label {
             font-weight: 500;
             color: #2c3e50;
+            min-width: 80px;
         }
         
         input[type="number"] {
@@ -92,7 +94,7 @@
             border: 2px solid #ddd;
             border-radius: 8px;
             font-size: 1rem;
-            width: 100px;
+            flex: 1;
             transition: border-color 0.3s;
         }
         
@@ -100,6 +102,13 @@
             border-color: #4CAF50;
             outline: none;
             box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            flex: 1 1 100%;
         }
         
         button {
@@ -113,6 +122,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            flex: 1;
         }
         
         .generate-btn {
@@ -156,6 +166,7 @@
             width: 100%;
             border-collapse: collapse;
             background-color: white;
+            min-width: 600px;
         }
         
         th {
@@ -184,6 +195,12 @@
             font-family: monospace;
             font-size: 0.9rem;
             color: #2196F3;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .address-cell:hover {
+            text-decoration: underline;
         }
         
         .type-cell {
@@ -204,6 +221,7 @@
             justify-content: center;
             margin-top: 20px;
             gap: 8px;
+            flex-wrap: wrap;
         }
         
         .pagination button {
@@ -211,6 +229,8 @@
             background-color: #f8f9fa;
             color: #2c3e50;
             border: 1px solid #ddd;
+            min-width: 40px;
+            justify-content: center;
         }
         
         .pagination button.active {
@@ -221,6 +241,11 @@
         
         .pagination button:hover:not(.active) {
             background-color: #e9ecef;
+        }
+        
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         
         .footer {
@@ -259,28 +284,78 @@
             transform: translateX(0);
         }
         
-        @max-width: 768px) {
+        .copy-notification {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .address-cell:hover .copy-notification {
+            opacity: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
             .controls {
+                padding: 15px;
+            }
+            
+            .input-group {
                 flex-direction: column;
                 align-items: stretch;
             }
             
-            .input-group {
-                width: 100%;
+            button {
+                padding: 10px 15px;
             }
             
-            input[type="number"] {
-                width: 100%;
+            th, td {
+                padding: 10px;
+            }
+            
+            .pagination button {
+                padding: 6px 12px;
+                font-size: 0.9rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .subtitle {
+                font-size: 0.95rem;
             }
             
             .btn-group {
-                display: flex;
-                gap: 10px;
-                flex-wrap: wrap;
+                flex-direction: column;
             }
             
-            .btn-group button {
-                flex: 1;
+            .pagination {
+                gap: 5px;
+            }
+            
+            .pagination button {
+                min-width: 30px;
+                padding: 5px 8px;
+                font-size: 0.85rem;
             }
         }
     </style>
@@ -419,13 +494,34 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${wallet.id}</td>
-                    <td class="address-cell">${wallet.address}</td>
+                    <td class="address-cell">
+                        <span class="address-text">${wallet.address}</span>
+                        <span class="copy-notification">点击复制</span>
+                    </td>
                     <td class="type-cell ${wallet.type === 'erc' ? 'erc-type' : 'trc-type'}">
                         ${wallet.type.toUpperCase()}
                     </td>
                 `;
+                
+                // 添加复制功能
+                const addressCell = row.querySelector('.address-cell');
+                addressCell.addEventListener('click', () => {
+                    copyToClipboard(wallet.address);
+                    showNotification('地址已复制到剪贴板');
+                });
+                
                 tableBody.appendChild(row);
             });
+        }
+        
+        // 复制到剪贴板
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
         }
         
         // 渲染分页控件
@@ -438,11 +534,10 @@
             const totalPages = Math.ceil(wallets.length / itemsPerPage);
             let paginationHTML = '';
             
-            // 首页按钮
+            // 上一页按钮
             paginationHTML += `
-                <button class="pagination-btn ${currentPage === 1 ? 'disabled' : ''}" 
-                        onclick="goToPage(1)" ${currentPage === 1 ? 'disabled' : ''}>
-                    首页
+                <button class="pagination-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+                    &lt; 上一页
                 </button>
             `;
             
@@ -469,6 +564,15 @@
                 }
             }
             
+            // 显示省略号（如果需要）
+            if (startPage > 1) {
+                paginationHTML += `
+                    <button class="pagination-btn" onclick="goToPage(1)">1</button>
+                    <span class="pagination-ellipsis">...</span>
+                `;
+            }
+            
+            // 生成页码按钮
             for (let i = startPage; i <= endPage; i++) {
                 paginationHTML += `
                     <button class="pagination-btn ${i === currentPage ? 'active' : ''}" 
@@ -478,11 +582,18 @@
                 `;
             }
             
-            // 尾页按钮
+            // 显示省略号（如果需要）
+            if (endPage < totalPages) {
+                paginationHTML += `
+                    <span class="pagination-ellipsis">...</span>
+                    <button class="pagination-btn" onclick="goToPage(${totalPages})">${totalPages}</button>
+                `;
+            }
+            
+            // 下一页按钮
             paginationHTML += `
-                <button class="pagination-btn ${currentPage === totalPages ? 'disabled' : ''}" 
-                        onclick="goToPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>
-                    尾页
+                <button class="pagination-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+                    下一页 &gt;
                 </button>
             `;
             
@@ -491,6 +602,9 @@
         
         // 跳转到指定页码
         function goToPage(page) {
+            const totalPages = Math.ceil(wallets.length / itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+            
             currentPage = page;
             renderTable();
             renderPagination();
