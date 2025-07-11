@@ -15,7 +15,7 @@
         
         body {
             font-family: 'Noto Sans SC', sans-serif;
-            background-color: #e6f2e6;
+            background-color: #e6f2e6; /* 护眼绿色背景 */
             color: #333;
             line-height: 1.6;
             padding: 20px;
@@ -25,43 +25,29 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             padding: 30px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .container::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 8px;
-            background: linear-gradient(90deg, #4CAF50, #2196F3);
-            border-radius: 15px 15px 0 0;
         }
         
         header {
             text-align: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #eaeaea;
         }
         
         h1 {
-            color: #2c3e50;
-            font-size: 2.5rem;
+            color: #2c7744;
+            font-size: 2.2rem;
             margin-bottom: 10px;
-            font-weight: 700;
         }
         
-        .subtitle {
-            color: #7f8c8d;
+        .description {
+            color: #666;
             font-size: 1.1rem;
-            max-width: 600px;
+            max-width: 700px;
             margin: 0 auto;
         }
         
@@ -70,9 +56,6 @@
             flex-wrap: wrap;
             gap: 15px;
             margin-bottom: 30px;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
             align-items: center;
         }
         
@@ -80,282 +63,232 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            flex: 1 1 100%;
         }
         
         label {
             font-weight: 500;
-            color: #2c3e50;
-            min-width: 80px;
+            color: #444;
         }
         
         input[type="number"] {
-            padding: 12px 15px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            width: 100px;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
             font-size: 1rem;
-            flex: 1;
+            outline: none;
             transition: border-color 0.3s;
         }
         
         input[type="number"]:focus {
             border-color: #4CAF50;
-            outline: none;
             box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
         }
         
-        .btn-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            flex: 1 1 100%;
-        }
-        
-        button {
-            padding: 12px 25px;
+        .btn {
+            padding: 10px 20px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 1rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
-            flex: 1;
         }
         
-        .generate-btn {
+        .btn-primary {
             background-color: #4CAF50;
             color: white;
         }
         
-        .generate-btn:hover {
-            background-color: #45a049;
-            transform: translateY(-2px);
+        .btn-primary:hover {
+            background-color: #3d8b40;
         }
         
-        .reset-btn {
+        .btn-reset {
             background-color: #f44336;
             color: white;
         }
         
-        .reset-btn:hover {
+        .btn-reset:hover {
             background-color: #d32f2f;
-            transform: translateY(-2px);
         }
         
-        .export-btn {
+        .btn-export {
             background-color: #2196F3;
             color: white;
         }
         
-        .export-btn:hover {
+        .btn-export:hover {
             background-color: #0b7dda;
-            transform: translateY(-2px);
         }
         
         .table-container {
             overflow-x: auto;
             margin-bottom: 30px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #eaeaea;
+            border-radius: 8px;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
-            background-color: white;
-            min-width: 600px;
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eaeaea;
         }
         
         th {
-            background-color: #f1f8e9;
-            color: #2c3e50;
+            background-color: #f5f9f5;
             font-weight: 600;
-            padding: 15px;
-            text-align: left;
-            border-bottom: 2px solid #4CAF50;
-        }
-        
-        td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
+            color: #2c7744;
         }
         
         tr:hover {
-            background-color: #f1f8e9;
+            background-color: #f9fdf9;
         }
         
         .address-cell {
-            font-family: monospace;
-            font-size: 0.9rem;
-            color: #2196F3;
             cursor: pointer;
             position: relative;
+            color: #2196F3;
+            font-weight: 500;
         }
         
         .address-cell:hover {
             text-decoration: underline;
         }
         
-        .type-cell {
-            font-weight: 500;
-            text-transform: uppercase;
-        }
-        
-        .erc-type {
-            color: #4CAF50;
-        }
-        
-        .trc-type {
-            color: #FF5722;
-        }
-        
         .pagination {
             display: flex;
             justify-content: center;
-            margin-top: 20px;
+            align-items: center;
             gap: 8px;
+            margin-top: 20px;
             flex-wrap: wrap;
         }
         
-        .pagination button {
+        .page-btn {
             padding: 8px 15px;
-            background-color: #f8f9fa;
-            color: #2c3e50;
             border: 1px solid #ddd;
-            min-width: 40px;
-            justify-content: center;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.2s;
         }
         
-        .pagination button.active {
-            background-color: #4CAF50;
-            color: white;
+        .page-btn:hover:not(.disabled) {
+            background-color: #f5f9f5;
             border-color: #4CAF50;
         }
         
-        .pagination button:hover:not(.active) {
-            background-color: #e9ecef;
-        }
-        
-        .pagination button:disabled {
+        .page-btn.disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
         
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e0e0e0;
-            color: #7f8c8d;
+        .page-number {
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
         
-        .footer a {
+        .page-number:hover, .page-number.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .ellipsis {
+            padding: 8px 5px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eaeaea;
+            color: #666;
+        }
+        
+        .tech-support {
             color: #2196F3;
             text-decoration: none;
             font-weight: 500;
         }
         
-        .footer a:hover {
+        .tech-support:hover {
             text-decoration: underline;
         }
         
-        .notification {
+        .toast {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            border-radius: 8px;
-            background-color: #4CAF50;
-            color: white;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            transform: translateX(110%);
-            transition: transform 0.3s ease;
-            z-index: 1000;
-        }
-        
-        .notification.show {
-            transform: translateX(0);
-        }
-        
-        .copy-notification {
-            position: absolute;
-            top: -30px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             background-color: #4CAF50;
             color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            white-space: nowrap;
+            padding: 12px 25px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             opacity: 0;
             transition: opacity 0.3s;
+            z-index: 1000;
         }
         
-        .address-cell:hover .copy-notification {
+        .toast.show {
             opacity: 1;
         }
         
         @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-            
-            h1 {
-                font-size: 2rem;
-            }
-            
             .controls {
-                padding: 15px;
-            }
-            
-            .input-group {
                 flex-direction: column;
                 align-items: stretch;
             }
             
-            button {
-                padding: 10px 15px;
+            .input-group {
+                width: 100%;
+            }
+            
+            .btn-group {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .btn {
+                flex: 1;
+                min-width: 120px;
             }
             
             th, td {
-                padding: 10px;
+                padding: 10px 8px;
+                font-size: 0.9rem;
             }
             
-            .pagination button {
-                padding: 6px 12px;
-                font-size: 0.9rem;
+            h1 {
+                font-size: 1.8rem;
             }
         }
         
         @media (max-width: 480px) {
-            h1 {
-                font-size: 1.8rem;
+            .container {
+                padding: 15px;
             }
             
-            .subtitle {
-                font-size: 0.95rem;
+            .page-number {
+                padding: 6px 10px;
+                font-size: 0.9rem;
             }
             
-            .btn-group {
-                flex-direction: column;
-            }
-            
-            .pagination {
-                gap: 5px;
-            }
-            
-            .pagination button {
-                min-width: 30px;
-                padding: 5px 8px;
-                font-size: 0.85rem;
+            .page-btn {
+                padding: 6px 10px;
             }
         }
     </style>
@@ -364,184 +297,163 @@
     <div class="container">
         <header>
             <h1>钱包地址生成器</h1>
-            <p class="subtitle">生成符合ERC-20/TRC-20标准的模拟钱包地址，用于测试或演示目的</p>
+            <p class="description">随机生成ERC-20（以太坊）和TRC-20（波场）格式的钱包地址</p>
         </header>
         
         <div class="controls">
             <div class="input-group">
-                <label for="count">生成数量：</label>
-                <input type="number" id="count" min="1" value="10">
+                <label for="address-count">生成数量：</label>
+                <input type="number" id="address-count" min="1" value="10">
             </div>
             
             <div class="btn-group">
-                <button class="generate-btn" id="generate-btn">
-                    <svg xmlns=" http://www.w3.org/2000/svg " width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-                    </svg>
-                    生成钱包地址
+                <button class="btn btn-primary" id="generate-btn">
+                    <span>生成钱包地址</span>
                 </button>
-                
-                <button class="reset-btn" id="reset-btn">
-                    <svg xmlns=" http://www.w3.org/2000/svg " width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5zm5 1a.5.5 0 0 0-1 0v7a.5.5 0 0 0 1 0v-7z"/>
-                    </svg>
-                    重置
+                <button class="btn btn-reset" id="reset-btn">
+                    <span>重置数据</span>
                 </button>
-                
-                <button class="export-btn" id="export-btn">
-                    <svg xmlns=" http://www.w3.org/2000/svg " width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                    </svg>
-                    导出Excel
+                <button class="btn btn-export" id="export-btn">
+                    <span>导出Excel</span>
                 </button>
             </div>
         </div>
         
         <div class="table-container">
-            <table id="wallet-table">
+            <table id="address-table">
                 <thead>
                     <tr>
-                        <th width="10%">编号</th>
-                        <th width="70%">钱包地址</th>
-                        <th width="20%">钱包类型</th>
+                        <th>编号</th>
+                        <th>钱包地址</th>
+                        <th>钱包类型</th>
                     </tr>
                 </thead>
                 <tbody id="table-body">
-                    <!-- 表格内容将通过JavaScript动态生成 -->
+                    <!-- 数据将通过JS动态填充 -->
                 </tbody>
             </table>
         </div>
         
         <div class="pagination" id="pagination">
-            <!-- 分页控件将通过JavaScript动态生成 -->
+            <!-- 分页控件将通过JS动态生成 -->
         </div>
         
-        <div class="footer">
-            <p>技术支持 - <a href="#" target="_blank">艾兜兜儿</a></p>
-            <p class="disclaimer">注意：这些地址均为随机生成，仅供测试或演示使用，无真实资产关联，切勿用于实际交易。</p>
-        </div>
+        <footer>
+            <p>技术支持 - <a href="#" class="tech-support">艾兜兜儿</a></p>
+        </footer>
     </div>
     
-    <div class="notification" id="notification">操作成功！</div>
+    <div class="toast" id="toast">地址已复制到剪贴板！</div>
     
     <script>
-        // 全局变量
-        let wallets = [];
+        // 存储生成的钱包地址数据
+        let walletData = [];
         const itemsPerPage = 10;
         let currentPage = 1;
         
         // DOM元素
-        const countInput = document.getElementById('count');
+        const tableBody = document.getElementById('table-body');
+        const pagination = document.getElementById('pagination');
         const generateBtn = document.getElementById('generate-btn');
         const resetBtn = document.getElementById('reset-btn');
         const exportBtn = document.getElementById('export-btn');
-        const tableBody = document.getElementById('table-body');
-        const paginationDiv = document.getElementById('pagination');
-        const notification = document.getElementById('notification');
+        const addressCountInput = document.getElementById('address-count');
+        const toast = document.getElementById('toast');
         
-        // 生成随机钱包地址
-        function generateWalletAddress() {
+        // 初始化：尝试从localStorage加载数据
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedData = localStorage.getItem('walletData');
+            if (savedData) {
+                walletData = JSON.parse(savedData);
+                renderTable();
+            }
+        });
+        
+        // 生成随机ERC-20地址
+        function generateERC20Address() {
             const chars = '0123456789abcdef';
             let address = '0x';
             for (let i = 0; i < 40; i++) {
-                address += chars[Math.floor(Math.random() * 16)];
+                address += chars.charAt(Math.floor(Math.random() * chars.length));
             }
             return address;
         }
         
-        // 随机选择钱包类型
-        function getRandomWalletType() {
-            return Math.random() > 0.5 ? 'erc' : 'trc';
+        // 生成随机TRC-20地址
+        function generateTRC20Address() {
+            const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+            let address = 'T';
+            for (let i = 0; i < 33; i++) {
+                address += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return address;
         }
         
-        // 生成钱包数据
-        function generateWallets(count) {
-            wallets = [];
-            for (let i = 1; i <= count; i++) {
-                wallets.push({
-                    id: i,
-                    address: generateWalletAddress(),
-                    type: getRandomWalletType()
+        // 生成钱包地址
+        function generateAddresses(count) {
+            const newData = [];
+            for (let i = 0; i < count; i++) {
+                const type = Math.random() > 0.5 ? 'ERC-20' : 'TRC-20';
+                const address = type === 'ERC-20' ? generateERC20Address() : generateTRC20Address();
+                newData.push({
+                    id: walletData.length + i + 1,
+                    address: address,
+                    type: type
                 });
             }
-            saveToLocalStorage();
-            renderTable();
-            renderPagination();
-            showNotification(`成功生成 ${count} 个钱包地址`);
+            return newData;
         }
         
         // 渲染表格
         function renderTable() {
             const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, wallets.length);
-            const pageWallets = wallets.slice(startIndex, endIndex);
+            const endIndex = Math.min(startIndex + itemsPerPage, walletData.length);
+            const pageData = walletData.slice(startIndex, endIndex);
             
             tableBody.innerHTML = '';
             
-            if (wallets.length === 0) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="3" style="text-align: center; padding: 30px;">
-                            暂无数据，请点击"生成钱包地址"按钮创建钱包地址
-                        </td>
-                    </tr>
-                `;
+            if (pageData.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 30px;">暂无数据，请点击"生成钱包地址"按钮创建数据</td></tr>`;
                 return;
             }
             
-            pageWallets.forEach(wallet => {
+            pageData.forEach(item => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${wallet.id}</td>
-                    <td class="address-cell">
-                        <span class="address-text">${wallet.address}</span>
-                        <span class="copy-notification">点击复制</span>
-                    </td>
-                    <td class="type-cell ${wallet.type === 'erc' ? 'erc-type' : 'trc-type'}">
-                        ${wallet.type.toUpperCase()}
-                    </td>
+                    <td>${item.id}</td>
+                    <td class="address-cell" data-address="${item.address}">${item.address}</td>
+                    <td>${item.type}</td>
                 `;
-                
-                // 添加复制功能
-                const addressCell = row.querySelector('.address-cell');
-                addressCell.addEventListener('click', () => {
-                    copyToClipboard(wallet.address);
-                    showNotification('地址已复制到剪贴板');
-                });
-                
                 tableBody.appendChild(row);
             });
-        }
-        
-        // 复制到剪贴板
-        function copyToClipboard(text) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
+            
+            // 添加复制事件监听器
+            document.querySelectorAll('.address-cell').forEach(cell => {
+                cell.addEventListener('click', () => {
+                    const address = cell.getAttribute('data-address');
+                    copyToClipboard(address);
+                });
+            });
+            
+            renderPagination();
         }
         
         // 渲染分页控件
         function renderPagination() {
-            if (wallets.length === 0) {
-                paginationDiv.innerHTML = '';
+            const totalPages = Math.ceil(walletData.length / itemsPerPage);
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
                 return;
             }
             
-            const totalPages = Math.ceil(wallets.length / itemsPerPage);
-            let paginationHTML = '';
-            
-            // 上一页按钮
-            paginationHTML += `
-                <button class="pagination-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
-                    &lt; 上一页
+            let paginationHTML = `
+                <button class="page-btn prev-btn" ${currentPage === 1 ? 'disabled' : ''}>
+                    上一页
                 </button>
             `;
             
-            // 页码按钮
+            // 计算页码范围
             const maxVisiblePages = 5;
             let startPage, endPage;
             
@@ -549,167 +461,143 @@
                 startPage = 1;
                 endPage = totalPages;
             } else {
-                const maxPagesBeforeCurrent = Math.floor(maxVisiblePages / 2);
-                const maxPagesAfterCurrent = Math.ceil(maxVisiblePages / 2) - 1;
+                const maxVisibleBeforeCurrent = Math.floor(maxVisiblePages / 2);
+                const maxVisibleAfterCurrent = Math.ceil(maxVisiblePages / 2) - 1;
                 
-                if (currentPage <= maxPagesBeforeCurrent) {
+                if (currentPage <= maxVisibleBeforeCurrent) {
                     startPage = 1;
                     endPage = maxVisiblePages;
-                } else if (currentPage + maxPagesAfterCurrent >= totalPages) {
+                } else if (currentPage + maxVisibleAfterCurrent >= totalPages) {
                     startPage = totalPages - maxVisiblePages + 1;
                     endPage = totalPages;
                 } else {
-                    startPage = currentPage - maxPagesBeforeCurrent;
-                    endPage = currentPage + maxPagesAfterCurrent;
+                    startPage = currentPage - maxVisibleBeforeCurrent;
+                    endPage = currentPage + maxVisibleAfterCurrent;
                 }
             }
             
-            // 显示省略号（如果需要）
+            // 添加页码
             if (startPage > 1) {
-                paginationHTML += `
-                    <button class="pagination-btn" onclick="goToPage(1)">1</button>
-                    <span class="pagination-ellipsis">...</span>
-                `;
+                paginationHTML += `<span class="page-number" data-page="1">1</span>`;
+                if (startPage > 2) {
+                    paginationHTML += `<span class="ellipsis">...</span>`;
+                }
             }
             
-            // 生成页码按钮
             for (let i = startPage; i <= endPage; i++) {
                 paginationHTML += `
-                    <button class="pagination-btn ${i === currentPage ? 'active' : ''}" 
-                            onclick="goToPage(${i})">
+                    <span class="page-number ${i === currentPage ? 'active' : ''}" data-page="${i}">
                         ${i}
-                    </button>
+                    </span>
                 `;
             }
             
-            // 显示省略号（如果需要）
             if (endPage < totalPages) {
-                paginationHTML += `
-                    <span class="pagination-ellipsis">...</span>
-                    <button class="pagination-btn" onclick="goToPage(${totalPages})">${totalPages}</button>
-                `;
+                if (endPage < totalPages - 1) {
+                    paginationHTML += `<span class="ellipsis">...</span>`;
+                }
+                paginationHTML += `<span class="page-number" data-page="${totalPages}">${totalPages}</span>`;
             }
             
-            // 下一页按钮
             paginationHTML += `
-                <button class="pagination-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
-                    下一页 &gt;
+                <button class="page-btn next-btn" ${currentPage === totalPages ? 'disabled' : ''}>
+                    下一页
                 </button>
             `;
             
-            paginationDiv.innerHTML = paginationHTML;
-        }
-        
-        // 跳转到指定页码
-        function goToPage(page) {
-            const totalPages = Math.ceil(wallets.length / itemsPerPage);
-            if (page < 1 || page > totalPages) return;
+            pagination.innerHTML = paginationHTML;
             
-            currentPage = page;
-            renderTable();
-            renderPagination();
+            // 添加分页事件监听器
+            document.querySelectorAll('.page-number').forEach(page => {
+                page.addEventListener('click', () => {
+                    currentPage = parseInt(page.getAttribute('data-page'));
+                    renderTable();
+                });
+            });
+            
+            document.querySelector('.prev-btn').addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable();
+                }
+            });
+            
+            document.querySelector('.next-btn').addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTable();
+                }
+            });
         }
         
-        // 导出为Excel
-        function exportToExcel() {
-            if (wallets.length === 0) {
-                showNotification('没有数据可导出');
+        // 复制到剪贴板
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast();
+            });
+        }
+        
+        // 显示提示信息
+        function showToast() {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+        
+        // 事件监听器
+        generateBtn.addEventListener('click', () => {
+            const count = parseInt(addressCountInput.value) || 10;
+            if (count < 1) {
+                alert('请输入大于0的数字');
                 return;
             }
             
-            // 准备导出数据
-            const exportData = wallets.map(wallet => ({
-                '编号': wallet.id,
-                '钱包地址': wallet.address,
-                '钱包类型': wallet.type.toUpperCase()
-            }));
+            const newData = generateAddresses(count);
+            walletData = [...walletData, ...newData];
+            
+            // 保存到localStorage
+            localStorage.setItem('walletData', JSON.stringify(walletData));
+            
+            // 重置到第一页
+            currentPage = 1;
+            renderTable();
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            if (confirm('确定要重置所有数据吗？此操作不可撤销。')) {
+                walletData = [];
+                localStorage.removeItem('walletData');
+                currentPage = 1;
+                renderTable();
+            }
+        });
+        
+        exportBtn.addEventListener('click', () => {
+            if (walletData.length === 0) {
+                alert('没有数据可导出');
+                return;
+            }
             
             // 创建工作簿
             const wb = XLSX.utils.book_new();
+            
+            // 准备数据
+            const exportData = walletData.map(item => ({
+                '编号': item.id,
+                '钱包地址': item.address,
+                '钱包类型': item.type
+            }));
+            
+            // 创建工作表
             const ws = XLSX.utils.json_to_sheet(exportData);
             
             // 将工作表添加到工作簿
             XLSX.utils.book_append_sheet(wb, ws, '钱包地址');
             
-            // 导出文件
+            // 导出Excel文件
             XLSX.writeFile(wb, '钱包地址列表.xlsx');
-            showNotification('导出成功！');
-        }
-        
-        // 重置数据
-        function resetData() {
-            wallets = [];
-            currentPage = 1;
-            countInput.value = '10';
-            saveToLocalStorage();
-            renderTable();
-            renderPagination();
-            showNotification('数据已重置');
-        }
-        
-        // 显示通知
-        function showNotification(message) {
-            notification.textContent = message;
-            notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-        
-        // 保存到本地存储
-        function saveToLocalStorage() {
-            localStorage.setItem('walletGeneratorData', JSON.stringify({
-                wallets: wallets,
-                count: countInput.value
-            }));
-        }
-        
-        // 从本地存储加载
-        function loadFromLocalStorage() {
-            const savedData = localStorage.getItem('walletGeneratorData');
-            if (savedData) {
-                const data = JSON.parse(savedData);
-                wallets = data.wallets || [];
-                countInput.value = data.count || '10';
-                
-                if (wallets.length > 0) {
-                    renderTable();
-                    renderPagination();
-                }
-            }
-        }
-        
-        // 事件监听
-        generateBtn.addEventListener('click', () => {
-            const count = parseInt(countInput.value);
-            if (isNaN(count) || count < 1) {
-                showNotification('请输入有效的数量（至少为1）');
-                return;
-            }
-            generateWallets(count);
         });
-        
-        resetBtn.addEventListener('click', resetData);
-        exportBtn.addEventListener('click', exportToExcel);
-        
-        // 限制输入框只能输入大于等于1的数字
-        countInput.addEventListener('input', function() {
-            if (this.value < 1) {
-                this.value = 1;
-            }
-        });
-        
-        // 初始化页面
-        function init() {
-            loadFromLocalStorage();
-        }
-        
-        // 全局函数
-        window.goToPage = goToPage;
-        
-        // 页面加载完成后初始化
-        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
