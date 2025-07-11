@@ -15,7 +15,7 @@
         
         body {
             font-family: 'Noto Sans SC', sans-serif;
-            background-color: #e6f2e6; /* 护眼绿色背景 */
+            background-color: #e6f2e6;
             color: #333;
             line-height: 1.6;
             padding: 20px;
@@ -53,25 +53,27 @@
         
         .controls {
             display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
+            flex-direction: column;
+            gap: 20px;
             margin-bottom: 30px;
-            align-items: center;
         }
         
         .input-group {
             display: flex;
             align-items: center;
             gap: 10px;
+            width: 100%;
+            max-width: 300px;
         }
         
         label {
             font-weight: 500;
             color: #444;
+            white-space: nowrap;
         }
         
         input[type="number"] {
-            width: 100px;
+            width: 100%;
             padding: 10px 15px;
             border: 1px solid #ddd;
             border-radius: 6px;
@@ -83,6 +85,13 @@
         input[type="number"]:focus {
             border-color: #4CAF50;
             box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            width: 100%;
         }
         
         .btn {
@@ -157,12 +166,28 @@
         .address-cell {
             cursor: pointer;
             position: relative;
-            color: #2196F3;
             font-weight: 500;
+            display: block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: all 0.2s;
         }
         
         .address-cell:hover {
-            text-decoration: underline;
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .erc-address {
+            color: #2196F3;
+            background-color: rgba(33, 150, 243, 0.1);
+        }
+        
+        .trc-address {
+            color: #FF5722;
+            background-color: rgba(255, 87, 34, 0.1);
         }
         
         .pagination {
@@ -247,24 +272,12 @@
         }
         
         @media (max-width: 768px) {
-            .controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .input-group {
-                width: 100%;
-            }
-            
             .btn-group {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 10px;
+                flex-direction: column;
             }
             
             .btn {
-                flex: 1;
-                min-width: 120px;
+                width: 100%;
             }
             
             th, td {
@@ -274,6 +287,10 @@
             
             h1 {
                 font-size: 1.8rem;
+            }
+            
+            .address-cell {
+                max-width: 150px;
             }
         }
         
@@ -289,6 +306,10 @@
             
             .page-btn {
                 padding: 6px 10px;
+            }
+            
+            .address-cell {
+                max-width: 120px;
             }
         }
     </style>
@@ -324,12 +345,14 @@
                 <thead>
                     <tr>
                         <th>编号</th>
-                        <th>钱包地址</th>
-                        <th>钱包类型</th>
+                        <th>ERC-20</th>
+                        <th>TRC-20</th>
                     </tr>
                 </thead>
                 <tbody id="table-body">
-                    <!-- 数据将通过JS动态填充 -->
+                    <tr>
+                        <td colspan="3" style="text-align: center; padding: 30px;">暂无数据，请点击"生成钱包地址"按钮创建数据</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -348,6 +371,7 @@
     <script>
         // 存储生成的钱包地址数据
         let walletData = [];
+        let lastId = 0;
         const itemsPerPage = 10;
         let currentPage = 1;
         
@@ -365,6 +389,10 @@
             const savedData = localStorage.getItem('walletData');
             if (savedData) {
                 walletData = JSON.parse(savedData);
+                // 确保ID连续
+                if (walletData.length > 0) {
+                    lastId = walletData[walletData.length - 1].id;
+                }
                 renderTable();
             }
         });
@@ -389,16 +417,15 @@
             return address;
         }
         
-        // 生成钱包地址
-        function generateAddresses(count) {
+        // 生成钱包地址对
+        function generateAddressPairs(count) {
             const newData = [];
             for (let i = 0; i < count; i++) {
-                const type = Math.random() > 0.5 ? 'ERC-20' : 'TRC-20';
-                const address = type === 'ERC-20' ? generateERC20Address() : generateTRC20Address();
+                lastId++;
                 newData.push({
-                    id: walletData.length + i + 1,
-                    address: address,
-                    type: type
+                    id: lastId,
+                    erc20: generateERC20Address(),
+                    trc20: generateTRC20Address()
                 });
             }
             return newData;
@@ -421,8 +448,8 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${item.id}</td>
-                    <td class="address-cell" data-address="${item.address}">${item.address}</td>
-                    <td>${item.type}</td>
+                    <td><span class="address-cell erc-address" data-address="${item.erc20}">${item.erc20}</span></td>
+                    <td><span class="address-cell trc-address" data-address="${item.trc20}">${item.trc20}</span></td>
                 `;
                 tableBody.appendChild(row);
             });
@@ -553,7 +580,7 @@
                 return;
             }
             
-            const newData = generateAddresses(count);
+            const newData = generateAddressPairs(count);
             walletData = [...walletData, ...newData];
             
             // 保存到localStorage
@@ -567,6 +594,7 @@
         resetBtn.addEventListener('click', () => {
             if (confirm('确定要重置所有数据吗？此操作不可撤销。')) {
                 walletData = [];
+                lastId = 0;
                 localStorage.removeItem('walletData');
                 currentPage = 1;
                 renderTable();
@@ -582,11 +610,11 @@
             // 创建工作簿
             const wb = XLSX.utils.book_new();
             
-            // 准备数据
+            // 准备数据 - 新格式
             const exportData = walletData.map(item => ({
                 '编号': item.id,
-                '钱包地址': item.address,
-                '钱包类型': item.type
+                'ERC-20': item.erc20,
+                'TRC-20': item.trc20
             }));
             
             // 创建工作表
