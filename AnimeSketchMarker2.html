@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>动漫图片转铅笔线稿工具-艾兜兜儿</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #f5f7fa;
+            --card-bg: #ffffff;
+            --primary-color: #06c;
+            --accent-color: #0071e3;
+            --text-color: #1d1d1f;
+            --light-text: #86868b;
+            --border-color: #d2d2d7;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --green-bg: #f0fff4;
+            --green-border: #c6f6d5;
+            --reset-color: #ff3b30;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin: 20px 0 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, var(--primary-color), #ff375f);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--light-text);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+        
+        .preview-section, .controls-section {
+            background-color: var(--card-bg);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 500;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title svg {
+            margin-right: 10px;
+        }
+        
+        .preview-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 2px dashed var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+            background-color: #fafafa;
+            position: relative;
+            min-height: 320px;
+        }
+        
+        .preview-area.active {
+            border-color: var(--primary-color);
+        }
+        
+        .preview-area.highlight {
+            animation: pulseBorder 1.5s infinite;
+        }
+        
+        @keyframes pulseBorder {
+            0% { border-color: var(--border-color); }
+            50% { border-color: var(--primary-color); }
+            100% { border-color: var(--border-color); }
+        }
+        
+        .preview-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            position: relative;
+        }
+        
+        #previewImage {
+            max-width: 100%;
+            max-height: 280px;
+            display: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        #previewCanvas {
+            display: none;
+            max-width: 100%;
+            max-height: 280px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .upload-instructions {
+            text-align: center;
+            padding: 25px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-icon {
+            font-size: 3.2rem;
+            color: var(--light-text);
+            margin-bottom: 12px;
+        }
+        
+        .upload-text {
+            font-size: 1rem;
+            color: var(--light-text);
+            margin-bottom: 15px;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .upload-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 102, 204, 0.3);
+        }
+        
+        .upload-btn:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 102, 204, 0.4);
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        
+        .control-value {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 7px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #d1e6fa, var(--primary-color));
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        
+        .action-btn {
+            padding: 12px 0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .convert-btn {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 102, 204, 0.3);
+        }
+        
+        .convert-btn:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 102, 204, 0.4);
+        }
+        
+        .download-btn {
+            background-color: #34c759;
+            color: white;
+            box-shadow: 0 4px 10px rgba(52, 199, 89, 0.3);
+        }
+        
+        .download-btn:hover {
+            background-color: #30b451;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(52, 199, 89, 0.4);
+        }
+        
+        .download-btn:disabled {
+            background-color: #a6a6a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .reset-btn {
+            background-color: #ff9500;
+            color: white;
+            box-shadow: 0 4px 10px rgba(255, 149, 0, 0.3);
+        }
+        
+        .reset-btn:hover {
+            background-color: #e68a00;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 149, 0, 0.4);
+        }
+        
+        .view-toggle {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            gap: 8px;
+        }
+        
+        .view-btn {
+            background-color: #f5f5f7;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .view-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .tips {
+            background-color: var(--green-bg);
+            border: 1px solid var(--green-border);
+            border-radius: 12px;
+            padding: 18px;
+            margin-top: 25px;
+            max-width: 800px;
+        }
+        
+        .tips h3 {
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            color: #2f855a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tips ul {
+            padding-left: 20px;
+        }
+        
+        .tips li {
+            margin-bottom: 7px;
+            color: #2d3748;
+            font-size: 0.95rem;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 15px 0;
+            color: var(--light-text);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border-color);
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .image-name {
+            text-align: center;
+            padding: 8px;
+            font-size: 0.85rem;
+            color: var(--light-text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .processing {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            display: none;
+            z-index: 10;
+            border-radius: 14px;
+        }
+        
+        .spinner {
+            width: 45px;
+            height: 45px;
+            border: 5px solid rgba(0, 102, 204, 0.2);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 12px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .processing-text {
+            font-size: 1rem;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+        
+        .reset-params {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 5px;
+        }
+        
+        .reset-link {
+            color: var(--reset-color);
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.2s;
+        }
+        
+        .reset-link:hover {
+            color: #d32f2f;
+            text-decoration: underline;
+        }
+        
+        .support-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .support-link:hover {
+            color: var(--accent-color);
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>动漫图片转铅笔线稿</h1>
+            <p class="subtitle">上传动漫图片，轻松转换为铅笔线稿，为您的孩子创造涂色乐趣</p>
+        </header>
+        
+        <div class="app-container">
+            <div class="preview-section">
+                <h2 class="section-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19Z" fill="#0071E3"/>
+                        <path d="M14.14 11.96L10.97 8.79L6 13.76V18H10.24L15.21 13.03L14.14 11.96Z" fill="#0071E3"/>
+                        <path d="M15.54 10.56L16.6 9.5L14.48 7.4L13.42 8.46L15.54 10.56Z" fill="#0071E3"/>
+                    </svg>
+                    图片预览
+                </h2>
+                <div class="preview-area highlight" id="dropArea">
+                    <div class="processing" id="processingIndicator">
+                        <div class="spinner"></div>
+                        <div class="processing-text">正在生成线稿...</div>
+                    </div>
+                    <div class="preview-content">
+                        <div class="upload-instructions" id="uploadInstructions">
+                            <div class="upload-icon">
+                                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4C9.11 4 6.6 5.64 5.35 8.04C2.34 8.36 0 10.91 0 14C0 17.31 2.69 20 6 20H19C21.76 20 24 17.76 24 15C24 12.36 21.95 10.22 19.35 10.04ZM19 18H6C3.79 18 2 16.21 2 14C2 11.95 3.53 10.24 5.56 10.03L6.63 9.92L7.13 8.97C8.08 7.14 9.94 6 12 6C14.62 6 16.88 7.86 17.39 10.43L17.69 11.93L19.22 12.04C20.78 12.14 22 13.45 22 15C22 16.65 20.65 18 19 18ZM8 13H10.55V16H13.45V13H16L12 9L8 13Z" fill="#86868B"/>
+                                </svg>
+                            </div>
+                            <p class="upload-text">拖放图片到此处，或点击下方按钮上传</p>
+                            <div class="file-input-wrapper">
+                                <button class="upload-btn">选择图片</button>
+                                <input type="file" id="fileInput" accept="image/*">
+                            </div>
+                        </div>
+                        <img id="previewImage" alt="预览图片">
+                        <canvas id="previewCanvas"></canvas>
+                    </div>
+                    <div class="image-name" id="fileName"></div>
+                </div>
+                
+                <div class="view-toggle">
+                    <button class="view-btn active" id="viewOriginal">原图</button>
+                    <button class="view-btn" id="viewSketch">铅笔线稿</button>
+                </div>
+            </div>
+            
+            <div class="controls-section">
+                <h2 class="section-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 17V19H9V17H3ZM3 5V7H13V5H3ZM13 21V19H21V17H13V15H11V21H13ZM7 9V11H3V13H7V15H9V9H7ZM21 13V11H11V13H21ZM15 9H17V7H21V5H17V3H15V9Z" fill="#0071E3"/>
+                    </svg>
+                    参数设置
+                </h2>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>线条强度</span>
+                            <span class="control-value" id="strengthValue">5</span>
+                        </div>
+                        <input type="range" min="1" max="10" value="5" class="slider" id="strengthSlider">
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>平滑度</span>
+                            <span class="control-value" id="smoothnessValue">3</span>
+                        </div>
+                        <input type="range" min="1" max="10" value="3" class="slider" id="smoothnessSlider">
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>边缘阈值</span>
+                            <span class="control-value" id="thresholdValue">128</span>
+                        </div>
+                        <input type="range" min="0" max="255" value="128" class="slider" id="thresholdSlider">
+                    </div>
+                    
+                    <div class="reset-params">
+                        <span class="reset-link" id="resetParams">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4C7.58 4 4.01 7.58 4.01 12C4.01 16.42 7.58 20 12 20C15.73 20 18.84 17.45 19.73 14H17.65C16.83 16.33 14.61 18 12 18C8.69 18 6 15.31 6 12C6 8.69 8.69 6 12 6C13.66 6 15.14 6.69 16.22 7.78L13 11H20V4L17.65 6.35Z" fill="#ff3b30"/>
+                            </svg>
+                            重置参数
+                        </span>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="action-btn convert-btn" id="convertBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4C7.58 4 4.01 7.58 4.01 12C4.01 16.42 7.58 20 12 20C15.73 20 18.84 17.45 19.73 14H17.65C16.83 16.33 14.61 18 12 18C8.69 18 6 15.31 6 12C6 8.69 8.69 6 12 6C13.66 6 15.14 6.69 16.22 7.78L13 11H20V4L17.65 6.35Z" fill="white"/>
+                            </svg>
+                            转为铅笔线稿
+                        </button>
+                        <button class="action-btn download-btn" id="downloadBtn" disabled>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 9H15V3H9V9H5L12 16L19 9ZM5 18V20H19V18H5Z" fill="white"/>
+                            </svg>
+                            下载线稿
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tips">
+            <h3>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 7H13V9H11V7ZM11 11H13V17H11V11ZM12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z" fill="#2f855a"/>
+                </svg>
+                使用小贴士
+            </h3>
+            <ul>
+                <li>上传清晰的动漫图片以获得最佳转换效果</li>
+                <li>点击"铅笔线稿"按钮可自动应用最优参数并生成</li>
+                <li>调整"线条强度"控制轮廓线的粗细程度</li>
+                <li>"平滑度"参数可减少噪点，使线条更流畅</li>
+                <li>"边缘阈值"影响轮廓识别的灵敏度</li>
+                <li>转换完成后，可下载线稿供孩子涂色使用</li>
+            </ul>
+        </div>
+    </div>
+    
+    <footer>
+        <p>动漫图片转铅笔线稿工具 &copy; 2025 - 让孩子享受涂色乐趣</p>
+        <p>技术支持: <a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" class="support-link" target="_blank">艾兜兜儿</a></p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const fileInput = document.getElementById('fileInput');
+            const dropArea = document.getElementById('dropArea');
+            const previewImage = document.getElementById('previewImage');
+            const previewCanvas = document.getElementById('previewCanvas');
+            const fileName = document.getElementById('fileName');
+            const viewOriginal = document.getElementById('viewOriginal');
+            const viewSketch = document.getElementById('viewSketch');
+            const strengthSlider = document.getElementById('strengthSlider');
+            const smoothnessSlider = document.getElementById('smoothnessSlider');
+            const thresholdSlider = document.getElementById('thresholdSlider');
+            const strengthValue = document.getElementById('strengthValue');
+            const smoothnessValue = document.getElementById('smoothnessValue');
+            const thresholdValue = document.getElementById('thresholdValue');
+            const convertBtn = document.getElementById('convertBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const processingIndicator = document.getElementById('processingIndicator');
+            const uploadInstructions = document.getElementById('uploadInstructions');
+            const resetParams = document.getElementById('resetParams');
+            
+            // 当前状态
+            let originalImage = null;
+            let sketchImageData = null;
+            
+            // 初始化滑块值显示
+            strengthValue.textContent = strengthSlider.value;
+            smoothnessValue.textContent = smoothnessSlider.value;
+            thresholdValue.textContent = thresholdSlider.value;
+            
+            // 滑块事件监听
+            strengthSlider.addEventListener('input', () => {
+                strengthValue.textContent = strengthSlider.value;
+            });
+            
+            smoothnessSlider.addEventListener('input', () => {
+                smoothnessValue.textContent = smoothnessSlider.value;
+            });
+            
+            thresholdSlider.addEventListener('input', () => {
+                thresholdValue.textContent = thresholdSlider.value;
+            });
+            
+            // 文件选择处理
+            fileInput.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    handleFile(this.files[0]);
+                }
+            });
+            
+            // 拖放功能
+            dropArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('active');
+            });
+            
+            dropArea.addEventListener('dragleave', function() {
+                this.classList.remove('active');
+            });
+            
+            dropArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('active');
+                
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // 处理上传的文件
+            function handleFile(file) {
+                // 检查文件类型
+                if (!file.type.match('image.*')) {
+                    alert('请上传图片文件！');
+                    return;
+                }
+                
+                // 清空历史线稿数据
+                sketchImageData = null;
+                downloadBtn.disabled = true;
+                
+                // 更新文件名显示
+                fileName.textContent = file.name;
+                
+                // 读取文件
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    // 隐藏上传提示
+                    uploadInstructions.style.display = 'none';
+                    
+                    // 显示预览图片
+                    previewImage.src = e.target.result;
+                    previewImage.style.display = 'block';
+                    previewCanvas.style.display = 'none';
+                    
+                    // 保存原始图片
+                    originalImage = new Image();
+                    originalImage.src = e.target.result;
+                    originalImage.onload = function() {
+                        // 移除高亮动画
+                        dropArea.classList.remove('highlight');
+                        
+                        // 默认显示原图
+                        viewOriginal.classList.add('active');
+                        viewSketch.classList.remove('active');
+                    };
+                };
+                
+                reader.readAsDataURL(file);
+            }
+            
+            // 视图切换
+            viewOriginal.addEventListener('click', function() {
+                if (originalImage) {
+                    this.classList.add('active');
+                    viewSketch.classList.remove('active');
+                    previewImage.style.display = 'block';
+                    previewCanvas.style.display = 'none';
+                }
+            });
+            
+            viewSketch.addEventListener('click', function() {
+                if (!originalImage) {
+                    alert('请先上传图片！');
+                    return;
+                }
+                
+                // 如果没有线稿，自动应用最优参数并生成
+                if (!sketchImageData) {
+                    applyOptimalSettings();
+                    convertToSketch();
+                } else {
+                    // 如果已经有线稿，直接切换视图
+                    this.classList.add('active');
+                    viewOriginal.classList.remove('active');
+                    previewImage.style.display = 'none';
+                    previewCanvas.style.display = 'block';
+                }
+            });
+            
+            // 应用最优参数设置
+            function applyOptimalSettings() {
+                strengthSlider.value = 7;
+                smoothnessSlider.value = 5;
+                thresholdSlider.value = 100;
+                
+                strengthValue.textContent = '7';
+                smoothnessValue.textContent = '5';
+                thresholdValue.textContent = '100';
+            }
+            
+            // 重置参数
+            resetParams.addEventListener('click', function() {
+                strengthSlider.value = 5;
+                smoothnessSlider.value = 3;
+                thresholdSlider.value = 128;
+                
+                strengthValue.textContent = '5';
+                smoothnessValue.textContent = '3';
+                thresholdValue.textContent = '128';
+            });
+            
+            // 转换为铅笔线稿
+            convertBtn.addEventListener('click', function() {
+                if (!originalImage) {
+                    alert('请先上传图片！');
+                    return;
+                }
+                
+                convertToSketch();
+            });
+            
+            // 转换函数
+            function convertToSketch() {
+                // 显示处理中指示器
+                processingIndicator.style.display = 'flex';
+                
+                // 模拟处理时间
+                setTimeout(() => {
+                    generateSketch();
+                    processingIndicator.style.display = 'none';
+                }, 1500);
+            }
+            
+            // 生成铅笔线稿
+            function generateSketch() {
+                const canvas = previewCanvas;
+                const ctx = canvas.getContext('2d');
+                
+                // 设置canvas尺寸
+                const maxWidth = 550;
+                const maxHeight = 350;
+                let width = originalImage.width;
+                let height = originalImage.height;
+                
+                // 按比例缩放
+                if (width > maxWidth) {
+                    height = height * (maxWidth / width);
+                    width = maxWidth;
+                }
+                if (height > maxHeight) {
+                    width = width * (maxHeight / height);
+                    height = maxHeight;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // 绘制原始图片
+                ctx.drawImage(originalImage, 0, 0, width, height);
+                
+                // 获取图像数据
+                const imageData = ctx.getImageData(0, 0, width, height);
+                const data = imageData.data;
+                
+                // 转换为灰度
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    
+                    // 灰度公式
+                    const gray = 0.2989 * r + 0.5870 * g + 0.1140 * b;
+                    
+                    data[i] = gray;
+                    data[i + 1] = gray;
+                    data[i + 2] = gray;
+                }
+                
+                // 应用简单边缘检测（Sobel算子）
+                const sobelData = new Uint8ClampedArray(data);
+                
+                // 获取平滑度参数
+                const smoothness = parseInt(smoothnessSlider.value);
+                
+                for (let y = 1; y < height - 1; y++) {
+                    for (let x = 1; x < width - 1; x++) {
+                        const idx = (y * width + x) * 4;
+                        
+                        // 获取周围像素的灰度值
+                        const topLeft = getGrayAt(sobelData, x-1, y-1, width);
+                        const top = getGrayAt(sobelData, x, y-1, width);
+                        const topRight = getGrayAt(sobelData, x+1, y-1, width);
+                        const left = getGrayAt(sobelData, x-1, y, width);
+                        const right = getGrayAt(sobelData, x+1, y, width);
+                        const bottomLeft = getGrayAt(sobelData, x-1, y+1, width);
+                        const bottom = getGrayAt(sobelData, x, y+1, width);
+                        const bottomRight = getGrayAt(sobelData, x+1, y+1, width);
+                        
+                        // 计算Sobel梯度
+                        const gx = -topLeft - 2*left - bottomLeft + topRight + 2*right + bottomRight;
+                        const gy = -topLeft - 2*top - topRight + bottomLeft + 2*bottom + bottomRight;
+                        
+                        // 计算梯度幅度
+                        let magnitude = Math.min(255, Math.sqrt(gx*gx + gy*gy));
+                        
+                        // 应用线条强度
+                        const strength = parseInt(strengthSlider.value);
+                        magnitude = magnitude * (strength / 5);
+                        
+                        // 应用阈值
+                        const threshold = parseInt(thresholdSlider.value);
+                        const value = magnitude > threshold ? 0 : 255;
+                        
+                        // 更新像素
+                        data[idx] = value;
+                        data[idx + 1] = value;
+                        data[idx + 2] = value;
+                    }
+                }
+                
+                // 保存图像数据
+                sketchImageData = imageData;
+                
+                // 绘制到Canvas
+                ctx.putImageData(imageData, 0, 0);
+                
+                // 显示铅笔线稿视图
+                viewSketch.classList.add('active');
+                viewOriginal.classList.remove('active');
+                previewImage.style.display = 'none';
+                previewCanvas.style.display = 'block';
+                
+                // 启用下载按钮
+                downloadBtn.disabled = false;
+            }
+            
+            // 辅助函数：获取指定位置的灰度值
+            function getGrayAt(data, x, y, width) {
+                const idx = (y * width + x) * 4;
+                return data[idx]; // R通道即为灰度值
+            }
+            
+            // 下载线稿
+            downloadBtn.addEventListener('click', function() {
+                if (!sketchImageData) return;
+                
+                const link = document.createElement('a');
+                link.download = '铅笔线稿_' + fileName.textContent.replace(/\.[^/.]+$/, "") + '.png';
+                link.href = previewCanvas.toDataURL('image/png');
+                link.click();
+            });
+        });
+    </script>
+</body>
+</html>
