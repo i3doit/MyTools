@@ -388,6 +388,10 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
         }
         
         .processing {
@@ -458,12 +462,57 @@
             color: var(--accent-color);
             text-decoration: underline;
         }
+        
+        .change-image-btn {
+            background: none;
+            border: none;
+            color: var(--light-text);
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.2s;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .change-image-btn:hover {
+            color: var(--primary-color);
+            background-color: rgba(0, 102, 204, 0.1);
+        }
+        
+        .image-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .clear-btn {
+            background: none;
+            border: none;
+            color: var(--reset-color);
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.2s;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .clear-btn:hover {
+            color: #d32f2f;
+            background-color: rgba(255, 59, 48, 0.1);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>动漫图片转铅笔线稿</h1>
+            <h1>动漫图片转铅笔线稿工具</h1>
             <p class="subtitle">上传动漫图片，轻松转换为铅笔线稿，为您的孩子创造涂色乐趣</p>
         </header>
         
@@ -499,6 +548,20 @@
                         <canvas id="previewCanvas"></canvas>
                     </div>
                     <div class="image-name" id="fileName"></div>
+                    <div class="image-controls">
+                        <button class="change-image-btn" id="changeImageBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 5V7H15V11H13V7H9V5H19ZM21 17V15H15V17H21ZM19 19H9V15H5V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19ZM7 5V9H3V5C3 3.9 3.9 3 5 3H15V5H7ZM3 13H11V15H3V13ZM15 13H21V11H15V13ZM7 17V13H9V17H7Z" fill="currentColor"/>
+                            </svg>
+                            更换图片
+                        </button>
+                        <button class="clear-btn" id="clearBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="currentColor"/>
+                            </svg>
+                            清除图片
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="view-toggle">
@@ -611,6 +674,8 @@
             const processingIndicator = document.getElementById('processingIndicator');
             const uploadInstructions = document.getElementById('uploadInstructions');
             const resetParams = document.getElementById('resetParams');
+            const changeImageBtn = document.getElementById('changeImageBtn');
+            const clearBtn = document.getElementById('clearBtn');
             
             // 当前状态
             let originalImage = null;
@@ -660,6 +725,45 @@
                 }
             });
             
+            // 更换图片按钮
+            changeImageBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // 清除图片按钮
+            clearBtn.addEventListener('click', function() {
+                resetPreview();
+            });
+            
+            // 重置预览区域
+            function resetPreview() {
+                // 重置状态
+                originalImage = null;
+                sketchImageData = null;
+                
+                // 清除预览
+                previewImage.src = "";
+                previewImage.style.display = 'none';
+                previewCanvas.getContext('2d').clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                previewCanvas.style.display = 'none';
+                
+                // 显示上传提示
+                uploadInstructions.style.display = 'block';
+                
+                // 清除文件名
+                fileName.textContent = "";
+                
+                // 重置按钮状态
+                downloadBtn.disabled = true;
+                
+                // 重置视图
+                viewOriginal.classList.add('active');
+                viewSketch.classList.remove('active');
+                
+                // 恢复高亮动画
+                dropArea.classList.add('highlight');
+            }
+            
             // 处理上传的文件
             function handleFile(file) {
                 // 检查文件类型
@@ -679,13 +783,13 @@
                 const reader = new FileReader();
                 
                 reader.onload = function(e) {
-                    // 隐藏上传提示
-                    uploadInstructions.style.display = 'none';
-                    
                     // 显示预览图片
                     previewImage.src = e.target.result;
                     previewImage.style.display = 'block';
                     previewCanvas.style.display = 'none';
+                    
+                    // 隐藏上传提示
+                    uploadInstructions.style.display = 'none';
                     
                     // 保存原始图片
                     originalImage = new Image();
