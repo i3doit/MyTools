@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>动漫图片转铅笔线稿工具-艾兜兜儿</title>
+    <title>动漫图片转铅笔线稿工具-程序员小艾</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -475,6 +475,7 @@
             transition: color 0.2s;
             padding: 4px 8px;
             border-radius: 4px;
+            display: none; /* 默认隐藏 */
         }
         
         .change-image-btn:hover {
@@ -501,6 +502,7 @@
             transition: color 0.2s;
             padding: 4px 8px;
             border-radius: 4px;
+            display: none; /* 默认隐藏 */
         }
         
         .clear-btn:hover {
@@ -566,7 +568,7 @@
                 
                 <div class="view-toggle">
                     <button class="view-btn active" id="viewOriginal">原图</button>
-                    <button class="view-btn" id="viewSketch">铅笔线稿</button>
+                    <button class="view-btn" id="viewSketch">预览铅笔线稿</button>
                 </div>
             </div>
             
@@ -639,7 +641,7 @@
             </h3>
             <ul>
                 <li>上传清晰的动漫图片以获得最佳转换效果</li>
-                <li>点击"铅笔线稿"按钮可自动应用最优参数并生成</li>
+                <li>点击"预览铅笔线稿"按钮可自动应用最优参数并生成</li>
                 <li>调整"线条强度"控制轮廓线的粗细程度</li>
                 <li>"平滑度"参数可减少噪点，使线条更流畅</li>
                 <li>"边缘阈值"影响轮廓识别的灵敏度</li>
@@ -649,7 +651,7 @@
     </div>
     
     <footer>
-        <p>动漫图片转铅笔线稿工具 &copy; 2025 - 让孩子享受涂色乐趣</p>
+        <p>动漫图片转铅笔线稿工具 &copy; 2023 - 让孩子享受涂色乐趣</p>
         <p>技术支持: <a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" class="support-link" target="_blank">艾兜兜儿</a></p>
     </footer>
 
@@ -762,6 +764,10 @@
                 
                 // 恢复高亮动画
                 dropArea.classList.add('highlight');
+                
+                // 隐藏控制按钮
+                changeImageBtn.style.display = 'none';
+                clearBtn.style.display = 'none';
             }
             
             // 处理上传的文件
@@ -778,6 +784,10 @@
                 
                 // 更新文件名显示
                 fileName.textContent = file.name;
+                
+                // 显示控制按钮
+                changeImageBtn.style.display = 'flex';
+                clearBtn.style.display = 'flex';
                 
                 // 读取文件
                 const reader = new FileReader();
