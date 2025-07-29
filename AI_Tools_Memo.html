@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI工具备忘录 - 精选AI资源库</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8faf8;
+            --card-bg: #ffffff;
+            --primary-color: #2e7d32;
+            --secondary-color: #4caf50;
+            --text-color: #333333;
+            --light-text: #666666;
+            --border-color: #e0e0e0;
+            --accent-color: #388e3c;
+            --hover-color: #1b5e20;
+            --tag-free: #e8f5e9;
+            --tag-chinese: #e3f2fd;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding-top: 70px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 顶部导航栏 */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            z-index: 1000;
+            padding: 0 5%;
+        }
+        
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo i {
+            margin-right: 10px;
+            font-size: 28px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 500;
+            transition: color 0.3s;
+            font-size: 16px;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+        
+        .search-container {
+            display: flex;
+            align-items: center;
+            background: #f1f3f4;
+            border-radius: 8px;
+            padding: 8px 15px;
+            width: 300px;
+        }
+        
+        .search-container input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .search-container i {
+            color: var(--light-text);
+            margin-right: 10px;
+        }
+        
+        /* 主内容区 */
+        .container {
+            flex: 1;
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 20px;
+            width: 100%;
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 40px 0;
+            margin-bottom: 40px;
+        }
+        
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--light-text);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        /* 工具卡片样式 */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+        
+        .tool-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tool-header {
+            padding: 20px 20px 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .tool-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .tool-icon {
+            width: 40px;
+            height: 40px;
+            background: #e0f7fa;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            color: var(--primary-color);
+            font-size: 20px;
+        }
+        
+        .tool-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .tool-link {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .tool-link:hover {
+            text-decoration: underline;
+        }
+        
+        .tool-desc {
+            color: var(--light-text);
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 10px 0;
+        }
+        
+        .tool-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .tag {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .tag-free {
+            background: var(--tag-free);
+            color: var(--primary-color);
+        }
+        
+        .tag-chinese {
+            background: var(--tag-chinese);
+            color: #1976d2;
+        }
+        
+        .tag-category {
+            background: #f3e5f5;
+            color: #9c27b0;
+        }
+        
+        .tool-footer {
+            padding: 15px 20px;
+            background: #fafafa;
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--light-text);
+        }
+        
+        /* 筛选器 */
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 8px 20px;
+            border: 1px solid var(--border-color);
+            background: white;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        /* 底部区域 */
+        footer {
+            background: #fff;
+            padding: 50px 0 30px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .footer-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .link-group h3 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+        
+        .link-group ul {
+            list-style: none;
+        }
+        
+        .link-group li {
+            margin-bottom: 12px;
+        }
+        
+        .link-group a {
+            text-decoration: none;
+            color: var(--light-text);
+            transition: color 0.3s;
+            font-size: 15px;
+        }
+        
+        .link-group a:hover {
+            color: var(--primary-color);
+        }
+        
+        .contact-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            padding-top: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .copyright {
+            color: var(--light-text);
+            font-size: 14px;
+        }
+        
+        .social-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .social-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: var(--light-text);
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+        
+        .social-link:hover {
+            color: var(--primary-color);
+        }
+        
+        .social-link i {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+        
+        .support-link {
+            background: var(--primary-color);
+            color: white !important;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+        
+        .support-link:hover {
+            background: var(--hover-color);
+            color: white;
+        }
+        
+        /* 加载动画 */
+        .loader {
+            display: flex;
+            justify-content: center;
+            padding: 50px 0;
+        }
+        
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(46, 125, 50, 0.2);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 900px) {
+            .navbar {
+                flex-wrap: wrap;
+                height: auto;
+                padding: 15px 5%;
+            }
+            
+            .nav-links {
+                order: 3;
+                width: 100%;
+                justify-content: center;
+                margin-top: 15px;
+                gap: 15px;
+            }
+            
+            .search-container {
+                width: 200px;
+            }
+            
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters {
+                justify-content: flex-start;
+            }
+            
+            .contact-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .social-links {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .search-container {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <header>
+        <div class="navbar">
+            <a href="https://i3doit.github.io/AI_Tools.html" class="logo">
+                <i class="fas fa-brain"></i>
+                AI工具箱
+            </a>
+            
+            <div class="nav-links">
+                <a href="https://i3doit.github.io/AI_Tools.html">首页</a>
+                <a href="#">我的收藏</a>
+                <a href="#">更新日志</a>
+                <a href="#">关于我们</a>
+            </div>
+            
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="搜索AI工具...">
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <div class="container">
+        <div class="hero">
+            <h1>AI工具备忘录</h1>
+            <p>精选最实用的AI工具，提升您的工作效率和创造力</p>
+        </div>
+        
+        <div class="filters">
+            <button class="filter-btn active">全部工具</button>
+            <button class="filter-btn">免费工具</button>
+            <button class="filter-btn">支持中文</button>
+            <button class="filter-btn">图像生成</button>
+            <button class="filter-btn">文本处理</button>
+            <button class="filter-btn">视频编辑</button>
+        </div>
+        
+        <div class="tools-grid">
+            <!-- 工具卡片通过JS动态生成 -->
+            <div class="loader">
+                <div class="loader-spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部区域 -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <div class="link-group">
+                    <h3>关于我们</h3>
+                    <ul>
+                        <li><a href="#">团队介绍</a></li>
+                        <li><a href="#">发展历程</a></li>
+                        <li><a href="#">加入我们</a></li>
+                    </ul>
+                </div>
+                
+                <div class="link-group">
+                    <h3>资源中心</h3>
+                    <ul>
+                        <li><a href="#">更新日志</a></li>
+                        <li><a href="#">使用教程</a></li>
+                        <li><a href="#">API文档</a></li>
+                    </ul>
+                </div>
+                
+                <div class="link-group">
+                    <h3>帮助支持</h3>
+                    <ul>
+                        <li><a href="#">联系我们</a></li>
+                        <li><a href="#">常见问题</a></li>
+                        <li><a href="#">意见反馈</a></li>
+                    </ul>
+                </div>
+                
+                <div class="link-group">
+                    <h3>政策条款</h3>
+                    <ul>
+                        <li><a href="#">用户协议</a></li>
+                        <li><a href="#">隐私政策</a></li>
+                        <li><a href="#">免责声明</a></li>
+                    </ul>
+                </div>
+                
+                <div class="link-group">
+                    <h3>我的收藏</h3>
+                    <ul>
+                        <li><a href="#">收藏的工具</a></li>
+                        <li><a href="#">使用历史</a></li>
+                        <li><a href="#">个人设置</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="contact-bar">
+                <div class="copyright">
+                    © 2023 AI工具备忘录. 保留所有权利。
+                </div>
+                
+                <div class="social-links">
+                    <a href="https://t.zsxq.com/11QO9" class="support-link">
+                        <i class="fas fa-life-ring"></i> 技术支持-艾兜兜儿
+                    </a>
+                    
+                    <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" class="social-link">
+                        <i class="fab fa-weixin"></i> 微信公众号
+                    </a>
+                    
+                    <a href="mailto:contact@aitools.com" class="social-link">
+                        <i class="fas fa-envelope"></i> 联系我们
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 模拟从Google Sheets获取的数据
+        const mockToolsData = [
+            {
+                id: 1,
+                name: "ChatGPT",
+                category: "文本生成",
+                description: "OpenAI开发的强大对话AI，能够生成自然语言文本，回答问题，创作内容等",
+                link: "https://chat.openai.com",
+                icon: "fa-comment-dots",
+                isFree: true,
+                supportsChinese: true,
+                tags: ["AI对话", "写作助手"]
+            },
+            {
+                id: 2,
+                name: "Midjourney",
+                category: "图像生成",
+                description: "通过文本描述生成高质量艺术图像的AI工具，支持多种艺术风格",
+                link: "https://www.midjourney.com",
+                icon: "fa-palette",
+                isFree: false,
+                supportsChinese: false,
+                tags: ["AI绘画", "艺术创作"]
+            },
+            {
+                id: 3,
+                name: "Notion AI",
+                category: "生产力工具",
+                description: "智能笔记和组织工具，帮助整理思路、生成内容和提高工作效率",
+                link: "https://www.notion.so/product/ai",
+                icon: "fa-file-alt",
+                isFree: false,
+                supportsChinese: true,
+                tags: ["笔记", "项目管理"]
+            },
+            {
+                id: 4,
+                name: "Runway ML",
+                category: "视频编辑",
+                description: "AI视频编辑工具，提供智能擦除、运动跟踪、视频生成等高级功能",
+                link: "https://runwayml.com",
+                icon: "fa-video",
+                isFree: true,
+                supportsChinese: false,
+                tags: ["视频生成", "特效"]
+            },
+            {
+                id: 5,
+                name: "Grammarly",
+                category: "文本处理",
+                description: "AI写作助手，提供语法检查、拼写纠正和写作风格建议",
+                link: "https://www.grammarly.com",
+                icon: "fa-spell-check",
+                isFree: true,
+                supportsChinese: false,
+                tags: ["写作辅助", "语法检查"]
+            },
+            {
+                id: 6,
+                name: "Descript",
+                category: "音频处理",
+                description: "通过文本编辑音频和视频，提供语音合成、转录和剪辑功能",
+                link: "https://www.descript.com",
+                icon: "fa-microphone-alt",
+                isFree: false,
+                supportsChinese: false,
+                tags: ["音频编辑", "语音合成"]
+            }
+        ];
+
+        // 渲染工具卡片
+        function renderTools(tools) {
+            const toolsGrid = document.querySelector('.tools-grid');
+            toolsGrid.innerHTML = '';
+            
+            tools.forEach(tool => {
+                const toolCard = document.createElement('div');
+                toolCard.className = 'tool-card';
+                
+                toolCard.innerHTML = `
+                    <div class="tool-header">
+                        <div class="tool-title">
+                            <div class="tool-icon">
+                                <i class="fas ${tool.icon}"></i>
+                            </div>
+                            <div>
+                                <div class="tool-name">${tool.name}</div>
+                                <a href="${tool.link}" target="_blank" class="tool-link">访问网站</a>
+                            </div>
+                        </div>
+                        <div class="tool-desc">${tool.description}</div>
+                        <div class="tool-tags">
+                            <span class="tag tag-category">${tool.category}</span>
+                            ${tool.isFree ? '<span class="tag tag-free">免费</span>' : ''}
+                            ${tool.supportsChinese ? '<span class="tag tag-chinese">支持中文</span>' : ''}
+                            ${tool.tags.map(tag => `<span class="tag tag-category">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div class="tool-footer">
+                        <span>ID: #${tool.id.toString().padStart(3, '0')}</span>
+                        <span><i class="far fa-star"></i> 收藏</span>
+                    </div>
+                `;
+                
+                toolsGrid.appendChild(toolCard);
+            });
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 模拟数据加载延迟
+            setTimeout(() => {
+                renderTools(mockToolsData);
+                
+                // 添加筛选按钮事件
+                document.querySelectorAll('.filter-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        document.querySelectorAll('.filter-btn').forEach(btn => {
+                            btn.classList.remove('active');
+                        });
+                        this.classList.add('active');
+                        
+                        // 这里可以添加实际的筛选逻辑
+                    });
+                });
+                
+                // 添加搜索功能
+                const searchInput = document.querySelector('.search-container input');
+                searchInput.addEventListener('input', function(e) {
+                    const searchTerm = e.target.value.toLowerCase();
+                    const filteredTools = mockToolsData.filter(tool => 
+                        tool.name.toLowerCase().includes(searchTerm) || 
+                        tool.description.toLowerCase().includes(searchTerm) ||
+                        tool.category.toLowerCase().includes(searchTerm) ||
+                        tool.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+                    );
+                    renderTools(filteredTools);
+                });
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
