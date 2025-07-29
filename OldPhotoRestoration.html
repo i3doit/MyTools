@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>老照片修复 - 重现珍贵回忆</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo" onclick="window.location.href='https://i3doit.github.io/AI_Tools.html'">
+                    <span>AI老照片修复</span>
+                </div>
+                <div class="nav">
+                    <a href="https://i3doit.github.io/AI_Tools.html" class="nav-link">AI工具箱</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container">
+        <!-- 上传区域 -->
+        <section class="upload-section">
+            <div class="upload-container">
+                <div id="drop-area" class="drop-area">
+                    <div id="default-content" class="default-content">
+                        <<i class="fas fa-image upload-icon"></</i>
+                        <p>拖放老照片到此处，或<span class="browse-text">浏览文件</span></p>
+                        <input type="file" id="file-input" accept="image/*" hidden>
+                    </div>
+                    <div id="image-preview" class="image-preview hidden">
+                        <img id="preview-img" src="" alt="预览图">
+                        <div class="image-actions">
+                            <button id="change-image" class="action-btn">
+                                <<i class="fas fa-exchange-alt"></</i> 更换图片
+                            </button>
+                            <button id="delete-image" class="action-btn delete-btn">
+                                <<i class="fas fa-trash"></</i> 删除图片
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button id="restore-btn" class="primary-btn" disabled>
+                    <<i class="fas fa-magic"></</i> AI一键修图
+                </button>
+            </div>
+        </section>
+
+        <!-- 对比和参数区域 -->
+        <section class="preview-section hidden" id="preview-section">
+            <div class="preview-controls">
+                <button class="tab-btn active" data-view="original">原图</button>
+                <button class="tab-btn" data-view="restored">修复后</button>
+                <button class="tab-btn" data-view="comparison">对比</button>
+            </div>
+
+            <div class="images-container">
+                <div class="image-wrapper original-image">
+                    <h3>原图</h3>
+                    <img id="original-img" src="" alt="原图">
+                </div>
+                <div class="image-wrapper restored-image hidden">
+                    <h3>修复后</h3>
+                    <img id="restored-img" src="" alt="修复后">
+                </div>
+                <div class="image-wrapper comparison-image hidden">
+                    <h3>对比</h3>
+                    <div class="comparison-slider">
+                        <img id="comparison-original" src="" alt="原图对比">
+                        <div class="comparison-slider-wrapper">
+                            <img id="comparison-restored" src="" alt="修复后对比">
+                        </div>
+                        <div class="slider-handle">
+                            <<i class="fas fa-arrows-h"></</i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 参数调整区域 -->
+            <div class="parameters-section">
+                <div class="section-header">
+                    <h3>精细调整</h3>
+                    <button id="reset-params" class="reset-btn">
+                        <<i class="fas fa-sync-alt"></</i> 重置参数
+                    </button>
+                </div>
+
+                <div class="params-grid">
+                    <!-- 破损修复 -->
+                    <div class="param-group">
+                        <h4>破损修复</h4>
+                        <div class="param-item">
+                            <label for="tear-repair">撕裂修复</label>
+                            <input type="range" id="tear-repair" min="0" max="100" value="70">
+                        </div>
+                        <div class="param-item">
+                            <label for="stain-removal">污渍去除</label>
+                            <input type="range" id="stain-removal" min="0" max="100" value="80">
+                        </div>
+                        <div class="param-item">
+                            <label for="mold-removal">霉斑修复</label>
+                            <input type="range" id="mold-removal" min="0" max="100" value="90">
+                        </div>
+                    </div>
+
+                    <!-- 图像质量 -->
+                    <div class="param-group">
+                        <h4>图像质量</h4>
+                        <div class="param-item">
+                            <label for="sharpness">清晰度</label>
+                            <input type="range" id="sharpness" min="0" max="100" value="60">
+                        </div>
+                        <div class="param-item">
+                            <label for="color-restore">色彩恢复</label>
+                            <input type="range" id="color-restore" min="0" max="100" value="75">
+                        </div>
+                        <div class="param-item">
+                            <label for="contrast">对比度</label>
+                            <input type="range" id="contrast" min="0" max="100" value="50">
+                        </div>
+                        <div class="param-item">
+                            <label for="brightness">亮度</label>
+                            <input type="range" id="brightness" min="0" max="100" value="50">
+                        </div>
+                    </div>
+
+                    <!-- 风格优化 -->
+                    <div class="param-group">
+                        <h4>风格优化</h4>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="style" value="vintage" checked> 复古质感保留
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="style" value="enhance"> 轻度美化
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="action-buttons">
+                <button id="undo-btn" class="secondary-btn" disabled>
+                    <<i class="fas fa-undo"></</i> 撤销
+                </button>
+                <button id="redo-btn" class="secondary-btn" disabled>
+                    <<i class="fas fa-redo"></</i> 复原
+                </button>
+                <button id="download-btn" class="primary-btn">
+                    <<i class="fas fa-download"></</i> 下载修复图
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- 底部信息 -->
+    <footer>
+        <div class="container footer-content">
+            <div class="footer-links">
+                <a href="https://t.zsxq.com/11QO9" target="_blank">技术支持-艾兜兜儿</a>
+                <a href="https://i3doit.github.io/AI_Tools.html" target="_blank">艾兜兜儿AI工具箱</a>
+            </div>
+            <div class="contact-info">
+                <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" target="_blank" class="wechat-link">
+                    <<i class="fab fa-weixin"></</i> 公众号
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
