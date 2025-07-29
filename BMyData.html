@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Sheets 数据展示</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>员工数据表</h1>
+    <table id="data-table">
+        <thead>
+            <tr>
+                <th>姓名</th>
+                <th>职位</th>
+                <th>部门</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        // 配置信息 - 替换为你的实际信息
+        const SHEET_ID = '1-WO9PGnJOZDlR38OZW_l96Sv3brp2AT5CwMI4bFdg5U';
+        const API_KEY = 'AKfycby8popN9VCHBCaBTNs_mQxndeSMpuZXNHBuosNdqDkG6-rIuBqlljBUEIerwYMg73rXvQ';
+        const RANGE = 'AI_Tools!A:I';  // 格式：工作表名!单元格范围
+
+        // 从 Google Sheets 获取数据
+        async function fetchSheetData() {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                processData(data.values);
+            } catch (error) {
+                console.error('数据获取失败:', error);
+                document.getElementById('data-table').innerHTML = 
+                    '<tr><td colspan="3">数据加载失败，请检查控制台</td></tr>';
+            }
+        }
+
+        // 处理并显示数据
+        function processData(rows) {
+            const tbody = document.querySelector('#data-table tbody');
+            tbody.innerHTML = '';  // 清空现有内容
+            
+            // 从第二行开始（跳过标题行）
+            rows.slice(1).forEach(row => {
+                const tr = document.createElement('tr');
+                row.forEach(cell => {
+                    const td = document.createElement('td');
+                    td.textContent = cell;
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 页面加载时获取数据
+        window.addEventListener('DOMContentLoaded', fetchSheetData);
+    </script>
+</body>
+</html>
