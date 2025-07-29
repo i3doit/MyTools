@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>老照片修复工具</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0071e3;
+            --secondary-color: #86868b;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #1d1d1f;
+            --border-color: #d2d2d7;
+            --success-color: #30d158;
+            --warning-color: #ff9f0a;
+            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            color: var(--secondary-color);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .image-section {
+            flex: 1;
+            min-width: 300px;
+            background: var(--card-bg);
+            border-radius: 18px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-section {
+            flex: 1;
+            min-width: 300px;
+            background: var(--card-bg);
+            border-radius: 18px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            padding: 25px;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 14px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: rgba(0,113,227,0.03);
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(0,113,227,0.06);
+        }
+
+        .upload-icon {
+            font-size: 3.5rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background-color: #0062c4;
+            transform: translateY(-2px);
+        }
+
+        .btn i {
+            font-size: 1.1rem;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(0,0,0,0.03);
+            transform: none;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+        }
+
+        .btn-success:hover {
+            background-color: #2ac350;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+
+        .btn-warning:hover {
+            background-color: #f29400;
+        }
+
+        .image-preview-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 100%;
+            display: none;
+        }
+
+        .image-actions {
+            display: none;
+            margin-top: 20px;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .image-actions.active {
+            display: flex;
+        }
+
+        .param-group {
+            margin-bottom: 25px;
+        }
+
+        .param-title {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .value-display {
+            width: 50px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .history-controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--secondary-color);
+            border-top: 1px solid var(--border-color);
+            margin-top: 20px;
+            font-size: 0.95rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--primary-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .image-preview-container {
+                height: 300px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+
+        /* 加载动画 */
+        .loader {
+            display: none;
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0,113,227,0.2);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .restore-notice {
+            background-color: rgba(255, 159, 10, 0.1);
+            border-left: 4px solid var(--warning-color);
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">老照片修复工具</div>
+            <div class="tagline">让珍贵记忆重现光彩 - 专业修复褪色、破损、模糊的老照片</div>
+        </header>
+
+        <div class="main-content">
+            <div class="image-section">
+                <h2 class="section-title">照片预览</h2>
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <div class="upload-text">拖放照片到此处或点击上传</div>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    <button class="btn" id="selectBtn">
+                        <i class="fas fa-folder-open"></i>选择照片
+                    </button>
+                </div>
+                
+                <div class="image-preview-container">
+                    <img id="previewImage" class="image-preview" alt="照片预览">
+                    <div class="loader" id="loader"></div>
+                </div>
+                
+                <div class="image-actions" id="imageActions">
+                    <button class="btn btn-outline" id="changeBtn">
+                        <i class="fas fa-sync"></i>更换图片
+                    </button>
+                    <button class="btn btn-outline" id="deleteBtn">
+                        <i class="fas fa-trash-alt"></i>删除图片
+                    </button>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h2 class="section-title">修复控制面板</h2>
+                
+                <div class="restore-notice">
+                    <i class="fas fa-lightbulb"></i> AI一键修复会自动分析照片问题并应用最优参数，您也可以手动微调
+                </div>
+                
+                <div class="param-group">
+                    <div class="param-title">
+                        <span>AI一键修复</span>
+                    </div>
+                    <button class="btn btn-warning" id="aiRestoreBtn" style="width: 100%;">
+                        <i class="fas fa-magic"></i> AI一键修复照片
+                    </button>
+                </div>
+                
+                <div class="param-group">
+                    <div class="param-title">
+                        <span>精细调整参数</span>
+                        <button class="btn btn-outline" id="resetParamsBtn" style="padding: 5px 10px; font-size: 0.9rem;">
+                            <i class="fas fa-undo"></i> 重置
+                        </button>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label>清晰度:</label>
+                        <input type="range" min="0" max="200" value="100" class="slider" id="sharpnessSlider">
+                        <div class="value-display" id="sharpnessValue">100%</div>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label>对比度:</label>
+                        <input type="range" min="0" max="200" value="100" class="slider" id="contrastSlider">
+                        <div class="value-display" id="contrastValue">100%</div>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label>亮度:</label>
+                        <input type="range" min="0" max="200" value="100" class="slider" id="brightnessSlider">
+                        <div class="value-display" id="brightnessValue">100%</div>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label>饱和度:</label>
+                        <input type="range" min="0" max="200" value="100" class="slider" id="saturationSlider">
+                        <div class="value-display" id="saturationValue">100%</div>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label>褪色修复:</label>
+                        <input type="range" min="0" max="100" value="0" class="slider" id="fadeSlider">
+                        <div class="value-display" id="fadeValue">0%</div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn" id="saveBtn">
+                        <i class="fas fa-download"></i> 保存修复结果
+                    </button>
+                    <button class="btn btn-outline" id="compareBtn">
+                        <i class="fas fa-exchange-alt"></i> 对比原图
+                    </button>
+                </div>
+                
+                <div class="history-controls">
+                    <button class="btn btn-outline" id="undoBtn">
+                        <i class="fas fa-undo"></i> 撤销
+                    </button>
+                    <button class="btn btn-outline" id="redoBtn">
+                        <i class="fas fa-redo"></i> 重做
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <div>© 2023 老照片修复工具 - 让珍贵记忆永存</div>
+            <div class="footer-links">
+                <a href="https://i3doit.github.io/AI_Tools.html">
+                    <i class="fas fa-home"></i> 艾兜兜儿AI工具箱主页
+                </a>
+                <a href="https://t.zsxq.com/11QO9">
+                    <i class="fas fa-headset"></i> 技术支持-艾兜兜儿
+                </a>
+                <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg">
+                    <i class="fab fa-weixin"></i> 关注微信公众号
+                </a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM元素引用
+            const fileInput = document.getElementById('fileInput');
+            const uploadArea = document.getElementById('uploadArea');
+            const selectBtn = document.getElementById('selectBtn');
+            const previewImage = document.getElementById('previewImage');
+            const imageActions = document.getElementById('imageActions');
+            const changeBtn = document.getElementById('changeBtn');
+            const deleteBtn = document.getElementById('deleteBtn');
+            const aiRestoreBtn = document.getElementById('aiRestoreBtn');
+            const resetParamsBtn = document.getElementById('resetParamsBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const compareBtn = document.getElementById('compareBtn');
+            const undoBtn = document.getElementById('undoBtn');
+            const redoBtn = document.getElementById('redoBtn');
+            const loader = document.getElementById('loader');
+            
+            // 滑块元素
+            const sharpnessSlider = document.getElementById('sharpnessSlider');
+            const contrastSlider = document.getElementById('contrastSlider');
+            const brightnessSlider = document.getElementById('brightnessSlider');
+            const saturationSlider = document.getElementById('saturationSlider');
+            const fadeSlider = document.getElementById('fadeSlider');
+            
+            // 滑块值显示元素
+            const sharpnessValue = document.getElementById('sharpnessValue');
+            const contrastValue = document.getElementById('contrastValue');
+            const brightnessValue = document.getElementById('brightnessValue');
+            const saturationValue = document.getElementById('saturationValue');
+            const fadeValue = document.getElementById('fadeValue');
+            
+            // 全局变量
+            let originalImage = null;
+            let historyStack = [];
+            let currentState = -1;
+            let isComparing = false;
+            
+            // 初始化事件监听器
+            function initEventListeners() {
+                // 文件选择相关事件
+                selectBtn.addEventListener('click', () => fileInput.click());
+                uploadArea.addEventListener('click', () => fileInput.click());
+                fileInput.addEventListener('change', handleFileSelect);
+                changeBtn.addEventListener('click', () => fileInput.click());
+                deleteBtn.addEventListener('click', resetTool);
+                
+                // 修复功能按钮
+                aiRestoreBtn.addEventListener('click', applyAIRestore);
+                resetParamsBtn.addEventListener('click', resetParameters);
+                saveBtn.addEventListener('click', saveImage);
+                compareBtn.addEventListener('click', toggleCompare);
+                
+                // 历史控制
+                undoBtn.addEventListener('click', undoAction);
+                redoBtn.addEventListener('click', redoAction);
+                
+                // 滑块事件
+                sharpnessSlider.addEventListener('input', updateImageFilters);
+                contrastSlider.addEventListener('input', updateImageFilters);
+                brightnessSlider.addEventListener('input', updateImageFilters);
+                saturationSlider.addEventListener('input', updateImageFilters);
+                fadeSlider.addEventListener('input', updateImageFilters);
+                
+                // 拖放功能
+                uploadArea.addEventListener('dragover', handleDragOver);
+                uploadArea.addEventListener('drop', handleDrop);
+            }
+            
+            // 处理文件选择
+            function handleFileSelect(e) {
+                const file = e.target.files[0] || (e.dataTransfer && e.dataTransfer.files[0]);
+                if (!file || !file.type.match('image.*')) return;
+                
+                resetTool();
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    originalImage = e.target.result;
+                    previewImage.src = originalImage;
+                    previewImage.style.display = 'block';
+                    imageActions.classList.add('active');
+                    
+                    // 初始化历史栈
+                    historyStack = [getCurrentParams()];
+                    currentState = 0;
+                    
+                    // 重置参数
+                    resetParameters();
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // 重置工具状态
+            function resetTool() {
+                previewImage.style.display = 'none';
+                imageActions.classList.remove('active');
+                fileInput.value = '';
+                originalImage = null;
+                historyStack = [];
+                currentState = -1;
+                resetParameters();
+            }
+            
+            // 重置所有参数
+            function resetParameters() {
+                sharpnessSlider.value = 100;
+                contrastSlider.value = 100;
+                brightnessSlider.value = 100;
+                saturationSlider.value = 100;
+                fadeSlider.value = 0;
+                
+                updateSliderDisplays();
+                updateImageFilters();
+            }
+            
+            // 更新滑块显示值
+            function updateSliderDisplays() {
+                sharpnessValue.textContent = sharpnessSlider.value + '%';
+                contrastValue.textContent = contrastSlider.value + '%';
+                brightnessValue.textContent = brightnessSlider.value + '%';
+                saturationValue.textContent = saturationSlider.value + '%';
+                fadeValue.textContent = fadeSlider.value + '%';
+            }
+            
+            // 应用AI一键修复
+            function applyAIRestore() {
+                if (!originalImage) return;
+                
+                // 显示加载动画
+                loader.style.display = 'block';
+                aiRestoreBtn.disabled = true;
+                
+                // 模拟AI处理时间
+                setTimeout(() => {
+                    // 应用AI优化参数
+                    sharpnessSlider.value = 140;
+                    contrastSlider.value = 130;
+                    brightnessSlider.value = 115;
+                    saturationSlider.value = 125;
+                    fadeSlider.value = 85;
+                    
+                    updateSliderDisplays();
+                    updateImageFilters();
+                    
+                    // 保存到历史记录
+                    saveToHistory();
+                    
+                    // 隐藏加载动画
+                    loader.style.display = 'none';
+                    aiRestoreBtn.disabled = false;
+                }, 1500);
+            }
+            
+            // 更新图像滤镜效果
+            function updateImageFilters() {
+                if (!previewImage.src) return;
+                
+                updateSliderDisplays();
+                
+                // 应用CSS滤镜
+                previewImage.style.filter = `
+                    brightness(${brightnessSlider.value}%)
+                    contrast(${contrastSlider.value}%)
+                    saturate(${saturationSlider.value}%)
+                    grayscale(${fadeSlider.value}%)
+                `;
+            }
+            
+            // 保存到历史记录
+            function saveToHistory() {
+                const currentParams = getCurrentParams();
+                
+                // 如果当前不是最新状态，移除之后的状态
+                if (currentState < historyStack.length - 1) {
+                    historyStack = historyStack.slice(0, currentState + 1);
+                }
+                
+                historyStack.push(currentParams);
+                currentState = historyStack.length - 1;
+                updateHistoryButtons();
+            }
+            
+            // 获取当前参数状态
+            function getCurrentParams() {
+                return {
+                    sharpness: sharpnessSlider.value,
+                    contrast: contrastSlider.value,
+                    brightness: brightnessSlider.value,
+                    saturation: saturationSlider.value,
+                    fade: fadeSlider.value
+                };
+            }
+            
+            // 应用参数状态
+            function applyParams(params) {
+                sharpnessSlider.value = params.sharpness;
+                contrastSlider.value = params.contrast;
+                brightnessSlider.value = params.brightness;
+                saturationSlider.value = params.saturation;
+                fadeSlider.value = params.fade;
+                
+                updateSliderDisplays();
+                updateImageFilters();
+            }
+            
+            // 撤销操作
+            function undoAction() {
+                if (currentState > 0) {
+                    currentState--;
+                    applyParams(historyStack[currentState]);
+                    updateHistoryButtons();
+                }
+            }
+            
+            // 重做操作
+            function redoAction() {
+                if (currentState < historyStack.length - 1) {
+                    currentState++;
+                    applyParams(historyStack[currentState]);
+                    updateHistoryButtons();
+                }
+            }
+            
+            // 更新历史按钮状态
+            function updateHistoryButtons() {
+                undoBtn.disabled = currentState <= 0;
+                redoBtn.disabled = currentState >= historyStack.length - 1;
+            }
+            
+            // 切换对比视图
+            function toggleCompare() {
+                if (!originalImage) return;
+                
+                isComparing = !isComparing;
+                
+                if (isComparing) {
+                    previewImage.style.opacity = '0.5';
+                    compareBtn.innerHTML = '<i class="fas fa-exchange-alt"></i> 返回修复图';
+                    compareBtn.classList.add('btn-success');
+                } else {
+                    previewImage.style.opacity = '1';
+                    compareBtn.innerHTML = '<i class="fas fa-exchange-alt"></i> 对比原图';
+                    compareBtn.classList.remove('btn-success');
+                }
+            }
+            
+            // 保存图片
+            function saveImage() {
+                if (!previewImage.src) return;
+                
+                // 在实际应用中，这里会有实际的图像处理代码
+                alert('修复完成！在实际应用中，这里会保存修复后的照片。\n\n保存选项: JPG/PNG/TIFF格式\n适合打印装裱或数字分享');
+            }
+            
+            // 处理拖放
+            function handleDragOver(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.style.borderColor = 'var(--primary-color)';
+                uploadArea.style.backgroundColor = 'rgba(0,113,227,0.1)';
+            }
+            
+            function handleDrop(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.style.borderColor = 'var(--border-color)';
+                uploadArea.style.backgroundColor = 'rgba(0,113,227,0.03)';
+                
+                const dt = e.dataTransfer;
+                const file = dt.files[0];
+                if (file && file.type.match('image.*')) {
+                    const event = { target: { files: [file] } };
+                    handleFileSelect(event);
+                }
+            }
+            
+            // 初始化
+            initEventListeners();
+            updateSliderDisplays();
+        });
+    </script>
+</body>
+</html>
