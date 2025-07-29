@@ -22,6 +22,7 @@
             --border-color: #e0e0e0;
             --card-bg: #ffffff;
             --hover-color: #426e67;
+            --ad-gradient: linear-gradient(135deg, #5b8c85, #3a6b63);
         }
         
         body {
@@ -124,6 +125,20 @@
             background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
             border-radius: 0 0 30px 30px;
             margin-bottom: 60px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><path fill="none" stroke="rgba(91, 140, 133, 0.1)" stroke-width="2" d="M20,20 Q100,20 180,20 Q200,100 180,180 Q100,200 20,180 Q0,100 20,20 Z"/></svg>');
+            background-size: 120px;
+            opacity: 0.3;
         }
         
         .hero h1 {
@@ -131,6 +146,8 @@
             margin-bottom: 20px;
             color: var(--primary-color);
             font-weight: 700;
+            position: relative;
+            z-index: 2;
         }
         
         .hero p {
@@ -138,6 +155,8 @@
             max-width: 700px;
             margin: 0 auto 40px;
             color: var(--light-text);
+            position: relative;
+            z-index: 2;
         }
         
         .cta-button {
@@ -151,6 +170,8 @@
             font-size: 18px;
             transition: all 0.3s;
             box-shadow: 0 4px 15px rgba(91, 140, 133, 0.3);
+            position: relative;
+            z-index: 2;
         }
         
         .cta-button:hover {
@@ -197,6 +218,26 @@
             text-align: center;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
             transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(91, 140, 133, 0.05), transparent);
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .feature-card:hover::before {
+            opacity: 1;
         }
         
         .feature-card:hover {
@@ -213,6 +254,8 @@
             align-items: center;
             justify-content: center;
             margin: 0 auto 20px;
+            position: relative;
+            z-index: 2;
         }
         
         .feature-icon i {
@@ -224,11 +267,96 @@
             font-size: 22px;
             margin-bottom: 15px;
             color: var(--primary-color);
+            position: relative;
+            z-index: 2;
         }
         
         .feature-card p {
             color: var(--light-text);
             font-size: 16px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        /* 营销广告区域 */
+        .promotion {
+            background: var(--ad-gradient);
+            border-radius: 20px;
+            padding: 50px;
+            margin: 80px auto;
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        
+        .promotion::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+            z-index: 1;
+        }
+        
+        .promotion-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .promotion h2 {
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .promotion p {
+            font-size: 1.4rem;
+            margin-bottom: 30px;
+            line-height: 1.7;
+        }
+        
+        .promo-button {
+            display: inline-block;
+            padding: 16px 40px;
+            background-color: white;
+            color: var(--primary-color);
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 18px;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .promo-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            background-color: #f8f9fa;
+        }
+        
+        .promotion .icon-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .promotion .icon-container i {
+            font-size: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin: 0 15px;
         }
         
         /* 页脚 */
@@ -356,6 +484,18 @@
             .section-title {
                 font-size: 2rem;
             }
+            
+            .promotion {
+                padding: 30px 20px;
+            }
+            
+            .promotion h2 {
+                font-size: 2.2rem;
+            }
+            
+            .promotion p {
+                font-size: 1.1rem;
+            }
         }
         
         @media (max-width: 480px) {
@@ -370,6 +510,15 @@
             .cta-button {
                 padding: 12px 24px;
                 font-size: 16px;
+            }
+            
+            .promotion .icon-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .promotion .icon-container i {
+                margin: 10px 0;
             }
         }
     </style>
@@ -388,7 +537,7 @@
             </button>
             
             <ul class="nav-links" id="navLinks">
-                <li><a href="#"><i class="fas fa-tools"></i> AI工具库</a></li>
+                <li><a href="https://i3doit.github.io/AI_Tools.html"><i class="fas fa-tools"></i> AI工具库</a></li>
                 <li><a href="#"><i class="fas fa-blog"></i> AI博客</a></li>
                 <li><a href="#"><i class="fas fa-cloud-upload-alt"></i> 上传发布</a></li>
                 <li><a href="#"><i class="fas fa-edit"></i> 在线编辑器</a></li>
@@ -403,7 +552,7 @@
         <div class="container">
             <h1>探索AI的无限可能</h1>
             <p>汇聚前沿AI工具与知识，打造属于您的智能创作空间</p>
-            <a href="#" class="cta-button">开始创作之旅</a>
+            <a href="https://i3doit.github.io/AI_Tools.html" class="cta-button">开始创作之旅</a>
         </div>
     </section>
     
@@ -412,53 +561,70 @@
         <div class="container">
             <h2 class="section-title">核心功能</h2>
             <div class="features-grid">
-                <div class="feature-card">
+                <a href="https://i3doit.github.io/AI_Tools_1.0.html" class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-tools"></i>
                     </div>
                     <h3>AI工具库</h3>
                     <p>精选各类AI工具，涵盖写作、设计、编程等多个领域，助力您的创作效率提升</p>
-                </div>
+                </a>
                 
-                <div class="feature-card">
+                <a href="https://i3doit.github.io/AI_Blog.html" class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-blog"></i>
                     </div>
                     <h3>AI博客</h3>
                     <p>分享最新AI技术、应用案例和行业洞察，与社区共同成长</p>
-                </div>
+                </a>
                 
-                <div class="feature-card">
+                <a href="https://i3doit.github.io/Upload.html" class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-cloud-upload-alt"></i>
                     </div>
                     <h3>上传发布</h3>
                     <p>一键上传您的创作成果，轻松发布并与社区分享您的作品</p>
-                </div>
+                </a>
                 
-                <div class="feature-card">
+                <a href="https://i3doit.github.io/Editor.html" class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-edit"></i>
                     </div>
                     <h3>在线编辑器</h3>
                     <p>强大的AI辅助编辑工具，支持Markdown和富文本，让创作更高效</p>
-                </div>
+                </a>
                 
-                <div class="feature-card">
+                <a href="https://i3doit.github.io/User.html" class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-user-circle"></i>
                     </div>
                     <h3>用户中心</h3>
                     <p>个性化设置与管理您的创作内容、收藏和账户信息</p>
-                </div>
+                </a>
                 
-                <div class="feature-card">
+                <a href="https://i3doit.github.io/Feedback.html" class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-comments"></i>
                     </div>
                     <h3>反馈中心</h3>
                     <p>随时提交您的建议和问题，共同打造更好的AI创作平台</p>
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 营销广告区域 -->
+    <section class="promotion">
+        <div class="container">
+            <div class="promotion-content">
+                <div class="icon-container">
+                    <i class="fas fa-chart-line"></i>
+                    <i class="fas fa-code"></i>
+                    <i class="fas fa-robot"></i>
                 </div>
+                <h2>AI编程·垂直小流量复利商业化</h2>
+                <p>我正在参与「AI编程·垂直小流量复利商业化」深度讨论，探索AI技术在垂直领域中的商业化路径与持续盈利模式。</p>
+                <p>加入我们的专业社群，与行业专家共同探讨AI技术的变现策略与实践经验！</p>
+                <a href="https://discuss.example.com/ai-commercialization" class="promo-button">立即加入讨论</a>
             </div>
         </div>
     </section>
@@ -499,9 +665,8 @@
                 <div class="footer-column">
                     <h3>联系我们</h3>
                     <ul class="footer-links">
-                        <li><i class="fas fa-envelope"></i> contact@aiblog.com</li>
-                        <li><i class="fas fa-phone"></i> +86 123 4567 8910</li>
-                        <li><i class="fas fa-map-marker-alt"></i> 北京市海淀区科技园区</li>
+                        <li><i class="fas fa-envelope"></i> 857023577@qq.com</li>
+                        <li><i class="fas fa-phone"></i> 857023577</li>
                     </ul>
                     <div class="social-links">
                         <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" target="_blank">
@@ -521,7 +686,7 @@
             </div>
             
             <div class="footer-bottom">
-                <p>技术支持：<a href="https://t.zsxq.com/11QO9" target="_blank">艾兜兜儿</a> | © 2023 AI智汇空间 版权所有</p>
+                <p>技术支持：<a href="https://t.zsxq.com/11QO9" target="_blank">艾兜兜儿</a> | © <span id="copyrightYear"></span> AI智汇空间 版权所有</p>
             </div>
         </div>
     </footer>
@@ -535,6 +700,17 @@
             navLinks.classList.toggle('active');
         });
         
+        // 动态生成版权年份
+        const currentYear = new Date().getFullYear();
+        const startYear = 2025;
+        let copyrightText = `© ${startYear} AI智汇空间`;
+        
+        if (currentYear > startYear) {
+            copyrightText = `© ${startYear} - ${currentYear} AI智汇空间`;
+        }
+        
+        document.getElementById('copyrightYear').textContent = copyrightText.replace('© ', '');
+        
         // 平滑滚动
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
@@ -545,6 +721,20 @@
                         behavior: 'smooth'
                     });
                 }
+            });
+        });
+        
+        // 功能卡片悬停效果增强
+        const featureCards = document.querySelectorAll('.feature-card');
+        featureCards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-10px)';
+                card.style.boxShadow = '0 15px 30px rgba(0, 0, 0, 0.1)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.05)';
             });
         });
     </script>
