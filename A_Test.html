@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>老照片修复工具2</title>
+    <title>专业老照片修复工具</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -15,6 +15,7 @@
             --border-color: #d2d2d7;
             --success-color: #30d158;
             --warning-color: #ff9f0a;
+            --danger-color: #ff453a;
             --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
@@ -49,6 +50,10 @@
             font-weight: 600;
             color: var(--primary-color);
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
         }
 
         .tagline {
@@ -91,6 +96,13 @@
             margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: var(--primary-color);
         }
 
         .upload-area {
@@ -178,6 +190,14 @@
             background-color: #f29400;
         }
 
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+
+        .btn-danger:hover {
+            background-color: #ff3b30;
+        }
+
         .image-preview-container {
             position: relative;
             width: 100%;
@@ -194,6 +214,7 @@
             max-width: 100%;
             max-height: 100%;
             display: none;
+            transition: opacity 0.3s;
         }
 
         .image-actions {
@@ -209,6 +230,9 @@
 
         .param-group {
             margin-bottom: 25px;
+            background: rgba(0,0,0,0.02);
+            padding: 15px;
+            border-radius: 12px;
         }
 
         .param-title {
@@ -216,6 +240,11 @@
             justify-content: space-between;
             margin-bottom: 10px;
             font-weight: 500;
+            align-items: center;
+        }
+
+        .param-title i {
+            color: var(--primary-color);
         }
 
         .slider-container {
@@ -261,6 +290,48 @@
             margin-top: 15px;
         }
 
+        .repair-types {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .repair-card {
+            background: rgba(0,0,0,0.02);
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .repair-card:hover {
+            background: rgba(0,113,227,0.05);
+            border-color: var(--primary-color);
+        }
+
+        .repair-card.active {
+            background: rgba(0,113,227,0.1);
+            border-color: var(--primary-color);
+        }
+
+        .repair-card i {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .repair-card h4 {
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .repair-card p {
+            font-size: 0.85rem;
+            color: var(--secondary-color);
+        }
+
         footer {
             text-align: center;
             padding: 30px 0;
@@ -290,6 +361,22 @@
             text-decoration: underline;
         }
 
+        .progress-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 10px;
+            background-color: var(--success-color);
+            border-radius: 5px;
+            transition: width 0.4s ease;
+        }
+
         /* 响应式调整 */
         @media (max-width: 768px) {
             .main-content {
@@ -302,6 +389,10 @@
             
             .action-buttons {
                 flex-direction: column;
+            }
+            
+            .repair-types {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -329,19 +420,88 @@
             border-radius: 0 8px 8px 0;
             margin: 20px 0;
             font-size: 0.95rem;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .restore-notice i {
+            font-size: 1.2rem;
+            color: var(--warning-color);
+            margin-top: 3px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .tab.active {
+            font-weight: 500;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .status-bar {
+            background: rgba(0,0,0,0.03);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-item i {
+            color: var(--primary-color);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="logo">老照片修复工具</div>
+            <div class="logo">
+                <i class="fas fa-images"></i>
+                <span>专业老照片修复工具</span>
+            </div>
             <div class="tagline">让珍贵记忆重现光彩 - 专业修复褪色、破损、模糊的老照片</div>
         </header>
 
         <div class="main-content">
             <div class="image-section">
-                <h2 class="section-title">照片预览</h2>
+                <h2 class="section-title">
+                    <i class="fas fa-image"></i>
+                    <span>照片预览</span>
+                </h2>
                 <div class="upload-area" id="uploadArea">
                     <i class="fas fa-cloud-upload-alt upload-icon"></i>
                     <div class="upload-text">拖放照片到此处或点击上传</div>
@@ -367,82 +527,186 @@
             </div>
             
             <div class="control-section">
-                <h2 class="section-title">修复控制面板</h2>
-                
-                <div class="restore-notice">
-                    <i class="fas fa-lightbulb"></i> AI一键修复会自动分析照片问题并应用最优参数，您也可以手动微调
+                <div class="tabs">
+                    <div class="tab active" data-tab="repair">修复功能</div>
+                    <div class="tab" data-tab="params">精细调整</div>
+                    <div class="tab" data-tab="tools">修复工具</div>
                 </div>
                 
-                <div class="param-group">
-                    <div class="param-title">
-                        <span>AI一键修复</span>
+                <div class="tab-content active" id="repairTab">
+                    <div class="restore-notice">
+                        <i class="fas fa-lightbulb"></i>
+                        <div>AI一键修复会自动分析照片问题并应用最优参数，您也可以手动微调</div>
                     </div>
-                    <button class="btn btn-warning" id="aiRestoreBtn" style="width: 100%;">
-                        <i class="fas fa-magic"></i> AI一键修复照片
-                    </button>
-                </div>
-                
-                <div class="param-group">
-                    <div class="param-title">
-                        <span>精细调整参数</span>
-                        <button class="btn btn-outline" id="resetParamsBtn" style="padding: 5px 10px; font-size: 0.9rem;">
-                            <i class="fas fa-undo"></i> 重置
+                    
+                    <div class="param-group">
+                        <div class="param-title">
+                            <span>AI一键修复</span>
+                        </div>
+                        <button class="btn btn-warning" id="aiRestoreBtn" style="width: 100%;">
+                            <i class="fas fa-magic"></i> AI一键修复照片
                         </button>
                     </div>
                     
-                    <div class="slider-container">
-                        <label>清晰度:</label>
-                        <input type="range" min="0" max="200" value="100" class="slider" id="sharpnessSlider">
-                        <div class="value-display" id="sharpnessValue">100%</div>
+                    <div class="param-group">
+                        <div class="param-title">
+                            <span>修复类型选择</span>
+                        </div>
+                        <div class="repair-types">
+                            <div class="repair-card active" data-type="basic">
+                                <i class="fas fa-tools"></i>
+                                <h4>基础损伤修复</h4>
+                                <p>修复撕裂、折痕、孔洞、霉斑、污渍</p>
+                            </div>
+                            <div class="repair-card" data-type="quality">
+                                <i class="fas fa-sun"></i>
+                                <h4>图像质量优化</h4>
+                                <p>锐化模糊画面，恢复原始色彩</p>
+                            </div>
+                            <div class="repair-card" data-type="detail">
+                                <i class="fas fa-user"></i>
+                                <h4>人物细节修复</h4>
+                                <p>修复人脸五官、衣物纹理等细节</p>
+                            </div>
+                            <div class="repair-card" data-type="background">
+                                <i class="fas fa-mountain"></i>
+                                <h4>场景背景修复</h4>
+                                <p>补全缺失背景元素，消除杂乱瑕疵</p>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="slider-container">
-                        <label>对比度:</label>
-                        <input type="range" min="0" max="200" value="100" class="slider" id="contrastSlider">
-                        <div class="value-display" id="contrastValue">100%</div>
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar" id="progressBar"></div>
                     </div>
                     
-                    <div class="slider-container">
-                        <label>亮度:</label>
-                        <input type="range" min="0" max="200" value="100" class="slider" id="brightnessSlider">
-                        <div class="value-display" id="brightnessValue">100%</div>
-                    </div>
-                    
-                    <div class="slider-container">
-                        <label>饱和度:</label>
-                        <input type="range" min="0" max="200" value="100" class="slider" id="saturationSlider">
-                        <div class="value-display" id="saturationValue">100%</div>
-                    </div>
-                    
-                    <div class="slider-container">
-                        <label>褪色修复:</label>
-                        <input type="range" min="0" max="100" value="0" class="slider" id="fadeSlider">
-                        <div class="value-display" id="fadeValue">0%</div>
+                    <div class="action-buttons">
+                        <button class="btn" id="saveBtn">
+                            <i class="fas fa-download"></i> 保存修复结果
+                        </button>
+                        <button class="btn btn-outline" id="compareBtn">
+                            <i class="fas fa-exchange-alt"></i> 对比原图
+                        </button>
                     </div>
                 </div>
                 
-                <div class="action-buttons">
-                    <button class="btn" id="saveBtn">
-                        <i class="fas fa-download"></i> 保存修复结果
-                    </button>
-                    <button class="btn btn-outline" id="compareBtn">
-                        <i class="fas fa-exchange-alt"></i> 对比原图
-                    </button>
+                <div class="tab-content" id="paramsTab">
+                    <div class="param-group">
+                        <div class="param-title">
+                            <span>精细调整参数</span>
+                            <button class="btn btn-outline" id="resetParamsBtn" style="padding: 5px 10px; font-size: 0.9rem;">
+                                <i class="fas fa-undo"></i> 重置
+                            </button>
+                        </div>
+                        
+                        <div class="slider-container">
+                            <label><i class="fas fa-search-plus"></i> 清晰度:</label>
+                            <input type="range" min="0" max="200" value="100" class="slider" id="sharpnessSlider">
+                            <div class="value-display" id="sharpnessValue">100%</div>
+                        </div>
+                        
+                        <div class="slider-container">
+                            <label><i class="fas fa-adjust"></i> 对比度:</label>
+                            <input type="range" min="0" max="200" value="100" class="slider" id="contrastSlider">
+                            <div class="value-display" id="contrastValue">100%</div>
+                        </div>
+                        
+                        <div class="slider-container">
+                            <label><i class="fas fa-sun"></i> 亮度:</label>
+                            <input type="range" min="0" max="200" value="100" class="slider" id="brightnessSlider">
+                            <div class="value-display" id="brightnessValue">100%</div>
+                        </div>
+                        
+                        <div class="slider-container">
+                            <label><i class="fas fa-palette"></i> 饱和度:</label>
+                            <input type="range" min="0" max="200" value="100" class="slider" id="saturationSlider">
+                            <div class="value-display" id="saturationValue">100%</div>
+                        </div>
+                        
+                        <div class="slider-container">
+                            <label><i class="fas fa-eraser"></i> 褪色修复:</label>
+                            <input type="range" min="0" max="100" value="0" class="slider" id="fadeSlider">
+                            <div class="value-display" id="fadeValue">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="history-controls">
+                        <button class="btn btn-outline" id="undoBtn">
+                            <i class="fas fa-undo"></i> 撤销
+                        </button>
+                        <button class="btn btn-outline" id="redoBtn">
+                            <i class="fas fa-redo"></i> 重做
+                        </button>
+                    </div>
+                    
+                    <div class="status-bar">
+                        <div class="status-item">
+                            <i class="fas fa-history"></i>
+                            <span>历史记录: <span id="historyCount">0</span> 步</span>
+                        </div>
+                        <div class="status-item">
+                            <i class="fas fa-save"></i>
+                            <span>当前状态: <span id="currentState">原始</span></span>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="history-controls">
-                    <button class="btn btn-outline" id="undoBtn">
-                        <i class="fas fa-undo"></i> 撤销
-                    </button>
-                    <button class="btn btn-outline" id="redoBtn">
-                        <i class="fas fa-redo"></i> 重做
-                    </button>
+                <div class="tab-content" id="toolsTab">
+                    <div class="param-group">
+                        <div class="param-title">
+                            <i class="fas fa-paint-brush"></i>
+                            <span>手动修复工具</span>
+                        </div>
+                        <p style="margin-bottom: 15px; color: var(--secondary-color);">
+                            使用以下工具对照片进行局部精细修复
+                        </p>
+                        
+                        <div class="slider-container" style="margin-bottom: 15px;">
+                            <label><i class="fas fa-ruler"></i> 画笔尺寸:</label>
+                            <input type="range" min="1" max="50" value="10" class="slider" id="brushSizeSlider">
+                            <div class="value-display" id="brushSizeValue">10px</div>
+                        </div>
+                        
+                        <div class="action-buttons" style="margin-top: 20px;">
+                            <button class="btn btn-outline">
+                                <i class="fas fa-stamp"></i> 修复撕裂
+                            </button>
+                            <button class="btn btn-outline">
+                                <i class="fas fa-broom"></i> 清除污渍
+                            </button>
+                            <button class="btn btn-outline">
+                                <i class="fas fa-fill-drip"></i> 颜色修复
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="param-group">
+                        <div class="param-title">
+                            <i class="fas fa-user-edit"></i>
+                            <span>人物细节增强</span>
+                        </div>
+                        <p style="margin-bottom: 15px; color: var(--secondary-color);">
+                            增强人物面部和衣物的细节
+                        </p>
+                        
+                        <div class="action-buttons" style="margin-top: 20px;">
+                            <button class="btn btn-outline">
+                                <i class="fas fa-eye"></i> 眼睛增强
+                            </button>
+                            <button class="btn btn-outline">
+                                <i class="fas fa-tshirt"></i> 衣物纹理
+                            </button>
+                            <button class="btn btn-outline">
+                                <i class="fas fa-smile"></i> 面部优化
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         
         <footer>
-            <div>© 2023 老照片修复工具 - 让珍贵记忆永存</div>
+            <div>© 2023 专业老照片修复工具 - 让珍贵记忆永存</div>
             <div class="footer-links">
                 <a href="https://i3doit.github.io/AI_Tools.html">
                     <i class="fas fa-home"></i> 艾兜兜儿AI工具箱主页
@@ -474,6 +738,10 @@
             const undoBtn = document.getElementById('undoBtn');
             const redoBtn = document.getElementById('redoBtn');
             const loader = document.getElementById('loader');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const historyCount = document.getElementById('historyCount');
+            const currentState = document.getElementById('currentState');
             
             // 滑块元素
             const sharpnessSlider = document.getElementById('sharpnessSlider');
@@ -489,11 +757,19 @@
             const saturationValue = document.getElementById('saturationValue');
             const fadeValue = document.getElementById('fadeValue');
             
+            // 标签页元素
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            // 修复卡片元素
+            const repairCards = document.querySelectorAll('.repair-card');
+            
             // 全局变量
             let originalImage = null;
             let historyStack = [];
-            let currentState = -1;
+            let currentStateIndex = -1;
             let isComparing = false;
+            let currentRepairType = 'basic';
             
             // 初始化事件监听器
             function initEventListeners() {
@@ -524,6 +800,27 @@
                 // 拖放功能
                 uploadArea.addEventListener('dragover', handleDragOver);
                 uploadArea.addEventListener('drop', handleDrop);
+                
+                // 标签页切换
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        tabs.forEach(t => t.classList.remove('active'));
+                        tabContents.forEach(c => c.classList.remove('active'));
+                        
+                        tab.classList.add('active');
+                        const tabId = tab.getAttribute('data-tab') + 'Tab';
+                        document.getElementById(tabId).classList.add('active');
+                    });
+                });
+                
+                // 修复类型选择
+                repairCards.forEach(card => {
+                    card.addEventListener('click', () => {
+                        repairCards.forEach(c => c.classList.remove('active'));
+                        card.classList.add('active');
+                        currentRepairType = card.getAttribute('data-type');
+                    });
+                });
             }
             
             // 处理文件选择
@@ -542,7 +839,8 @@
                     
                     // 初始化历史栈
                     historyStack = [getCurrentParams()];
-                    currentState = 0;
+                    currentStateIndex = 0;
+                    updateHistoryUI();
                     
                     // 重置参数
                     resetParameters();
@@ -557,8 +855,10 @@
                 fileInput.value = '';
                 originalImage = null;
                 historyStack = [];
-                currentState = -1;
+                currentStateIndex = -1;
+                updateHistoryUI();
                 resetParameters();
+                progressContainer.style.display = 'none';
             }
             
             // 重置所有参数
@@ -586,29 +886,71 @@
             function applyAIRestore() {
                 if (!originalImage) return;
                 
-                // 显示加载动画
+                // 显示加载动画和进度条
                 loader.style.display = 'block';
+                progressContainer.style.display = 'block';
                 aiRestoreBtn.disabled = true;
                 
-                // 模拟AI处理时间
+                // 模拟AI处理过程
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 5;
+                    progressBar.style.width = progress + '%';
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        
+                        // 应用AI优化参数
+                        sharpnessSlider.value = 140;
+                        contrastSlider.value = 130;
+                        brightnessSlider.value = 115;
+                        saturationSlider.value = 125;
+                        fadeSlider.value = 85;
+                        
+                        updateSliderDisplays();
+                        updateImageFilters();
+                        
+                        // 保存到历史记录
+                        saveToHistory();
+                        
+                        // 隐藏加载动画
+                        loader.style.display = 'none';
+                        aiRestoreBtn.disabled = false;
+                        
+                        // 显示修复完成信息
+                        showRepairComplete();
+                    }
+                }, 150);
+            }
+            
+            // 显示修复完成信息
+            function showRepairComplete() {
+                const repairTypes = {
+                    'basic': '基础损伤修复',
+                    'quality': '图像质量优化',
+                    'detail': '人物细节修复',
+                    'background': '场景背景修复'
+                };
+                
+                const repairMessage = repairTypes[currentRepairType] || '照片修复';
+                
+                // 创建完成通知
+                const notice = document.createElement('div');
+                notice.className = 'restore-notice';
+                notice.innerHTML = `
+                    <i class="fas fa-check-circle" style="color: var(--success-color);"></i>
+                    <div>${repairMessage}完成！照片质量已显著提升</div>
+                `;
+                
+                // 添加到控制面板
+                const repairTab = document.getElementById('repairTab');
+                repairTab.insertBefore(notice, progressContainer.nextSibling);
+                
+                // 5秒后移除通知
                 setTimeout(() => {
-                    // 应用AI优化参数
-                    sharpnessSlider.value = 140;
-                    contrastSlider.value = 130;
-                    brightnessSlider.value = 115;
-                    saturationSlider.value = 125;
-                    fadeSlider.value = 85;
-                    
-                    updateSliderDisplays();
-                    updateImageFilters();
-                    
-                    // 保存到历史记录
-                    saveToHistory();
-                    
-                    // 隐藏加载动画
-                    loader.style.display = 'none';
-                    aiRestoreBtn.disabled = false;
-                }, 1500);
+                    notice.style.opacity = '0';
+                    setTimeout(() => notice.remove(), 500);
+                }, 5000);
             }
             
             // 更新图像滤镜效果
@@ -624,6 +966,12 @@
                     saturate(${saturationSlider.value}%)
                     grayscale(${fadeSlider.value}%)
                 `;
+                
+                // 更新锐化效果（使用CSS hack）
+                previewImage.style.transform = `scale(1)`;
+                setTimeout(() => {
+                    previewImage.style.transform = `scale(${1 + (sharpnessSlider.value - 100) / 500})`;
+                }, 10);
             }
             
             // 保存到历史记录
@@ -631,13 +979,13 @@
                 const currentParams = getCurrentParams();
                 
                 // 如果当前不是最新状态，移除之后的状态
-                if (currentState < historyStack.length - 1) {
-                    historyStack = historyStack.slice(0, currentState + 1);
+                if (currentStateIndex < historyStack.length - 1) {
+                    historyStack = historyStack.slice(0, currentStateIndex + 1);
                 }
                 
                 historyStack.push(currentParams);
-                currentState = historyStack.length - 1;
-                updateHistoryButtons();
+                currentStateIndex = historyStack.length - 1;
+                updateHistoryUI();
             }
             
             // 获取当前参数状态
@@ -665,26 +1013,28 @@
             
             // 撤销操作
             function undoAction() {
-                if (currentState > 0) {
-                    currentState--;
-                    applyParams(historyStack[currentState]);
-                    updateHistoryButtons();
+                if (currentStateIndex > 0) {
+                    currentStateIndex--;
+                    applyParams(historyStack[currentStateIndex]);
+                    updateHistoryUI();
                 }
             }
             
             // 重做操作
             function redoAction() {
-                if (currentState < historyStack.length - 1) {
-                    currentState++;
-                    applyParams(historyStack[currentState]);
-                    updateHistoryButtons();
+                if (currentStateIndex < historyStack.length - 1) {
+                    currentStateIndex++;
+                    applyParams(historyStack[currentStateIndex]);
+                    updateHistoryUI();
                 }
             }
             
-            // 更新历史按钮状态
-            function updateHistoryButtons() {
-                undoBtn.disabled = currentState <= 0;
-                redoBtn.disabled = currentState >= historyStack.length - 1;
+            // 更新历史UI
+            function updateHistoryUI() {
+                undoBtn.disabled = currentStateIndex <= 0;
+                redoBtn.disabled = currentStateIndex >= historyStack.length - 1;
+                historyCount.textContent = historyStack.length;
+                currentState.textContent = currentStateIndex === 0 ? '原始' : `步骤 ${currentStateIndex}`;
             }
             
             // 切换对比视图
@@ -709,7 +1059,52 @@
                 if (!previewImage.src) return;
                 
                 // 在实际应用中，这里会有实际的图像处理代码
-                alert('修复完成！在实际应用中，这里会保存修复后的照片。\n\n保存选项: JPG/PNG/TIFF格式\n适合打印装裱或数字分享');
+                const formatOptions = ['JPG', 'PNG', 'TIFF'];
+                const formatList = formatOptions.map(f => `<li>${f}</li>`).join('');
+                
+                const saveMessage = `
+                    <div style="margin-bottom: 15px;">修复完成！请选择保存格式：</div>
+                    <ul style="text-align: left; margin-left: 20px; margin-bottom: 15px;">
+                        ${formatList}
+                    </ul>
+                    <div>适合打印装裱或数字分享</div>
+                `;
+                
+                // 在实际应用中，这里会显示保存对话框
+                alertWithHtml('照片修复完成', saveMessage);
+            }
+            
+            // 带HTML内容的alert
+            function alertWithHtml(title, message) {
+                const alertDiv = document.createElement('div');
+                alertDiv.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: white;
+                    padding: 25px;
+                    border-radius: 14px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    z-index: 1000;
+                    max-width: 90%;
+                    width: 350px;
+                    text-align: center;
+                `;
+                
+                alertDiv.innerHTML = `
+                    <h3 style="margin-bottom: 15px; color: var(--primary-color);">${title}</h3>
+                    <div style="margin-bottom: 20px;">${message}</div>
+                    <button id="closeAlert" class="btn" style="width: 100%;">
+                        <i class="fas fa-check"></i> 确认
+                    </button>
+                `;
+                
+                document.body.appendChild(alertDiv);
+                
+                document.getElementById('closeAlert').addEventListener('click', () => {
+                    document.body.removeChild(alertDiv);
+                });
             }
             
             // 处理拖放
@@ -737,6 +1132,7 @@
             // 初始化
             initEventListeners();
             updateSliderDisplays();
+            updateHistoryUI();
         });
     </script>
 </body>
