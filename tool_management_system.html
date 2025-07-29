@@ -1,1 +1,730 @@
-1
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工具信息管理系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0071e3;
+            --secondary-color: #6e6e73;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #1d1d1f;
+            --border-color: #d2d2d7;
+            --success-color: #34c759;
+            --warning-color: #ff9500;
+            --danger-color: #ff3b30;
+            --hover-color: #f0f5ff;
+            --footer-bg: #f5f5f7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 护眼模式 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1c1c1e;
+                --card-bg: #2c2c2e;
+                --text-color: #f5f5f7;
+                --border-color: #444446;
+                --footer-bg: #1d1d1f;
+            }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 头部样式 */
+        header {
+            background: linear-gradient(135deg, var(--primary-color), #0047ab);
+            color: white;
+            padding: 25px 0;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            z-index: 0;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        /* 表单区域 */
+        .form-section {
+            flex: 1;
+            min-width: 300px;
+            background: var(--card-bg);
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 1rem;
+            background: var(--card-bg);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #005bbd;
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5c5c61;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        /* 表格区域 */
+        .table-section {
+            flex: 2;
+            min-width: 300px;
+            background: var(--card-bg);
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        .table-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-box {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 14px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px 0 0 12px;
+            font-size: 1rem;
+        }
+
+        .search-box button {
+            border-radius: 0 12px 12px 0;
+            padding: 0 20px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        th, td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: rgba(0, 113, 227, 0.08);
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        tr:hover {
+            background-color: var(--hover-color);
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 10px;
+        }
+
+        .actions-cell button {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+
+        /* 分页样式 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+            gap: 8px;
+        }
+
+        .pagination button {
+            padding: 10px 16px;
+            min-width: 40px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .pagination button:hover:not(.active) {
+            background-color: var(--hover-color);
+        }
+
+        /* 底部样式 */
+        footer {
+            background-color: var(--footer-bg);
+            padding: 40px 0 20px;
+            margin-top: auto;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 30px;
+            padding-bottom: 30px;
+        }
+
+        .footer-section {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .footer-section h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            transition: color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .social-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .social-links a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+
+        .social-links a:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 113, 227, 0.3);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .search-box input {
+                border-radius: 12px;
+                margin-bottom: 10px;
+            }
+            
+            .search-box button {
+                border-radius: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1><i class="fas fa-tools"></i> 工具信息管理系统</h1>
+            <p>高效管理您的工具信息，支持增删改查与分页功能</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="main-content">
+            <!-- 表单区域 -->
+            <section class="form-section">
+                <h2><i class="fas fa-plus-circle"></i> 添加新工具</h2>
+                <form id="toolForm">
+                    <div class="form-group">
+                        <label for="toolName">工具名称</label>
+                        <input type="text" id="toolName" class="form-control" placeholder="输入工具名称" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="toolCategory">分类</label>
+                        <select id="toolCategory" class="form-control" required>
+                            <option value="">选择分类</option>
+                            <option value="开发工具">开发工具</option>
+                            <option value="设计工具">设计工具</option>
+                            <option value="测试工具">测试工具</option>
+                            <option value="部署工具">部署工具</option>
+                            <option value="管理工具">管理工具</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="toolDescription">描述</label>
+                        <textarea id="toolDescription" class="form-control" placeholder="输入工具描述" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="toolLink">链接</label>
+                        <input type="url" id="toolLink" class="form-control" placeholder="https://example.com" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存工具</button>
+                        <button type="reset" class="btn btn-secondary"><i class="fas fa-redo"></i> 重置</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- 表格区域 -->
+            <section class="table-section">
+                <h2><i class="fas fa-list"></i> 工具列表</h2>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索工具...">
+                    <button class="btn btn-primary"><i class="fas fa-search"></i></button>
+                </div>
+                <div class="table-container">
+                    <table id="toolsTable">
+                        <thead>
+                            <tr>
+                                <th>名称</th>
+                                <th>分类</th>
+                                <th>描述</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 数据将通过JavaScript动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="pagination">
+                    <!-- 分页按钮将通过JavaScript动态生成 -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于系统</h3>
+                    <p>这是一个简洁高效的工具信息管理系统，采用现代Web技术开发，支持响应式布局，可在各种设备上完美运行。</p>
+                </div>
+                <div class="footer-section">
+                    <h3>快速链接</h3>
+                    <ul class="footer-links">
+                        <li><a href="https://i3doit.github.io/AI_Tools.html"><i class="fas fa-home"></i> 返回主页</a></li>
+                        <li><a href="#"><i class="fas fa-info-circle"></i> 使用文档</a></li>
+                        <li><a href="#"><i class="fas fa-question-circle"></i> 帮助中心</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="https://t.zsxq.com/11QO9"><i class="fas fa-headset"></i> 技术支持: 艾兜兜儿</a></li>
+                        <li><a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg"><i class="fab fa-weixin"></i> 微信公众号</a></li>
+                        <li><a href="mailto:support@example.com"><i class="fas fa-envelope"></i> support@example.com</a></li>
+                    </ul>
+                    <div class="social-links">
+                        <a href="#" title="分享到微信"><i class="fab fa-weixin"></i></a>
+                        <a href="#" title="分享到微博"><i class="fab fa-weibo"></i></a>
+                        <a href="#" title="分享到QQ"><i class="fab fa-qq"></i></a>
+                        <a href="#" title="分享到Twitter"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023 工具信息管理系统 | 遵循 MIT 开源协议 | 设计灵感来自苹果官网</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 数据管理
+        let tools = JSON.parse(localStorage.getItem('tools')) || [];
+        let currentPage = 1;
+        const itemsPerPage = 5;
+        let currentEditId = null;
+
+        // DOM元素
+        const toolForm = document.getElementById('toolForm');
+        const toolsTable = document.getElementById('toolsTable').getElementsByTagName('tbody')[0];
+        const pagination = document.getElementById('pagination');
+        const searchInput = document.getElementById('searchInput');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTable();
+            setupPagination();
+        });
+
+        // 表单提交
+        toolForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const tool = {
+                id: currentEditId || Date.now().toString(),
+                name: document.getElementById('toolName').value,
+                category: document.getElementById('toolCategory').value,
+                description: document.getElementById('toolDescription').value,
+                link: document.getElementById('toolLink').value
+            };
+            
+            if (currentEditId) {
+                // 更新现有工具
+                const index = tools.findIndex(t => t.id === currentEditId);
+                if (index !== -1) {
+                    tools[index] = tool;
+                }
+                currentEditId = null;
+            } else {
+                // 添加新工具
+                tools.push(tool);
+            }
+            
+            saveTools();
+            toolForm.reset();
+            renderTable();
+            setupPagination();
+        });
+
+        // 搜索功能
+        searchInput.addEventListener('input', () => {
+            currentPage = 1;
+            renderTable();
+            setupPagination();
+        });
+
+        // 保存到localStorage
+        function saveTools() {
+            localStorage.setItem('tools', JSON.stringify(tools));
+        }
+
+        // 渲染表格
+        function renderTable() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredTools = tools.filter(tool => 
+                tool.name.toLowerCase().includes(searchTerm) ||
+                tool.category.toLowerCase().includes(searchTerm) ||
+                tool.description.toLowerCase().includes(searchTerm)
+            );
+            
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const paginatedTools = filteredTools.slice(startIndex, startIndex + itemsPerPage);
+            
+            toolsTable.innerHTML = '';
+            
+            if (paginatedTools.length === 0) {
+                toolsTable.innerHTML = '<tr><td colspan="4" style="text-align: center;">没有找到工具</td></tr>';
+                return;
+            }
+            
+            paginatedTools.forEach(tool => {
+                const row = toolsTable.insertRow();
+                
+                // 名称列
+                const nameCell = row.insertCell(0);
+                const nameLink = document.createElement('a');
+                nameLink.href = tool.link;
+                nameLink.textContent = tool.name;
+                nameLink.target = '_blank';
+                nameCell.appendChild(nameLink);
+                
+                // 分类列
+                const categoryCell = row.insertCell(1);
+                categoryCell.textContent = tool.category;
+                
+                // 描述列
+                const descCell = row.insertCell(2);
+                descCell.textContent = tool.description.length > 50 ? 
+                    tool.description.substring(0, 50) + '...' : tool.description;
+                
+                // 操作列
+                const actionCell = row.insertCell(3);
+                actionCell.className = 'actions-cell';
+                
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn btn-warning';
+                editBtn.innerHTML = '<i class="fas fa-edit"></i> 编辑';
+                editBtn.onclick = () => editTool(tool.id);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-danger';
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 删除';
+                deleteBtn.onclick = () => deleteTool(tool.id);
+                
+                actionCell.appendChild(editBtn);
+                actionCell.appendChild(deleteBtn);
+            });
+        }
+
+        // 设置分页
+        function setupPagination() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredTools = tools.filter(tool => 
+                tool.name.toLowerCase().includes(searchTerm) ||
+                tool.category.toLowerCase().includes(searchTerm) ||
+                tool.description.toLowerCase().includes(searchTerm)
+            );
+            
+            const pageCount = Math.ceil(filteredTools.length / itemsPerPage);
+            
+            pagination.innerHTML = '';
+            
+            if (pageCount <= 1) return;
+            
+            // 上一页按钮
+            const prevBtn = document.createElement('button');
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable();
+                    setupPagination();
+                }
+            };
+            pagination.appendChild(prevBtn);
+            
+            // 页码按钮
+            for (let i = 1; i <= pageCount; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.textContent = i;
+                pageBtn.className = currentPage === i ? 'active' : '';
+                pageBtn.onclick = () => {
+                    currentPage = i;
+                    renderTable();
+                    setupPagination();
+                };
+                pagination.appendChild(pageBtn);
+            }
+            
+            // 下一页按钮
+            const nextBtn = document.createElement('button');
+            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextBtn.disabled = currentPage === pageCount;
+            nextBtn.onclick = () => {
+                if (currentPage < pageCount) {
+                    currentPage++;
+                    renderTable();
+                    setupPagination();
+                }
+            };
+            pagination.appendChild(nextBtn);
+        }
+
+        // 编辑工具
+        function editTool(id) {
+            const tool = tools.find(t => t.id === id);
+            if (tool) {
+                document.getElementById('toolName').value = tool.name;
+                document.getElementById('toolCategory').value = tool.category;
+                document.getElementById('toolDescription').value = tool.description;
+                document.getElementById('toolLink').value = tool.link;
+                currentEditId = tool.id;
+                
+                // 滚动到表单区域
+                document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // 删除工具
+        function deleteTool(id) {
+            if (confirm('确定要删除这个工具吗？')) {
+                tools = tools.filter(tool => tool.id !== id);
+                saveTools();
+                renderTable();
+                setupPagination();
+            }
+        }
+    </script>
+</body>
+</html>
