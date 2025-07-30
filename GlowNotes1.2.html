@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blur Notes - 毛玻璃便签系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #5b8fb9;
+            --secondary: #62a6d9;
+            --accent: #7bbde6;
+            --light: #f0f8ff;
+            --dark: #2c5282;
+            --text: #2d3748;
+            --card-shadow: rgba(50, 50, 93, 0.15) 0px 6px 12px -2px, rgba(0, 0, 0, 0.1) 0px 3px 7px -3px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e6f7ff, #ccebff);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* 头部区域 */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.7);
+            box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, rgba(91, 143, 185, 0.1), rgba(123, 189, 230, 0.1));
+            z-index: -1;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+        }
+
+        .logo i {
+            margin-right: 12px;
+            font-size: 32px;
+            color: var(--primary);
+        }
+
+        .search-container {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 12px 16px 12px 45px;
+            border-radius: 50px;
+            border: 1px solid rgba(91, 143, 185, 0.2);
+            background: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+            outline: none;
+            transition: var(--transition);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .search-container input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(123, 189, 230, 0.3);
+        }
+
+        .search-container i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+            font-size: 18px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 6px rgba(50, 85, 220, 0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(50, 85, 220, 0.15);
+        }
+
+        .btn.btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--primary);
+            border: 1px solid rgba(91, 143, 185, 0.3);
+        }
+
+        /* 移动端菜单按钮 */
+        .mobile-menu-btn {
+            display: none;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(91, 143, 185, 0.1);
+        }
+
+        /* 便签管理区域 */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 25px;
+            height: calc(100vh - 200px);
+        }
+
+        .sidebar {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .sidebar h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filters {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        .filter-item:hover {
+            background: rgba(91, 143, 185, 0.1);
+        }
+
+        .filter-item.active {
+            background: rgba(91, 143, 185, 0.15);
+            color: var(--primary);
+        }
+
+        .filter-item i {
+            margin-right: 10px;
+            font-size: 18px;
+            width: 24px;
+        }
+
+        .stats {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid rgba(91, 143, 185, 0.1);
+            color: var(--dark);
+        }
+
+        .stats .count {
+            font-size: 36px;
+            font-weight: 600;
+            line-height: 1;
+            margin: 5px 0;
+            color: var(--primary);
+        }
+
+        /* 主便签区域 */
+        .notes-container {
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(91, 143, 185, 0.1);
+        }
+
+        .notes-header h2 {
+            font-size: 20px;
+            color: var(--dark);
+        }
+
+        .notes-grid {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 5px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            align-content: flex-start;
+        }
+
+        /* 便签卡片样式 */
+        .note-card {
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(12px);
+            position: relative;
+            cursor: pointer;
+            transform: translateY(0);
+            transition: var(--transition);
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+
+        .note-card:hover {
+            transform: translateY(-5px);
+            box-shadow: rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.1) 0px 8px 16px -8px;
+        }
+
+        .note-card .content {
+            flex: 1;
+            padding: 10px 0;
+            line-height: 1.5;
+        }
+
+        .note-card .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .delete-btn, .color-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+            color: rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+        }
+
+        .delete-btn:hover, .color-btn:hover {
+            background: rgba(0, 0, 0, 0.2);
+            color: rgba(0, 0, 0, 0.8);
+        }
+
+        .note-card .category {
+            position: absolute;
+            top: -2px;
+            right: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 0 0 6px 6px;
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+
+        .empty-notes {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: rgba(91, 143, 185, 0.5);
+        }
+
+        .empty-notes i {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(91, 143, 185, 0.1);
+        }
+
+        .page-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(91, 143, 185, 0.1);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .page-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .page-btn:hover:not(.active) {
+            background: rgba(91, 143, 185, 0.2);
+        }
+
+        /* 模态框样式 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            width: 500px;
+            max-width: 90%;
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            position: relative;
+            transform: translateY(20px);
+            transition: var(--transition);
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .close-modal:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .modal h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(91, 143, 185, 0.3);
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(123, 189, 230, 0.3);
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .color-option:hover {
+            transform: scale(1.2);
+        }
+
+        .color-option.selected {
+            transform: scale(1.2);
+            box-shadow: 0 0 0 3px white, 0 0 0 5px var(--primary);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        /* 页脚区域 */
+        footer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.7);
+            box-shadow: var(--card-shadow);
+            margin-top: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, rgba(91, 143, 185, 0.1), rgba(123, 189, 230, 0.1));
+            z-index: -1;
+        }
+
+        .copyright {
+            display: flex;
+            align-items: center;
+            color: var(--dark);
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .share-links {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .share-links a {
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 500;
+            font-size: 14px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: rgba(91, 143, 185, 0.1);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .share-links a:hover {
+            background: rgba(91, 143, 185, 0.25);
+            color: var(--primary);
+        }
+
+        .ad-container {
+            background: linear-gradient(45deg, #5b8fb9, #62a6d9);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            color: white;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 15px;
+        }
+
+        .ad-container a {
+            color: #fff;
+            background: #ff6b6b;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-left: 5px;
+            text-decoration: none;
+            transition: background 0.3s;
+            font-weight: bold;
+        }
+
+        .ad-container a:hover {
+            background: #ff5252;
+        }
+
+        .floating-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 15px rgba(50, 85, 220, 0.3);
+            cursor: pointer;
+            z-index: 50;
+            transition: var(--transition);
+        }
+
+        .floating-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .sidebar {
+                margin-bottom: 25px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .action-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .search-container {
+                width: 100%;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+                position: absolute;
+                top: 15px;
+                left: 15px;
+            }
+            
+            .dashboard {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                position: absolute;
+                left: 15px;
+                right: 15px;
+                top: 100px;
+                z-index: 40;
+                transform: translateY(-20px);
+                opacity: 0;
+                pointer-events: none;
+            }
+            
+            .sidebar.active {
+                transform: translateY(0);
+                opacity: 1;
+                pointer-events: all;
+            }
+            
+            .notes-container {
+                min-height: calc(100vh - 300px);
+            }
+            
+            .notes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            }
+        }
+
+        /* 自定义字体图标 */
+        @font-face {
+            font-family: 'Material Icons';
+            font-style: normal;
+            font-weight: 400;
+            src: url(https://fonts.gstatic.com/s/materialicons/v139/flUhRq6tzZclQEJ-Vdg-IuiaDsNc.woff2) format('woff2');
+        }
+
+        .material-icons {
+            font-family: 'Material Icons';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="material-icons">note_add</i>
+                <span>Blur Notes</span>
+            </div>
+            <div class="search-container">
+                <i class="material-icons">search</i>
+                <input type="text" id="search-input" placeholder="搜索便签内容...">
+            </div>
+            <div class="action-buttons">
+                <button class="btn" id="new-note-btn">
+                    <i class="material-icons">add</i>
+                    <span>新建便签</span>
+                </button>
+                <button class="btn btn-secondary" id="import-btn">
+                    <i class="material-icons">upload</i>
+                    <span>导入</span>
+                </button>
+                <button class="btn btn-secondary" id="export-btn">
+                    <i class="material-icons">download</i>
+                    <span>导出</span>
+                </button>
+            </div>
+            <button class="mobile-menu-btn" id="mobile-menu-btn">
+                <i class="material-icons">menu</i>
+            </button>
+        </header>
+
+        <main class="dashboard">
+            <div class="sidebar" id="sidebar">
+                <h3><i class="material-icons">category</i> 分类管理</h3>
+                <div class="filters">
+                    <div class="filter-item active" data-filter="all">
+                        <i class="material-icons">all_inbox</i>全部便签
+                    </div>
+                    <div class="filter-item" data-filter="work">
+                        <i class="material-icons">work</i>工作
+                    </div>
+                    <div class="filter-item" data-filter="personal">
+                        <i class="material-icons">person</i>个人
+                    </div>
+                    <div class="filter-item" data-filter="ideas">
+                        <i class="material-icons">lightbulb</i>想法
+                    </div>
+                    <div class="filter-item" data-filter="todo">
+                        <i class="material-icons">check_circle</i>待办事项
+                    </div>
+                    <div class="filter-item" data-filter="other">
+                        <i class="material-icons">category</i>其他
+                    </div>
+                    <div class="filter-item" id="add-category">
+                        <i class="material-icons">add</i>添加分类
+                    </div>
+                </div>
+                <div class="stats">
+                    <h3>统计信息</h3>
+                    <div class="count">0</div>
+                    <span>条便签</span>
+                </div>
+            </div>
+
+            <div class="notes-container">
+                <div class="notes-header">
+                    <h2>全部便签</h2>
+                </div>
+                
+                <div class="notes-grid" id="notes-grid">
+                    <!-- 便签卡片将通过JavaScript动态生成 -->
+                    <div class="empty-notes">
+                        <i class="material-icons">note_add</i>
+                        <h3>没有便签</h3>
+                        <p>点击"新建便签"按钮添加第一条便签</p>
+                    </div>
+                </div>
+                
+                <div class="pagination">
+                    <!-- 分页按钮将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="share-links">
+                <a href="https://t.zsxq.com/11QO9" target="_blank">
+                    <i class="material-icons">support</i>
+                    <span>技术支持-艾兜兜儿</span>
+                </a>
+                <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" target="_blank">
+                    <i class="material-icons">wechat</i>
+                    <span>挑战100个小工具</span>
+                </a>
+                <a href="https://i3doit.github.io/AI_Tools_2.6.html" target="_blank">
+                    <i class="material-icons">home</i>
+                    <span>主页</span>
+                </a>
+                <a href="https://twitter.com/intent/tweet?url=https://i3doit.github.io/AI_Tools_2.6.html&text=发现一个超棒的毛玻璃便签系统" target="_blank">
+                    <i class="material-icons">share</i>
+                    <span>分享到Twitter</span>
+                </a>
+                <a href="https://www.facebook.com/sharer/sharer.php?u=https://i3doit.github.io/AI_Tools_2.6.html" target="_blank">
+                    <i class="material-icons">thumb_up</i>
+                    <span>分享到Facebook</span>
+                </a>
+            </div>
+            
+            <div class="ad-container">
+                <p>我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」，
+                <a href="https://t.zsxq.com/yL7L8" target="_blank">一起加入讨论吧</a></p>
+            </div>
+            
+            <div class="copyright" id="copyright">
+                © <span id="current-year">2025</span> Blur Notes - 您的智能便签助手
+            </div>
+        </footer>
+    </div>
+
+    <!-- 新建/编辑便签模态框 -->
+    <div class="modal" id="note-modal">
+        <div class="modal-content">
+            <div class="close-modal" id="close-modal">
+                <i class="material-icons">close</i>
+            </div>
+            <h2 id="modal-title">新建便签</h2>
+            <div class="form-group">
+                <label for="note-content">便签内容</label>
+                <textarea id="note-content" placeholder="输入便签内容..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="note-category">分类</label>
+                <select id="note-category">
+                    <option value="work">工作</option>
+                    <option value="personal">个人</option>
+                    <option value="ideas">想法</option>
+                    <option value="todo">待办事项</option>
+                    <option value="other">其他</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>便签背景</label>
+                <div class="color-palette">
+                    <div class="color-option selected" style="background-color: #f9e2af;" data-color="#f9e2af"></div>
+                    <div class="color-option" style="background-color: #f0c7d4;" data-color="#f0c7d4"></div>
+                    <div class="color-option" style="background-color: #a8e6cf;" data-color="#a8e6cf"></div>
+                    <div class="color-option" style="background-color: #b5e8e0;" data-color="#b5e8e0"></div>
+                    <div class="color-option" style="background-color: #c3c8e8;" data-color="#c3c8e8"></div>
+                    <div class="color-option" style="background-color: #f9d7c5;" data-color="#f9d7c5"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-note">
+                    <i class="material-icons">close</i>
+                    <span>取消</span>
+                </button>
+                <button class="btn" id="save-note">
+                    <i class="material-icons">check</i>
+                    <span>保存便签</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="floating-btn" id="floating-add-btn">
+        <i class="material-icons">add</i>
+    </div>
+
+    <script>
+        // 页面加载时执行
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化日期
+            initCopyright();
+            // 初始化便签
+            loadNotes();
+            // 添加事件监听器
+            setupEventListeners();
+            // 创建示例便签（如果本地存储为空）
+            createSampleNoteIfEmpty();
+            
+            // 移动端初始化
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('active');
+            }
+        });
+
+        // 版权年份信息
+        function initCopyright() {
+            const currentYear = new Date().getFullYear();
+            const startYear = 2025;
+            
+            document.getElementById('current-year').textContent = 
+                currentYear > startYear ? `${startYear} - ${currentYear}` : startYear;
+        }
+
+        // 创建示例便签
+        function createSampleNoteIfEmpty() {
+            const notes = loadFromLocalStorage();
+            if (notes.length === 0) {
+                const sampleNote = {
+                    id: Date.now(),
+                    content: '欢迎使用Blur Notes便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
+                    category: 'work',
+                    color: '#a8e6cf',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                saveToLocalStorage([sampleNote]);
+                renderNotes([sampleNote]);
+            }
+        }
+
+        // 从localStorage加载便签
+        function loadNotes() {
+            const notes = loadFromLocalStorage();
+            renderNotes(notes);
+        }
+
+        // 加载存储数据
+        function loadFromLocalStorage() {
+            const notesJSON = localStorage.getItem('blur-notes');
+            return notesJSON ? JSON.parse(notesJSON) : [];
+        }
+
+        // 保存到localStorage
+        function saveToLocalStorage(notes) {
+            localStorage.setItem('blur-notes', JSON.stringify(notes));
+            updateStats(notes.length);
+        }
+
+        // 更新统计信息
+        function updateStats(count) {
+            document.querySelector('.count').textContent = count;
+        }
+
+        // 渲染便签卡片
+        function renderNotes(notes) {
+            const grid = document.getElementById('notes-grid');
+            grid.innerHTML = '';
+            
+            if (notes.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-notes">
+                        <i class="material-icons">note_add</i>
+                        <h3>没有便签</h3>
+                        <p>点击"新建便签"按钮添加第一条便签</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            notes.forEach(note => {
+                const categoryText = {
+                    'work': '工作',
+                    'personal': '个人',
+                    'ideas': '想法',
+                    'todo': '待办事项',
+                    'other': '其他'
+                }[note.category] || '未分类';
+                
+                const card = document.createElement('div');
+                card.className = 'note-card';
+                card.style.backgroundColor = note.color;
+                card.dataset.id = note.id;
+                
+                card.innerHTML = `
+                    <div class="category">${categoryText}</div>
+                    <div class="content">${note.content.replace(/\n/g, '<br>')}</div>
+                    <div class="actions">
+                        <div class="color-btn">
+                            <i class="material-icons">palette</i>
+                        </div>
+                        <div class="delete-btn">
+                            <i class="material-icons">close</i>
+                        </div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+                
+                // 添加删除事件
+                card.querySelector('.delete-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteNote(note.id);
+                });
+                
+                // 添加更改颜色事件
+                card.querySelector('.color-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    changeNoteColor(note.id);
+                });
+                
+                // 双击编辑
+                card.addEventListener('dblclick', () => {
+                    openEditModal(note);
+                });
+            });
+            
+            updateStats(notes.length);
+        }
+
+        // 删除便签
+        function deleteNote(id) {
+            if (confirm('确定要删除此便签吗？此操作无法撤销。')) {
+                let notes = loadFromLocalStorage();
+                notes = notes.filter(note => note.id !== id);
+                saveToLocalStorage(notes);
+                renderNotes(notes);
+            }
+        }
+
+        // 更改便签颜色
+        function changeNoteColor(id) {
+            const colors = [
+                '#f9e2af', '#f0c7d4', '#a8e6cf', '#b5e8e0', 
+                '#c3c8e8', '#f9d7c5', '#e4f3d7', '#e1f0fd'
+            ];
+            
+            let notes = loadFromLocalStorage();
+            const noteIndex = notes.findIndex(note => note.id === id);
+            
+            if (noteIndex !== -1) {
+                // 随机选择新颜色（但避免与当前颜色相同）
+                let newColor;
+                do {
+                    newColor = colors[Math.floor(Math.random() * colors.length)];
+                } while (newColor === notes[noteIndex].color);
+                
+                notes[noteIndex].color = newColor;
+                notes[noteIndex].updatedAt = new Date().toISOString();
+                
+                saveToLocalStorage(notes);
+                renderNotes(notes);
+            }
+        }
+
+        // 打开编辑/新建模态框
+        function openEditModal(note = null) {
+            const modal = document.getElementById('note-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const noteContent = document.getElementById('note-content');
+            const noteCategory = document.getElementById('note-category');
+            
+            if (note) {
+                // 编辑模式
+                modalTitle.textContent = '编辑便签';
+                noteContent.value = note.content;
+                noteCategory.value = note.category;
+                // 设置当前颜色为选中状态
+                document.querySelectorAll('.color-option').forEach(option => {
+                    option.classList.remove('selected');
+                    if (option.dataset.color === note.color) {
+                        option.classList.add('selected');
+                    }
+                });
+                
+                modal.dataset.id = note.id;
+            } else {
+                // 新建模式
+                modalTitle.textContent = '新建便签';
+                noteContent.value = '';
+                noteCategory.value = 'work';
+                // 重置颜色选择
+                document.querySelectorAll('.color-option')[0].classList.add('selected');
+                
+                delete modal.dataset.id;
+            }
+            
+            modal.classList.add('active');
+        }
+
+        // 保存便签
+        function saveNote() {
+            const modal = document.getElementById('note-modal');
+            const noteContent = document.getElementById('note-content').value;
+            const noteCategory = document.getElementById('note-category').value;
+            const noteId = modal.dataset.id;
+            const selectedColor = document.querySelector('.color-option.selected').dataset.color;
+            
+            if (!noteContent.trim()) {
+                alert('便签内容不能为空！');
+                return;
+            }
+            
+            let notes = loadFromLocalStorage();
+            
+            if (noteId) {
+                // 更新现有便签
+                const noteIndex = notes.findIndex(note => note.id === parseInt(noteId));
+                if (noteIndex !== -1) {
+                    notes[noteIndex].content = noteContent;
+                    notes[noteIndex].category = noteCategory;
+                    notes[noteIndex].color = selectedColor;
+                    notes[noteIndex].updatedAt = new Date().toISOString();
+                }
+            } else {
+                // 创建新便签
+                const newNote = {
+                    id: Date.now(),
+                    content: noteContent,
+                    category: noteCategory,
+                    color: selectedColor,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                notes.push(newNote);
+            }
+            
+            saveToLocalStorage(notes);
+            renderNotes(notes);
+            closeModal();
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('note-modal').classList.remove('active');
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 打开新建便签模态框的按钮
+            document.getElementById('new-note-btn').addEventListener('click', () => openEditModal());
+            document.getElementById('floating-add-btn').addEventListener('click', () => openEditModal());
+            
+            // 模态框关闭按钮
+            document.getElementById('close-modal').addEventListener('click', closeModal);
+            document.getElementById('cancel-note').addEventListener('click', closeModal);
+            
+            // 保存按钮
+            document.getElementById('save-note').addEventListener('click', saveNote);
+            
+            // 颜色选择
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('.color-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    option.classList.add('selected');
+                });
+            });
+            
+            // 搜索功能
+            document.getElementById('search-input').addEventListener('input', () => {
+                const searchTerm = document.getElementById('search-input').value.toLowerCase();
+                const notes = loadFromLocalStorage();
+                
+                if (searchTerm) {
+                    const filteredNotes = notes.filter(note => 
+                        note.content.toLowerCase().includes(searchTerm)
+                    );
+                    renderNotes(filteredNotes);
+                } else {
+                    renderNotes(notes);
+                }
+            });
+            
+            // 分类筛选
+            document.querySelectorAll('.filter-item').forEach(item => {
+                if (item.id !== 'add-category') {
+                    item.addEventListener('click', () => {
+                        document.querySelectorAll('.filter-item').forEach(i => {
+                            i.classList.remove('active');
+                        });
+                        item.classList.add('active');
+                        
+                        const filter = item.dataset.filter;
+                        const notes = loadFromLocalStorage();
+                        
+                        if (filter === 'all') {
+                            renderNotes(notes);
+                        } else {
+                            const filteredNotes = notes.filter(note => note.category === filter);
+                            renderNotes(filteredNotes);
+                        }
+                        
+                        // 移动端选择后关闭侧边栏
+                        if (window.innerWidth <= 768) {
+                            document.getElementById('sidebar').classList.remove('active');
+                        }
+                    });
+                }
+            });
+            
+            // 导入/导出功能
+            document.getElementById('import-btn').addEventListener('click', () => {
+                alert('导入功能：点击后选择备份文件导入便签数据');
+                // 实际应用中这里应使用文件输入读取JSON文件
+            });
+            
+            document.getElementById('export-btn').addEventListener('click', () => {
+                const notes = loadFromLocalStorage();
+                const dataStr = JSON.stringify(notes, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                const exportFileDefaultName = `blur-notes-${new Date().toISOString().split('T')[0]}.json`;
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+            });
+            
+            // 添加新分类
+            document.getElementById('add-category').addEventListener('click', () => {
+                const categoryName = prompt('请输入新分类名称：');
+                if (categoryName) {
+                    // 简化实现 - 实际中需要添加该分类到UI和数据结构中
+                    alert(`已添加分类: ${categoryName}\n\n在实际应用中，这里会将分类添加到系统并支持使用`);
+                }
+            });
+            
+            // 移动端菜单按钮
+            document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('active');
+            });
+        }
+    </script>
+</body>
+</html>
