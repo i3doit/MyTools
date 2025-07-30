@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GlowNotes - 智能便签系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -29,16 +32,11 @@
             min-height: 100vh;
             padding: 20px;
             color: var(--text);
-            display: flex;
-            flex-direction: column;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
         }
 
         /* 头部区域 */
@@ -51,7 +49,7 @@
             backdrop-filter: blur(10px);
             background: rgba(255, 255, 255, 0.7);
             box-shadow: var(--card-shadow);
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             position: relative;
             overflow: hidden;
         }
@@ -68,7 +66,7 @@
         }
 
         .logo {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: 600;
             color: var(--dark);
             display: flex;
@@ -76,25 +74,26 @@
         }
 
         .logo i {
-            margin-right: 10px;
-            font-size: 26px;
+            margin-right: 12px;
+            font-size: 32px;
             color: var(--primary);
         }
 
         .search-container {
             position: relative;
-            width: 280px;
+            width: 300px;
         }
 
         .search-container input {
             width: 100%;
-            padding: 12px 16px 12px 40px;
+            padding: 14px 16px 14px 45px;
             border-radius: 50px;
             border: 2px solid rgba(91, 143, 185, 0.3);
             background: rgba(255, 255, 255, 0.8);
-            font-size: 14px;
+            font-size: 16px;
             outline: none;
             transition: var(--transition);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
         .search-container input:focus {
@@ -104,35 +103,36 @@
 
         .search-container i {
             position: absolute;
-            left: 14px;
+            left: 16px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--primary);
-            font-size: 16px;
+            font-size: 18px;
         }
 
         .action-buttons {
             display: flex;
-            gap: 10px;
+            gap: 12px;
         }
 
         .btn {
-            padding: 8px 16px;
+            padding: 10px 18px;
             border-radius: 8px;
             background: linear-gradient(45deg, var(--primary), var(--secondary));
             color: white;
             font-weight: 500;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             border: none;
             cursor: pointer;
             transition: var(--transition);
-            font-size: 14px;
+            box-shadow: 0 4px 6px rgba(50, 85, 220, 0.1);
         }
 
         .btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(50, 85, 220, 0.15);
         }
 
         .btn.btn-secondary {
@@ -144,45 +144,61 @@
         /* 便签管理区域 */
         .dashboard {
             display: grid;
-            grid-template-columns: 240px 1fr;
-            gap: 20px;
-            flex: 1;
+            grid-template-columns: 280px 1fr;
+            gap: 25px;
+            height: calc(100vh - 200px);
         }
 
         .sidebar {
             backdrop-filter: blur(10px);
             background: rgba(255, 255, 255, 0.7);
             border-radius: 16px;
-            padding: 15px;
+            padding: 20px;
             box-shadow: var(--card-shadow);
             display: flex;
             flex-direction: column;
-            height: fit-content;
+            overflow: hidden;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
         }
 
         .sidebar h3 {
-            font-size: 16px;
-            margin-bottom: 12px;
+            font-size: 18px;
+            margin-bottom: 15px;
             color: var(--dark);
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
 
         .filters {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
         }
 
         .filter-item {
             display: flex;
             align-items: center;
-            padding: 10px 12px;
-            border-radius: 8px;
+            padding: 12px 15px;
+            border-radius: 10px;
             cursor: pointer;
             transition: var(--transition);
-            font-size: 14px;
+            font-weight: 500;
         }
 
         .filter-item:hover {
@@ -195,29 +211,20 @@
         }
 
         .filter-item i {
-            margin-right: 8px;
-            font-size: 16px;
-            width: 20px;
-        }
-
-        .filter-item .count {
-            margin-left: auto;
-            background: rgba(91, 143, 185, 0.2);
-            border-radius: 12px;
-            padding: 2px 8px;
-            font-size: 12px;
+            margin-right: 10px;
+            font-size: 18px;
+            width: 24px;
         }
 
         .stats {
-            margin-top: 15px;
-            padding-top: 15px;
+            margin-top: auto;
+            padding-top: 20px;
             border-top: 1px solid rgba(91, 143, 185, 0.1);
             color: var(--dark);
-            font-size: 14px;
         }
 
-        .stats .total-count {
-            font-size: 24px;
+        .stats .count {
+            font-size: 36px;
             font-weight: 600;
             line-height: 1;
             margin: 5px 0;
@@ -232,61 +239,40 @@
             background: rgba(255, 255, 255, 0.7);
             border-radius: 16px;
             box-shadow: var(--card-shadow);
-            padding: 15px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            flex: 1;
+            min-height: 500px; /* 确保无数据时高度足够 */
         }
 
         .notes-header {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            padding-bottom: 15px;
-            margin-bottom: 10px;
+            padding-bottom: 20px;
             border-bottom: 1px solid rgba(91, 143, 185, 0.1);
         }
 
         .notes-header h2 {
-            font-size: 18px;
+            font-size: 20px;
             color: var(--dark);
-            margin-right: 15px;
-            display: flex;
-            align-items: center;
-        }
-
-        .notes-header .total-count {
-            margin-left: 8px;
-            background: rgba(91, 143, 185, 0.2);
-            border-radius: 12px;
-            padding: 2px 8px;
-            font-size: 14px;
+            margin-right: 20px;
+            margin-bottom: 10px;
         }
 
         .quick-filters {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             flex-wrap: wrap;
-            margin-top: 10px;
         }
 
         .quick-filter {
-            padding: 5px 10px;
-            border-radius: 16px;
+            padding: 6px 12px;
+            border-radius: 20px;
             background: rgba(91, 143, 185, 0.1);
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
             transition: var(--transition);
-            display: flex;
-            align-items: center;
-        }
-
-        .quick-filter .count {
-            margin-left: 5px;
-            background: rgba(91, 143, 185, 0.2);
-            border-radius: 10px;
-            padding: 0 5px;
-            font-size: 11px;
         }
 
         .quick-filter:hover, .quick-filter.active {
@@ -297,19 +283,19 @@
         .view-toggle {
             margin-left: auto;
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
 
         .view-btn {
-            width: 30px;
-            height: 30px;
-            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: rgba(91, 143, 185, 0.1);
-            transition: var(--transition);
             cursor: pointer;
+            transition: var(--transition);
         }
 
         .view-btn.active {
@@ -317,35 +303,177 @@
             color: white;
         }
 
-        .notes-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
         .notes-grid {
             flex: 1;
             overflow-y: auto;
-            padding: 10px 5px;
+            padding: 20px 5px;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
             align-content: flex-start;
+            min-height: 400px; /* 确保无数据时高度足够 */
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+            display: none;
+            flex-direction: column;
+            min-height: 400px; /* 确保无数据时高度足够 */
+        }
+
+        .view-list .notes-grid {
+            display: none;
+        }
+
+        .view-list .notes-list {
+            display: flex;
+        }
+
+        /* 便签卡片样式 */
+        .note-card {
+            border-radius: 12px;
+            padding: 20px;
+            height: 250px; /* 固定高度 */
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(12px);
+            position: relative;
+            cursor: pointer;
+            transform: translateY(0);
+            transition: var(--transition);
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+
+        .note-card:hover {
+            transform: translateY(-5px);
+            box-shadow: rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.1) 0px 8px 16px -8px;
+        }
+
+        .note-card .content {
+            flex: 1;
+            padding: 10px 0;
+            line-height: 1.5;
+            overflow-y: auto; /* 内容超出时滚动 */
+        }
+
+        .note-card .date {
+            font-size: 13px;
+            color: rgba(0, 0, 0, 0.6);
+            margin-top: 5px;
+        }
+
+        .note-card .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .delete-btn, .color-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+            color: rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+        }
+
+        .delete-btn:hover, .color-btn:hover {
+            background: rgba(0, 0, 0, 0.2);
+            color: rgba(0, 0, 0, 0.8);
+        }
+
+        .note-card .category {
+            position: absolute;
+            top: -2px;
+            right: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 0 0 6px 6px;
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+
+        .note-card.reminder-expired {
+            animation: pulse 1.5s infinite;
+        }
+
+        .note-list-item {
+            display: flex;
+            padding: 15px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.7);
+            margin-bottom: 12px;
+            box-shadow: var(--card-shadow);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .note-list-item:hover {
+            transform: translateX(5px);
+        }
+
+        .note-list-item .content {
+            flex: 1;
+            padding-right: 15px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3; /* 限制显示行数 */
+            -webkit-box-orient: vertical;
+        }
+
+        .note-list-item .date {
+            font-size: 13px;
+            color: #666;
+            display: block;
+            margin-top: 8px;
+        }
+
+        .note-list-item .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .empty-notes {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: rgba(91, 143, 185, 0.5);
+            width: 100%;
+            padding: 20px;
+        }
+
+        .empty-notes i {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .empty-notes .btn {
+            margin-top: 20px;
         }
 
         .pagination {
             display: flex;
             justify-content: center;
             gap: 8px;
-            margin-top: 15px;
-            padding-top: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
             border-top: 1px solid rgba(91, 143, 185, 0.1);
         }
 
         .page-btn {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -364,122 +492,149 @@
             background: rgba(91, 143, 185, 0.2);
         }
 
-        /* 便签卡片样式 */
-        .note-card {
-            border-radius: 12px;
-            padding: 18px;
-            min-height: 180px;
+        /* 模态框样式 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
             display: flex;
-            flex-direction: column;
-            backdrop-filter: blur(12px);
-            position: relative;
-            cursor: pointer;
-            transform: translateY(0);
-            transition: var(--transition);
-            box-shadow: var(--card-shadow);
-            overflow: hidden;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            z-index: 100;
             opacity: 0;
-            animation: fadeIn 0.5s forwards;
+            visibility: hidden;
+            transition: var(--transition);
         }
 
-        @keyframes fadeIn {
-            to { opacity: 1; }
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
         }
 
-        .note-card:hover {
-            transform: translateY(-5px);
-            box-shadow: rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.1) 0px 8px 16px -8px;
+        .modal-content {
+            width: 500px;
+            max-width: 90%;
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            position: relative;
+            transform: translateY(20px);
+            transition: var(--transition);
         }
 
-        .note-card .content {
-            flex: 1;
-            padding: 8px 0;
-            line-height: 1.5;
-            overflow-y: auto;
-            font-size: 14px;
+        .modal.active .modal-content {
+            transform: translateY(0);
         }
 
-        .note-card .date {
-            font-size: 12px;
-            color: rgba(0, 0, 0, 0.6);
-            margin-top: 5px;
-        }
-
-        .note-card .actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        .action-btn {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             background: rgba(0, 0, 0, 0.1);
-            transition: var(--transition);
-            color: rgba(0, 0, 0, 0.5);
             cursor: pointer;
+            transition: var(--transition);
         }
 
-        .action-btn:hover {
+        .close-modal:hover {
             background: rgba(0, 0, 0, 0.2);
-            color: rgba(0, 0, 0, 0.8);
         }
 
-        .note-card .category {
-            position: absolute;
-            top: -2px;
-            right: 12px;
-            font-size: 11px;
+        .modal h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
             font-weight: 500;
-            padding: 3px 8px;
-            border-radius: 0 0 6px 6px;
-            background: rgba(0, 0, 0, 0.2);
-            color: white;
+            color: var(--text);
         }
 
-        .note-card.todo-pinned {
-            border: 2px solid var(--primary);
-            box-shadow: 0 0 0 2px rgba(91, 143, 185, 0.3);
-        }
-
-        .note-card.todo-completed {
-            opacity: 0.8;
-            background: rgba(200, 200, 200, 0.3);
-        }
-
-        .empty-notes {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: rgba(91, 143, 185, 0.5);
+        .form-group input, .form-group textarea, .form-group select {
             width: 100%;
-            padding: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(91, 143, 185, 0.3);
+            font-size: 16px;
+            transition: var(--transition);
         }
 
-        .empty-notes i {
-            font-size: 50px;
-            margin-bottom: 12px;
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(123, 189, 230, 0.3);
+        }
+
+        .reminder-group {
+            display: none;
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .color-option:hover {
+            transform: scale(1.2);
+        }
+
+        .color-option.selected {
+            transform: scale(1.2);
+            box-shadow: 0 0 0 3px white, 0 0 0 5px var(--primary);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
         }
 
         /* 页脚区域 */
         footer {
             display: flex;
             flex-direction: column;
-            padding: 20px;
+            padding: 25px;
             border-radius: 16px;
             backdrop-filter: blur(10px);
             background: rgba(255, 255, 255, 0.7);
             box-shadow: var(--card-shadow);
-            margin-top: 20px;
+            margin-top: 30px;
             position: relative;
             overflow: hidden;
+            gap: 20px;
         }
 
         footer::before {
@@ -493,54 +648,180 @@
             z-index: -1;
         }
 
-        .footer-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
         .copyright {
+            text-align: center;
             color: var(--dark);
             font-size: 14px;
+            order: 3;
         }
 
-        .footer-links {
+        .ad-container {
+            background: linear-gradient(45deg, rgba(255, 200, 150, 0.2), rgba(255, 175, 125, 0.3));
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin: 0 auto;
+            max-width: 600px;
+            width: 100%;
+            order: 1;
+        }
+
+        .ad-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+
+        .ad-content {
+            line-height: 1.6;
+        }
+
+        .ad-highlight {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 20px;
+            border-radius: 50px;
+            background: linear-gradient(45deg, #ff8c00, #ff5500);
+            color: white;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(255, 140, 0, 0.3);
+        }
+
+        .ad-highlight:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 140, 0, 0.4);
+        }
+
+        .share-links {
             display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 15px;
+            order: 2;
+            margin: 15px 0;
         }
 
-        .footer-links a {
+        .share-title {
+            width: 100%;
+            text-align: center;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+
+        .share-link {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(91, 143, 185, 0.1);
+            transition: var(--transition);
+            position: relative;
             text-decoration: none;
             color: var(--dark);
-            font-size: 14px;
+            font-size: 22px;
+        }
+
+        .share-link:hover {
+            transform: translateY(-5px);
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 5px 15px rgba(91, 143, 185, 0.3);
+        }
+
+        .share-link.tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .share-link.tooltip:hover::after {
+            opacity: 1;
+        }
+
+        .author-links {
             display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .author-link {
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 6px;
+            text-decoration: none;
+            color: var(--dark);
             transition: var(--transition);
         }
 
-        .footer-links a:hover {
+        .author-link:hover {
             color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .author-link i {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .author-link span {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .floating-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 15px rgba(50, 85, 220, 0.3);
+            cursor: pointer;
+            z-index: 50;
+            transition: var(--transition);
+        }
+
+        .floating-btn:hover {
+            transform: scale(1.1) rotate(90deg);
         }
 
         .toast {
             position: fixed;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%) translateY(100px);
             background: rgba(0, 0, 0, 0.8);
             color: white;
             padding: 12px 20px;
-            border-radius: 30px;
+            border-radius: 50px;
             font-size: 14px;
             z-index: 1000;
             opacity: 0;
             transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .toast.show {
@@ -552,26 +833,43 @@
         @media (max-width: 1024px) {
             .dashboard {
                 grid-template-columns: 1fr;
+                height: auto;
             }
             
             .sidebar {
-                margin-bottom: 20px;
+                position: absolute;
+                left: -300px;
+                width: 280px;
+                z-index: 100;
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.active {
+                transform: translateX(300px);
+            }
+            
+            .sidebar-toggle {
+                display: flex;
+            }
+            
+            .quick-filters {
+                margin-top: 10px;
             }
         }
 
         @media (max-width: 768px) {
             header {
                 flex-direction: column;
-                gap: 15px;
-            }
-            
-            .search-container {
-                width: 100%;
+                gap: 20px;
             }
             
             .action-buttons {
                 width: 100%;
                 justify-content: center;
+            }
+            
+            .search-container {
+                width: 100%;
             }
             
             .notes-header {
@@ -580,25 +878,34 @@
             }
             
             .view-toggle {
-                margin-top: 10px;
+                margin-top: 15px;
                 margin-left: 0;
                 align-self: flex-end;
             }
             
-            .footer-content {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
+            .share-links {
+                gap: 15px;
             }
             
-            .footer-links {
-                justify-content: center;
+            .notes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             }
+        }
+
+        /* 动画 */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.3); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="sidebar-toggle" id="sidebar-toggle">
+            <i class="fas fa-bars"></i>
+        </div>
+        
         <header>
             <div class="logo">
                 <i class="fas fa-sticky-note"></i>
@@ -625,40 +932,41 @@
         </header>
 
         <main class="dashboard">
-            <div class="sidebar">
+            <div class="sidebar" id="sidebar">
                 <h3><i class="fas fa-folder"></i> 分类管理</h3>
                 <div class="filters">
                     <div class="filter-item active" data-filter="all">
                         <i class="fas fa-tasks"></i>全部便签
-                        <span class="count" id="all-count">0</span>
                     </div>
                     <div class="filter-item" data-filter="work">
                         <i class="fas fa-briefcase"></i>工作
-                        <span class="count" id="work-count">0</span>
                     </div>
                     <div class="filter-item" data-filter="personal">
                         <i class="fas fa-user"></i>个人
-                        <span class="count" id="personal-count">0</span>
                     </div>
                     <div class="filter-item" data-filter="ideas">
                         <i class="fas fa-lightbulb"></i>想法
-                        <span class="count" id="ideas-count">0</span>
                     </div>
                     <div class="filter-item" data-filter="todo">
                         <i class="fas fa-check-circle"></i>待办事项
-                        <span class="count" id="todo-count">0</span>
+                    </div>
+                    <div class="filter-item" data-filter="other">
+                        <i class="fas fa-folder"></i>其他
+                    </div>
+                    <div class="filter-item" id="add-category">
+                        <i class="fas fa-plus"></i>添加分类
                     </div>
                 </div>
                 <div class="stats">
                     <h3>统计信息</h3>
-                    <div class="total-count" id="total-count">0</div>
+                    <div class="count">1</div>
                     <span>条便签</span>
                 </div>
             </div>
 
             <div class="notes-container">
                 <div class="notes-header">
-                    <h2>全部便签 <span class="total-count" id="header-count">0</span></h2>
+                    <h2>全部便签</h2>
                     <div class="quick-filters">
                         <div class="quick-filter active" data-filter="all">全部</div>
                         <div class="quick-filter" data-filter="todo">待办事项</div>
@@ -672,44 +980,79 @@
                     </div>
                 </div>
                 
-                <div class="notes-content">
-                    <div class="notes-grid" id="notes-grid">
-                        <!-- 便签卡片将通过JavaScript动态生成 -->
+                <div class="notes-grid" id="notes-grid">
+                    <!-- 便签卡片将通过JavaScript动态生成 -->
+                    <div class="empty-notes">
+                        <i class="fas fa-sticky-note"></i>
+                        <h3>没有便签</h3>
+                        <p>点击"新建便签"按钮添加第一条便签</p>
+                        <button class="btn" id="add-sample-note">
+                            <i class="fas fa-plus"></i>
+                            <span>添加示例便签</span>
+                        </button>
                     </div>
-                    
-                    <div class="pagination" id="pagination">
-                        <!-- 分页按钮将通过JavaScript动态生成 -->
-                    </div>
+                </div>
+                
+                <div class="notes-list" id="notes-list">
+                    <!-- 列表视图内容 -->
                 </div>
             </div>
         </main>
 
         <footer>
-            <div class="footer-content">
-                <div class="copyright">
-                    © 2025 GlowNotes - 您的智能便签助手
-                </div>
-                <div class="footer-links">
-                    <a href="https://t.zsxq.com/11QO9" target="_blank">
-                        <i class="fas fa-headset"></i>
-                        <span>技术支持</span>
-                    </a>
-                    <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" target="_blank">
-                        <i class="fab fa-weixin"></i>
-                        <span>公众号</span>
-                    </a>
-                    <a href="https://i3doit.github.io/AI_Tools_2.5.html" target="_blank">
-                        <i class="fas fa-home"></i>
-                        <span>主页</span>
-                    </a>
+            <div class="ad-container">
+                <div class="ad-title">AI编程挑战赛</div>
+                <div class="ad-content">
+                    我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」
+                    <br>
+                    <a href="https://t.zsxq.com/yL7L8" class="ad-highlight">一起加入讨论吧</a>
                 </div>
             </div>
+            
+            <div class="share-links">
+                <div class="share-title">分享到：</div>
+                <a href="#" class="share-link tooltip" data-tooltip="微信" id="wechat-share">
+                    <i class="fab fa-weixin"></i>
+                </a>
+                <a href="#" class="share-link tooltip" data-tooltip="QQ" id="qq-share">
+                    <i class="fab fa-qq"></i>
+                </a>
+                <a href="#" class="share-link tooltip" data-tooltip="微博">
+                    <i class="fab fa-weibo"></i>
+                </a>
+                <a href="#" class="share-link tooltip" data-tooltip="Instagram">
+                    <i class="fab fa-instagram"></i>
+                </a>
+                <a href="#" class="share-link tooltip" data-tooltip="Facebook">
+                    <i class="fab fa-facebook-f"></i>
+                </a>
+                <a href="#" class="share-link tooltip" data-tooltip="WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                </a>
+                <a href="#" class="share-link tooltip" data-tooltip="X">
+                    <i class="fab fa-twitter"></i>
+                </a>
+            </div>
+            
+            <div class="author-links">
+                <a href="https://t.zsxq.com/11QO9" target="_blank" title="联系作者">
+                    <i class="fas fa-headset"></i>
+                    <span>联系作者</span>
+                </a>
+                <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" target="_blank" title="微信公众号">
+                    <i class="fab fa-weixin"></i>
+                    <span>公众号</span>
+                </a>
+                <a href="https://i3doit.github.io/AI_Tools_2.6.html" target="_blank" title="主页">
+                    <i class="fas fa-home"></i>
+                    <span>主页</span>
+                </a>
+            </div>
+            
+            <div class="copyright" id="copyright">
+                © <span id="current-year">2025</span> GlowNotes - 您的智能便签助手
+            </div>
         </footer>
-    </div>
-    
-    <div class="toast" id="toast">
-        <i class="fas fa-check-circle"></i>
-        <span id="toast-message">操作成功</span>
     </div>
 
     <!-- 新建/编辑便签模态框 -->
@@ -730,6 +1073,7 @@
                     <option value="personal">个人</option>
                     <option value="ideas">想法</option>
                     <option value="todo">待办事项</option>
+                    <option value="other">其他</option>
                 </select>
             </div>
             <div class="form-group reminder-group" id="reminder-group">
@@ -759,10 +1103,22 @@
             </div>
         </div>
     </div>
+    
+    <div class="floating-btn" id="floating-add-btn">
+        <i class="fas fa-plus"></i>
+    </div>
+    
+    <div class="toast" id="toast">复制成功，欢迎添加作者！</div>
+    
+    <audio id="reminder-alert" preload="auto">
+        <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
+    </audio>
 
     <script>
         // 页面加载时执行
         document.addEventListener('DOMContentLoaded', () => {
+            // 初始化日期
+            initCopyright();
             // 初始化便签
             setupEventListeners();
             // 加载便签
@@ -771,10 +1127,14 @@
             startReminderCheck();
         });
 
-        // 常量定义
-        const NOTES_PER_PAGE = 9;
-        let currentPage = 1;
-        let currentFilter = 'all';
+        // 版权年份信息
+        function initCopyright() {
+            const currentYear = new Date().getFullYear();
+            const startYear = 2025;
+            
+            document.getElementById('current-year').textContent = 
+                currentYear > startYear ? `${startYear} - ${currentYear}` : startYear;
+        }
 
         // 创建提醒检查
         function startReminderCheck() {
@@ -786,7 +1146,7 @@
                 notes.forEach(note => {
                     if (note.reminder && new Date(note.reminder) <= now && !note.reminderTriggered) {
                         // 播放提醒声音（重复3次）
-                        const alert = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3');
+                        const alert = document.getElementById('reminder-alert');
                         let playCount = 0;
                         
                         const playAlert = () => {
@@ -804,11 +1164,6 @@
                         note.reminderTriggered = true;
                         hasExpired = true;
                         
-                        // 取消置顶
-                        if (note.pinned) {
-                            note.pinned = false;
-                        }
-                        
                         // 显示视觉提示
                         const card = document.querySelector(`.note-card[data-id="${note.id}"]`);
                         if (card) {
@@ -819,7 +1174,6 @@
                 
                 if (hasExpired) {
                     saveToLocalStorage(notes);
-                    renderNotes(notes);
                 }
             }, 10000); // 每10秒检查一次
         }
@@ -842,11 +1196,20 @@
                 saveToLocalStorage(notes);
             }
             
-            // 更新统计信息
-            updateStats(notes);
+            // 倒序排列便签
+            notes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             
-            // 渲染便签
-            renderNotes(notes);
+            // 待办事项置顶
+            let sortedNotes = [];
+            notes.forEach(note => {
+                if (note.category === 'todo') {
+                    sortedNotes.unshift(note);
+                } else {
+                    sortedNotes.push(note);
+                }
+            });
+            
+            renderNotes(sortedNotes);
         }
 
         // 加载存储数据
@@ -858,30 +1221,21 @@
         // 保存到localStorage
         function saveToLocalStorage(notes) {
             localStorage.setItem('glow-notes', JSON.stringify(notes));
-            updateStats(notes);
+            updateStats(notes.length);
         }
 
         // 更新统计信息
-        function updateStats(notes) {
-            const totalCount = notes.length;
-            const workCount = notes.filter(note => note.category === 'work').length;
-            const personalCount = notes.filter(note => note.category === 'personal').length;
-            const ideasCount = notes.filter(note => note.category === 'ideas').length;
-            const todoCount = notes.filter(note => note.category === 'todo').length;
-            
-            document.getElementById('total-count').textContent = totalCount;
-            document.getElementById('header-count').textContent = totalCount;
-            document.getElementById('all-count').textContent = totalCount;
-            document.getElementById('work-count').textContent = workCount;
-            document.getElementById('personal-count').textContent = personalCount;
-            document.getElementById('ideas-count').textContent = ideasCount;
-            document.getElementById('todo-count').textContent = todoCount;
+        function updateStats(count) {
+            document.querySelector('.count').textContent = count;
         }
 
         // 渲染便签卡片
         function renderNotes(notes) {
             const grid = document.getElementById('notes-grid');
+            const list = document.getElementById('notes-list');
+            
             grid.innerHTML = '';
+            list.innerHTML = '';
             
             if (notes.length === 0) {
                 grid.innerHTML = `
@@ -889,53 +1243,46 @@
                         <i class="fas fa-sticky-note"></i>
                         <h3>没有便签</h3>
                         <p>点击"新建便签"按钮添加第一条便签</p>
+                        <button class="btn" id="add-sample-note">
+                            <i class="fas fa-plus"></i>
+                            <span>添加示例便签</span>
+                        </button>
                     </div>
                 `;
+                
+                document.getElementById('add-sample-note').addEventListener('click', () => {
+                    const sampleNote = {
+                        id: Date.now(),
+                        content: '欢迎使用 GlowNotes 便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
+                        category: 'work',
+                        color: '#a8e6cf',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+                    
+                    let notes = loadFromLocalStorage();
+                    notes.push(sampleNote);
+                    saveToLocalStorage(notes);
+                    renderNotes(notes);
+                });
+                
                 return;
             }
             
-            // 过滤便签
-            let filteredNotes = notes;
-            if (currentFilter !== 'all') {
-                filteredNotes = notes.filter(note => note.category === currentFilter);
-            }
-            
-            // 排序：待办事项置顶，其他按时间倒序
-            filteredNotes.sort((a, b) => {
-                if (a.category === 'todo' && b.category !== 'todo') return -1;
-                if (b.category === 'todo' && a.category !== 'todo') return 1;
-                if (a.pinned && !b.pinned) return -1;
-                if (!a.pinned && b.pinned) return 1;
-                return new Date(b.createdAt) - new Date(a.createdAt);
-            });
-            
-            // 分页
-            const totalPages = Math.ceil(filteredNotes.length / NOTES_PER_PAGE);
-            const startIndex = (currentPage - 1) * NOTES_PER_PAGE;
-            const endIndex = Math.min(startIndex + NOTES_PER_PAGE, filteredNotes.length);
-            const pageNotes = filteredNotes.slice(startIndex, endIndex);
-            
-            // 渲染当前页的便签
-            pageNotes.forEach(note => {
+            notes.forEach(note => {
                 const categoryText = {
                     'work': '工作',
                     'personal': '个人',
                     'ideas': '想法',
-                    'todo': '待办事项'
+                    'todo': '待办事项',
+                    'other': '其他'
                 }[note.category] || '未分类';
                 
+                // 卡片视图
                 const card = document.createElement('div');
                 card.className = 'note-card';
                 card.style.backgroundColor = note.color || '#f9e2af';
                 card.dataset.id = note.id;
-                
-                if (note.category === 'todo' && note.pinned) {
-                    card.classList.add('todo-pinned');
-                }
-                
-                if (note.completed) {
-                    card.classList.add('todo-completed');
-                }
                 
                 // 格式化日期
                 const createdAt = new Date(note.createdAt);
@@ -946,18 +1293,11 @@
                     <div class="content">${note.content.replace(/\n/g, '<br>')}</div>
                     <div class="date">${dateStr}</div>
                     <div class="actions">
-                        ${note.category === 'todo' ? `
-                            <div class="action-btn complete-btn">
-                                <i class="fas fa-check"></i>
-                            </div>
-                            ${note.pinned ? `
-                                <div class="action-btn unpin-btn">
-                                    <i class="fas fa-thumbtack"></i>
-                                </div>
-                            ` : ''}
-                        ` : ''}
-                        <div class="action-btn delete-btn">
-                            <i class="fas fa-trash"></i>
+                        <div class="color-btn">
+                            <i class="fas fa-palette"></i>
+                        </div>
+                        <div class="delete-btn">
+                            <i class="fas fa-times"></i>
                         </div>
                     </div>
                 `;
@@ -966,54 +1306,35 @@
                 
                 // 添加事件处理
                 attachCardEvents(card, note);
+                
+                // 列表视图
+                const listItem = document.createElement('div');
+                listItem.className = 'note-list-item';
+                listItem.dataset.id = note.id;
+                
+                listItem.innerHTML = `
+                    <div class="content">
+                        <strong>${categoryText}</strong>
+                        <div>${note.content}</div>
+                        <span class="date">${dateStr}</span>
+                    </div>
+                    <div class="actions">
+                        <div class="color-btn">
+                            <i class="fas fa-palette"></i>
+                        </div>
+                        <div class="delete-btn">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    </div>
+                `;
+                
+                list.appendChild(listItem);
+                
+                // 列表项事件处理
+                attachListEvents(listItem, note);
             });
             
-            // 渲染分页控件
-            renderPagination(totalPages);
-        }
-
-        // 渲染分页控件
-        function renderPagination(totalPages) {
-            const pagination = document.getElementById('pagination');
-            pagination.innerHTML = '';
-            
-            if (totalPages <= 1) return;
-            
-            // 上一页按钮
-            if (currentPage > 1) {
-                const prevBtn = document.createElement('div');
-                prevBtn.className = 'page-btn';
-                prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
-                prevBtn.addEventListener('click', () => {
-                    currentPage--;
-                    loadNotes();
-                });
-                pagination.appendChild(prevBtn);
-            }
-            
-            // 页码按钮
-            for (let i = 1; i <= totalPages; i++) {
-                const pageBtn = document.createElement('div');
-                pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
-                pageBtn.textContent = i;
-                pageBtn.addEventListener('click', () => {
-                    currentPage = i;
-                    loadNotes();
-                });
-                pagination.appendChild(pageBtn);
-            }
-            
-            // 下一页按钮
-            if (currentPage < totalPages) {
-                const nextBtn = document.createElement('div');
-                nextBtn.className = 'page-btn';
-                nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
-                nextBtn.addEventListener('click', () => {
-                    currentPage++;
-                    loadNotes();
-                });
-                pagination.appendChild(nextBtn);
-            }
+            updateStats(notes.length);
         }
 
         // 添加卡片事件处理
@@ -1024,27 +1345,83 @@
                 deleteNote(note.id);
             });
             
-            // 添加完成事件（仅待办事项）
-            const completeBtn = card.querySelector('.complete-btn');
-            if (completeBtn) {
-                completeBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    completeTodo(note.id);
-                });
-            }
-            
-            // 添加取消置顶事件
-            const unpinBtn = card.querySelector('.unpin-btn');
-            if (unpinBtn) {
-                unpinBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    unpinNote(note.id);
-                });
-            }
+            // 添加更改颜色事件
+            card.querySelector('.color-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                changeNoteColor(note.id);
+            });
             
             // 双击编辑
             card.addEventListener('dblclick', () => {
                 openEditModal(note);
+            });
+            
+            // 滑动删除
+            setupSwipeEvents(card, note.id);
+        }
+
+        // 添加列表项事件处理
+        function attachListEvents(listItem, note) {
+            // 添加删除事件
+            listItem.querySelector('.delete-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteNote(note.id);
+            });
+            
+            // 添加更改颜色事件
+            listItem.querySelector('.color-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                changeNoteColor(note.id);
+            });
+            
+            // 单击编辑
+            listItem.addEventListener('click', (e) => {
+                if (!e.target.closest('.delete-btn, .color-btn')) {
+                    openEditModal(note);
+                }
+            });
+        }
+
+        // 设置滑动事件
+        function setupSwipeEvents(element, noteId) {
+            let startX, startY;
+            let isSwiping = false;
+            
+            element.addEventListener('touchstart', e => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                isSwiping = true;
+            }, { passive: true });
+            
+            element.addEventListener('touchmove', e => {
+                if (!isSwiping) return;
+                
+                const deltaX = e.touches[0].clientX - startX;
+                const deltaY = e.touches[0].clientY - startY;
+                
+                // 确保是水平滑动而不是垂直滑动
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    e.preventDefault();
+                    element.style.transform = `translateX(${deltaX}px)`;
+                    element.style.opacity = 1 - Math.abs(deltaX) / 200;
+                }
+            }, { passive: false });
+            
+            element.addEventListener('touchend', e => {
+                if (!isSwiping) return;
+                isSwiping = false;
+                
+                const deltaX = e.changedTouches[0].clientX - startX;
+                const deltaY = e.changedTouches[0].clientY - startY;
+                
+                // 如果是明显的水平滑动（超过100px）
+                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
+                    deleteNote(noteId);
+                } else {
+                    // 恢复原始位置
+                    element.style.transform = '';
+                    element.style.opacity = '';
+                }
             });
         }
 
@@ -1055,34 +1432,31 @@
                 notes = notes.filter(note => note.id !== id);
                 saveToLocalStorage(notes);
                 renderNotes(notes);
-                showToast('便签已删除');
             }
         }
 
-        // 完成待办事项
-        function completeTodo(id) {
+        // 更改便签颜色
+        function changeNoteColor(id) {
+            const colors = [
+                '#f9e2af', '#f0c7d4', '#a8e6cf', '#b5e8e0', 
+                '#c3c8e8', '#f9d7c5', '#e4f3d7', '#e1f0fd'
+            ];
+            
             let notes = loadFromLocalStorage();
             const noteIndex = notes.findIndex(note => note.id === id);
             
             if (noteIndex !== -1) {
-                notes[noteIndex].completed = true;
-                notes[noteIndex].pinned = false;
+                // 随机选择新颜色（但避免与当前颜色相同）
+                let newColor;
+                do {
+                    newColor = colors[Math.floor(Math.random() * colors.length)];
+                } while (newColor === notes[noteIndex].color);
+                
+                notes[noteIndex].color = newColor;
+                notes[noteIndex].updatedAt = new Date().toISOString();
+                
                 saveToLocalStorage(notes);
                 renderNotes(notes);
-                showToast('待办事项已完成');
-            }
-        }
-
-        // 取消置顶
-        function unpinNote(id) {
-            let notes = loadFromLocalStorage();
-            const noteIndex = notes.findIndex(note => note.id === id);
-            
-            if (noteIndex !== -1) {
-                notes[noteIndex].pinned = false;
-                saveToLocalStorage(notes);
-                renderNotes(notes);
-                showToast('已取消置顶');
             }
         }
 
@@ -1092,12 +1466,22 @@
             const modalTitle = document.getElementById('modal-title');
             const noteContent = document.getElementById('note-content');
             const noteCategory = document.getElementById('note-category');
+            const reminderGroup = document.getElementById('reminder-group');
             
             if (note) {
                 // 编辑模式
                 modalTitle.textContent = '编辑便签';
                 noteContent.value = note.content;
                 noteCategory.value = note.category;
+                
+                // 显示提醒时间（如果是待办事项）
+                if (note.reminder) {
+                    const reminderTime = document.getElementById('reminder-time');
+                    // 转换为本地日期时间格式
+                    const dt = new Date(note.reminder);
+                    const dateTimeLocal = dt.toISOString().slice(0, 16);
+                    reminderTime.value = dateTimeLocal;
+                }
                 
                 // 设置当前颜色为选中状态
                 document.querySelectorAll('.color-option').forEach(option => {
@@ -1113,6 +1497,8 @@
                 modalTitle.textContent = '新建便签';
                 noteContent.value = '';
                 noteCategory.value = 'work';
+                document.getElementById('reminder-time').value = '';
+                
                 // 重置颜色选择
                 document.querySelectorAll('.color-option')[0].classList.add('selected');
                 
@@ -1122,7 +1508,7 @@
             // 显示/隐藏提醒时间选择器
             noteCategory.addEventListener('change', () => {
                 if (noteCategory.value === 'todo') {
-                    document.getElementById('reminder-group').style.display = 'block';
+                    reminderGroup.style.display = 'block';
                     
                     // 设置默认提醒时间为5分钟后
                     const now = new Date();
@@ -1130,15 +1516,21 @@
                     const defaultTime = now.toISOString().slice(0, 16);
                     document.getElementById('reminder-time').value = defaultTime;
                 } else {
-                    document.getElementById('reminder-group').style.display = 'none';
+                    reminderGroup.style.display = 'none';
                 }
             });
             
             // 初始显示状态
             if (noteCategory.value === 'todo') {
-                document.getElementById('reminder-group').style.display = 'block';
+                reminderGroup.style.display = 'block';
+                
+                // 设置默认提醒时间为5分钟后
+                const now = new Date();
+                now.setMinutes(now.getMinutes() + 5);
+                const defaultTime = now.toISOString().slice(0, 16);
+                document.getElementById('reminder-time').value = defaultTime;
             } else {
-                document.getElementById('reminder-group').style.display = 'none';
+                reminderGroup.style.display = 'none';
             }
             
             modal.classList.add('active');
@@ -1179,8 +1571,10 @@
                     // 更新提醒时间
                     if (noteCategory === 'todo') {
                         notes[noteIndex].reminder = reminderTime;
+                        notes[noteIndex].reminderTriggered = false;
                     } else {
                         delete notes[noteIndex].reminder;
+                        delete notes[noteIndex].reminderTriggered;
                     }
                 }
             } else {
@@ -1192,21 +1586,20 @@
                     color: selectedColor,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
-                    pinned: noteCategory === 'todo' // 待办事项默认置顶
                 };
                 
                 // 如果是待办事项且有提醒时间
                 if (noteCategory === 'todo' && reminderTime) {
                     newNote.reminder = reminderTime;
+                    newNote.reminderTriggered = false;
                 }
                 
                 notes.push(newNote);
             }
             
             saveToLocalStorage(notes);
-            renderNotes(notes);
+            loadNotes(); // 重新加载并排序
             closeModal();
-            showToast(noteId ? '便签已更新' : '便签已创建');
         }
 
         // 导入便签
@@ -1252,12 +1645,7 @@
                         
                         saveToLocalStorage(currentNotes);
                         renderNotes(currentNotes);
-                        showToast(`已成功导入 ${importedNotes.length} 条便签`);
-                        
-                        // 3秒后自动关闭提示
-                        setTimeout(() => {
-                            document.getElementById('toast').classList.remove('show');
-                        }, 3000);
+                        showToast(`成功导入 ${importedNotes.length} 条便签`);
                     } catch (error) {
                         alert(`导入失败: ${error.message}`);
                     }
@@ -1276,7 +1664,7 @@
         // 显示提示信息
         function showToast(message) {
             const toast = document.getElementById('toast');
-            document.getElementById('toast-message').textContent = message;
+            toast.textContent = message;
             toast.classList.add('show');
             
             setTimeout(() => {
@@ -1288,6 +1676,7 @@
         function setupEventListeners() {
             // 打开新建便签模态框的按钮
             document.getElementById('new-note-btn').addEventListener('click', () => openEditModal());
+            document.getElementById('floating-add-btn').addEventListener('click', () => openEditModal());
             
             // 模态框关闭按钮
             document.getElementById('close-modal').addEventListener('click', closeModal);
@@ -1323,16 +1712,60 @@
             
             // 分类筛选
             document.querySelectorAll('.filter-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    document.querySelectorAll('.filter-item').forEach(i => {
-                        i.classList.remove('active');
+                if (item.id !== 'add-category') {
+                    item.addEventListener('click', () => {
+                        document.querySelectorAll('.filter-item').forEach(i => {
+                            i.classList.remove('active');
+                        });
+                        item.classList.add('active');
+                        
+                        const filter = item.dataset.filter;
+                        const notes = loadFromLocalStorage();
+                        
+                        if (filter === 'all') {
+                            renderNotes(notes);
+                        } else {
+                            const filteredNotes = notes.filter(note => note.category === filter);
+                            renderNotes(filteredNotes);
+                        }
+                        
+                        // 在移动端关闭侧边栏
+                        const sidebar = document.getElementById('sidebar');
+                        if (window.innerWidth <= 1024) {
+                            sidebar.classList.remove('active');
+                        }
                     });
-                    item.classList.add('active');
+                }
+            });
+            
+            // 添加新分类
+            document.getElementById('add-category').addEventListener('click', () => {
+                const categoryName = prompt('请输入新分类名称：');
+                if (categoryName) {
+                    // 创建新分类
+                    const newItem = document.createElement('div');
+                    newItem.className = 'filter-item';
+                    newItem.dataset.filter = categoryName.toLowerCase().replace(/\s+/g, '-');
+                    newItem.innerHTML = `
+                        <i class="fas fa-folder"></i>${categoryName}
+                    `;
                     
-                    currentFilter = item.dataset.filter;
-                    currentPage = 1;
-                    loadNotes();
-                });
+                    // 添加到分类列表中
+                    const filters = document.querySelector('.filters');
+                    filters.insertBefore(newItem, document.getElementById('add-category'));
+                    
+                    // 添加事件监听
+                    newItem.addEventListener('click', () => {
+                        document.querySelectorAll('.filter-item').forEach(i => {
+                            i.classList.remove('active');
+                        });
+                        newItem.classList.add('active');
+                        
+                        const notes = loadFromLocalStorage();
+                        const filteredNotes = notes.filter(note => note.category === newItem.dataset.filter);
+                        renderNotes(filteredNotes);
+                    });
+                }
             });
             
             // 快捷筛选
@@ -1343,9 +1776,32 @@
                     });
                     filter.classList.add('active');
                     
-                    currentFilter = filter.dataset.filter;
-                    currentPage = 1;
-                    loadNotes();
+                    const filterType = filter.dataset.filter;
+                    const notes = loadFromLocalStorage();
+                    
+                    if (filterType === 'all') {
+                        renderNotes(notes);
+                    } else {
+                        const filteredNotes = notes.filter(note => note.category === filterType);
+                        renderNotes(filteredNotes);
+                    }
+                });
+            });
+            
+            // 视图切换
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.view-btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    btn.classList.add('active');
+                    
+                    const container = document.querySelector('.notes-container');
+                    if (btn.dataset.view === 'list') {
+                        container.classList.add('view-list');
+                    } else {
+                        container.classList.remove('view-list');
+                    }
                 });
             });
             
@@ -1363,6 +1819,25 @@
                 linkElement.setAttribute('href', dataUri);
                 linkElement.setAttribute('download', exportFileDefaultName);
                 linkElement.click();
+            });
+            
+            // 分享功能
+            document.getElementById('wechat-share').addEventListener('click', (e) => {
+                e.preventDefault();
+                navigator.clipboard.writeText("857023577");
+                showToast("复制成功，欢迎添加作者！");
+            });
+            
+            document.getElementById('qq-share').addEventListener('click', (e) => {
+                e.preventDefault();
+                navigator.clipboard.writeText("857023577");
+                showToast("复制成功，欢迎添加作者！");
+            });
+            
+            // 侧边栏开关
+            document.getElementById('sidebar-toggle').addEventListener('click', () => {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('active');
             });
         }
 
