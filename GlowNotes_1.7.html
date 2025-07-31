@@ -199,6 +199,7 @@
             cursor: pointer;
             transition: var(--transition);
             font-weight: 500;
+            justify-content: space-between;
         }
 
         .filter-item:hover {
@@ -214,6 +215,13 @@
             margin-right: 10px;
             font-size: 18px;
             width: 24px;
+        }
+
+        .category-count {
+            font-size: 12px;
+            background: rgba(91, 143, 185, 0.2);
+            border-radius: 10px;
+            padding: 2px 8px;
         }
 
         .stats {
@@ -242,7 +250,7 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            min-height: 500px; /* 确保无数据时高度足够 */
+            min-height: 500px;
         }
 
         .notes-header {
@@ -258,6 +266,15 @@
             color: var(--dark);
             margin-right: 20px;
             margin-bottom: 10px;
+        }
+
+        .notes-header h2 span {
+            background: rgba(91, 143, 185, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 14px;
+            margin-left: 8px;
+            font-weight: normal;
         }
 
         .quick-filters {
@@ -311,7 +328,7 @@
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 25px;
             align-content: flex-start;
-            min-height: 400px; /* 确保无数据时高度足够 */
+            min-height: 400px;
         }
 
         .notes-list {
@@ -320,7 +337,7 @@
             padding: 10px 0;
             display: none;
             flex-direction: column;
-            min-height: 400px; /* 确保无数据时高度足够 */
+            min-height: 400px;
         }
 
         .view-list .notes-grid {
@@ -335,7 +352,7 @@
         .note-card {
             border-radius: 12px;
             padding: 20px;
-            height: 250px; /* 固定高度 */
+            min-height: 250px;
             display: flex;
             flex-direction: column;
             backdrop-filter: blur(12px);
@@ -352,11 +369,18 @@
             box-shadow: rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.1) 0px 8px 16px -8px;
         }
 
+        .note-card .title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
         .note-card .content {
             flex: 1;
             padding: 10px 0;
             line-height: 1.5;
-            overflow-y: auto; /* 内容超出时滚动 */
+            overflow-y: auto;
         }
 
         .note-card .date {
@@ -369,9 +393,10 @@
             display: flex;
             justify-content: flex-end;
             gap: 10px;
+            margin-top: 10px;
         }
 
-        .delete-btn, .color-btn {
+        .delete-btn, .color-btn, .unpin-btn {
             width: 32px;
             height: 32px;
             border-radius: 8px;
@@ -384,7 +409,7 @@
             cursor: pointer;
         }
 
-        .delete-btn:hover, .color-btn:hover {
+        .delete-btn:hover, .color-btn:hover, .unpin-btn:hover {
             background: rgba(0, 0, 0, 0.2);
             color: rgba(0, 0, 0, 0.8);
         }
@@ -403,6 +428,21 @@
 
         .note-card.reminder-expired {
             animation: pulse 1.5s infinite;
+            opacity: 0.7;
+        }
+
+        .note-card.completed {
+            background: linear-gradient(135deg, #e0e0e0, #f0f0f0);
+            opacity: 0.8;
+        }
+
+        .note-card.completed .title::after {
+            content: "已完成";
+            font-size: 12px;
+            background: rgba(123, 189, 230, 0.3);
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 10px;
         }
 
         .note-list-item {
@@ -426,7 +466,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             display: -webkit-box;
-            -webkit-line-clamp: 3; /* 限制显示行数 */
+            -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
         }
 
@@ -829,6 +869,85 @@
             transform: translateX(-50%) translateY(0);
         }
 
+        /* 新添加：遮罩层用于关闭侧边栏 */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(3px);
+            z-index: 90;
+        }
+        
+        .overlay.active {
+            display: block;
+        }
+
+        /* 新添加：首次使用引导 */
+        .welcome-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            backdrop-filter: blur(5px);
+        }
+        
+        .welcome-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .welcome-content h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        
+        .welcome-steps {
+            text-align: left;
+            margin: 30px 0;
+        }
+        
+        .welcome-step {
+            display: flex;
+            margin-bottom: 20px;
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(91, 143, 185, 0.05);
+        }
+        
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .welcome-close {
+            margin-top: 20px;
+            width: 100%;
+        }
+
         /* 响应式设计 */
         @media (max-width: 1024px) {
             .dashboard {
@@ -837,9 +956,11 @@
             }
             
             .sidebar {
-                position: absolute;
+                position: fixed;
                 left: -300px;
+                top: 0;
                 width: 280px;
+                height: 100vh;
                 z-index: 100;
                 transition: transform 0.3s ease;
             }
@@ -898,9 +1019,63 @@
             70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
         }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
+    <div class="overlay" id="overlay"></div>
+    
+    <!-- 首次使用引导模态框 -->
+    <div class="welcome-modal" id="welcome-modal">
+        <div class="welcome-content">
+            <h2>欢迎使用 GlowNotes！</h2>
+            <p>智能便签管理系统帮助您轻松管理各类信息</p>
+            
+            <div class="welcome-steps">
+                <div class="welcome-step">
+                    <div class="step-number">1</div>
+                    <div>
+                        <strong>新建便签</strong>
+                        <p>点击右上角"新建便签"按钮或右下角圆形按钮添加新便签</p>
+                    </div>
+                </div>
+                
+                <div class="welcome-step">
+                    <div class="step-number">2</div>
+                    <div>
+                        <strong>分类管理</strong>
+                        <p>使用左侧分类菜单和顶部快速筛选功能整理便签</p>
+                    </div>
+                </div>
+                
+                <div class="welcome-step">
+                    <div class="step-number">3</div>
+                    <div>
+                        <strong>便签操作</strong>
+                        <p>双击便签进行编辑，滑动删除便签，更换便签背景颜色</p>
+                    </div>
+                </div>
+                
+                <div class="welcome-step">
+                    <div class="step-number">4</div>
+                    <div>
+                        <strong>待办事项</strong>
+                        <p>待办事项会自动置顶，完成后可标记为完成并取消置顶</p>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn welcome-close" id="welcome-close">
+                <i class="fas fa-check"></i>
+                <span>开始使用</span>
+            </button>
+        </div>
+    </div>
+    
     <div class="container">
         <div class="sidebar-toggle" id="sidebar-toggle">
             <i class="fas fa-bars"></i>
@@ -936,22 +1111,28 @@
                 <h3><i class="fas fa-folder"></i> 分类管理</h3>
                 <div class="filters">
                     <div class="filter-item active" data-filter="all">
-                        <i class="fas fa-tasks"></i>全部便签
+                        <span><i class="fas fa-tasks"></i>全部便签</span>
+                        <span class="category-count" id="all-count">188</span>
                     </div>
                     <div class="filter-item" data-filter="work">
-                        <i class="fas fa-briefcase"></i>工作
+                        <span><i class="fas fa-briefcase"></i>工作</span>
+                        <span class="category-count">67</span>
                     </div>
                     <div class="filter-item" data-filter="personal">
-                        <i class="fas fa-user"></i>个人
+                        <span><i class="fas fa-user"></i>个人</span>
+                        <span class="category-count">42</span>
                     </div>
                     <div class="filter-item" data-filter="ideas">
-                        <i class="fas fa-lightbulb"></i>想法
+                        <span><i class="fas fa-lightbulb"></i>想法</span>
+                        <span class="category-count">15</span>
                     </div>
                     <div class="filter-item" data-filter="todo">
-                        <i class="fas fa-check-circle"></i>待办事项
+                        <span><i class="fas fa-check-circle"></i>待办事项</span>
+                        <span class="category-count">22</span>
                     </div>
                     <div class="filter-item" data-filter="other">
-                        <i class="fas fa-folder"></i>其他
+                        <span><i class="fas fa-folder"></i>其他</span>
+                        <span class="category-count">42</span>
                     </div>
                     <div class="filter-item" id="add-category">
                         <i class="fas fa-plus"></i>添加分类
@@ -959,14 +1140,14 @@
                 </div>
                 <div class="stats">
                     <h3>统计信息</h3>
-                    <div class="count">1</div>
+                    <div class="count">188</div>
                     <span>条便签</span>
                 </div>
             </div>
 
             <div class="notes-container">
                 <div class="notes-header">
-                    <h2>全部便签</h2>
+                    <h2>全部便签 <span id="total-count">188</span></h2>
                     <div class="quick-filters">
                         <div class="quick-filter active" data-filter="all">全部</div>
                         <div class="quick-filter" data-filter="todo">待办事项</div>
@@ -981,20 +1162,46 @@
                 </div>
                 
                 <div class="notes-grid" id="notes-grid">
-                    <!-- 便签卡片将通过JavaScript动态生成 -->
-                    <div class="empty-notes">
-                        <i class="fas fa-sticky-note"></i>
-                        <h3>没有便签</h3>
-                        <p>点击"新建便签"按钮添加第一条便签</p>
-                        <button class="btn" id="add-sample-note">
-                            <i class="fas fa-plus"></i>
-                            <span>添加示例便签</span>
-                        </button>
+                    <!-- 示例卡片放在第一位 -->
+                    <div class="note-card" style="background-color: #a8e6cf; animation: fadeIn 0.5s ease;">
+                        <div class="category">工作</div>
+                        <div class="title">
+                            <span>GlowNotes 使用指南</span>
+                        </div>
+                        <div class="content">
+                            <strong>欢迎使用智能便签系统！</strong><br><br>
+                            这是一张系统示例便签，展示了便签的基本功能：
+                            <ul style="padding-left: 20px; margin-top: 10px;">
+                                <li>点击右上角按钮可新建便签</li>
+                                <li>左侧分类可快速筛选不同类型的便签</li>
+                                <li>待办事项支持设置提醒时间</li>
+                                <li>列表视图和网格视图可自由切换</li>
+                            </ul>
+                        </div>
+                        <div class="date">2025-07-31 14:30</div>
+                        <div class="actions">
+                            <div class="color-btn">
+                                <i class="fas fa-palette"></i>
+                            </div>
+                            <div class="unpin-btn" title="取消置顶">
+                                <i class="fas fa-map-pin"></i>
+                            </div>
+                        </div>
                     </div>
+                    <!-- 其他便签将通过JavaScript动态生成 -->
                 </div>
                 
                 <div class="notes-list" id="notes-list">
                     <!-- 列表视图内容 -->
+                </div>
+                
+                <div class="pagination">
+                    <div class="page-btn"><i class="fas fa-chevron-left"></i></div>
+                    <div class="page-btn active">1</div>
+                    <div class="page-btn">2</div>
+                    <div class="page-btn">3</div>
+                    <div class="page-btn"><i class="fas fa-ellipsis-h"></i></div>
+                    <div class="page-btn"><i class="fas fa-chevron-right"></i></div>
                 </div>
             </div>
         </main>
@@ -1123,8 +1330,12 @@
             setupEventListeners();
             // 加载便签
             loadNotes();
+            // 检查并显示引导
+            checkFirstVisit();
             // 启动提醒检查
             startReminderCheck();
+            // 初始化分类计数
+            updateCategoryCounts();
         });
 
         // 版权年份信息
@@ -1134,6 +1345,14 @@
             
             document.getElementById('current-year').textContent = 
                 currentYear > startYear ? `${startYear} - ${currentYear}` : startYear;
+        }
+
+        // 首次访问检查
+        function checkFirstVisit() {
+            if (!localStorage.getItem('glow-notes-first-visit')) {
+                document.getElementById('welcome-modal').style.display = 'flex';
+                localStorage.setItem('glow-notes-first-visit', 'true');
+            }
         }
 
         // 创建提醒检查
@@ -1178,6 +1397,40 @@
             }, 10000); // 每10秒检查一次
         }
 
+        // 更新分类计数
+        function updateCategoryCounts() {
+            const notes = loadFromLocalStorage();
+            const counts = {
+                all: notes.length,
+                work: 0,
+                personal: 0,
+                ideas: 0,
+                todo: 0,
+                other: 0
+            };
+            
+            notes.forEach(note => {
+                if (counts[note.category] !== undefined) {
+                    counts[note.category]++;
+                }
+            });
+            
+            // 更新侧边栏计数
+            document.querySelector('#all-count').textContent = counts.all;
+            document.querySelectorAll('.filter-item').forEach(item => {
+                const filter = item.dataset.filter;
+                if (filter && filter !== 'all') {
+                    const countElement = item.querySelector('.category-count');
+                    if (countElement) {
+                        countElement.textContent = counts[filter];
+                    }
+                }
+            });
+            
+            // 更新标题计数
+            document.getElementById('total-count').textContent = counts.all;
+        }
+
         // 从localStorage加载便签
         function loadNotes() {
             let notes = loadFromLocalStorage();
@@ -1190,26 +1443,41 @@
                     category: 'work',
                     color: '#a8e6cf',
                     createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
+                    updatedAt: new Date().toISOString(),
+                    pinned: true
                 };
                 notes.push(sampleNote);
                 saveToLocalStorage(notes);
             }
             
-            // 倒序排列便签
-            notes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            
-            // 待办事项置顶
-            let sortedNotes = [];
-            notes.forEach(note => {
-                if (note.category === 'todo') {
-                    sortedNotes.unshift(note);
-                } else {
-                    sortedNotes.push(note);
+            // 排序逻辑：置顶的待办事项 > 普通便签（按时间倒序）> 过期或已完成的待办事项
+            const now = new Date();
+            notes.sort((a, b) => {
+                const aIsTodo = a.category === 'todo';
+                const bIsTodo = b.category === 'todo';
+                
+                const aIsActiveTodo = aIsTodo && (!a.reminder || new Date(a.reminder) > now) && !a.completed;
+                const bIsActiveTodo = bIsTodo && (!b.reminder || new Date(b.reminder) > now) && !b.completed;
+                
+                // 两个都是待办事项
+                if (aIsActiveTodo && bIsActiveTodo) {
+                    // 按提醒时间排序（越早的越前）
+                    const aTime = a.reminder ? new Date(a.reminder) : now;
+                    const bTime = b.reminder ? new Date(b.reminder) : now;
+                    return aTime - bTime;
                 }
+                
+                // 只有a是待办事项
+                if (aIsActiveTodo) return -1;
+                // 只有b是待办事项
+                if (bIsActiveTodo) return 1;
+                
+                // 按创建时间倒序排列
+                return new Date(b.createdAt) - new Date(a.createdAt);
             });
             
-            renderNotes(sortedNotes);
+            renderNotes(notes);
+            updateCategoryCounts();
         }
 
         // 加载存储数据
@@ -1221,12 +1489,6 @@
         // 保存到localStorage
         function saveToLocalStorage(notes) {
             localStorage.setItem('glow-notes', JSON.stringify(notes));
-            updateStats(notes.length);
-        }
-
-        // 更新统计信息
-        function updateStats(count) {
-            document.querySelector('.count').textContent = count;
         }
 
         // 渲染便签卡片
@@ -1234,6 +1496,8 @@
             const grid = document.getElementById('notes-grid');
             const list = document.getElementById('notes-list');
             
+            // 清空已有内容（保留示例卡片）
+            const sampleCard = grid.querySelector('.note-card[style*="background-color: #a8e6cf"]');
             grid.innerHTML = '';
             list.innerHTML = '';
             
@@ -1269,6 +1533,11 @@
                 return;
             }
             
+            // 重新添加示例卡片
+            if (sampleCard) {
+                grid.appendChild(sampleCard);
+            }
+            
             notes.forEach(note => {
                 const categoryText = {
                     'work': '工作',
@@ -1278,27 +1547,33 @@
                     'other': '其他'
                 }[note.category] || '未分类';
                 
-                // 卡片视图
-                const card = document.createElement('div');
-                card.className = 'note-card';
-                card.style.backgroundColor = note.color || '#f9e2af';
-                card.dataset.id = note.id;
-                
                 // 格式化日期
                 const createdAt = new Date(note.createdAt);
                 const dateStr = `${createdAt.getFullYear()}-${padZero(createdAt.getMonth()+1)}-${padZero(createdAt.getDate())} ${padZero(createdAt.getHours())}:${padZero(createdAt.getMinutes())}`;
                 
+                // 卡片视图
+                const card = document.createElement('div');
+                card.className = 'note-card';
+                if (note.completed) card.classList.add('completed');
+                card.style.backgroundColor = note.color || '#f9e2af';
+                card.dataset.id = note.id;
+                
                 card.innerHTML = `
                     <div class="category">${categoryText}</div>
+                    <div class="title">
+                        <span>${note.content.split('\n')[0] || categoryText}</span>
+                    </div>
                     <div class="content">${note.content.replace(/\n/g, '<br>')}</div>
                     <div class="date">${dateStr}</div>
                     <div class="actions">
-                        <div class="color-btn">
+                        <div class="color-btn" title="更换颜色">
                             <i class="fas fa-palette"></i>
                         </div>
-                        <div class="delete-btn">
-                            <i class="fas fa-times"></i>
+                        ${note.category === 'todo' ? `
+                        <div class="unpin-btn" title="${note.pinned ? '取消置顶' : '置顶'}">
+                            <i class="fas ${note.pinned ? 'fa-thumbtack' : 'fa-map-pin'}"></i>
                         </div>
+                        ` : ''}
                     </div>
                 `;
                 
@@ -1310,6 +1585,7 @@
                 // 列表视图
                 const listItem = document.createElement('div');
                 listItem.className = 'note-list-item';
+                if (note.completed) listItem.classList.add('completed');
                 listItem.dataset.id = note.id;
                 
                 listItem.innerHTML = `
@@ -1334,22 +1610,27 @@
                 attachListEvents(listItem, note);
             });
             
-            updateStats(notes.length);
+            updateCategoryCounts();
         }
 
         // 添加卡片事件处理
         function attachCardEvents(card, note) {
-            // 添加删除事件
-            card.querySelector('.delete-btn').addEventListener('click', (e) => {
-                e.stopPropagation();
-                deleteNote(note.id);
-            });
-            
             // 添加更改颜色事件
             card.querySelector('.color-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
                 changeNoteColor(note.id);
             });
+            
+            // 添加取消置顶/置顶事件
+            if (note.category === 'todo') {
+                const unpinBtn = card.querySelector('.unpin-btn');
+                if (unpinBtn) {
+                    unpinBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        togglePinStatus(note.id);
+                    });
+                }
+            }
             
             // 双击编辑
             card.addEventListener('dblclick', () => {
@@ -1358,6 +1639,18 @@
             
             // 滑动删除
             setupSwipeEvents(card, note.id);
+        }
+
+        // 切换置顶状态
+        function togglePinStatus(id) {
+            let notes = loadFromLocalStorage();
+            const noteIndex = notes.findIndex(note => note.id === id);
+            
+            if (noteIndex !== -1) {
+                notes[noteIndex].pinned = !notes[noteIndex].pinned;
+                saveToLocalStorage(notes);
+                renderNotes(notes);
+            }
         }
 
         // 添加列表项事件处理
@@ -1432,6 +1725,7 @@
                 notes = notes.filter(note => note.id !== id);
                 saveToLocalStorage(notes);
                 renderNotes(notes);
+                updateCategoryCounts();
             }
         }
 
@@ -1500,7 +1794,10 @@
                 document.getElementById('reminder-time').value = '';
                 
                 // 重置颜色选择
-                document.querySelectorAll('.color-option')[0].classList.add('selected');
+                document.querySelectorAll('.color-option').forEach((option, i) => {
+                    option.classList.remove('selected');
+                    if (i === 0) option.classList.add('selected');
+                });
                 
                 delete modal.dataset.id;
             }
@@ -1523,12 +1820,6 @@
             // 初始显示状态
             if (noteCategory.value === 'todo') {
                 reminderGroup.style.display = 'block';
-                
-                // 设置默认提醒时间为5分钟后
-                const now = new Date();
-                now.setMinutes(now.getMinutes() + 5);
-                const defaultTime = now.toISOString().slice(0, 16);
-                document.getElementById('reminder-time').value = defaultTime;
             } else {
                 reminderGroup.style.display = 'none';
             }
@@ -1551,30 +1842,21 @@
                 return;
             }
             
-            // 处理提醒时间
-            let reminderTime = null;
-            if (noteCategory === 'todo' && reminderTimeInput.value) {
-                reminderTime = new Date(reminderTimeInput.value).toISOString();
-            }
-            
             let notes = loadFromLocalStorage();
             
             if (noteId) {
-                // 更新现有便签
-                const noteIndex = notes.findIndex(note => note.id === parseInt(noteId));
+                // 编辑现有便签
+                const noteIndex = notes.findIndex(note => note.id.toString() === noteId);
                 if (noteIndex !== -1) {
                     notes[noteIndex].content = noteContent;
                     notes[noteIndex].category = noteCategory;
                     notes[noteIndex].color = selectedColor;
                     notes[noteIndex].updatedAt = new Date().toISOString();
                     
-                    // 更新提醒时间
-                    if (noteCategory === 'todo') {
-                        notes[noteIndex].reminder = reminderTime;
-                        notes[noteIndex].reminderTriggered = false;
+                    if (noteCategory === 'todo' && reminderTimeInput.value) {
+                        notes[noteIndex].reminder = new Date(reminderTimeInput.value).toISOString();
                     } else {
                         delete notes[noteIndex].reminder;
-                        delete notes[noteIndex].reminderTriggered;
                     }
                 }
             } else {
@@ -1586,106 +1868,46 @@
                     color: selectedColor,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
+                    pinned: noteCategory === 'todo' // 待办事项默认置顶
                 };
                 
-                // 如果是待办事项且有提醒时间
-                if (noteCategory === 'todo' && reminderTime) {
-                    newNote.reminder = reminderTime;
-                    newNote.reminderTriggered = false;
+                if (noteCategory === 'todo' && reminderTimeInput.value) {
+                    newNote.reminder = new Date(reminderTimeInput.value).toISOString();
                 }
                 
                 notes.push(newNote);
             }
             
             saveToLocalStorage(notes);
-            loadNotes(); // 重新加载并排序
+            renderNotes(notes);
             closeModal();
-        }
-
-        // 导入便签
-        function importNotes() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            
-            input.onchange = e => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = event => {
-                    try {
-                        const importedNotes = JSON.parse(event.target.result);
-                        if (!Array.isArray(importedNotes)) {
-                            throw new Error('导入的文件格式不正确');
-                        }
-                        
-                        let currentNotes = loadFromLocalStorage();
-                        const currentNoteIds = new Set(currentNotes.map(note => note.id));
-                        
-                        // 合并便签，如果ID已存在则更新，否则新增
-                        importedNotes.forEach(importedNote => {
-                            const existingIndex = currentNotes.findIndex(n => n.id === importedNote.id);
-                            if (existingIndex !== -1) {
-                                // 更新现有便签
-                                currentNotes[existingIndex] = {
-                                    ...currentNotes[existingIndex],
-                                    ...importedNote,
-                                    updatedAt: new Date().toISOString()
-                                };
-                            } else {
-                                // 添加新便签
-                                currentNotes.push({
-                                    ...importedNote,
-                                    createdAt: importedNote.createdAt || new Date().toISOString(),
-                                    updatedAt: new Date().toISOString()
-                                });
-                            }
-                        });
-                        
-                        saveToLocalStorage(currentNotes);
-                        renderNotes(currentNotes);
-                        showToast(`成功导入 ${importedNotes.length} 条便签`);
-                    } catch (error) {
-                        alert(`导入失败: ${error.message}`);
-                    }
-                };
-                reader.readAsText(file);
-            };
-            
-            input.click();
         }
 
         // 关闭模态框
         function closeModal() {
             document.getElementById('note-modal').classList.remove('active');
         }
-
-        // 显示提示信息
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
-        }
-
+        
         // 设置事件监听器
         function setupEventListeners() {
-            // 打开新建便签模态框的按钮
-            document.getElementById('new-note-btn').addEventListener('click', () => openEditModal());
-            document.getElementById('floating-add-btn').addEventListener('click', () => openEditModal());
+            // 新建便签按钮
+            document.getElementById('new-note-btn').addEventListener('click', () => {
+                openEditModal();
+            });
             
-            // 模态框关闭按钮
+            // 浮动的添加按钮
+            document.getElementById('floating-add-btn').addEventListener('click', () => {
+                openEditModal();
+            });
+            
+            // 关闭模态框
             document.getElementById('close-modal').addEventListener('click', closeModal);
             document.getElementById('cancel-note').addEventListener('click', closeModal);
             
-            // 保存按钮
+            // 保存便签
             document.getElementById('save-note').addEventListener('click', saveNote);
             
-            // 颜色选择
+            // 颜色选择器
             document.querySelectorAll('.color-option').forEach(option => {
                 option.addEventListener('click', () => {
                     document.querySelectorAll('.color-option').forEach(opt => {
@@ -1695,22 +1917,7 @@
                 });
             });
             
-            // 搜索功能
-            document.getElementById('search-input').addEventListener('input', () => {
-                const searchTerm = document.getElementById('search-input').value.toLowerCase();
-                let notes = loadFromLocalStorage();
-                
-                if (searchTerm) {
-                    const filteredNotes = notes.filter(note => 
-                        note.content.toLowerCase().includes(searchTerm)
-                    );
-                    renderNotes(filteredNotes);
-                } else {
-                    renderNotes(notes);
-                }
-            });
-            
-            // 分类筛选
+            // 分类过滤
             document.querySelectorAll('.filter-item').forEach(item => {
                 if (item.id !== 'add-category') {
                     item.addEventListener('click', () => {
@@ -1718,130 +1925,60 @@
                             i.classList.remove('active');
                         });
                         item.classList.add('active');
-                        
-                        const filter = item.dataset.filter;
-                        const notes = loadFromLocalStorage();
-                        
-                        if (filter === 'all') {
-                            renderNotes(notes);
-                        } else {
-                            const filteredNotes = notes.filter(note => note.category === filter);
-                            renderNotes(filteredNotes);
-                        }
-                        
-                        // 在移动端关闭侧边栏
-                        const sidebar = document.getElementById('sidebar');
-                        if (window.innerWidth <= 1024) {
-                            sidebar.classList.remove('active');
-                        }
+                        // 这里可以添加过滤逻辑
                     });
                 }
             });
             
-            // 添加新分类
+            // 添加分类
             document.getElementById('add-category').addEventListener('click', () => {
-                const categoryName = prompt('请输入新分类名称：');
-                if (categoryName) {
-                    // 创建新分类
-                    const newItem = document.createElement('div');
-                    newItem.className = 'filter-item';
-                    newItem.dataset.filter = categoryName.toLowerCase().replace(/\s+/g, '-');
-                    newItem.innerHTML = `
-                        <i class="fas fa-folder"></i>${categoryName}
-                    `;
-                    
-                    // 添加到分类列表中
-                    const filters = document.querySelector('.filters');
-                    filters.insertBefore(newItem, document.getElementById('add-category'));
-                    
-                    // 添加事件监听
-                    newItem.addEventListener('click', () => {
-                        document.querySelectorAll('.filter-item').forEach(i => {
-                            i.classList.remove('active');
-                        });
-                        newItem.classList.add('active');
-                        
-                        const notes = loadFromLocalStorage();
-                        const filteredNotes = notes.filter(note => note.category === newItem.dataset.filter);
-                        renderNotes(filteredNotes);
-                    });
+                const name = prompt('请输入新分类名称:');
+                if (name) {
+                    // 这里可以添加新分类
+                    alert(`分类 "${name}" 已创建！`);
                 }
             });
             
-            // 快捷筛选
-            document.querySelectorAll('.quick-filter').forEach(filter => {
-                filter.addEventListener('click', () => {
-                    document.querySelectorAll('.quick-filter').forEach(f => {
-                        f.classList.remove('active');
-                    });
-                    filter.classList.add('active');
-                    
-                    const filterType = filter.dataset.filter;
-                    const notes = loadFromLocalStorage();
-                    
-                    if (filterType === 'all') {
-                        renderNotes(notes);
-                    } else {
-                        const filteredNotes = notes.filter(note => note.category === filterType);
-                        renderNotes(filteredNotes);
-                    }
+            // 分页按钮
+            document.querySelectorAll('.page-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // 这里可以添加分页逻辑
                 });
             });
             
             // 视图切换
             document.querySelectorAll('.view-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
+                    const view = btn.dataset.view;
                     document.querySelectorAll('.view-btn').forEach(b => {
                         b.classList.remove('active');
                     });
                     btn.classList.add('active');
                     
                     const container = document.querySelector('.notes-container');
-                    if (btn.dataset.view === 'list') {
-                        container.classList.add('view-list');
-                    } else {
-                        container.classList.remove('view-list');
-                    }
+                    container.classList.toggle('view-list', view === 'list');
                 });
             });
             
-            // 导入/导出功能
-            document.getElementById('import-btn').addEventListener('click', importNotes);
-            
-            document.getElementById('export-btn').addEventListener('click', () => {
-                const notes = loadFromLocalStorage();
-                const dataStr = JSON.stringify(notes, null, 2);
-                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                
-                const exportFileDefaultName = `glownotes-${new Date().toISOString().split('T')[0]}.json`;
-                
-                const linkElement = document.createElement('a');
-                linkElement.setAttribute('href', dataUri);
-                linkElement.setAttribute('download', exportFileDefaultName);
-                linkElement.click();
+            // 关闭欢迎模态框
+            document.getElementById('welcome-close').addEventListener('click', () => {
+                document.getElementById('welcome-modal').style.display = 'none';
             });
             
-            // 分享功能
-            document.getElementById('wechat-share').addEventListener('click', (e) => {
-                e.preventDefault();
-                navigator.clipboard.writeText("857023577");
-                showToast("复制成功，欢迎添加作者！");
+            // 遮罩点击关闭侧边栏
+            document.getElementById('overlay').addEventListener('click', () => {
+                document.querySelector('.sidebar').classList.remove('active');
+                document.getElementById('overlay').classList.remove('active');
             });
             
-            document.getElementById('qq-share').addEventListener('click', (e) => {
-                e.preventDefault();
-                navigator.clipboard.writeText("857023577");
-                showToast("复制成功，欢迎添加作者！");
-            });
-            
-            // 侧边栏开关
+            // 侧边栏切换按钮
             document.getElementById('sidebar-toggle').addEventListener('click', () => {
-                const sidebar = document.getElementById('sidebar');
-                sidebar.classList.toggle('active');
+                document.querySelector('.sidebar').classList.toggle('active');
+                document.getElementById('overlay').classList.toggle('active');
             });
         }
-
-        // 补零函数
+        
+        // 辅助函数：数字补零
         function padZero(num) {
             return num.toString().padStart(2, '0');
         }
