@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyBooker - 云端机票预订系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-bg: #f0f8ff;
+            --secondary-bg: rgba(255, 255, 255, 0.8);
+            --glass-bg: rgba(255, 255, 255, 0.3);
+            --text-color: #333;
+            --accent-color: #1e90ff;
+            --shadow: 0 8px 32px rgba(0, 0, 255, 0.1);
+            --transition: all 0.3s ease;
+            --border-radius: 16px;
+            --blur: blur(12px);
+            --gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: var(--primary-bg);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 毛玻璃效果 */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: var(--blur);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 255, 0.2);
+        }
+
+        /* 头部样式 */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .logo-icon {
+            font-size: 3rem;
+            color: var(--accent-color);
+        }
+
+        nav ul {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+        }
+
+        nav a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 10px 15px;
+            border-radius: 50px;
+            transition: var(--transition);
+        }
+
+        nav a:hover, nav a.active {
+            background: rgba(255, 255, 255, 0.5);
+            color: var(--accent-color);
+        }
+
+        /* 搜索区域 */
+        .search-section {
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .search-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            background: var(--secondary-bg);
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            background: var(--gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            align-self: flex-end;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: scale(1.03);
+        }
+
+        /* 航班展示 */
+        .flight-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .flight-card {
+            padding: 25px;
+        }
+
+        .flight-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: 15px;
+        }
+
+        .flight-id {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .flight-price {
+            font-weight: bold;
+            font-size: 1.8rem;
+            color: #ff6b6b;
+        }
+
+        .flight-details {
+            margin: 15px 0;
+            font-size: 0.95rem;
+        }
+
+        .flight-details > div {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .flight-route {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 10px 0;
+            position: relative;
+        }
+
+        .flight-route::before {
+            content: "";
+            position: absolute;
+            height: 2px;
+            background: var(--accent-color);
+            width: 100%;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .route-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            position: relative;
+            z-index: 2;
+        }
+
+        .route-dot.mid {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border: 2px solid var(--accent-color);
+        }
+
+        /* 操作按钮 */
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .actions .btn {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 30px 0;
+        }
+
+        .page-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--secondary-bg);
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .page-btn.active {
+            background: var(--gradient);
+            color: white;
+            border: none;
+        }
+
+        .page-btn:hover:not(.active) {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        /* 订单管理 */
+        .orders-section {
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--secondary-bg);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .table th {
+            background: rgba(30, 144, 255, 0.1);
+            padding: 15px;
+            text-align: left;
+        }
+
+        .table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .table tr:hover {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .action-cell {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .edit-btn { color: #4CAF50; }
+        .delete-btn { color: #ff5252; }
+
+        /* 导入导出 */
+        .data-tools {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        /* 页脚 */
+        footer {
+            padding: 40px 20px 20px;
+            text-align: center;
+        }
+
+        .social-sharing {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .social-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--secondary-bg);
+            color: var(--text-color);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+
+        .social-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .weibo { background: #e6162d; color: white; }
+        .wechat { background: #07c160; color: white; }
+        .qq { background: #12b7f5; color: white; }
+
+        .info-box {
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 20px;
+            background: rgba(30, 144, 255, 0.1);
+            border-radius: var(--border-radius);
+        }
+
+        .highlight {
+            color: #ff6b6b;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .copyright {
+            margin-top: 30px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            nav ul {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .search-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .table {
+                font-size: 0.85rem;
+            }
+            
+            .action-cell {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-paper-plane logo-icon"></i>
+                <h1>SkyBooker</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active">首页</a></li>
+                    <li><a href="#">航班查询</a></li>
+                    <li><a href="#">我的订单</a></li>
+                    <li><a href="#">价格日历</a></li>
+                    <li><a href="#">客服支持</a></li>
+                </ul>
+            </nav>
+        </header>
+        
+        <main>
+            <section class="glass-card search-section">
+                <h2 style="margin-bottom: 20px;">搜索航班</h2>
+                <div class="search-form">
+                    <div class="form-group">
+                        <label>出发地</label>
+                        <input type="text" class="form-control" placeholder="请输入出发城市" value="上海">
+                    </div>
+                    <div class="form-group">
+                        <label>目的地</label>
+                        <input type="text" class="form-control" placeholder="请输入目的城市" value="北京">
+                    </div>
+                    <div class="form-group">
+                        <label>出发日期</label>
+                        <input type="date" class="form-control" value="2025-08-15">
+                    </div>
+                    <div class="form-group">
+                        <label>乘客</label>
+                        <select class="form-control">
+                            <option>1 名乘客</option>
+                            <option>2 名乘客</option>
+                            <option>3 名乘客</option>
+                            <option>4 名乘客</option>
+                        </select>
+                    </div>
+                    <button class="btn"><i class="fas fa-search"></i> 搜索航班</button>
+                </div>
+            </section>
+            
+            <div class="section-header">
+                <h2>推荐航班</h2>
+                <div>
+                    共 <span id="totalFlights">47</span> 个航班 | 
+                    显示 <span id="currentRange">1-10</span>
+                </div>
+            </div>
+            
+            <div class="flight-grid">
+                <!-- 航班卡片 1 -->
+                <div class="glass-card flight-card">
+                    <div class="flight-header">
+                        <div class="flight-id">CA1837</div>
+                        <div class="flight-price">¥1,280</div>
+                    </div>
+                    <div class="flight-details">
+                        <div>
+                            <span>机型</span>
+                            <span>空客 A330</span>
+                        </div>
+                        <div>
+                            <span>飞行时间</span>
+                            <span>2小时25分</span>
+                        </div>
+                        <div>
+                            <span>出发: <strong>浦东 T2</strong></span>
+                            <span>到达: <strong>首都 T3</strong></span>
+                        </div>
+                    </div>
+                    <div class="flight-route">
+                        <div class="route-dot"></div>
+                        <div class="route-dot mid"></div>
+                        <div class="route-dot"></div>
+                    </div>
+                    <div class="flight-details">
+                        <div>
+                            <span>07:30</span>
+                            <span>09:55</span>
+                        </div>
+                        <div>
+                            <span>上海 (PVG)</span>
+                            <span>北京 (PEK)</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn">立即预订</button>
+                        <button class="btn btn-outline">详情</button>
+                    </div>
+                </div>
+                
+                <!-- 航班卡片 2 -->
+                <div class="glass-card flight-card">
+                    <div class="flight-header">
+                        <div class="flight-id">MU5125</div>
+                        <div class="flight-price">¥1,150</div>
+                    </div>
+                    <div class="flight-details">
+                        <div>
+                            <span>机型</span>
+                            <span>波音 737</span>
+                        </div>
+                        <div>
+                            <span>飞行时间</span>
+                            <span>2小时35分</span>
+                        </div>
+                        <div>
+                            <span>出发: <strong>虹桥 T2</strong></span>
+                            <span>到达: <strong>首都 T2</strong></span>
+                        </div>
+                    </div>
+                    <div class="flight-route">
+                        <div class="route-dot"></div>
+                        <div class="route-dot mid"></div>
+                        <div class="route-dot"></div>
+                    </div>
+                    <div class="flight-details">
+                        <div>
+                            <span>08:15</span>
+                            <span>10:50</span>
+                        </div>
+                        <div>
+                            <span>上海 (SHA)</span>
+                            <span>北京 (PEK)</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn">立即预订</button>
+                        <button class="btn btn-outline">详情</button>
+                    </div>
+                </div>
+                
+                <!-- 航班卡片 3 -->
+                <div class="glass-card flight-card">
+                    <div class="flight-header">
+                        <div class="flight-id">HU7602</div>
+                        <div class="flight-price">¥1,050</div>
+                    </div>
+                    <div class="flight-details">
+                        <div>
+                            <span>机型</span>
+                            <span>空客 A321</span>
+                        </div>
+                        <div>
+                            <span>飞行时间</span>
+                            <span>2小时20分</span>
+                        </div>
+                        <div>
+                            <span>出发: <strong>虹桥 T2</strong></span>
+                            <span>到达: <strong>大兴 PKX</strong></span>
+                        </div>
+                    </div>
+                    <div class="flight-route">
+                        <div class="route-dot"></div>
+                        <div class="route-dot mid"></div>
+                        <div class="route-dot"></div>
+                    </div>
+                    <div class="flight-details">
+                        <div>
+                            <span>18:40</span>
+                            <span>21:00</span>
+                        </div>
+                        <div>
+                            <span>上海 (SHA)</span>
+                            <span>北京 (PKX)</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn">立即预订</button>
+                        <button class="btn btn-outline">详情</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pagination">
+                <div class="page-btn"><i class="fas fa-chevron-left"></i></div>
+                <div class="page-btn active">1</div>
+                <div class="page-btn">2</div>
+                <div class="page-btn">3</div>
+                <div class="page-btn">4</div>
+                <div class="page-btn">5</div>
+                <div class="page-btn"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            
+            <section class="glass-card orders-section">
+                <div class="section-header">
+                    <h2>我的订单</h2>
+                    <div>
+                        <button class="btn"><i class="fas fa-plus"></i> 添加订单</button>
+                    </div>
+                </div>
+                
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>订单号</th>
+                            <th>航班号</th>
+                            <th>乘客</th>
+                            <th>日期</th>
+                            <th>状态</th>
+                            <th>金额</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>ORD20250731001</td>
+                            <td>CA1837</td>
+                            <td>李明</td>
+                            <td>2025-08-15</td>
+                            <td><span style="color:#4CAF50">已确认</span></td>
+                            <td>¥1,280</td>
+                            <td class="action-cell">
+                                <div class="action-btn edit-btn"><i class="fas fa-edit"></i></div>
+                                <div class="action-btn delete-btn"><i class="fas fa-trash"></i></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>ORD20250731002</td>
+                            <td>MU5125</td>
+                            <td>张伟</td>
+                            <td>2025-08-17</td>
+                            <td><span style="color:#FF9800">待支付</span></td>
+                            <td>¥1,150</td>
+                            <td class="action-cell">
+                                <div class="action-btn edit-btn"><i class="fas fa-edit"></i></div>
+                                <div class="action-btn delete-btn"><i class="fas fa-trash"></i></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>ORD20250731003</td>
+                            <td>HU7602</td>
+                            <td>王芳</td>
+                            <td>2025-08-20</td>
+                            <td><span style="color:#2196F3">已预订</span></td>
+                            <td>¥1,050</td>
+                            <td class="action-cell">
+                                <div class="action-btn edit-btn"><i class="fas fa-edit"></i></div>
+                                <div class="action-btn delete-btn"><i class="fas fa-trash"></i></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="data-tools">
+                    <button class="btn"><i class="fas fa-download"></i> 导出数据</button>
+                    <button class="btn btn-outline"><i class="fas fa-upload"></i> 导入数据</button>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <div class="social-sharing">
+                <a href="#" class="social-btn weibo"><i class="fab fa-weibo"></i></a>
+                <a href="#" class="social-btn wechat"><i class="fab fa-weixin"></i></a>
+                <a href="#" class="social-btn qq"><i class="fab fa-qq"></i></a>
+                <a href="#" class="social-btn"><i class="fas fa-share-alt"></i></a>
+            </div>
+            
+            <div class="info-box">
+                <p>技术支持：<a href="https://t.zsxq.com/11QO9" style="color: var(--accent-color); text-decoration: none;">艾兜兜儿</a></p>
+                <p>挑战100个小工具：<a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" style="color: var(--accent-color); text-decoration: none;">https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg</a></p>
+                <p style="margin-top: 15px;">我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」，
+                <span class="highlight" onclick="window.open('https://t.zsxq.com/yL7L8', '_blank')">一起加入讨论吧</span></p>
+            </div>
+            
+            <p style="margin-top: 10px;"><a href="https://deepseek.idoxu.com/aidder/FireNotes.html" style="color: var(--accent-color); text-decoration: none;">返回主页</a></p>
+            
+            <p class="copyright">
+                © <span id="copyrightYear">2025</span> SkyBooker飞机订票系统 - 轻松预订您的旅程
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // 动态版权年份
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentYear = new Date().getFullYear();
+            const copyrightYear = document.getElementById('copyrightYear');
+            
+            if (currentYear > 2025) {
+                copyrightYear.textContent = `2025 - ${currentYear}`;
+            } else {
+                copyrightYear.textContent = '2025';
+            }
+            
+            // 模拟数据初始化
+            if (!localStorage.getItem('flights')) {
+                const flightData = generateFlightData();
+                localStorage.setItem('flights', JSON.stringify(flightData));
+            }
+            
+            if (!localStorage.getItem('orders')) {
+                const orderData = generateOrderData();
+                localStorage.setItem('orders', JSON.stringify(orderData));
+            }
+        });
+
+        // 生成模拟航班数据
+        function generateFlightData() {
+            const flights = [];
+            const airlines = ['CA', 'MU', 'CZ', 'HU', '3U', 'FM', 'ZH', 'JD'];
+            const cities = ['上海', '北京', '广州', '深圳', '成都', '重庆', '昆明', '西安', '杭州', '厦门'];
+            
+            for (let i = 0; i < 50; i++) {
+                const fromIdx = Math.floor(Math.random() * cities.length);
+                let toIdx;
+                do {
+                    toIdx = Math.floor(Math.random() * cities.length);
+                } while (toIdx === fromIdx);
+                
+                const airline = airlines[Math.floor(Math.random() * airlines.length)];
+                const flightNumber = `${airline}${Math.floor(Math.random() * 2000) + 1000}`;
+                
+                const hour = Math.floor(Math.random() * 24);
+                const minute = Math.floor(Math.random() * 60);
+                const departTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                
+                // 飞行时间1-5小时
+                const flightHours = Math.floor(Math.random() * 5) + 1;
+                const flightMinutes = Math.floor(Math.random() * 60);
+                const flightDuration = `${flightHours}小时${flightMinutes}分`;
+                
+                const flight = {
+                    id: `FL${i + 1000}`,
+                    number: flightNumber,
+                    airline: airline,
+                    departure: cities[fromIdx],
+                    destination: cities[toIdx],
+                    date: generateRandomDate(),
+                    departTime: departTime,
+                    duration: flightDuration,
+                    price: Math.floor(Math.random() * 2000) + 800,
+                    status: ['scheduled', 'on-time', 'delayed'][Math.floor(Math.random() * 3)]
+                };
+                
+                flights.push(flight);
+            }
+            
+            return flights;
+        }
+
+        // 生成模拟订单数据
+        function generateOrderData() {
+            const orders = [];
+            const passengers = generatePassengers(50);
+            const flights = JSON.parse(localStorage.getItem('flights') || '[]');
+            
+            if (flights.length === 0) return [];
+            
+            for (let i = 0; i < 50; i++) {
+                const flight = flights[Math.floor(Math.random() * flights.length)];
+                const passenger = passengers[Math.floor(Math.random() * passengers.length)];
+                
+                const statuses = ['confirmed', 'pending', 'booked', 'canceled'];
+                const statusColors = {
+                    'confirmed': '#4CAF50',
+                    'pending': '#FF9800',
+                    'booked': '#2196F3',
+                    'canceled': '#9E9E9E'
+                };
+                
+                const status = statuses[Math.floor(Math.random() * statuses.length)];
+                
+                const order = {
+                    id: `ORD2025${(i + 100).toString().substring(1)}`,
+                    flightNumber: flight.number,
+                    passenger: passenger.name,
+                    passengerId: passenger.id,
+                    date: flight.date,
+                    status: status,
+                    statusColor: statusColors[status],
+                    amount: flight.price,
+                    contact: passenger.phone
+                };
+                
+                orders.push(order);
+            }
+            
+            return orders;
+        }
+
+        // 生成模拟乘客数据
+        function generatePassengers(count) {
+            const passengers = [];
+            const surnames = ['张', '李', '王', '刘', '陈', '杨', '赵', '黄', '周', '吴'];
+            const names = ['伟', '芳', '娜', '秀英', '敏', '静', '强', '磊', '洋', '艳'];
+            
+            for (let i = 0; i < count; i++) {
+                const surname = surnames[Math.floor(Math.random() * surnames.length)];
+                const name = names[Math.floor(Math.random() * names.length)];
+                
+                // 生成身份证号
+                const idNum = '11010119' + Math.floor(50000000 + Math.random() * 50000000).toString();
+                
+                // 生成手机号
+                const phone = '1' + ['3', '5', '7', '8', '9'][Math.floor(Math.random() * 5)] + 
+                    Math.floor(1000000000 + Math.random() * 9000000000).toString().substring(1);
+                
+                passengers.push({
+                    id: idNum,
+                    name: surname + name,
+                    phone: phone
+                });
+            }
+            
+            return passengers;
+        }
+
+        // 生成随机日期
+        function generateRandomDate() {
+            const start = new Date(2025, 7, 1);
+            const end = new Date(2025, 10, 30);
+            const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+            return date.toISOString().split('T')[0];
+        }
+    </script>
+</body>
+</html>
