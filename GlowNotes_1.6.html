@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GlowNotes - 智能便签系统</title>
+    <title>FireNotes - 智能便签系统</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -909,7 +909,7 @@
         <header>
             <div class="logo">
                 <i class="fas fa-sticky-note"></i>
-                <span>GlowNotes</span>
+                <span>FireNotes</span>
             </div>
             <div class="search-container">
                 <i class="fas fa-search"></i>
@@ -1037,20 +1037,20 @@
             <div class="author-links">
                 <a href="https://t.zsxq.com/11QO9" target="_blank" title="联系作者">
                     <i class="fas fa-headset"></i>
-                    <span>联系作者</span>
+                    <span>技术支持-艾兜兜儿</span>
                 </a>
                 <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" target="_blank" title="微信公众号">
                     <i class="fab fa-weixin"></i>
-                    <span>公众号</span>
+                    <span>「我的AI编程日记」</span>
                 </a>
-                <a href="https://i3doit.github.io/AI_Tools_2.6.html" target="_blank" title="主页">
+                <a href="#" target="_blank" title="主页">
                     <i class="fas fa-home"></i>
                     <span>主页</span>
                 </a>
             </div>
             
             <div class="copyright" id="copyright">
-                © <span id="current-year">2025</span> GlowNotes - 您的智能便签助手
+                © <span id="current-year">2025</span> FireNotes - 您的智能便签助手
             </div>
         </footer>
     </div>
@@ -1186,7 +1186,7 @@
                 // 添加示例便签
                 const sampleNote = {
                     id: Date.now(),
-                    content: '欢迎使用 GlowNotes 便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
+                    content: '欢迎使用 FireNotes 便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
                     category: 'work',
                     color: '#a8e6cf',
                     createdAt: new Date().toISOString(),
@@ -1253,7 +1253,7 @@
                 document.getElementById('add-sample-note').addEventListener('click', () => {
                     const sampleNote = {
                         id: Date.now(),
-                        content: '欢迎使用 GlowNotes 便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
+                        content: '欢迎使用 FireNotes 便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
                         category: 'work',
                         color: '#a8e6cf',
                         createdAt: new Date().toISOString(),
@@ -1813,7 +1813,7 @@
                 const dataStr = JSON.stringify(notes, null, 2);
                 const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
                 
-                const exportFileDefaultName = `glownotes-${new Date().toISOString().split('T')[0]}.json`;
+                const exportFileDefaultName = `firenotes-${new Date().toISOString().split('T')[0]}.json`;
                 
                 const linkElement = document.createElement('a');
                 linkElement.setAttribute('href', dataUri);
