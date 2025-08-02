@@ -2079,13 +2079,18 @@
             });
             
             // 关闭欢迎模态框
+            // 修复引导页关闭功能
             document.getElementById('welcome-close').addEventListener('click', () => {
                 const dontShow = document.getElementById('dont-show-again').checked;
                 if (dontShow) {
-                    localStorage.setItem('fire-notes-first-visit', 'true');
+                    localStorage.setItem('glowmemo-first-visit', 'true');
                 }
                 document.getElementById('welcome-modal').style.display = 'none';
+                
+                // 确保加载便签
+                loadNotes();
             });
+            
             
             // 遮罩点击关闭侧边栏
             document.getElementById('overlay').addEventListener('click', () => {
@@ -2221,7 +2226,7 @@
             document.getElementById('welcome-close').addEventListener('click', () => {
                 const dontShow = document.getElementById('dont-show-again').checked;
                 if (dontShow) {
-                    localStorage.setItem('sparkmemo-first-visit', 'true');
+                    localStorage.setItem('glowmemo-first-visit', 'true');
                 }
                 document.getElementById('welcome-modal').style.display = 'none';
             });
