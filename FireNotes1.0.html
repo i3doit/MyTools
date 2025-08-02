@@ -1,0 +1,132 @@
+
+        // 之前的JavaScript代码保持不变
+
+        // 添加事件监听器
+        function setupEventListeners() {
+            // 新建便签按钮
+            document.getElementById('new-note-btn').addEventListener('click', () => {
+                openEditModal();
+            });
+
+            // 浮动的添加按钮
+            document.getElementById('floating-add-btn').addEventListener('click', () => {
+                openEditModal();
+            });
+
+            // 关闭模态框
+            document.getElementById('close-modal').addEventListener('click', closeModal);
+            document.getElementById('cancel-note').addEventListener('click', closeModal);
+
+            // 保存便签
+            document.getElementById('save-note').addEventListener('click', saveNote);
+
+            // 颜色选择器
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('.color-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    option.classList.add('selected');
+                });
+            });
+
+            // 分类过滤
+            document.querySelectorAll('.filter-item').forEach(item => {
+                if (item.id !== 'add-category') {
+                    item.addEventListener('click', () => {
+                        document.querySelectorAll('.filter-item').forEach(i => {
+                            i.classList.remove('active');
+                        });
+                        item.classList.add('active');
+                        
+                        // 过滤便签
+                        const filter = item.dataset.filter;
+                        let notes = loadFromLocalStorage();
+                        
+                        if (filter !== 'all') {
+                            notes = notes.filter(note => note.category === filter);
+                        }
+                        
+                        renderNotes(notes);
+                    });
+                }
+            });
+
+            // 顶部快速过滤
+            document.querySelectorAll('.quick-filter').forEach(item => {
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('.quick-filter').forEach(i => {
+                        i.classList.remove('active');
+                    });
+                    item.classList.add('active');
+                    
+                    // 过滤便签
+                    const filter = item.dataset.filter;
+                    let notes = loadFromLocalStorage();
+                    
+                    if (filter !== 'all') {
+                        notes = notes.filter(note => note.category === filter);
+                    }
+                    
+                    renderNotes(notes);
+                });
+            });
+
+            // 添加分类
+            document.getElementById('add-category').addEventListener('click', () => {
+                const name = prompt('请输入新分类名称:');
+                if (name) {
+                    // 这里可以添加新分类
+                    alert(`分类 "${name}" 已创建！`);
+                }
+            });
+
+            // 视图切换
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const view = btn.dataset.view;
+                    document.querySelectorAll('.view-btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    btn.classList.add('active');
+                    
+                    const container = document.querySelector('.notes-container');
+                    container.classList.toggle('view-list', view === 'list');
+                });
+            });
+
+            // 关闭欢迎模态框
+            document.getElementById('welcome-close').addEventListener('click', () => {
+                const dontShow = document.getElementById('dont-show-again').checked;
+                if (dontShow) {
+                    localStorage.setItem('sparkmemo-first-visit', 'true');
+                }
+                document.getElementById('welcome-modal').style.display = 'none';
+            });
+
+            // 分享按钮
+            document.getElementById('wechat-share').addEventListener('click', (e) => {
+                e.preventDefault();
+                navigator.clipboard.writeText('857023577');
+                showToast('成功获取作者联系方式，去链接TA吧！');
+            });
+
+            document.getElementById('qq-share').addEventListener('click', (e) => {
+                e.preventDefault();
+                navigator.clipboard.writeText('857023577');
+                showToast('成功获取作者联系方式，去链接TA吧！');
+            });
+
+            // 导入导出按钮
+            document.getElementById('import-btn').addEventListener('click', importNotes);
+            document.getElementById('export-btn').addEventListener('click', exportNotes);
+        }
+
+        // 辅助函数：数字补零
+        function padZero(num) {
+            return num.toString().padStart(2, '0');
+        }
+
+        // 初始化
+        setupEventListeners();
+        loadNotes();
