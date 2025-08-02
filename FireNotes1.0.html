@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FireNotes - 智能便签系统</title>
+    <title>GlowMemo - 智能便签系统</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -1051,7 +1051,7 @@
     <!-- 首次使用引导模态框 -->
     <div class="welcome-modal" id="welcome-modal">
         <div class="welcome-content">
-            <h2>欢迎使用 FireNotes！</h2>
+            <h2>欢迎使用 GlowMemo ！</h2>
             <p>智能AI音频便签管理系统，帮助您轻松管理各类信息</p>
             
             <div class="welcome-steps">
@@ -1108,7 +1108,7 @@
         <header>
             <div class="logo">
                 <i class="fas fa-sticky-note"></i>
-                <span>FireNotes</span>
+                <span>GlowMemo</span>
             </div>
             <div class="search-container">
                 <i class="fas fa-search"></i>
@@ -1248,14 +1248,14 @@
                     <i class="fab fa-weixin"></i>
                     <span>我的AI编程日记</span>
                 </a>
-                <a href="https://i3doit.github.io/MyTools/FireNotes.html" target="_blank" title="主页">
+                <a href="https://i3doit.github.io/MyTools/GlowMemo.html" target="_blank" title="主页">
                     <i class="fas fa-home"></i>
                     <span>主页</span>
                 </a>
             </div>
             
             <div class="copyright" id="copyright">
-                © <span id="current-year">2025</span> FireNotes - 您的AI智能音频便签助手
+                © <span id="current-year">2025</span> GlowMemo - 您的AI智能音频便签助手
             </div>
         </footer>
     </div>
@@ -1445,7 +1445,7 @@
                 // 添加示例便签
                 const sampleNote = {
                     id: Date.now(),
-                    content: '欢迎使用 FireNotes 便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
+                    content: '欢迎使用 GlowMemo 便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
                     category: 'work',
                     color: '#a8e6cf',
                     createdAt: new Date().toISOString(),
@@ -1523,7 +1523,7 @@
                 document.getElementById('add-sample-note').addEventListener('click', () => {
                     const sampleNote = {
                         id: Date.now(),
-                        content: '欢迎使用 FireNotes 智能音频便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
+                        content: '欢迎使用 GlowMemo 智能音频便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
                         category: 'work',
                         color: '#a8e6cf',
                         createdAt: new Date().toISOString(),
@@ -1957,7 +1957,7 @@
             const dataStr = JSON.stringify(notes);
             const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
             
-            const exportFileDefaultName = `firenotes-${new Date().toISOString().slice(0,10)}.json`;
+            const exportFileDefaultName = `glowmemo-${new Date().toISOString().slice(0,10)}.json`;
             
             const linkElement = document.createElement('a');
             linkElement.setAttribute('href', dataUri);
