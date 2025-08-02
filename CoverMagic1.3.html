@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CoverMagic - 公众号封面生成器</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        /* 全局样式 */
+        :root {
+            --primary-color: #0071e3;
+            --background-color: #f0f7ff;
+            --card-color: rgba(255, 255, 255, 0.85);
+            --text-color: #1d1d1f;
+            --border-radius: 16px;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+            --focus-shadow: 0 0 0 2px rgba(0, 113, 227, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-bottom: 60px;
+        }
+
+        header {
+            text-align: center;
+            margin: 20px 0 40px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .logo-icon {
+            font-size: 32px;
+            color: var(--primary-color);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            background: linear-gradient(45deg, #0071e3, #34a853, #ea4335);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        /* 表单区域样式 */
+        .form-section {
+            flex: 1;
+            min-width: 300px;
+            background: var(--card-color);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .form-section:hover {
+            box-shadow: 0 15px 40px rgba(0, 113, 227, 0.15);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #444;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #d1d1d6;
+            border-radius: 10px;
+            font-size: 16px;
+            background-color: rgba(255, 255, 255, 0.5);
+            transition: var(--transition);
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: var(--focus-shadow);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 14px 28px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 6px rgba(0, 113, 227, 0.2);
+        }
+
+        .btn:hover {
+            background-color: #005bb5;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 113, 227, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.generate-btn {
+            background: linear-gradient(45deg, #0071e3, #34a853);
+            width: 100%;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        .ratio-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .ratio-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #d1d1d6;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .ratio-btn.active {
+            border-color: var(--primary-color);
+            background-color: rgba(0, 113, 227, 0.1);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .ratio-btn:hover {
+            border-color: var(--primary-color);
+        }
+
+        /* 预览区域样式 */
+        .preview-section {
+            flex: 2;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .preview-card {
+            background: var(--card-color);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .preview-card:hover {
+            box-shadow: 0 15px 40px rgba(0, 113, 227, 0.15);
+        }
+
+        .preview-container {
+            width: 100%;
+            background-color: white;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: var(--transition);
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .preview-image {
+            width: 100%;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 30px;
+        }
+
+        .preview-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .preview-title {
+            font-size: 40px;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 15px;
+            color: #1a73e8; /* 默认标题颜色 */
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        .preview-subtitle {
+            font-size: 24px;
+            color: #5f6368;
+            margin-bottom: 30px;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        .preview-author {
+            font-size: 18px;
+            color: #5f6368;
+            margin-top: auto;
+            text-align: right;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        .preview-placeholder {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: #888;
+            text-align: center;
+        }
+
+        .preview-placeholder i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #ccc;
+        }
+
+        /* 模板选择区样式 */
+        .templates-section {
+            margin-top: 30px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            position: relative;
+            padding-left: 15px;
+        }
+
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 5px;
+            height: 24px;
+            background: var(--primary-color);
+            border-radius: 2px;
+        }
+
+        .templates-container {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding: 10px 5px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 113, 227, 0.3) transparent;
+        }
+
+        .templates-container::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .templates-container::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 113, 227, 0.3);
+            border-radius: 4px;
+        }
+
+        .template-item {
+            flex: 0 0 200px;
+            height: 150px;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+        }
+
+        .template-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .template-item.active {
+            border: 3px solid var(--primary-color);
+            transform: scale(1.03);
+        }
+
+        .template-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 8px;
+            text-align: center;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .template-item:hover .template-name {
+            background: rgba(0, 113, 227, 0.8);
+        }
+
+        .template-stats {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            color: #333;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* 下载区域样式 */
+        .download-section {
+            background: var(--card-color);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .format-select {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .btn.download-btn {
+            background: linear-gradient(45deg, #ea4335, #fbbc05);
+            flex: 1;
+            min-width: 180px;
+        }
+
+        /* 模态弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            background: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-image {
+            max-width: 100%;
+            max-height: 90vh;
+            display: block;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 36px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .close-modal:hover {
+            transform: rotate(90deg);
+        }
+
+        /* 页脚样式 */
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            padding: 30px 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .footer-links a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: var(--transition);
+        }
+
+        .footer-links a:hover {
+            color: #005bb5;
+            transform: translateY(-2px);
+        }
+
+        .ad-container {
+            background: linear-gradient(45deg, rgba(0, 113, 227, 0.1), rgba(52, 168, 83, 0.1));
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin: 30px auto;
+            max-width: 600px;
+            border: 1px solid rgba(0, 113, 227, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ad-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #0071e3, #34a853, #ea4335);
+        }
+
+        .ad-text {
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .ad-btn {
+            background: linear-gradient(45deg, #0071e3, #34a853);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .ad-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .social-share {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .social-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .social-icon:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .wechat { background-color: #07c160; }
+        .weibo { background-color: #e6162d; }
+        .qq { background-color: #12b7f5; }
+
+        .copyright {
+            margin-top: 25px;
+            font-size: 14px;
+            color: #888;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .form-section, .preview-section {
+                width: 100%;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .preview-image {
+                height: 300px;
+            }
+            
+            .template-item {
+                flex: 0 0 160px;
+                height: 120px;
+            }
+            
+            .download-section {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .ratio-buttons {
+                flex-wrap: wrap;
+            }
+            
+            .ratio-btn {
+                flex: 0 0 calc(50% - 5px);
+            }
+            
+            .social-share {
+                gap: 10px;
+            }
+            
+            .social-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+        }
+
+        /* 通知样式 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 8px;
+            font-weight: 500;
+            z-index: 1100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .notification.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">🎨</div>
+                <h1>CoverMagic - 公众号封面生成器</h1>
+            </div>
+            <p>使用AI轻松打造专业级公众号封面，惊艳读者</p>
+        </header>
+
+        <div class="main-content">
+            <!-- 左侧表单区域 -->
+            <div class="form-section">
+                <h2 class="section-title">封面内容设置</h2>
+                
+                <div class="form-group">
+                    <label for="title">封面标题 (必填)</label>
+                    <input type="text" id="title" placeholder="输入封面标题..." value="打造10W+阅读量的公众号封面图">
+                </div>
+                
+                <div class="form-group">
+                    <label for="subtitle">封面副标题 (选填)</label>
+                    <input type="text" id="subtitle" placeholder="输入封面副标题..." value="独家秘籍大公开，速来收藏！">
+                </div>
+                
+                <div class="form-group">
+                    <label for="author">作者昵称 (选填)</label>
+                    <input type="text" id="author" placeholder="输入作者昵称..." value="艾兜兜儿">
+                </div>
+                
+                <div class="form-group">
+                    <label>封面比例</label>
+                    <div class="ratio-buttons">
+                        <div class="ratio-btn active" data-ratio="3/4">3:4</div>
+                        <div class="ratio-btn" data-ratio="1/1">1:1</div>
+                        <div class="ratio-btn" data-ratio="4/3">4:3</div>
+                        <div class="ratio-btn" data-ratio="2/1">2:1</div>
+                    </div>
+                </div>
+                
+                <button class="btn generate-btn" id="generateBtn">生成封面预览</button>
+            </div>
+
+            <!-- 右侧预览区域 -->
+            <div class="preview-section">
+                <div class="preview-card">
+                    <h2 class="section-title">封面预览</h2>
+                    <p>点击图片可查看大图</p>
+                    
+                    <div class="preview-container">
+                        <div class="preview-image" id="coverPreview" 
+                             style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);">
+                            <div class="preview-content">
+                                <div class="preview-placeholder">
+                                    <i>🖼️</i>
+                                    <p>填写左侧内容并点击生成按钮</p>
+                                    <p>预览您的公众号封面图</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="download-section">
+                    <div class="format-select">
+                        <label for="format">选择图片格式</label>
+                        <select id="format">
+                            <option value="png">PNG（推荐）</option>
+                            <option value="jpeg">JPEG</option>
+                            <option value="webp">WEBP</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn download-btn" id="downloadBtn">下载封面图片</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模板区域 -->
+        <div class="templates-section">
+            <h2 class="section-title">精选封面模板</h2>
+            
+            <div class="templates-container" id="templatesContainer">
+                <!-- 模板会通过JS动态添加 -->
+            </div>
+        </div>
+
+        <!-- 广告栏 -->
+        <div class="ad-container">
+            <p class="ad-text">我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」，「一起加入讨论吧」</p>
+            <button class="ad-btn" id="joinBtn">一起加入讨论</button>
+        </div>
+
+        <!-- 分享和页脚区域 -->
+        <div class="social-share">
+            <div class="social-icon wechat" title="分享到微信">
+                <span>微</span>
+            </div>
+            <div class="social-icon weibo" title="分享到微博">
+                <span>博</span>
+            </div>
+            <div class="social-icon qq" title="分享到QQ">
+                <span>Q</span>
+            </div>
+        </div>
+        
+        <footer>
+            <div class="footer-links">
+                <a href="https://t.zsxq.com/11QO9">
+                    <span>👨‍💻</span> 技术支持-艾兜兜儿
+                </a>
+                <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg">
+                    <span>📱</span> 微信公众号
+                </a>
+                <a href="https://i3doit.github.io/AI_Tools_2.5.html">
+                    <span>🏠</span> 返回主页
+                </a>
+            </div>
+            
+            <div class="copyright">
+                © <span id="currentYear">2025</span> CoverMagic - 公众号封面图设计与生成工具
+            </div>
+        </footer>
+    </div>
+
+    <!-- 模态弹窗 -->
+    <div class="modal" id="previewModal">
+        <span class="close-modal">&times;</span>
+        <div class="modal-content">
+            <img class="modal-image" id="modalImage" alt="封面预览大图">
+        </div>
+    </div>
+
+    <!-- 消息通知 -->
+    <div class="notification" id="notification">
+        <span id="notificationMessage"></span>
+    </div>
+
+    <!-- 渲染容器 - 用于生成图片 -->
+    <div id="renderContainer" style="position: absolute; left: -9999px; top: -9999px;"></div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取当前年份
+            const currentYear = new Date().getFullYear();
+            document.getElementById('currentYear').textContent = currentYear > 2025 ? `2025 - ${currentYear}` : '2025';
+            
+            // 模板数据 - 每个模板包含背景、标题颜色、副标题颜色和作者颜色
+            const templates = [
+                {
+                    id: 'template1',
+                    name: '专业商务蓝',
+                    background: 'linear-gradient(135deg, #0072ff 0%, #00c6ff 100%)',
+                    titleColor: '#ffffff',
+                    subtitleColor: '#e0f0ff',
+                    authorColor: '#f0f8ff',
+                    stats: 142,
+                    isPopular: true
+                },
+                {
+                    id: 'template2',
+                    name: '活力橙黄',
+                    background: 'linear-gradient(to right, #ff9a9e 0%, #fad0c4 100%)',
+                    titleColor: '#701c1c',
+                    subtitleColor: '#b33c3c',
+                    authorColor: '#5c2b29',
+                    stats: 98
+                },
+                {
+                    id: 'template3',
+                    name: '清新薄荷绿',
+                    background: 'linear-gradient(120deg, #a1ffce 0%, #faffd1 100%)',
+                    titleColor: '#007a3d',
+                    subtitleColor: '#00a056',
+                    authorColor: '#00693a',
+                    stats: 87
+                },
+                {
+                    id: 'template4',
+                    name: '神秘紫罗兰',
+                    background: 'linear-gradient(to right, #834d9b 0%, #d04ed6 100%)',
+                    titleColor: '#ffffff',
+                    subtitleColor: '#f0e4ff',
+                    authorColor: '#f0e4ff',
+                    stats: 76
+                },
+                {
+                    id: 'template5',
+                    name: '简约白',
+                    background: 'linear-gradient(to bottom right, #ffffff, #f5f7fa)',
+                    titleColor: '#333333',
+                    subtitleColor: '#666666',
+                    authorColor: '#555555',
+                    stats: 155,
+                    isPopular: true
+                },
+                {
+                    id: 'template6',
+                    name: '科技感深蓝',
+                    background: 'linear-gradient(to right, #1a2a6c, #b21f1f, #1a2a6c)',
+                    titleColor: '#00c9ff',
+                    subtitleColor: '#92fe9d',
+                    authorColor: '#92fe9d',
+                    stats: 113
+                },
+                {
+                    id: 'template7',
+                    name: '春日樱花',
+                    background: 'linear-gradient(to top, #fff1eb 0%, #ace0f9 100%)',
+                    titleColor: '#ff416c',
+                    subtitleColor: '#ff4b2b',
+                    authorColor: '#c73c29',
+                    stats: 92
+                },
+                {
+                    id: 'template8',
+                    name: '落日余晖',
+                    background: 'linear-gradient(to top, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%)',
+                    titleColor: '#8b0000',
+                    subtitleColor: '#ff0000',
+                    authorColor: '#8b0000',
+                    stats: 121,
+                    isPopular: true
+                }
+            ];
+            
+            // 按使用统计排序
+            templates.sort((a, b) => b.stats - a.stats);
+            
+            // 生成模板HTML
+            const templatesContainer = document.getElementById('templatesContainer');
+            templates.forEach((template, index) => {
+                const templateDiv = document.createElement('div');
+                templateDiv.className = 'template-item';
+                templateDiv.id = template.id;
+                templateDiv.innerHTML = `
+                    <div style="width: 100%; height: 100%; background: ${template.background};"></div>
+                    <div class="template-name">${template.name}</div>
+                    <div class="template-stats">${template.stats}次</div>
+                `;
+                
+                // 设置第一个模板为选中
+                if (index === 0) {
+                    templateDiv.classList.add('active');
+                    // 设置默认预览背景
+                    document.getElementById('coverPreview').style.background = template.background;
+                }
+                
+                templateDiv.addEventListener('click', () => {
+                    // 高亮选中模板
+                    document.querySelectorAll('.template-item').forEach(t => t.classList.remove('active'));
+                    templateDiv.classList.add('active');
+                    
+                    // 更新预览区域背景
+                    document.getElementById('coverPreview').style.background = template.background;
+                    
+                    // 显示通知
+                    showNotification(`已切换至「${template.name}」模板`);
+                });
+                
+                templatesContainer.appendChild(templateDiv);
+            });
+            
+            // 比例按钮切换
+            const ratioButtons = document.querySelectorAll('.ratio-btn');
+            ratioButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    ratioButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    // 更新预览容器比例
+                    const preview = document.querySelector('.preview-container');
+                    const ratio = button.dataset.ratio;
+                    
+                    switch(ratio) {
+                        case '1/1':
+                            preview.style.aspectRatio = '1/1';
+                            break;
+                        case '4/3':
+                            preview.style.aspectRatio = '4/3';
+                            break;
+                        case '2/1':
+                            preview.style.aspectRatio = '2/1';
+                            break;
+                        case '3/4':
+                        default:
+                            preview.style.aspectRatio = '3/4';
+                    }
+                    
+                    showNotification(`已切换到 ${ratio} 比例`);
+                });
+            });
+            
+            // 生成按钮事件
+            document.getElementById('generateBtn').addEventListener('click', generatePreview);
+            
+            // 下载按钮事件
+            document.getElementById('downloadBtn').addEventListener('click', downloadCover);
+            
+            // 点击预览图查看大图
+            document.querySelector('.preview-container').addEventListener('click', showFullPreview);
+            
+            // 关闭模态框
+            document.querySelector('.close-modal').addEventListener('click', () => {
+                document.getElementById('previewModal').style.display = 'none';
+            });
+            
+            // 模态框点击背景关闭
+            document.getElementById('previewModal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('previewModal')) {
+                    document.getElementById('previewModal').style.display = 'none';
+                }
+            });
+            
+            // 分享按钮功能
+            document.querySelectorAll('.social-icon').forEach(icon => {
+                icon.addEventListener('click', function() {
+                    // 复制微信号
+                    copyToClipboard('857023577');
+                    showNotification('复制成功！咨询加艾兜兜儿微信：857023577，记得备注来源');
+                });
+            });
+            
+            // 广告按钮跳转
+            document.getElementById('joinBtn').addEventListener('click', () => {
+                window.open('https://t.zsxq.com/yL7L8', '_blank');
+            });
+            
+            // 初始加载
+            initFromLocalStorage();
+            
+            // 复制文本到剪贴板
+            function copyToClipboard(text) {
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = text;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempTextArea);
+            }
+            
+            // 显示通知
+            function showNotification(message) {
+                const notification = document.getElementById('notification');
+                const messageElement = document.getElementById('notificationMessage');
+                
+                messageElement.textContent = message;
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+            
+            // 从本地存储初始化
+            function initFromLocalStorage() {
+                const savedTitle = localStorage.getItem('coverTitle');
+                const savedSubtitle = localStorage.getItem('coverSubtitle');
+                const savedAuthor = localStorage.getItem('coverAuthor');
+                
+                if (savedTitle) document.getElementById('title').value = savedTitle;
+                if (savedSubtitle) document.getElementById('subtitle').value = savedSubtitle;
+                if (savedAuthor) document.getElementById('author').value = savedAuthor;
+                
+                // 初始化模板使用统计数据
+                const savedTemplates = JSON.parse(localStorage.getItem('templateStats')) || {};
+                templates.forEach(template => {
+                    if (savedTemplates[template.id]) {
+                        template.stats = savedTemplates[template.id];
+                    }
+                });
+            }
+            
+            // 生成预览
+            function generatePreview() {
+                const title = document.getElementById('title').value || '';
+                const subtitle = document.getElementById('subtitle').value || '';
+                const author = document.getElementById('author').value || '';
+                
+                // 保存到本地存储
+                localStorage.setItem('coverTitle', title);
+                localStorage.setItem('coverSubtitle', subtitle);
+                localStorage.setItem('coverAuthor', author);
+                
+                const preview = document.getElementById('coverPreview');
+                const previewContent = preview.querySelector('.preview-content');
+                const activeTemplateId = document.querySelector('.template-item.active').id;
+                const template = templates.find(t => t.id === activeTemplateId);
+                
+                // 更新模板使用统计数据
+                template.stats++;
+                localStorage.setItem('templateStats', JSON.stringify(templates.reduce((acc, t) => {
+                    acc[t.id] = t.stats;
+                    return acc;
+                }, {})));
+                
+                // 更新显示的统计
+                document.querySelector(`#${activeTemplateId} .template-stats`).textContent = `${template.stats}次`;
+                
+                // 清空预览内容
+                previewContent.innerHTML = '';
+                
+                // 应用背景
+                preview.style.background = template.background;
+                
+                // 创建标题
+                if (title) {
+                    const titleElement = document.createElement('div');
+                    titleElement.className = 'preview-title';
+                    titleElement.style.color = template.titleColor;
+                    titleElement.textContent = title;
+                    previewContent.appendChild(titleElement);
+                }
+                
+                // 创建副标题
+                if (subtitle) {
+                    const subtitleElement = document.createElement('div');
+                    subtitleElement.className = 'preview-subtitle';
+                    subtitleElement.style.color = template.subtitleColor;
+                    subtitleElement.textContent = subtitle;
+                    previewContent.appendChild(subtitleElement);
+                }
+                
+                // 创建作者
+                if (author) {
+                    const authorElement = document.createElement('div');
+                    authorElement.className = 'preview-author';
+                    authorElement.style.color = template.authorColor;
+                    authorElement.textContent = `作者：${author}`;
+                    previewContent.appendChild(authorElement);
+                }
+                
+                // 如果没有内容，显示占位符
+                if (!title && !subtitle && !author) {
+                    previewContent.innerHTML = `
+                        <div class="preview-placeholder">
+                            <i>🖼️</i>
+                            <p>请填写左侧内容并生成预览</p>
+                        </div>
+                    `;
+                }
+                
+                // 显示通知
+                showNotification('封面预览已生成！');
+            }
+            
+            // 创建渲染容器
+            function createRenderContainer(width, height) {
+                const renderContainer = document.getElementById('renderContainer');
+                renderContainer.innerHTML = '';
+                
+                // 获取当前模板
+                const activeTemplateId = document.querySelector('.template-item.active').id;
+                const template = templates.find(t => t.id === activeTemplateId);
+                
+                // 获取输入内容
+                const title = document.getElementById('title').value || '';
+                const subtitle = document.getElementById('subtitle').value || '';
+                const author = document.getElementById('author').value || '';
+                
+                // 创建渲染元素
+                const renderElement = document.createElement('div');
+                renderElement.style.width = `${width}px`;
+                renderElement.style.height = `${height}px`;
+                renderElement.style.background = template.background;
+                renderElement.style.padding = '30px';
+                renderElement.style.display = 'flex';
+                renderElement.style.flexDirection = 'column';
+                renderElement.style.justifyContent = 'center';
+                renderElement.style.position = 'relative';
+                renderElement.style.overflow = 'hidden';
+                renderElement.style.fontFamily = "'Noto Sans SC', sans-serif";
+                
+                // 添加标题
+                if (title) {
+                    const titleElement = document.createElement('div');
+                    titleElement.style.fontSize = `${width * 0.06}px`;
+                    titleElement.style.fontWeight = '800';
+                    titleElement.style.lineHeight = '1.2';
+                    titleElement.style.marginBottom = '15px';
+                    titleElement.style.color = template.titleColor;
+                    titleElement.textContent = title;
+                    renderElement.appendChild(titleElement);
+                }
+                
+                // 添加副标题
+                if (subtitle) {
+                    const subtitleElement = document.createElement('div');
+                    subtitleElement.style.fontSize = `${width * 0.04}px`;
+                    subtitleElement.style.color = template.subtitleColor;
+                    subtitleElement.style.marginBottom = '30px';
+                    subtitleElement.textContent = subtitle;
+                    renderElement.appendChild(subtitleElement);
+                }
+                
+                // 添加作者
+                if (author) {
+                    const authorElement = document.createElement('div');
+                    authorElement.style.fontSize = `${width * 0.03}px`;
+                    authorElement.style.color = template.authorColor;
+                    authorElement.style.marginTop = 'auto';
+                    authorElement.style.textAlign = 'right';
+                    authorElement.textContent = `作者：${author}`;
+                    renderElement.appendChild(authorElement);
+                }
+                
+                renderContainer.appendChild(renderElement);
+                
+                return renderElement;
+            }
+            
+            // 显示全屏预览
+            function showFullPreview() {
+                const preview = document.getElementById('coverPreview');
+                
+                if (preview.querySelector('.preview-placeholder')) {
+                    showNotification('请先生成封面预览');
+                    return;
+                }
+                
+                // 获取当前比例
+                const ratio = document.querySelector('.ratio-btn.active').dataset.ratio;
+                let width, height;
+                
+                switch(ratio) {
+                    case '1/1':
+                        width = 800;
+                        height = 800;
+                        break;
+                    case '4/3':
+                        width = 800;
+                        height = 600;
+                        break;
+                    case '2/1':
+                        width = 800;
+                        height = 400;
+                        break;
+                    case '3/4':
+                    default:
+                        width = 600;
+                        height = 800;
+                }
+                
+                // 创建渲染容器
+                const renderElement = createRenderContainer(width, height);
+                
+                // 使用html2canvas生成图片
+                html2canvas(renderElement, {
+                    scale: 2,
+                    backgroundColor: null,
+                    useCORS: true
+                }).then(canvas => {
+                    const image = canvas.toDataURL('image/png');
+                    const modalImage = document.getElementById('modalImage');
+                    modalImage.src = image;
+                    
+                    document.getElementById('previewModal').style.display = 'flex';
+                });
+            }
+            
+            // 下载封面
+            function downloadCover() {
+                const preview = document.getElementById('coverPreview');
+                
+                if (preview.querySelector('.preview-placeholder')) {
+                    showNotification('请先生成封面预览');
+                    return;
+                }
+                
+                const format = document.getElementById('format').value;
+                const ratio = document.querySelector('.ratio-btn.active').dataset.ratio;
+                let width, height;
+                
+                switch(ratio) {
+                    case '1/1':
+                        width = 1000;
+                        height = 1000;
+                        break;
+                    case '4/3':
+                        width = 1000;
+                        height = 750;
+                        break;
+                    case '2/1':
+                        width = 1000;
+                        height = 500;
+                        break;
+                    case '3/4':
+                    default:
+                        width = 750;
+                        height = 1000;
+                }
+                
+                // 创建渲染容器
+                const renderElement = createRenderContainer(width, height);
+                
+                // 生成图片
+                html2canvas(renderElement, {
+                    scale: 3,
+                    backgroundColor: null,
+                    useCORS: true
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `公众号封面-${new Date().getTime()}.${format}`;
+                    
+                    if (format === 'png') {
+                        link.href = canvas.toDataURL('image/png');
+                    } else if (format === 'jpeg') {
+                        link.href = canvas.toDataURL('image/jpeg', 0.95);
+                    } else {
+                        link.href = canvas.toDataURL('image/webp', 0.95);
+                    }
+                    
+                    link.click();
+                    showNotification('封面下载成功！');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
