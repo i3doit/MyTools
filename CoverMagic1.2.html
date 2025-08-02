@@ -690,6 +690,15 @@
                 height: 112px;
             }
         }
+        
+        /* 渲染容器 - 用于生成图片 */
+        #renderContainer {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            z-index: -9999;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
@@ -823,6 +832,9 @@
     <div class="notification" id="notification">
         <i>✔</i> <span id="notificationMessage"></span>
     </div>
+
+    <!-- 渲染容器 - 用于生成图片 -->
+    <div id="renderContainer"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -1117,6 +1129,50 @@
                 showNotification('封面预览已生成！');
             }
             
+            // 创建渲染容器
+            function createRenderContainer(width, height) {
+                const renderContainer = document.getElementById('renderContainer');
+                renderContainer.innerHTML = '';
+                
+                // 克隆预览内容
+                const preview = document.getElementById('coverPreview');
+                const previewContent = preview.querySelector('.preview-content').cloneNode(true);
+                
+                // 创建渲染元素
+                const renderElement = document.createElement('div');
+                renderElement.style.width = `${width}px`;
+                renderElement.style.height = `${height}px`;
+                renderElement.style.background = preview.style.background;
+                renderElement.style.padding = '40px';
+                renderElement.style.display = 'flex';
+                renderElement.style.flexDirection = 'column';
+                renderElement.style.justifyContent = 'center';
+                renderElement.style.position = 'relative';
+                renderElement.style.overflow = 'hidden';
+                
+                // 添加内容
+                renderElement.appendChild(previewContent);
+                renderContainer.appendChild(renderElement);
+                
+                // 调整字体大小
+                const titleElement = renderElement.querySelector('.preview-title');
+                if (titleElement) {
+                    titleElement.style.fontSize = `${width * 0.06}px`;
+                }
+                
+                const subtitleElement = renderElement.querySelector('.preview-subtitle');
+                if (subtitleElement) {
+                    subtitleElement.style.fontSize = `${width * 0.04}px`;
+                }
+                
+                const authorElement = renderElement.querySelector('.preview-author');
+                if (authorElement) {
+                    authorElement.style.fontSize = `${width * 0.03}px`;
+                }
+                
+                return renderElement;
+            }
+            
             // 显示全屏预览
             function showFullPreview() {
                 const preview = document.getElementById('coverPreview');
@@ -1149,58 +1205,21 @@
                         height = 800;
                 }
                 
-                // 创建临时容器用于截图
-                const tempContainer = document.createElement('div');
-                tempContainer.style.position = 'absolute';
-                tempContainer.style.left = '-9999px';
-                tempContainer.style.width = `${width}px`;
-                tempContainer.style.height = `${height}px`;
-                tempContainer.style.overflow = 'hidden';
-                tempContainer.style.background = preview.style.background;
-                tempContainer.style.padding = '30px';
-                tempContainer.style.display = 'flex';
-                tempContainer.style.flexDirection = 'column';
-                
-                // 克隆预览内容
-                const contentClone = preview.querySelector('.preview-content').cloneNode(true);
-                contentClone.style.width = '100%';
-                contentClone.style.height = '100%';
-                contentClone.style.display = 'flex';
-                contentClone.style.flexDirection = 'column';
-                contentClone.style.justifyContent = 'center';
-                
-                // 调整字体大小
-                const titleElement = contentClone.querySelector('.preview-title');
-                if (titleElement) {
-                    titleElement.style.fontSize = `${width * 0.06}px`;
-                }
-                
-                const subtitleElement = contentClone.querySelector('.preview-subtitle');
-                if (subtitleElement) {
-                    subtitleElement.style.fontSize = `${width * 0.04}px`;
-                }
-                
-                const authorElement = contentClone.querySelector('.preview-author');
-                if (authorElement) {
-                    authorElement.style.fontSize = `${width * 0.03}px`;
-                }
-                
-                tempContainer.appendChild(contentClone);
-                document.body.appendChild(tempContainer);
+                // 创建渲染容器
+                const renderElement = createRenderContainer(width, height);
                 
                 // 使用html2canvas生成图片
-                html2canvas(tempContainer, {
+                html2canvas(renderElement, {
                     scale: 2,
-                    backgroundColor: null
+                    backgroundColor: null,
+                    useCORS: true,
+                    logging: false
                 }).then(canvas => {
                     const image = canvas.toDataURL('image/png');
                     const modalImage = document.getElementById('modalImage');
                     modalImage.src = image;
                     
                     document.getElementById('previewModal').style.display = 'flex';
-                    
-                    // 移除临时容器
-                    document.body.removeChild(tempContainer);
                 });
             }
             
@@ -1236,49 +1255,15 @@
                         height = 1000;
                 }
                 
-                // 创建临时容器用于截图
-                const tempContainer = document.createElement('div');
-                tempContainer.style.position = 'absolute';
-                tempContainer.style.left = '-9999px';
-                tempContainer.style.width = `${width}px`;
-                tempContainer.style.height = `${height}px`;
-                tempContainer.style.overflow = 'hidden';
-                tempContainer.style.background = preview.style.background;
-                tempContainer.style.padding = '40px';
-                tempContainer.style.display = 'flex';
-                tempContainer.style.flexDirection = 'column';
-                
-                // 克隆预览内容
-                const contentClone = preview.querySelector('.preview-content').cloneNode(true);
-                contentClone.style.width = '100%';
-                contentClone.style.height = '100%';
-                contentClone.style.display = 'flex';
-                contentClone.style.flexDirection = 'column';
-                contentClone.style.justifyContent = 'center';
-                
-                // 调整字体大小
-                const titleElement = contentClone.querySelector('.preview-title');
-                if (titleElement) {
-                    titleElement.style.fontSize = `${width * 0.06}px`;
-                }
-                
-                const subtitleElement = contentClone.querySelector('.preview-subtitle');
-                if (subtitleElement) {
-                    subtitleElement.style.fontSize = `${width * 0.04}px`;
-                }
-                
-                const authorElement = contentClone.querySelector('.preview-author');
-                if (authorElement) {
-                    authorElement.style.fontSize = `${width * 0.03}px`;
-                }
-                
-                tempContainer.appendChild(contentClone);
-                document.body.appendChild(tempContainer);
+                // 创建渲染容器
+                const renderElement = createRenderContainer(width, height);
                 
                 // 生成图片
-                html2canvas(tempContainer, {
+                html2canvas(renderElement, {
                     scale: 3,
-                    backgroundColor: null
+                    backgroundColor: null,
+                    useCORS: true,
+                    logging: false
                 }).then(canvas => {
                     const link = document.createElement('a');
                     link.download = `公众号封面-${new Date().getTime()}.${format}`;
@@ -1292,10 +1277,6 @@
                     }
                     
                     link.click();
-                    
-                    // 移除临时容器
-                    document.body.removeChild(tempContainer);
-                    
                     showNotification('封面下载成功！');
                 });
             }
