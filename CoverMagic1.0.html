@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoverMagic - 公众号封面图生成工具</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        /* 全局样式 */
+        :root {
+            --primary-color: #0071e3;
+            --secondary-color: #6bf;
+            --background-color: #f0f8ff;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --text-color: #333;
+            --light-text: #666;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e0f7ff, #f0f8ff);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        /* 毛玻璃效果 */
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: var(--shadow);
+            padding: 25px;
+            transition: var(--transition);
+        }
+
+        .glass:hover {
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
+        }
+
+        /* 头部样式 */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-top: 10px;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .logo i {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tagline {
+            font-size: 1rem;
+            color: var(--light-text);
+            margin-bottom: 20px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* 主容器 */
+        .container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                grid-template-columns: 1fr 1.2fr;
+            }
+            
+            .logo {
+                font-size: 3.5rem;
+            }
+            
+            .tagline {
+                font-size: 1.2rem;
+            }
+        }
+
+        /* 控制面板 */
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: var(--secondary-color);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 500;
+            color: var(--light-text);
+            font-size: 0.9rem;
+        }
+
+        input, textarea, select {
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            background: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(0, 113, 227, 0.3);
+        }
+
+        .btn i {
+            font-size: 1.1rem;
+        }
+
+        /* 模板选择 */
+        .templates-container {
+            position: relative;
+        }
+
+        .templates {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            padding: 10px 0;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .templates::-webkit-scrollbar {
+            display: none;
+        }
+
+        .template-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            z-index: 10;
+            opacity: 0.8;
+            transition: var(--transition);
+        }
+
+        .template-nav:hover {
+            opacity: 1;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .template-nav.prev {
+            left: -20px;
+        }
+
+        .template-nav.next {
+            right: -20px;
+        }
+
+        .template {
+            flex: 0 0 120px;
+            aspect-ratio: 1/1.3;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 2px solid transparent;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .template:hover {
+            transform: translateY(-5px);
+        }
+
+        .template.selected {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+        }
+
+        .template-preview {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+        }
+
+        /* 模板背景色 */
+        .template-1 { background: linear-gradient(135deg, #6a11cb, #2575fc); }
+        .template-2 { background: linear-gradient(135deg, #ff9a9e, #fad0c4); }
+        .template-3 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+        .template-4 { background: linear-gradient(135deg, #fa709a, #fee140); }
+        .template-5 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .template-6 { background: linear-gradient(135deg, #a6c0fe, #f68084); }
+        .template-7 { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+        .template-8 { background: linear-gradient(135deg, #84fab0, #8fd3f4); }
+        .template-9 { background: linear-gradient(135deg, #ffc3a0, #ffafbd); }
+        .template-10 { background: linear-gradient(135deg, #ff9a9e, #fad0c4); }
+        .template-11 { background: linear-gradient(135deg, #a1c4fd, #c2e9fb); }
+        .template-12 { background: linear-gradient(135deg, #ffecd2, #fcb69f); }
+
+        .template-title {
+            font-size: 0.7rem;
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .template-footer {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 3px;
+            text-align: center;
+            font-size: 0.6rem;
+            color: white;
+            backdrop-filter: blur(5px);
+        }
+
+        /* 预览区域 */
+        .preview-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .preview-container {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            aspect-ratio: 3/4;
+            background: white;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .preview-container.ratio-1-1 { aspect-ratio: 1/1; }
+        .preview-container.ratio-2-1 { aspect-ratio: 2/1; }
+        .preview-container.ratio-4-3 { aspect-ratio: 4/3; }
+        .preview-container.ratio-3-4 { aspect-ratio: 3/4; }
+
+        .preview-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        #cover-preview {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 30px;
+            position: relative;
+        }
+
+        .cover-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            line-height: 1.2;
+            width: 100%;
+            margin-bottom: 15px;
+            word-break: break-word;
+        }
+
+        .cover-subtitle {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 5px rgba(0,0,0,0.2);
+            width: 100%;
+            margin-bottom: 10px;
+            word-break: break-word;
+        }
+
+        .cover-nickname {
+            font-size: 1rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            width: 100%;
+            margin-top: auto;
+            word-break: break-word;
+        }
+
+        /* 图片比例选择 */
+        .ratio-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .ratio-btn {
+            padding: 8px 15px;
+            border-radius: 8px;
+            background: white;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+
+        .ratio-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .ratio-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .ratio-btn.active:hover {
+            background: var(--primary-color);
+        }
+
+        /* 下载选项 */
+        .download-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .format-btn {
+            flex: 1;
+            min-width: 80px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .format-btn:hover {
+            background: #f9f9f9;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .format-icon {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .format-name {
+            font-weight: 500;
+            color: var(--light-text);
+            font-size: 0.85rem;
+        }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+
+        /* 页脚样式 */
+        footer {
+            max-width: 1400px;
+            margin: 40px auto 20px;
+            text-align: center;
+            padding: 20px 0;
+            color: var(--light-text);
+            font-size: 0.9rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .footer-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+
+        .footer-link:hover {
+            color: var(--secondary-color);
+            text-decoration: underline;
+        }
+
+        .social-share {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .social-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .social-btn:hover {
+            transform: translateY(-5px);
+        }
+
+        .weibo { background: #e6162d; }
+        .wechat { background: #07c160; }
+        .qq { background: #12b7f5; }
+        .home { background: var(--primary-color); }
+
+        .ad-container {
+            background: linear-gradient(135deg, rgba(107, 191, 255, 0.2), rgba(0, 113, 227, 0.2));
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .ad-link {
+            color: var(--primary-color);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .ad-link:hover {
+            text-decoration: underline;
+        }
+
+        .copyright {
+            margin-top: 15px;
+        }
+
+        /* 提示框 */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部区域 -->
+    <header>
+        <div class="logo">
+            <i class="fas fa-magic"></i>
+            <h1>CoverMagic</h1>
+        </div>
+        <p class="tagline glass">基于AI技术的公众号封面图生成工具，轻松创建专业级封面图，提升文章点击率</p>
+    </header>
+
+    <!-- 主内容区域 -->
+    <main class="container">
+        <!-- 左侧控制面板 -->
+        <section class="control-panel glass">
+            <div class="panel-section">
+                <h2 class="section-title"><i class="fas fa-heading"></i> 封面内容</h2>
+                <div class="input-group">
+                    <label for="cover-title">封面标题</label>
+                    <input type="text" id="cover-title" placeholder="输入封面标题..." value="AI时代的内容创作新范式">
+                </div>
+                <div class="input-group">
+                    <label for="cover-subtitle">封面副标题（可选）</label>
+                    <input type="text" id="cover-subtitle" placeholder="输入副标题..." value="探索AI如何重塑内容创作流程">
+                </div>
+                <div class="input-group">
+                    <label for="cover-nickname">作者昵称（可选）</label>
+                    <input type="text" id="cover-nickname" placeholder="输入作者昵称..." value="艾兜兜儿">
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h2 class="section-title"><i class="fas fa-palette"></i> 模板选择</h2>
+                <div class="templates-container">
+                    <div class="templates">
+                        <div class="template selected" data-template="1">
+                            <div class="template-preview template-1">
+                                <div class="template-title">科技蓝</div>
+                                <div class="template-footer">简约现代</div>
+                            </div>
+                        </div>
+                        <div class="template" data-template="2">
+                            <div class="template-preview template-2">
+                                <div class="template-title">温暖粉</div>
+                                <div class="template-footer">柔和渐变</div>
+                            </div>
+                        </div>
+                        <div class="template" data-template="3">
+                            <div class="template-preview template-3">
+                                <div class="template-title">清新绿</div>
+                                <div class="template-footer">活力自然</div>
+                            </div>
+                        </div>
+                        <div class="template" data-template="4">
+                            <div class="template-preview template-4">
+                                <div class="template-title">日落黄</div>
+                                <div class="template-footer">热情活力</div>
+                            </div>
+                        </div>
+                        <div class="template" data-template="5">
+                            <div class="template-preview template-5">
+                                <div class="template-title">海洋蓝</div>
+                                <div class="template-footer">专业商务</div>
+                            </div>
+                        </div>
+                        <div class="template" data-template="6">
+                            <div class="template-preview template-6">
+                                <div class="template-title">双色渐变</div>
+                                <div class="template-footer">优雅时尚</div>
+                            </div>
+                        </div>
+                        <div class="template" data-template="7">
+                            <div class="template-preview template-7">
+                                <div class="template-title">薰衣草</div>
+                                <div class="template-footer">浪漫优雅</div>
+                            </div>
+                        </div>
+                        <div class="template" data-template="8">
+                            <div class="template-preview template-8">
+                                <div class="template-title">薄荷绿</div>
+                                <div class="template-footer">清新自然</div>
+                            </div>
+                        </div>
+                        <div class="template" data-template="9">
+                            <div class="template-preview template-9">
+                                <div class="template-title">珊瑚橙</div>
+                                <div class="template-footer">温暖活力</div>
+                            </div>
+                        </div>
+                        <div class="template" data-template="10">
+                            <div class="template-preview template-10">
+                                <div class="template-title">柔美粉</div>
+                                <div class="template-footer">温柔甜美</div>
+                            </div>
+                        </div>
+                        <div class="template" data-template="11">
+                            <div class="template-preview template-11">
+                                <div class="template-title">天空蓝</div>
+                                <div class="template-footer">清新开阔</div>
+                            </div>
+                        </div>
+                        <div class="template" data-template="12">
+                            <div class="template-preview template-12">
+                                <div class="template-title">奶油橙</div>
+                                <div class="template-footer">温暖舒适</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="template-nav prev">
+                        <i class="fas fa-chevron-left"></i>
+                    </div>
+                    <div class="template-nav next">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h2 class="section-title"><i class="fas fa-crop"></i> 图片比例</h2>
+                <div class="ratio-options">
+                    <div class="ratio-btn active" data-ratio="3-4">3:4 (默认)</div>
+                    <div class="ratio-btn" data-ratio="1-1">1:1 (方形)</div>
+                    <div class="ratio-btn" data-ratio="4-3">4:3</div>
+                    <div class="ratio-btn" data-ratio="2-1">2:1 (横版)</div>
+                </div>
+            </div>
+
+            <button id="generate-btn" class="btn">
+                <i class="fas fa-wand-magic-sparkles"></i> 生成封面图
+            </button>
+        </section>
+
+        <!-- 右侧预览区域 -->
+        <section class="preview-section">
+            <div class="glass">
+                <h2 class="section-title"><i class="fas fa-eye"></i> 封面预览</h2>
+                <div class="preview-container ratio-3-4">
+                    <div id="cover-preview" class="template-1">
+                        <h1 class="cover-title">AI时代的内容创作新范式</h1>
+                        <p class="cover-subtitle">探索AI如何重塑内容创作流程</p>
+                        <p class="cover-nickname">艾兜兜儿</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass">
+                <h2 class="section-title"><i class="fas fa-download"></i> 下载封面图</h2>
+                <div class="download-options">
+                    <div class="format-btn" data-format="png">
+                        <i class="fas fa-file-image format-icon"></i>
+                        <span class="format-name">PNG 格式</span>
+                    </div>
+                    <div class="format-btn" data-format="jpg">
+                        <i class="fas fa-file-image format-icon"></i>
+                        <span class="format-name">JPG 格式</span>
+                    </div>
+                    <div class="format-btn" data-format="webp">
+                        <i class="fas fa-file-image format-icon"></i>
+                        <span class="format-name">WEBP 格式</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 图片预览模态框 -->
+    <div id="preview-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="modal-preview" style="width: 100%; height: 100%;"></div>
+        </div>
+    </div>
+
+    <!-- 提示框 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 页脚区域 -->
+    <footer>
+        <div class="ad-container glass">
+            <p>我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」，<a href="https://t.zsxq.com/yL7L8" class="ad-link">「一起加入讨论吧」</a></p>
+        </div>
+
+        <div class="footer-links">
+            <a href="https://t.zsxq.com/11QO9" class="footer-link">
+                <i class="fas fa-laptop-code"></i> 技术支持-艾兜兜儿
+            </a>
+            <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" class="footer-link">
+                <i class="fab fa-weixin"></i> 微信公众号
+            </a>
+            <a href="https://i3doit.github.io/AI_Tools_2.5.html" class="footer-link">
+                <i class="fas fa-home"></i> 返回主页
+            </a>
+        </div>
+
+        <div class="social-share">
+            <div class="social-btn weibo" title="分享到微博">
+                <i class="fab fa-weibo"></i>
+            </div>
+            <div class="social-btn wechat" title="分享到微信">
+                <i class="fab fa-weixin"></i>
+            </div>
+            <div class="social-btn qq" title="分享到QQ">
+                <i class="fab fa-qq"></i>
+            </div>
+            <div class="social-btn home" title="返回主页">
+                <i class="fas fa-home"></i>
+            </div>
+        </div>
+
+        <div class="copyright">
+            <p>© <span id="copyright-year">2025</span> CoverMagic - 公众号封面图智能生成工具</p>
+            <p>让每一篇文章都拥有专业级封面，提升阅读体验与点击率</p>
+        </div>
+    </footer>
+
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化变量
+            let currentTemplate = '1';
+            let currentRatio = '3-4';
+            const templates = document.querySelectorAll('.template');
+            const generateBtn = document.getElementById('generate-btn');
+            const formatBtns = document.querySelectorAll('.format-btn');
+            const ratioBtns = document.querySelectorAll('.ratio-btn');
+            const coverPreview = document.getElementById('cover-preview');
+            const previewContainer = document.querySelector('.preview-container');
+            const modal = document.getElementById('preview-modal');
+            const modalClose = document.querySelector('.modal-close');
+            const modalPreview = document.getElementById('modal-preview');
+            const toast = document.getElementById('toast');
+            const templateNavPrev = document.querySelector('.template-nav.prev');
+            const templateNavNext = document.querySelector('.template-nav.next');
+            const templatesContainer = document.querySelector('.templates');
+            
+            // 设置版权年份
+            const currentYear = new Date().getFullYear();
+            const copyrightYear = document.getElementById('copyright-year');
+            copyrightYear.textContent = currentYear > 2025 ? `2025 - ${currentYear}` : '2025';
+            
+            // 从localStorage加载保存的数据
+            loadSavedData();
+            
+            // 模板选择事件
+            templates.forEach(template => {
+                template.addEventListener('click', function() {
+                    templates.forEach(t => t.classList.remove('selected'));
+                    this.classList.add('selected');
+                    currentTemplate = this.dataset.template;
+                    
+                    // 更新预览区背景
+                    updatePreviewBackground();
+                    
+                    // 更新模板使用统计
+                    updateTemplateUsage(currentTemplate);
+                    
+                    // 保存选择
+                    saveToLocalStorage();
+                });
+            });
+            
+            // 模板导航按钮
+            templateNavPrev.addEventListener('click', function() {
+                templatesContainer.scrollBy({ left: -150, behavior: 'smooth' });
+            });
+            
+            templateNavNext.addEventListener('click', function() {
+                templatesContainer.scrollBy({ left: 150, behavior: 'smooth' });
+            });
+            
+            // 图片比例选择事件
+            ratioBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    ratioBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentRatio = this.dataset.ratio;
+                    
+                    // 更新预览容器比例
+                    previewContainer.className = 'preview-container';
+                    previewContainer.classList.add(`ratio-${currentRatio}`);
+                    
+                    // 保存选择
+                    saveToLocalStorage();
+                });
+            });
+            
+            // 生成封面事件
+            generateBtn.addEventListener('click', function() {
+                const title = document.getElementById('cover-title').value;
+                const subtitle = document.getElementById('cover-subtitle').value;
+                const nickname = document.getElementById('cover-nickname').value;
+                
+                // 更新预览
+                updatePreviewContent(title, subtitle, nickname);
+                
+                // 保存数据
+                saveToLocalStorage();
+            });
+            
+            // 下载事件
+            formatBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const format = this.dataset.format;
+                    downloadCover(format);
+                });
+            });
+            
+            // 预览图点击放大
+            previewContainer.addEventListener('click', function() {
+                // 克隆预览内容到模态框
+                const previewClone = coverPreview.cloneNode(true);
+                previewClone.style.width = '100%';
+                previewClone.style.height = '100%';
+                previewClone.style.padding = '40px';
+                
+                // 根据比例调整模态框内容大小
+                switch(currentRatio) {
+                    case '1-1':
+                        previewClone.querySelector('.cover-title').style.fontSize = '3rem';
+                        previewClone.querySelector('.cover-subtitle').style.fontSize = '1.5rem';
+                        previewClone.querySelector('.cover-nickname').style.fontSize = '1.2rem';
+                        break;
+                    case '2-1':
+                        previewClone.querySelector('.cover-title').style.fontSize = '2.5rem';
+                        previewClone.querySelector('.cover-subtitle').style.fontSize = '1.3rem';
+                        previewClone.querySelector('.cover-nickname').style.fontSize = '1rem';
+                        break;
+                    case '4-3':
+                        previewClone.querySelector('.cover-title').style.fontSize = '2.8rem';
+                        previewClone.querySelector('.cover-subtitle').style.fontSize = '1.4rem';
+                        previewClone.querySelector('.cover-nickname').style.fontSize = '1.1rem';
+                        break;
+                    default: // 3:4
+                        previewClone.querySelector('.cover-title').style.fontSize = '3rem';
+                        previewClone.querySelector('.cover-subtitle').style.fontSize = '1.5rem';
+                        previewClone.querySelector('.cover-nickname').style.fontSize = '1.2rem';
+                }
+                
+                modalPreview.innerHTML = '';
+                modalPreview.appendChild(previewClone);
+                modal.style.display = 'flex';
+            });
+            
+            // 关闭模态框
+            modalClose.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            // 点击模态框外部关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+            
+            // 社交分享按钮事件
+            document.querySelectorAll('.social-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (this.classList.contains('home')) {
+                        window.location.href = 'https://i3doit.github.io/AI_Tools_2.5.html';
+                    } else {
+                        copyToClipboard('857023577');
+                        showToast('复制成功！咨询加艾兜兜儿微信：857023577，记得备注来源');
+                    }
+                });
+            });
+            
+            // 保存数据到localStorage
+            function saveToLocalStorage() {
+                const data = {
+                    title: document.getElementById('cover-title').value,
+                    subtitle: document.getElementById('cover-subtitle').value,
+                    nickname: document.getElementById('cover-nickname').value,
+                    template: currentTemplate,
+                    ratio: currentRatio,
+                    templatesUsage: JSON.parse(localStorage.getItem('templatesUsage')) || {}
+                };
+                localStorage.setItem('coverMagicData', JSON.stringify(data));
+            }
+            
+            // 从localStorage加载数据
+            function loadSavedData() {
+                const savedData = localStorage.getItem('coverMagicData');
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    document.getElementById('cover-title').value = data.title || 'AI时代的内容创作新范式';
+                    document.getElementById('cover-subtitle').value = data.subtitle || '探索AI如何重塑内容创作流程';
+                    document.getElementById('cover-nickname').value = data.nickname || '艾兜兜儿';
+                    
+                    // 更新模板选择
+                    currentTemplate = data.template || '1';
+                    templates.forEach(t => {
+                        if (t.dataset.template === currentTemplate) {
+                            t.classList.add('selected');
+                        } else {
+                            t.classList.remove('selected');
+                        }
+                    });
+                    
+                    // 更新比例选择
+                    currentRatio = data.ratio || '3-4';
+                    ratioBtns.forEach(b => {
+                        if (b.dataset.ratio === currentRatio) {
+                            b.classList.add('active');
+                        } else {
+                            b.classList.remove('active');
+                        }
+                    });
+                    
+                    // 更新预览
+                    updatePreviewBackground();
+                    updatePreviewContent(data.title, data.subtitle, data.nickname);
+                    previewContainer.className = 'preview-container';
+                    previewContainer.classList.add(`ratio-${currentRatio}`);
+                    
+                    // 根据使用频率排序模板
+                    sortTemplatesByUsage();
+                }
+            }
+            
+            // 更新模板使用统计
+            function updateTemplateUsage(templateId) {
+                let templatesUsage = JSON.parse(localStorage.getItem('templatesUsage')) || {};
+                templatesUsage[templateId] = (templatesUsage[templateId] || 0) + 1;
+                localStorage.setItem('templatesUsage', JSON.stringify(templatesUsage));
+            }
+            
+            // 根据使用频率排序模板
+            function sortTemplatesByUsage() {
+                const templatesUsage = JSON.parse(localStorage.getItem('templatesUsage')) || {};
+                const templatesArray = Array.from(templates);
+                
+                templatesArray.sort((a, b) => {
+                    const countA = templatesUsage[a.dataset.template] || 0;
+                    const countB = templatesUsage[b.dataset.template] || 0;
+                    return countB - countA;
+                });
+                
+                const templatesContainer = document.querySelector('.templates');
+                templatesContainer.innerHTML = '';
+                templatesArray.forEach(template => {
+                    templatesContainer.appendChild(template);
+                });
+                
+                // 确保当前选中的模板可见
+                const selectedTemplate = document.querySelector(`.template[data-template="${currentTemplate}"]`);
+                if (selectedTemplate) {
+                    selectedTemplate.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+            
+            // 更新预览内容
+            function updatePreviewContent(title, subtitle, nickname) {
+                const titleElement = coverPreview.querySelector('.cover-title');
+                const subtitleElement = coverPreview.querySelector('.cover-subtitle');
+                const nicknameElement = coverPreview.querySelector('.cover-nickname');
+                
+                titleElement.textContent = title || '请输入封面标题';
+                subtitleElement.textContent = subtitle || ' ';
+                nicknameElement.textContent = nickname || ' ';
+                
+                // 根据比例调整字体大小
+                switch(currentRatio) {
+                    case '1-1':
+                        titleElement.style.fontSize = '2rem';
+                        subtitleElement.style.fontSize = '1rem';
+                        nicknameElement.style.fontSize = '0.9rem';
+                        break;
+                    case '2-1':
+                        titleElement.style.fontSize = '1.8rem';
+                        subtitleElement.style.fontSize = '0.9rem';
+                        nicknameElement.style.fontSize = '0.8rem';
+                        break;
+                    case '4-3':
+                        titleElement.style.fontSize = '2.2rem';
+                        subtitleElement.style.fontSize = '1.1rem';
+                        nicknameElement.style.fontSize = '0.9rem';
+                        break;
+                    default: // 3:4
+                        titleElement.style.fontSize = '2rem';
+                        subtitleElement.style.fontSize = '1rem';
+                        nicknameElement.style.fontSize = '0.9rem';
+                }
+            }
+            
+            // 更新预览背景
+            function updatePreviewBackground() {
+                coverPreview.className = 'cover-preview';
+                coverPreview.classList.add(`template-${currentTemplate}`);
+            }
+            
+            // 下载封面函数
+            function downloadCover(format) {
+                // 临时调整预览大小以获得高质量图片
+                const originalWidth = previewContainer.offsetWidth;
+                const originalHeight = previewContainer.offsetHeight;
+                
+                // 创建一个隐藏的容器用于生成高质量图片
+                const hiddenContainer = document.createElement('div');
+                hiddenContainer.style.position = 'fixed';
+                hiddenContainer.style.left = '-9999px';
+                hiddenContainer.style.top = '0';
+                hiddenContainer.style.width = '1200px';
+                hiddenContainer.style.height = '1600px';
+                hiddenContainer.style.overflow = 'hidden';
+                
+                // 根据比例设置尺寸
+                let width, height;
+                switch(currentRatio) {
+                    case '1-1':
+                        width = 1200;
+                        height = 1200;
+                        break;
+                    case '2-1':
+                        width = 1200;
+                        height = 600;
+                        break;
+                    case '4-3':
+                        width = 1200;
+                        height = 900;
+                        break;
+                    default: // 3:4
+                        width = 900;
+                        height = 1200;
+                }
+                
+                hiddenContainer.style.width = `${width}px`;
+                hiddenContainer.style.height = `${height}px`;
+                
+                // 克隆预览内容
+                const previewClone = coverPreview.cloneNode(true);
+                previewClone.style.width = '100%';
+                previewClone.style.height = '100%';
+                previewClone.style.padding = '60px';
+                
+                // 调整字体大小
+                const title = previewClone.querySelector('.cover-title');
+                const subtitle = previewClone.querySelector('.cover-subtitle');
+                const nickname = previewClone.querySelector('.cover-nickname');
+                
+                switch(currentRatio) {
+                    case '1-1':
+                        title.style.fontSize = '4rem';
+                        subtitle.style.fontSize = '2rem';
+                        nickname.style.fontSize = '1.5rem';
+                        break;
+                    case '2-1':
+                        title.style.fontSize = '3.5rem';
+                        subtitle.style.fontSize = '1.8rem';
+                        nickname.style.fontSize = '1.3rem';
+                        break;
+                    case '4-3':
+                        title.style.fontSize = '3.8rem';
+                        subtitle.style.fontSize = '1.9rem';
+                        nickname.style.fontSize = '1.4rem';
+                        break;
+                    default: // 3:4
+                        title.style.fontSize = '4rem';
+                        subtitle.style.fontSize = '2rem';
+                        nickname.style.fontSize = '1.5rem';
+                }
+                
+                hiddenContainer.appendChild(previewClone);
+                document.body.appendChild(hiddenContainer);
+                
+                // 使用html2canvas生成图片
+                html2canvas(hiddenContainer, {
+                    scale: 2,
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true
+                }).then(canvas => {
+                    // 移除临时容器
+                    document.body.removeChild(hiddenContainer);
+                    
+                    // 创建下载链接
+                    const link = document.createElement('a');
+                    let mimeType, extension;
+                    
+                    switch(format) {
+                        case 'jpg':
+                            mimeType = 'image/jpeg';
+                            extension = 'jpg';
+                            break;
+                        case 'webp':
+                            mimeType = 'image/webp';
+                            extension = 'webp';
+                            break;
+                        default: // png
+                            mimeType = 'image/png';
+                            extension = 'png';
+                    }
+                    
+                    link.download = `covermagic-${new Date().getTime()}.${extension}`;
+                    link.href = canvas.toDataURL(mimeType, 1.0);
+                    link.click();
+                    
+                    showToast(`封面图已下载 (${extension.toUpperCase()})`);
+                }).catch(err => {
+                    console.error('生成图片失败:', err);
+                    showToast('生成图片失败，请重试');
+                    document.body.removeChild(hiddenContainer);
+                });
+            }
+            
+            // 复制到剪贴板
+            function copyToClipboard(text) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+            
+            // 显示提示信息
+            function showToast(message) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+            
+            // 初始化页面
+            function init() {
+                // 触发一次生成
+                generateBtn.click();
+                
+                // 检查模板使用统计
+                if (!localStorage.getItem('templatesUsage')) {
+                    const initialUsage = {};
+                    templates.forEach(t => {
+                        initialUsage[t.dataset.template] = 0;
+                    });
+                    localStorage.setItem('templatesUsage', JSON.stringify(initialUsage));
+                }
+            }
+            
+            init();
+        });
+    </script>
+</body>
+</html>
