@@ -1328,7 +1328,7 @@
     </audio>
 
     <script>
-        // 页面加载时执行
+           // 页面加载时执行
         document.addEventListener('DOMContentLoaded', () => {
             // 初始化日期
             initCopyright();
@@ -1340,7 +1340,22 @@
             checkFirstVisit();
             // 启动提醒检查
             startReminderCheck();
+            // 初始化分类计数
+            updateCategoryCounts();
+            
+            // 修复引导页关闭功能
+            document.getElementById('welcome-close').addEventListener('click', () => {
+                const dontShow = document.getElementById('dont-show-again').checked;
+                if (dontShow) {
+                    localStorage.setItem('sparkmemo-first-visit', 'true');
+                }
+                document.getElementById('welcome-modal').style.display = 'none';
+                
+                // 确保加载便签
+                loadNotes();
+            });
         });
+
 
         // 版权年份信息
         function initCopyright() {
