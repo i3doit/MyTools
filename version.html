@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FireNotes Pro - 版本升级管理系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* CSS变量定义 */
+        :root {
+            --primary-color: #0071e3;
+            --secondary-color: #30b2e3;
+            --background-color: #eff9fe;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --text-color: #333;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --glass: rgba(255, 255, 255, 0.25);
+            --border-radius: 14px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #e0f2fe, #f0f9ff);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        /* 头部样式 */
+        header {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .logo-text {
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            color: var(--text-color);
+            background: linear-gradient(45deg, #0d6efd, #0dcaf0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* 搜索区域 */
+        .search-container {
+            display: flex;
+            gap: 10px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .search-box {
+            flex: 1;
+            background: var(--glass);
+            border-radius: 50px;
+            padding: 0 20px;
+            height: 44px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .search-box:focus-within {
+            background: var(--card-bg);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+        }
+
+        .search-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            height: 100%;
+            padding: 0 10px;
+            font-size: 16px;
+        }
+
+        .search-box i {
+            color: #777;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        /* 侧边栏分类 */
+        .sidebar {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            align-self: start;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .sidebar-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-title h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .add-category {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .add-category:hover {
+            background: rgba(0, 113, 227, 0.1);
+        }
+
+        .categories {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .category-item:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .category-item.active {
+            background: rgba(0, 113, 227, 0.15);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .category-count {
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 13px;
+        }
+
+        .category-actions {
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .category-item:hover .category-actions {
+            opacity: 1;
+        }
+
+        .category-action-btn {
+            background: none;
+            border: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .category-action-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* 内容卡片区域 */
+        .content-area {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .content-title h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(45deg, #0d6efd, #0dcaf0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .content-header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 50px;
+            background: var(--glass);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: var(--shadow);
+        }
+
+        .action-btn.primary {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+        }
+
+        .action-btn.primary:hover {
+            background: #0060c9;
+            transform: translateY(-2px);
+        }
+
+        /* 版本卡片 */
+        .versions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .version-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: var(--transition);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .version-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .card-category {
+            position: absolute;
+            top: -10px;
+            right: 15px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
+        }
+
+        .card-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .card-title h3 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .card-date {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .card-content {
+            padding: 15px 20px;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        .card-footer {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: rgba(0, 113, 227, 0.1);
+            color: var(--primary-color);
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .card-actions button {
+            background: none;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .card-actions button:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        /* 分页控件 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 40px;
+            padding: 0 20px;
+        }
+
+        .pagination-button {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: var(--card-bg);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .pagination-button.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: transparent;
+        }
+
+        .pagination-button:hover:not(.active) {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        /* 模态对话框样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(3px);
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            transform: translateY(-30px);
+            transition: var(--transition);
+            opacity: 0;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            color: var(--text-color);
+        }
+
+        .modal-body {
+            padding: 25px 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+        }
+
+        .tag-input-container {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tag-input {
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+        }
+
+        .btn-secondary {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0060c9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 113, 227, 0.3);
+        }
+
+        /* 悬浮操作按钮 */
+        .floating-actions {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 999;
+        }
+
+        .floating-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px rgba(0, 113, 227, 0.4);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 22px;
+            border: none;
+        }
+
+        .floating-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(0, 113, 227, 0.5);
+        }
+
+        .floating-btn.secondary {
+            background: white;
+            color: var(--primary-color);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 通知样式 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: var(--transition);
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .notification-success {
+            border-left: 4px solid #28a745;
+        }
+
+        /* 页脚样式 */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px 0;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+        }
+
+        .footer-links a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        .copyright {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .social-share {
+            display: flex;
+            gap: 10px;
+        }
+
+        .social-share a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .social-share a:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .promo-banner {
+            background: linear-gradient(45deg, #ffcc00, #ff9900);
+            color: #fff;
+            padding: 10px 20px;
+            text-align: center;
+            font-size: 14px;
+            border-radius: 0 0 10px 10px;
+            margin-top: -20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .promo-banner a {
+            color: #fff;
+            text-decoration: underline;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .search-container {
+                max-width: 100%;
+            }
+            
+            .content-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .versions-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .floating-actions {
+                bottom: 20px;
+                right: 20px;
+            }
+            
+            .floating-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+            background: var(--glass);
+            border-radius: var(--border-radius);
+            border: 1px dashed rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+
+        .empty-state i {
+            font-size: 60px;
+            color: #b8d5f5;
+            margin-bottom: 20px;
+        }
+
+        .empty-state p {
+            max-width: 500px;
+            margin: 15px auto;
+            font-size: 17px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div class="logo-text">FireNotes Pro</div>
+                </div>
+                <div class="search-container">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="搜索版本号、内容或标签...">
+                    </div>
+                    <button class="action-btn primary" id="filterBtn">
+                        <i class="fas fa-sliders-h"></i> 筛选
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="promo-banner">
+        我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」，<a href="https://t.zsxq.com/yL7L8">一起加入讨论吧</a>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="sidebar-title">
+                    <h2>分类管理</h2>
+                    <button class="add-category" id="addCategoryBtn">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="categories" id="categoriesList">
+                    <div class="category-item active">
+                        <div>全部版本</div>
+                        <div class="category-count">4</div>
+                    </div>
+                    <div class="category-item">
+                        <div>新功能</div>
+                        <div class="category-count">2</div>
+                    </div>
+                    <div class="category-item">
+                        <div>性能优化</div>
+                        <div class="category-count">1</div>
+                    </div>
+                    <div class="category-item">
+                        <div>安全增强</div>
+                        <div class="category-count">1</div>
+                    </div>
+                    <div class="category-item">
+                        <div>UI改进</div>
+                        <div class="category-count">1</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <div class="content-header">
+                    <div class="content-title">
+                        <h1>版本发布记录</h1>
+                    </div>
+                    <div class="content-header-actions">
+                        <button class="action-btn" id="importBtn">
+                            <i class="fas fa-file-import"></i> 导入
+                        </button>
+                        <button class="action-btn" id="exportBtn">
+                            <i class="fas fa-file-export"></i> 导出
+                        </button>
+                    </div>
+                </div>
+
+                <div class="versions-grid" id="versionsGrid">
+                    <div class="version-card">
+                        <div class="card-header">
+                            <div class="card-category">安全增强</div>
+                            <div class="card-title">
+                                <h3>v1.3.0</h3>
+                                <div class="card-actions">
+                                    <button><i class="fas fa-edit"></i></button>
+                                    <button><i class="fas fa-trash-alt"></i></button>
+                                </div>
+                            </div>
+                            <div class="card-date">2025-07-28</div>
+                        </div>
+                        <div class="card-content">
+                            本次更新增强了系统安全性，修复了身份验证逻辑中的漏洞，增加了双因素认证选项
+                        </div>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="tag">安全</span>
+                                <span class="tag">认证</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="version-card">
+                        <div class="card-header">
+                            <div class="card-category">新功能</div>
+                            <div class="card-title">
+                                <h3>v1.2.0</h3>
+                                <div class="card-actions">
+                                    <button><i class="fas fa-edit"></i></button>
+                                    <button><i class="fas fa-trash-alt"></i></button>
+                                </div>
+                            </div>
+                            <div class="card-date">2025-07-15</div>
+                        </div>
+                        <div class="card-content">
+                            新增全局搜索功能，支持模糊匹配；优化了任务管理面板交互体验，提高工作效率30%
+                        </div>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="tag">搜索</span>
+                                <span class="tag">UI</span>
+                                <span class="tag">效率</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="version-card">
+                        <div class="card-header">
+                            <div class="card-category">UI改进</div>
+                            <div class="card-title">
+                                <h3>v1.1.5</h3>
+                                <div class="card-actions">
+                                    <button><i class="fas fa-edit"></i></button>
+                                    <button><i class="fas fa-trash-alt"></i></button>
+                                </div>
+                            </div>
+                            <div class="card-date">2025-07-05</div>
+                        </div>
+                        <div class="card-content">
+                            重新设计卡片UI，采用毛玻璃效果，新增护眼配色方案，优化响应式布局在所有设备上的表现
+                        </div>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="tag">设计</span>
+                                <span class="tag">响应式</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="version-card">
+                        <div class="card-header">
+                            <div class="card-category">性能优化</div>
+                            <div class="card-title">
+                                <h3>v1.1.0</h3>
+                                <div class="card-actions">
+                                    <button><i class="fas fa-edit"></i></button>
+                                    <button><i class="fas fa-trash-alt"></i></button>
+                                </div>
+                            </div>
+                            <div class="card-date">2025-06-20</div>
+                        </div>
+                        <div class="card-content">
+                            通过优化数据库查询策略和前端懒加载技术，将页面加载时间减少40%
+                        </div>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="tag">性能</span>
+                                <span class="tag">优化</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pagination" id="pagination">
+                    <div class="pagination-button active">1</div>
+                    <div class="pagination-button">2</div>
+                    <div class="pagination-button">3</div>
+                    <div class="pagination-button">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 悬浮操作按钮 -->
+    <div class="floating-actions">
+        <button class="floating-btn" id="addVersionBtn">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+
+    <!-- 添加版本模态框 -->
+    <div class="modal-overlay" id="addVersionModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>添加新版本</h2>
+                <button class="modal-close" id="closeAddModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="versionNumber">版本号</label>
+                    <input type="text" id="versionNumber" class="form-input" placeholder="例如: v1.2.3">
+                </div>
+                <div class="form-group">
+                    <label for="versionDate">发布日期</label>
+                    <input type="date" id="versionDate" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="versionContent">更新内容</label>
+                    <textarea id="versionContent" class="form-input" rows="4" placeholder="详细描述此次更新的内容..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="versionTags">标签</label>
+                    <div class="tag-input-container">
+                        <input type="text" id="versionTags" class="form-input tag-input" placeholder="输入标签（多个标签用逗号分隔）">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="versionCategory">分类</label>
+                    <select id="versionCategory" class="form-input">
+                        <option value="">-- 选择分类 --</option>
+                        <option value="新功能">新功能</option>
+                        <option value="安全增强">安全增强</option>
+                        <option value="性能优化">性能优化</option>
+                        <option value="Bug修复">Bug修复</option>
+                        <option value="UI改进">UI改进</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelAddBtn">取消</button>
+                <button class="btn btn-primary" id="saveVersionBtn">保存版本</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知组件 -->
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span>操作成功！</span>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="https://t.zsxq.com/11QO9" target="_blank">技术支持：艾兜兜儿</a>
+                <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" target="_blank">我的AI编程日记</a>
+                <a href="https://deepseek.idoxu.com/aidder/FireNotes.html" target="_blank">返回主页</a>
+            </div>
+            <div class="copyright">
+                © 2025 FireNotes Pro - 轻量高效的版本管理系统
+            </div>
+            <div class="social-share">
+                <a href="https://www.facebook.com/sharer/sharer.php?u=example.com" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://twitter.com/intent/tweet?url=example.com&text=FireNotes Pro" target="_blank"><i class="fab fa-twitter"></i></a>
+                <a href="https://www.linkedin.com/shareArticle?mini=true&url=example.com&title=FireNotes Pro" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+                <a href="https://weibo.com/share?url=example.com&title=FireNotes Pro" target="_blank"><i class="fab fa-weibo"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 显示/隐藏模态框
+        const addVersionModal = document.getElementById('addVersionModal');
+        const addVersionBtn = document.getElementById('addVersionBtn');
+        const closeAddModal = document.getElementById('closeAddModal');
+        const cancelAddBtn = document.getElementById('cancelAddBtn');
+        
+        addVersionBtn.addEventListener('click', () => {
+            addVersionModal.classList.add('active');
+        });
+        
+        closeAddModal.addEventListener('click', closeModal);
+        cancelAddBtn.addEventListener('click', closeModal);
+        
+        function closeModal() {
+            addVersionModal.classList.remove('active');
+        }
+        
+        // 点击遮罩层关闭模态框
+        addVersionModal.addEventListener('click', (e) => {
+            if (e.target === addVersionModal) {
+                closeModal();
+            }
+        });
+        
+        // 通知功能
+        function showNotification(message, isSuccess = true) {
+            const notification = document.getElementById('notification');
+            notification.innerHTML = `
+                <i class="fas fa-${isSuccess ? 'check-circle' : 'exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            notification.className = `notification ${isSuccess ? 'notification-success' : ''} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化示例数据
+            loadInitialData();
+            
+            // 分页事件监听
+            document.querySelectorAll('.pagination-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('.pagination-button').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // 在实际应用中，这里会重新加载数据
+                    showNotification(`已切换到第${this.textContent}页`, true);
+                });
+            });
+            
+            // 模拟保存版本
+            document.getElementById('saveVersionBtn').addEventListener('click', function() {
+                const version = document.getElementById('versionNumber').value;
+                
+                if (!version) {
+                    showNotification('请填写版本号', false);
+                    return;
+                }
+                
+                // 在实际应用中，这里会将数据保存到localStorage
+                showNotification(`版本 ${version} 添加成功`, true);
+                closeModal();
+                
+                // 清空表单
+                document.getElementById('versionNumber').value = '';
+                document.getElementById('versionDate').value = '';
+                document.getElementById('versionContent').value = '';
+                document.getElementById('versionTags').value = '';
+                document.getElementById('versionCategory').selectedIndex = 0;
+            });
+            
+            // 模拟导出
+            document.getElementById('exportBtn').addEventListener('click', function() {
+                showNotification('数据已导出为JSON文件', true);
+                
+                // 实际应用中，这里应该生成下载链接
+                // 以下仅为模拟逻辑
+                const data = {
+                    message: "这里是导出的版本数据",
+                    versions: []
+                };
+                
+                const dataStr = JSON.stringify(data);
+                const blob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                
+                // 创建临时下载链接
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'firenotes-backup.json';
+                document.body.appendChild(a);
+                a.click();
+                
+                // 清理
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            });
+            
+            // 模拟导入
+            document.getElementById('importBtn').addEventListener('click', function() {
+                // 在实际应用中，这里应该触发文件上传
+                // 以下代码仅用于演示UI反应
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = '.json';
+                
+                fileInput.onchange = function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            try {
+                                const jsonData = JSON.parse(e.target.result);
+                                showNotification('数据导入成功', true);
+                                
+                                // 在实际应用中，这里会处理导入的数据
+                            } catch (error) {
+                                showNotification('导入失败：文件格式错误', false);
+                            }
+                        };
+                        reader.readAsText(file);
+                    }
+                };
+                
+                fileInput.click();
+            });
+            
+            // 分类点击事件
+            document.querySelectorAll('.category-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.category-item').forEach(el => {
+                        el.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    showNotification(`已切换至分类: ${this.querySelector('div').textContent}`, true);
+                });
+            });
+            
+            // 全局搜索
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.trim().toLowerCase();
+                
+                if (searchTerm.length > 0) {
+                    showNotification(`搜索关键字: ${searchTerm}`, true);
+                    
+                    // 在实际应用中，这里会执行搜索操作
+                }
+            });
+        });
+        
+        // 加载初始数据
+        function loadInitialData() {
+            // 在实际应用中，这里会从localStorage加载数据
+            // 此处仅为演示目的
+            console.log('从localStorage加载初始数据...');
+        }
+        
+        // 动态更新版权年份
+        function updateCopyrightYear() {
+            const currentYear = new Date().getFullYear();
+            const copyrightEl = document.querySelector('.copyright');
+            
+            // 如果当前年份大于2025
+            if (currentYear > 2025) {
+                copyrightEl.innerHTML = `© 2025 - ${currentYear} FireNotes Pro - 轻量高效的版本管理系统`;
+            }
+        }
+        
+        // 页面加载完成后更新年份
+        window.onload = updateCopyrightYear;
+    </script>
+</body>
+</html>
