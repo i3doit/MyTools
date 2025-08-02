@@ -749,7 +749,7 @@
                     <p>点击图片可查看大图</p>
                     
                     <div class="preview-container">
-                        <div class="preview-image" id="coverPreview" style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);">
+                        <div class="preview-image" id="coverPreview">
                             <div class="preview-content">
                                 <div class="preview-placeholder">
                                     <i>🖼️</i>
@@ -939,17 +939,12 @@
                 // 设置第一个模板为选中
                 if (index === 0) {
                     templateDiv.classList.add('active');
-                    // 设置默认预览背景
-                    document.getElementById('coverPreview').style.background = template.background;
                 }
                 
                 templateDiv.addEventListener('click', () => {
                     // 高亮选中模板
                     document.querySelectorAll('.template-item').forEach(t => t.classList.remove('active'));
                     templateDiv.classList.add('active');
-                    
-                    // 更新预览区域背景
-                    document.getElementById('coverPreview').style.background = template.background;
                     
                     // 显示通知
                     showNotification(`已切换至「${template.name}」模板`);
@@ -1074,6 +1069,11 @@
                 const subtitle = document.getElementById('subtitle').value || '';
                 const author = document.getElementById('author').value || '';
                 
+                if (!title) {
+                    showNotification('封面标题不能为空！');
+                    return;
+                }
+                
                 // 保存到本地存储
                 localStorage.setItem('coverTitle', title);
                 localStorage.setItem('coverSubtitle', subtitle);
@@ -1084,18 +1084,30 @@
                 const activeTemplateId = document.querySelector('.template-item.active').id;
                 const template = templates.find(t => t.id === activeTemplateId);
                 
+                // 更新模板使用统计数据
+                template.stats++;
+                localStorage.setItem('templateStats', JSON.stringify(templates.reduce((acc, t) => {
+                    acc[t.id] = t.stats;
+                    return acc;
+                }, {})));
+                
+                // 更新显示的统计
+                document.querySelector(`#${activeTemplateId} .template-stats`).textContent = `${template.stats}次`;
+                
                 // 清空预览内容
                 previewContent.innerHTML = '';
                 
-                // 生成预览HTML - 只显示非空字段
-                if (title) {
-                    const titleElement = document.createElement('div');
-                    titleElement.className = 'preview-title';
-                    titleElement.style.background = template.titleColor;
-                    titleElement.textContent = title;
-                    previewContent.appendChild(titleElement);
-                }
+                // 应用背景
+                preview.style.background = template.background;
                 
+                // 创建标题
+                const titleElement = document.createElement('div');
+                titleElement.className = 'preview-title';
+                titleElement.style.background = template.titleColor;
+                titleElement.textContent = title;
+                previewContent.appendChild(titleElement);
+                
+                // 创建副标题
                 if (subtitle) {
                     const subtitleElement = document.createElement('div');
                     subtitleElement.className = 'preview-subtitle';
@@ -1104,6 +1116,7 @@
                     previewContent.appendChild(subtitleElement);
                 }
                 
+                // 创建作者
                 if (author) {
                     const authorElement = document.createElement('div');
                     authorElement.className = 'preview-author';
@@ -1111,19 +1124,6 @@
                     authorElement.textContent = `作者：${author}`;
                     previewContent.appendChild(authorElement);
                 }
-                
-                // 如果没有内容，显示占位符
-                if (!title && !subtitle && !author) {
-                    previewContent.innerHTML = `
-                        <div class="preview-placeholder">
-                            <i>🖼️</i>
-                            <p>请填写左侧内容并生成预览</p>
-                        </div>
-                    `;
-                }
-                
-                // 应用背景
-                preview.style.background = template.background;
                 
                 // 显示通知
                 showNotification('封面预览已生成！');
@@ -1134,41 +1134,69 @@
                 const renderContainer = document.getElementById('renderContainer');
                 renderContainer.innerHTML = '';
                 
-                // 克隆预览内容
-                const preview = document.getElementById('coverPreview');
-                const previewContent = preview.querySelector('.preview-content').cloneNode(true);
+                // 获取当前模板
+                const activeTemplateId = document.querySelector('.template-item.active').id;
+                const template = templates.find(t => t.id === activeTemplateId);
+                
+                // 获取输入内容
+                const title = document.getElementById('title').value || '';
+                const subtitle = document.getElementById('subtitle').value || '';
+                const author = document.getElementById('author').value || '';
                 
                 // 创建渲染元素
                 const renderElement = document.createElement('div');
                 renderElement.style.width = `${width}px`;
                 renderElement.style.height = `${height}px`;
-                renderElement.style.background = preview.style.background;
+                renderElement.style.background = template.background;
                 renderElement.style.padding = '40px';
                 renderElement.style.display = 'flex';
                 renderElement.style.flexDirection = 'column';
                 renderElement.style.justifyContent = 'center';
                 renderElement.style.position = 'relative';
                 renderElement.style.overflow = 'hidden';
+                renderElement.style.fontFamily = "'Noto Sans SC', sans-serif";
                 
-                // 添加内容
-                renderElement.appendChild(previewContent);
-                renderContainer.appendChild(renderElement);
+                // 添加标题
+                const titleElement = document.createElement('div');
+                titleElement.style.fontSize = `${width * 0.06}px`;
+                titleElement.style.fontWeight = '800';
+                titleElement.style.lineHeight = '1.2';
+                titleElement.style.marginBottom = '15px';
+                titleElement.style.background = template.titleColor;
+                titleElement.style.webkitBackgroundClip = 'text';
+                titleElement.style.backgroundClip = 'text';
+                titleElement.style.color = 'transparent';
+                titleElement.textContent = title;
+                renderElement.appendChild(titleElement);
                 
-                // 调整字体大小
-                const titleElement = renderElement.querySelector('.preview-title');
-                if (titleElement) {
-                    titleElement.style.fontSize = `${width * 0.06}px`;
-                }
-                
-                const subtitleElement = renderElement.querySelector('.preview-subtitle');
-                if (subtitleElement) {
+                // 添加副标题
+                if (subtitle) {
+                    const subtitleElement = document.createElement('div');
                     subtitleElement.style.fontSize = `${width * 0.04}px`;
+                    subtitleElement.style.fontWeight = '500';
+                    subtitleElement.style.marginBottom = '20px';
+                    subtitleElement.style.color = template.subtitleColor;
+                    subtitleElement.textContent = subtitle;
+                    renderElement.appendChild(subtitleElement);
                 }
                 
-                const authorElement = renderElement.querySelector('.preview-author');
-                if (authorElement) {
+                // 添加作者
+                if (author) {
+                    const authorElement = document.createElement('div');
                     authorElement.style.fontSize = `${width * 0.03}px`;
+                    authorElement.style.marginTop = 'auto';
+                    authorElement.style.textAlign = 'right';
+                    authorElement.style.padding = '6px 10px';
+                    authorElement.style.background = 'rgba(0, 0, 0, 0.2)';
+                    authorElement.style.display = 'inline-block';
+                    authorElement.style.borderRadius = '4px';
+                    authorElement.style.alignSelf = 'flex-end';
+                    authorElement.style.color = template.authorColor;
+                    authorElement.textContent = `作者：${author}`;
+                    renderElement.appendChild(authorElement);
                 }
+                
+                renderContainer.appendChild(renderElement);
                 
                 return renderElement;
             }
