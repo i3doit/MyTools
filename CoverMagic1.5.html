@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoverCanvas - AI封面图生成工具</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Lato:wght@300;400;700&display=swap">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-bg: #e6f7ff;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-border: rgba(255, 255, 255, 0.3);
+            --text-primary: #1a2b4d;
+            --text-secondary: #4a5a7b;
+            --accent-color: #4facfe;
+            --shadow-light: 0 8px 32px rgba(31, 38, 135, 0.1);
+            --shadow-deep: 0 12px 48px rgba(31, 38, 135, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lato', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at center, #e6f7ff 0%, #ccefff 100%);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        .title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 3.2rem;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #4facfe 0%, #00c1fc 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .subtitle {
+            font-weight: 300;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 992px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .control-panel {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: var(--shadow-light);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .control-panel:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-deep);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 14px 15px;
+            border: none;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            font-family: 'Lato', sans-serif;
+            font-size: 1rem;
+            color: var(--text-primary);
+            outline: none;
+            transition: all 0.3s;
+            border: 1px solid rgba(79, 172, 254, 0.2);
+        }
+
+        input:focus, select:focus {
+            background: rgba(255, 255, 255, 1);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.3);
+        }
+
+        .templates-container {
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .templates-scroller {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 15px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(79, 172, 254, 0.5) transparent;
+        }
+
+        .templates-scroller::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .templates-scroller::-webkit-scrollbar-thumb {
+            background-color: rgba(79, 172, 254, 0.5);
+            border-radius: 3px;
+        }
+
+        .templates-scroller::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .template-item {
+            flex: 0 0 70px;
+            height: 70px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .template-item.active {
+            border: 2px solid var(--accent-color);
+            box-shadow: 0 0 8px rgba(79, 172, 254, 0.5);
+        }
+
+        .template-item:hover {
+            transform: scale(1.05);
+        }
+
+        .template-1 { background: linear-gradient(135deg, #4facfe 0%, #00c1fc 100%); }
+        .template-2 { background: linear-gradient(135deg, #ff7eb3 0%, #ff758c 100%); }
+        .template-3 { background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%); }
+        .template-4 { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); }
+        .template-5 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .template-6 { background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%); }
+        .template-7 { background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%); }
+        .template-8 { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
+        .template-9 { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+        .template-10 { background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%); }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 14px 0;
+            border: none;
+            border-radius: 50px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 500;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, #4facfe, #00c1fc);
+            color: white;
+            box-shadow: 0 4px 20px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 24px rgba(79, 172, 254, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #4facfe;
+            color: var(--accent-color);
+        }
+
+        .btn-outline:hover {
+            background: rgba(79, 172, 254, 0.07);
+            transform: translateY(-2px);
+        }
+
+        .preview-area {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-deep);
+            transition: transform 0.3s;
+        }
+
+        .preview-area:hover {
+            transform: scale(1.01);
+        }
+
+        .preview-container {
+            position: relative;
+            width: 100%;
+            transition: all 0.3s;
+            overflow: hidden;
+            background-color: white;
+        }
+
+        .preview-content {
+            padding: 40px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+            transition: padding 0.3s;
+        }
+
+        .preview-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            margin-bottom: 20px;
+            line-height: 1.3;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.05);
+            transition: font-size 0.3s, margin-bottom 0.3s;
+            word-break: break-word;
+            max-width: 90%;
+        }
+
+        .preview-subtitle {
+            font-weight: 400;
+            margin-bottom: 25px;
+            opacity: 0.9;
+            line-height: 1.6;
+            transition: font-size 0.3s, margin-bottom 0.3s;
+            word-break: break-word;
+            max-width: 90%;
+        }
+
+        .preview-author {
+            font-weight: 600;
+            padding: 8px 15px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.25);
+            backdrop-filter: blur(5px);
+            transition: bottom 0.3s, right 0.3s, padding 0.3s;
+        }
+
+        .aspect-ratio-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .aspect-ratio-btn {
+            padding: 8px 15px;
+            background: rgba(79, 172, 254, 0.1);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .aspect-ratio-btn.active {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .footer {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 40px;
+            text-align: center;
+            box-shadow: var(--shadow-light);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: all 0.3s;
+            min-width: 140px;
+        }
+
+        .social-link:hover {
+            color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .social-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 8px;
+            filter: invert(44%) sepia(91%) saturate(415%) hue-rotate(174deg) brightness(103%) contrast(99%);
+        }
+
+        .ad-text {
+            background: rgba(79, 172, 254, 0.07);
+            border-radius: 12px;
+            padding: 18px;
+            max-width: 700px;
+            margin: 20px auto;
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        .highlight {
+            display: block;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-top: 10px;
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        .copyright {
+            margin-top: 20px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        #preview {
+            transition: all 0.3s ease;
+        }
+
+        /* 2:1比例专用样式 */
+        .ratio-2-1 {
+            aspect-ratio: 2/1;
+        }
+        
+        .ratio-2-1 .preview-content {
+            padding: 40px 50px;
+        }
+        
+        .ratio-2-1 .preview-title {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            max-width: 85%;
+        }
+        
+        .ratio-2-1 .preview-subtitle {
+            font-size: 1.3rem;
+            max-width: 85%;
+        }
+        
+        .ratio-2-1 .preview-author {
+            bottom: 40px;
+            right: 50px;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="title">CoverCanvas</h1>
+            <p class="subtitle">AI驱动的专业封面图生成工具，三分钟打造爆款设计</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <div class="form-group">
+                    <label for="mainTitle">主标题</label>
+                    <input type="text" id="mainTitle" placeholder="输入吸引眼球的标题" value="用AI打造爆款设计">
+                </div>
+                
+                <div class="form-group">
+                    <label for="subTitle">副标题</label>
+                    <input type="text" id="subTitle" placeholder="添加补充性信息" value="CoverCanvas帮你3分钟制作高质量封面图">
+                </div>
+                
+                <div class="form-group">
+                    <label for="author">作者</label>
+                    <input type="text" id="author" placeholder="作者名称" value="艾兜兜儿">
+                </div>
+                
+                <div class="form-group">
+                    <label>选择模板</label>
+                    <div class="templates-container">
+                        <div class="templates-scroller">
+                            <div class="template-item template-1 active" data-template="1"></div>
+                            <div class="template-item template-2" data-template="2"></div>
+                            <div class="template-item template-3" data-template="3"></div>
+                            <div class="template-item template-4" data-template="4"></div>
+                            <div class="template-item template-5" data-template="5"></div>
+                            <div class="template-item template-6" data-template="6"></div>
+                            <div class="template-item template-7" data-template="7"></div>
+                            <div class="template-item template-8" data-template="8"></div>
+                            <div class="template-item template-9" data-template="9"></div>
+                            <div class="template-item template-10" data-template="10"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>封面尺寸比例</label>
+                    <div class="aspect-ratio-selector">
+                        <div class="aspect-ratio-btn" data-ratio="3/4">竖版 3:4</div>
+                        <div class="aspect-ratio-btn" data-ratio="4/3">横版 4:3</div>
+                        <div class="aspect-ratio-btn active" data-ratio="2/1">长图 2:1</div>
+                        <div class="aspect-ratio-btn" data-ratio="1/1">方形 1:1</div>
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button id="downloadBtn" class="btn btn-primary">下载封面图</button>
+                    <button id="resetBtn" class="btn btn-outline">恢复初始值</button>
+                </div>
+            </div>
+            
+            <div class="preview-area">
+                <div id="preview" class="preview-container ratio-2-1">
+                    <div class="preview-content">
+                        <h1 id="previewTitle" class="preview-title">用AI打造爆款设计</h1>
+                        <p id="previewSubtitle" class="preview-subtitle">CoverCanvas帮你3分钟制作高质量封面图</p>
+                        <p id="previewAuthor" class="preview-author">艾兜兜儿</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="social-links">
+                <a href="https://t.zsxq.com/11QO9" class="social-link" target="_blank">
+                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M12,2C6.5,2,2,6.5,2,12c0,5.5,4.5,10,10,10s10-4.5,10-10C22,6.5,17.5,2,12,2z M16.7,14.5c-0.2,0.1-0.5,0.2-0.8,0.2c-0.4,0-0.8-0.1-1.1-0.4l-0.6-0.5l-0.7,0.7c-0.4,0.4-1,0.7-1.7,0.7c-0.8,0-1.5-0.3-2-0.8l1.7-1.7c0.2,0.3,0.6,0.5,0.9,0.5c0.3,0,0.6-0.1,0.8-0.3l0.4-0.3c-0.2-0.1-0.4-0.2-0.5-0.4c-0.4-0.4-0.6-0.9-0.6-1.5c0-1.2,0.9-2.1,2.1-2.1c0.6,0,1.1,0.2,1.4,0.6l1.1-1.1c-0.5-0.6-1.3-1-2.1-1c-1.7,0-3.1,1.4-3.1,3.1c0,0.8,0.3,1.5,0.8,2l-0.8,0.8c-0.5-0.6-0.8-1.3-0.8-2.1c0-1.9,1.6-3.5,3.5-3.5c0.9,0,1.7,0.3,2.3,0.9l1.3-1.3c-0.8-0.8-1.9-1.3-3.1-1.3c-2.5,0-4.5,2-4.5,4.5c0,0.9,0.3,1.8,0.8,2.5l-2.3,2.3l0.7,0.7l2.3-2.3c0.7,0.5,1.5,0.8,2.4,0.8c0.5,0,0.9-0.1,1.4-0.2L16.7,14.5z"/></svg>
+                    艾兜兜儿
+                </a>
+                <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" class="social-link" target="_blank">
+                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M8.3,17.2h1.5v-3.7h5.2v3.7h1.5V7.2h-1.5v3.6H9.8V7.2H8.3V17.2z M12,22c-5.5,0-10-4.5-10-10S6.5,2,12,2s10,4.5,10,10S17.5,22,12,22z M12,3.4c-4.7,0-8.6,3.9-8.6,8.6c0,4.7,3.9,8.6,8.6,8.6c4.7,0,8.6-3.9,8.6-8.6C20.6,7.2,16.7,3.4,12,3.4z"/></svg>
+                    我的AI编程日记
+                </a>
+            </div>
+            
+            <div class="ad-text">
+                我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」，
+                <a href="https://t.zsxq.com/yL7L8" target="_blank" class="highlight">一起加入讨论吧</a>
+            </div>
+            
+            <div class="social-links">
+                <a href="#" class="social-link">
+                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M20,3H4C3.4,3,3,3.4,3,4v16c0,0.6,0.4,1,1,1h8.6v-6.9h-2.3v-2.7h2.3V9.2c0-2.3,1.5-3.5,3.7-3.5c0.8,0,1.5,0.1,2.2,0.2v2.5h-1.5c-1.2,0-1.4,0.5-1.4,1.3v1.8h2.8l-0.4,2.7h-2.3V21H20c0.6,0,1-0.4,1-1V4C21,3.4,20.6,3,20,3z"/></svg>
+                    微信分享
+                </a>
+                <a href="#" class="social-link">
+                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M10.7,15.8l4.1-2.4c0.4-0.3,0.4-0.8,0-1.1l-4.1-2.4c-0.5-0.3-1.1,0.1-1.1,0.6v4.7C9.6,15.7,10.2,16.1,10.7,15.8z M12,2C6.5,2,2,6.5,2,12c0,5.5,4.5,10,10,10s10-4.5,10-10C22,6.5,17.5,2,12,2z M12,20c-4.4,0-8-3.6-8-8c0-4.4,3.6-8,8-8c4.4,0,8,3.6,8,8C20,16.4,16.4,20,12,20z"/></svg>
+                    QQ分享
+                </a>
+                <a href="#" class="social-link">
+                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M10.9,13.8l3.1,1.9l1.5-1.5l4.4,2.5c0.2,0.1,0.4,0.1,0.6,0c0.3-0.1,0.4-0.4,0.4-0.7V7.4c0-0.3-0.2-0.6-0.4-0.7c-0.3-0.1-0.6,0-0.8,0.2l-3.7,3.1l-3.1-1.8c-0.2-0.1-0.4-0.1-0.6,0L7,11.4l-3.7-3c-0.2-0.2-0.5-0.2-0.8-0.2C2.3,8.2,2.1,8.5,2,8.8v9.4c0,0.3,0.1,0.5,0.4,0.7c0.3,0.1,0.5,0.1,0.7,0l3.9-2.2l3.3,1.9c0.2,0.1,0.4,0.1,0.6,0L10.9,13.8z M4,16.3V9l2.8,2.3L4,16.3z M12,4c4.4,0,8,3.6,8,8c0,4.4-3.6,8-8,8s-8-3.6-8-8C4,7.6,7.6,4,12,4z M12,3c-5,0-9,4-9,9s4,9,9,9s9-4,9-9S17,3,12,3z"/></svg>
+                    微博分享
+                </a>
+            </div>
+            
+            <div class="copyright">
+                © <span id="currentYear"></span> CoverCanvas | 由AI驱动，让设计更简单
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentTemplate = 1;
+        let currentAspectRatio = '2/1';
+        
+        // DOM元素
+        const mainTitleInput = document.getElementById('mainTitle');
+        const subTitleInput = document.getElementById('subTitle');
+        const authorInput = document.getElementById('author');
+        const templateItems = document.querySelectorAll('.template-item');
+        const aspectRatioBtns = document.querySelectorAll('.aspect-ratio-btn');
+        const preview = document.getElementById('preview');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const previewTitle = document.getElementById('previewTitle');
+        const previewSubtitle = document.getElementById('previewSubtitle');
+        const previewAuthor = document.getElementById('previewAuthor');
+        const currentYear = document.getElementById('currentYear');
+        
+        // 模板背景渐变
+        const gradients = {
+            1: 'linear-gradient(135deg, #4facfe 0%, #00c1fc 100%)',
+            2: 'linear-gradient(135deg, #ff7eb3 0%, #ff758c 100%)',
+            3: 'linear-gradient(135deg, #43cea2 0%, #185a9d 100%)',
+            4: 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)',
+            5: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            6: 'linear-gradient(135deg, #5ee7df 0%, #b490ca 100%)',
+            7: 'linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%)',
+            8: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+            9: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+            10: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)'
+        };
+        
+        // 初始化
+        function init() {
+            // 设置当前年份
+            currentYear.textContent = new Date().getFullYear();
+            
+            // 从本地存储加载数据
+            loadFromLocalStorage();
+            
+            // 初始化模板选择
+            templateItems.forEach(item => {
+                item.addEventListener('click', handleTemplateChange);
+            });
+            
+            // 初始化比例选择
+            aspectRatioBtns.forEach(btn => {
+                btn.addEventListener('click', handleAspectRatioChange);
+            });
+            
+            // 输入事件监听
+            [mainTitleInput, subTitleInput, authorInput].forEach(input => {
+                input.addEventListener('input', updatePreview);
+                input.addEventListener('input', checkInputVisibility);
+            });
+            
+            // 按钮事件绑定
+            downloadBtn.addEventListener('click', downloadImage);
+            resetBtn.addEventListener('click', resetForm);
+            
+            // 初始更新预览
+            checkInputVisibility();
+            updatePreview();
+        }
+        
+        // 处理模板切换
+        function handleTemplateChange(e) {
+            const template = e.currentTarget.dataset.template;
+            
+            templateItems.forEach(item => {
+                item.classList.toggle('active', item === e.currentTarget);
+            });
+            
+            currentTemplate = parseInt(template);
+            updatePreviewBackground();
+            saveToLocalStorage();
+        }
+        
+        // 处理比例切换
+        function handleAspectRatioChange(e) {
+            const ratio = e.currentTarget.dataset.ratio;
+            
+            aspectRatioBtns.forEach(btn => {
+                btn.classList.toggle('active', btn === e.currentTarget);
+            });
+            
+            currentAspectRatio = ratio;
+            updatePreviewRatio();
+            updatePreviewLayout();
+            saveToLocalStorage();
+        }
+        
+        // 更新预览比例
+        function updatePreviewRatio() {
+            // 移除所有比例类
+            preview.classList.remove('ratio-3-4', 'ratio-4-3', 'ratio-2-1', 'ratio-1-1');
+            
+            // 添加当前比例类
+            switch(currentAspectRatio) {
+                case '3/4':
+                    preview.classList.add('ratio-3-4');
+                    break;
+                case '4/3':
+                    preview.classList.add('ratio-4-3');
+                    break;
+                case '2/1':
+                    preview.classList.add('ratio-2-1');
+                    break;
+                case '1/1':
+                    preview.classList.add('ratio-1-1');
+                    break;
+            }
+        }
+        
+        // 更新预览布局
+        function updatePreviewLayout() {
+            // 2:1比例的特殊布局
+            if (currentAspectRatio === '2/1') {
+                previewTitle.style.fontSize = '3.5rem';
+                previewSubtitle.style.fontSize = '1.3rem';
+                previewAuthor.style.bottom = '40px';
+                previewAuthor.style.right = '50px';
+                previewContainer.style.padding = '40px 50px';
+            } else {
+                // 其他比例的默认布局
+                previewTitle.style.fontSize = '';
+                previewSubtitle.style.fontSize = '';
+                previewAuthor.style.bottom = '';
+                previewAuthor.style.right = '';
+                previewContainer.style.padding = '';
+            }
+        }
+        
+        // 更新预览背景
+        function updatePreviewBackground() {
+            preview.style.background = gradients[currentTemplate];
+        }
+        
+        // 检查输入可见性
+        function checkInputVisibility() {
+            previewTitle.classList.toggle('hidden', !mainTitleInput.value);
+            previewSubtitle.classList.toggle('hidden', !subTitleInput.value);
+            previewAuthor.classList.toggle('hidden', !authorInput.value);
+        }
+        
+        // 更新预览内容
+        function updatePreview() {
+            // 安全处理：防止XSS攻击
+            const safeTitle = escapeHtml(mainTitleInput.value);
+            const safeSubtitle = escapeHtml(subTitleInput.value);
+            const safeAuthor = escapeHtml(authorInput.value);
+            
+            previewTitle.innerHTML = safeTitle;
+            previewSubtitle.innerHTML = safeSubtitle;
+            previewAuthor.innerHTML = safeAuthor;
+            
+            // 更新输入可见性
+            checkInputVisibility();
+            
+            saveToLocalStorage();
+        }
+        
+        // 下载封面图
+        function downloadImage() {
+            html2canvas(preview, {
+                useCORS: true,
+                scale: 2 // 高分辨率输出
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `covercanvas-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+        
+        // 重置表单
+        function resetForm() {
+            mainTitleInput.value = '用AI打造爆款设计';
+            subTitleInput.value = 'CoverCanvas帮你3分钟制作高质量封面图';
+            authorInput.value = '艾兜兜儿';
+            
+            // 重置模板选择
+            templateItems.forEach((item, index) => {
+                item.classList.toggle('active', index === 0);
+            });
+            currentTemplate = 1;
+            
+            // 重置比例选择
+            aspectRatioBtns.forEach((btn, index) => {
+                btn.classList.toggle('active', index === 2); // 默认选中2:1
+            });
+            currentAspectRatio = '2/1';
+            
+            // 更新布局和背景
+            updatePreviewRatio();
+            updatePreviewLayout();
+            updatePreviewBackground();
+            
+            // 清除隐藏类
+            previewTitle.classList.remove('hidden');
+            previewSubtitle.classList.remove('hidden');
+            previewAuthor.classList.remove('hidden');
+            
+            // 清除本地存储
+            localStorage.removeItem('coverCanvasData');
+            
+            // 更新预览
+            updatePreview();
+        }
+        
+        // HTML转义函数
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        
+        // 保存到本地存储
+        function saveToLocalStorage() {
+            const data = {
+                title: mainTitleInput.value,
+                subtitle: subTitleInput.value,
+                author: authorInput.value,
+                template: currentTemplate,
+                ratio: currentAspectRatio
+            };
+            localStorage.setItem('coverCanvasData', JSON.stringify(data));
+        }
+        
+        // 从本地存储加载
+        function loadFromLocalStorage() {
+            const data = localStorage.getItem('coverCanvasData');
+            if (!data) return;
+            
+            try {
+                const savedData = JSON.parse(data);
+                
+                if (savedData.title) mainTitleInput.value = savedData.title;
+                if (savedData.subtitle) subTitleInput.value = savedData.subtitle;
+                if (savedData.author) authorInput.value = savedData.author;
+                if (savedData.template) currentTemplate = savedData.template;
+                if (savedData.ratio) currentAspectRatio = savedData.ratio;
+                
+                // 更新模板UI
+                templateItems.forEach(item => {
+                    item.classList.toggle('active', parseInt(item.dataset.template) === currentTemplate);
+                });
+                
+                // 更新比例UI
+                aspectRatioBtns.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.ratio === currentAspectRatio);
+                });
+                
+                // 更新预览
+                updatePreviewRatio();
+                updatePreviewLayout();
+                updatePreviewBackground();
+                updatePreview();
+            } catch (e) {
+                console.error('Error loading saved data:', e);
+            }
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
