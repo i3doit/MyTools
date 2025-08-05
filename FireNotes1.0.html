@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GlowMemo - 智能便签系统</title>
+    <title>FireNotes - 智能便签系统</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -1046,22 +1046,20 @@
     </style>
 </head>
 <body>
-    
-       <div class="overlay" id="overlay"></div>
+    <div class="overlay" id="overlay"></div>
     
     <!-- 首次使用引导模态框 -->
     <div class="welcome-modal" id="welcome-modal">
         <div class="welcome-content">
-            <h2>欢迎使用 GlowMemo！</h2>
-            <p>智能便签管理系统帮助您轻松管理各类信息</p>
+            <h2>欢迎使用 FireNotes！</h2>
+            <p>智能AI音频便签管理系统，帮助您轻松管理各类信息</p>
             
             <div class="welcome-steps">
-                <!-- 步骤内容保持不变 -->
-                                <div class="welcome-step">
+                <div class="welcome-step">
                     <div class="step-number">1</div>
                     <div>
                         <strong>新建便签</strong>
-                        <p>点击右上角"新建便签"按钮或右下角圆形按钮添加新便签</p>
+                
                     </div>
                 </div>
                 
@@ -1069,7 +1067,7 @@
                     <div class="step-number">2</div>
                     <div>
                         <strong>分类管理</strong>
-                        <p>使用左侧分类菜单和顶部快速筛选功能整理便签</p>
+                      
                     </div>
                 </div>
                 
@@ -1077,7 +1075,7 @@
                     <div class="step-number">3</div>
                     <div>
                         <strong>便签操作</strong>
-                        <p>双击便签进行编辑，滑动删除便签，更换便签背景颜色</p>
+                       
                     </div>
                 </div>
                 
@@ -1110,7 +1108,7 @@
         <header>
             <div class="logo">
                 <i class="fas fa-sticky-note"></i>
-                <span>GlowMemo</span>
+                <span>FireNotes</span>
             </div>
             <div class="search-container">
                 <i class="fas fa-search"></i>
@@ -1250,14 +1248,14 @@
                     <i class="fab fa-weixin"></i>
                     <span>我的AI编程日记</span>
                 </a>
-                <a href="https://i3doit.github.io/MyTools/GlowMemo.html" target="_blank" title="主页">
+                <a href="https://i3doit.github.io/MyTools/FireNotes.html" target="_blank" title="主页">
                     <i class="fas fa-home"></i>
                     <span>主页</span>
                 </a>
             </div>
             
             <div class="copyright" id="copyright">
-                © <span id="current-year">2025</span> GlowMemo - 您的AI智能音频便签助手
+                © <span id="current-year">2025</span> FireNotes - 您的AI智能音频便签助手
             </div>
         </footer>
     </div>
@@ -1328,7 +1326,7 @@
     </audio>
 
     <script>
-           // 页面加载时执行
+        // 页面加载时执行
         document.addEventListener('DOMContentLoaded', () => {
             // 初始化日期
             initCopyright();
@@ -1340,22 +1338,7 @@
             checkFirstVisit();
             // 启动提醒检查
             startReminderCheck();
-            // 初始化分类计数
-            updateCategoryCounts();
-            
-            // 修复引导页关闭功能
-            document.getElementById('welcome-close').addEventListener('click', () => {
-                const dontShow = document.getElementById('dont-show-again').checked;
-                if (dontShow) {
-                    localStorage.setItem('sparkmemo-first-visit', 'true');
-                }
-                document.getElementById('welcome-modal').style.display = 'none';
-                
-                // 确保加载便签
-                loadNotes();
-            });
         });
-
 
         // 版权年份信息
         function initCopyright() {
@@ -1462,7 +1445,7 @@
                 // 添加示例便签
                 const sampleNote = {
                     id: Date.now(),
-                    content: '欢迎使用 GlowMemo 便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
+                    content: '欢迎使用 FireNotes 便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
                     category: 'work',
                     color: '#a8e6cf',
                     createdAt: new Date().toISOString(),
@@ -1540,7 +1523,7 @@
                 document.getElementById('add-sample-note').addEventListener('click', () => {
                     const sampleNote = {
                         id: Date.now(),
-                        content: '欢迎使用 GlowMemo 智能音频便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
+                        content: '欢迎使用 FireNotes 智能音频便签系统！\n\n双击卡片编辑内容，点击右上角按钮删除便签，右下角按钮可以更换背景颜色。',
                         category: 'work',
                         color: '#a8e6cf',
                         createdAt: new Date().toISOString(),
@@ -1974,7 +1957,7 @@
             const dataStr = JSON.stringify(notes);
             const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
             
-            const exportFileDefaultName = `glowmemo-${new Date().toISOString().slice(0,10)}.json`;
+            const exportFileDefaultName = `firenotes-${new Date().toISOString().slice(0,10)}.json`;
             
             const linkElement = document.createElement('a');
             linkElement.setAttribute('href', dataUri);
@@ -2094,18 +2077,13 @@
             });
             
             // 关闭欢迎模态框
-            // 修复引导页关闭功能
             document.getElementById('welcome-close').addEventListener('click', () => {
                 const dontShow = document.getElementById('dont-show-again').checked;
                 if (dontShow) {
-                    localStorage.setItem('glowmemo-first-visit', 'true');
+                    localStorage.setItem('fire-notes-first-visit', 'true');
                 }
                 document.getElementById('welcome-modal').style.display = 'none';
-                
-                // 确保加载便签
-                loadNotes();
             });
-            
             
             // 遮罩点击关闭侧边栏
             document.getElementById('overlay').addEventListener('click', () => {
@@ -2141,137 +2119,6 @@
         function padZero(num) {
             return num.toString().padStart(2, '0');
         }
-                // 之前的JavaScript代码保持不变
-
-        // 添加事件监听器
-        function setupEventListeners() {
-            // 新建便签按钮
-            document.getElementById('new-note-btn').addEventListener('click', () => {
-                openEditModal();
-            });
-
-            // 浮动的添加按钮
-            document.getElementById('floating-add-btn').addEventListener('click', () => {
-                openEditModal();
-            });
-
-            // 关闭模态框
-            document.getElementById('close-modal').addEventListener('click', closeModal);
-            document.getElementById('cancel-note').addEventListener('click', closeModal);
-
-            // 保存便签
-            document.getElementById('save-note').addEventListener('click', saveNote);
-
-            // 颜色选择器
-            document.querySelectorAll('.color-option').forEach(option => {
-                option.addEventListener('click', () => {
-                    document.querySelectorAll('.color-option').forEach(opt => {
-                        opt.classList.remove('selected');
-                    });
-                    option.classList.add('selected');
-                });
-            });
-
-            // 分类过滤
-            document.querySelectorAll('.filter-item').forEach(item => {
-                if (item.id !== 'add-category') {
-                    item.addEventListener('click', () => {
-                        document.querySelectorAll('.filter-item').forEach(i => {
-                            i.classList.remove('active');
-                        });
-                        item.classList.add('active');
-                        
-                        // 过滤便签
-                        const filter = item.dataset.filter;
-                        let notes = loadFromLocalStorage();
-                        
-                        if (filter !== 'all') {
-                            notes = notes.filter(note => note.category === filter);
-                        }
-                        
-                        renderNotes(notes);
-                    });
-                }
-            });
-
-            // 顶部快速过滤
-            document.querySelectorAll('.quick-filter').forEach(item => {
-                item.addEventListener('click', () => {
-                    document.querySelectorAll('.quick-filter').forEach(i => {
-                        i.classList.remove('active');
-                    });
-                    item.classList.add('active');
-                    
-                    // 过滤便签
-                    const filter = item.dataset.filter;
-                    let notes = loadFromLocalStorage();
-                    
-                    if (filter !== 'all') {
-                        notes = notes.filter(note => note.category === filter);
-                    }
-                    
-                    renderNotes(notes);
-                });
-            });
-
-            // 添加分类
-            document.getElementById('add-category').addEventListener('click', () => {
-                const name = prompt('请输入新分类名称:');
-                if (name) {
-                    // 这里可以添加新分类
-                    alert(`分类 "${name}" 已创建！`);
-                }
-            });
-
-            // 视图切换
-            document.querySelectorAll('.view-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const view = btn.dataset.view;
-                    document.querySelectorAll('.view-btn').forEach(b => {
-                        b.classList.remove('active');
-                    });
-                    btn.classList.add('active');
-                    
-                    const container = document.querySelector('.notes-container');
-                    container.classList.toggle('view-list', view === 'list');
-                });
-            });
-
-            // 关闭欢迎模态框
-            document.getElementById('welcome-close').addEventListener('click', () => {
-                const dontShow = document.getElementById('dont-show-again').checked;
-                if (dontShow) {
-                    localStorage.setItem('glowmemo-first-visit', 'true');
-                }
-                document.getElementById('welcome-modal').style.display = 'none';
-            });
-
-            // 分享按钮
-            document.getElementById('wechat-share').addEventListener('click', (e) => {
-                e.preventDefault();
-                navigator.clipboard.writeText('857023577');
-                showToast('成功获取作者联系方式，去链接TA吧！');
-            });
-
-            document.getElementById('qq-share').addEventListener('click', (e) => {
-                e.preventDefault();
-                navigator.clipboard.writeText('857023577');
-                showToast('成功获取作者联系方式，去链接TA吧！');
-            });
-
-            // 导入导出按钮
-            document.getElementById('import-btn').addEventListener('click', importNotes);
-            document.getElementById('export-btn').addEventListener('click', exportNotes);
-        }
-
-        // 辅助函数：数字补零
-        function padZero(num) {
-            return num.toString().padStart(2, '0');
-        }
-
-        // 初始化
-        setupEventListeners();
-        loadNotes();
     </script>
 </body>
 </html>
