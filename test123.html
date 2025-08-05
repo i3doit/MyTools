@@ -1,982 +1,344 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoverCanvas - AI封面图生成工具</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Lato:wght@300;400;700&display=swap">
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <style>
-        :root {
-            --primary-bg: #e6f7ff;
-            --card-bg: rgba(255, 255, 255, 0.85);
-            --card-border: rgba(255, 255, 255, 0.3);
-            --text-primary: #1a2b4d;
-            --text-secondary: #4a5a7b;
-            --accent-color: #4facfe;
-            --shadow-light: 0 8px 32px rgba(31, 38, 135, 0.1);
-            --shadow-deep: 0 12px 48px rgba(31, 38, 135, 0.2);
-            --glass-bg: rgba(255, 255, 255, 0.2);
-            --glass-border: rgba(255, 255, 255, 0.3);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Lato', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background-color: var(--primary-bg);
-            color: var(--text-primary);
-            line-height: 1.6;
-            padding: 20px;
-            min-height: 100vh;
-            background-image: radial-gradient(circle at center, #e6f7ff 0%, #ccefff 100%);
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px 0;
-        }
-
-        .title {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 800;
-            font-size: 3.2rem;
-            letter-spacing: -1px;
-            background: linear-gradient(135deg, #4facfe 0%, #00c1fc 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        .subtitle {
-            font-weight: 300;
-            color: var(--text-secondary);
-            font-size: 1.2rem;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-
-        @media (max-width: 992px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .control-panel {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: var(--shadow-light);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--card-border);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .control-panel:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-deep);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            font-weight: 700;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-            color: var(--text-primary);
-        }
-
-        input, select {
-            width: 100%;
-            padding: 14px 15px;
-            border: none;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 10px;
-            font-family: 'Lato', sans-serif;
-            font-size: 1rem;
-            color: var(--text-primary);
-            outline: none;
-            transition: all 0.3s;
-            border: 1px solid rgba(79, 172, 254, 0.2);
-        }
-
-        input:focus, select:focus {
-            background: rgba(255, 255, 255, 1);
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.3);
-        }
-
-        .templates-container {
-            position: relative;
-            margin-top: 10px;
-        }
-
-        .templates-scroller {
-            display: flex;
-            gap: 12px;
-            overflow-x: auto;
-            padding-bottom: 15px;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(79, 172, 254, 0.5) transparent;
-        }
-
-        .templates-scroller::-webkit-scrollbar {
-            height: 6px;
-        }
-
-        .templates-scroller::-webkit-scrollbar-thumb {
-            background-color: rgba(79, 172, 254, 0.5);
-            border-radius: 3px;
-        }
-
-        .templates-scroller::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .template-item {
-            flex: 0 0 70px;
-            height: 70px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 2px solid transparent;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .template-item.active {
-            border: 2px solid var(--accent-color);
-            box-shadow: 0 0 8px rgba(79, 172, 254, 0.5);
-        }
-
-        .template-item:hover {
-            transform: scale(1.05);
-        }
-
-        .template-1 { background: linear-gradient(135deg, #4facfe 0%, #00c1fc 100%); }
-        .template-2 { background: linear-gradient(135deg, #ff7eb3 0%, #ff758c 100%); }
-        .template-3 { background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%); }
-        .template-4 { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); }
-        .template-5 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .template-6 { background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%); }
-        .template-7 { background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%); }
-        .template-8 { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
-        .template-9 { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
-        .template-10 { background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%); }
-
-        .btn-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 30px;
-        }
-
-        .btn {
-            padding: 14px 0;
-            border: none;
-            border-radius: 50px;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 500;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: center;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background: linear-gradient(to right, #4facfe, #00c1fc);
-            color: white;
-            box-shadow: 0 4px 20px rgba(79, 172, 254, 0.4);
-        }
-
-        .btn-primary:hover {
-            box-shadow: 0 6px 24px rgba(79, 172, 254, 0.6);
-            transform: translateY(-2px);
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 2px solid #4facfe;
-            color: var(--accent-color);
-        }
-
-        .btn-outline:hover {
-            background: rgba(79, 172, 254, 0.07);
-            transform: translateY(-2px);
-        }
-
-        .preview-area {
-            position: relative;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: var(--shadow-deep);
-            transition: transform 0.3s;
-        }
-
-        .preview-area:hover {
-            transform: scale(1.01);
-        }
-
-        .preview-container {
-            position: relative;
-            width: 100%;
-            transition: all 0.3s;
-            overflow: hidden;
-            background-color: white;
-        }
-
-        .preview-content {
-            padding: 40px;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            height: 100%;
-            transition: padding 0.3s;
-        }
-
-        .preview-title {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 800;
-            margin-bottom: 20px;
-            line-height: 1.3;
-            text-shadow: 0 1px 1px rgba(0,0,0,0.05);
-            transition: font-size 0.3s, margin-bottom 0.3s;
-            word-break: break-word;
-            max-width: 90%;
-        }
-
-        .preview-subtitle {
-            font-weight: 400;
-            margin-bottom: 25px;
-            opacity: 0.9;
-            line-height: 1.6;
-            transition: font-size 0.3s, margin-bottom 0.3s;
-            word-break: break-word;
-            max-width: 90%;
-        }
-
-        .preview-author {
-            position: absolute;
-            font-weight: 600;
-            padding: 8px 15px;
-            border-radius: 8px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            transition: all 0.3s;
-        }
-
-        .aspect-ratio-selector {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .aspect-ratio-btn {
-            padding: 8px 15px;
-            background: rgba(79, 172, 254, 0.1);
-            border-radius: 8px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .aspect-ratio-btn.active {
-            background: var(--accent-color);
-            color: white;
-        }
-
-        .footer {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 30px;
-            margin-top: 40px;
-            text-align: center;
-            box-shadow: var(--shadow-light);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--card-border);
-        }
-
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 25px;
-            margin: 25px 0;
-            flex-wrap: wrap;
-        }
-
-        .social-link {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: var(--text-primary);
-            font-weight: 500;
-            transition: all 0.3s;
-            min-width: 60px;
-            justify-content: center;
-        }
-
-        .social-link:hover {
-            color: var(--accent-color);
-            transform: translateY(-2px);
-        }
-
-        .social-icon {
-            width: 32px;
-            height: 32px;
-            margin-right: 0;
-        }
-
-        .ad-text {
-            background: rgba(255, 99, 71, 0.1);
-            border-radius: 12px;
-            padding: 18px;
-            max-width: 700px;
-            margin: 20px auto;
-            font-size: 1rem;
-            line-height: 1.7;
-            border: 1px solid rgba(255, 99, 71, 0.2);
-        }
-
-        .highlight {
-            display: block;
-            font-weight: 700;
-            font-size: 1.1rem;
-            margin-top: 10px;
-            color: #ff6347;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-
-        .highlight:hover {
-            color: #ff4500;
-            text-decoration: underline;
-        }
-
-        .copyright {
-            margin-top: 20px;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        #preview {
-            transition: all 0.3s ease;
-        }
-
-        /* Toast通知 */
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 50px;
-            font-size: 0.9rem;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s;
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-        }
-
-        .toast.show {
-            opacity: 1;
-        }
-
-        .toast-icon {
-            margin-right: 10px;
-            width: 20px;
-            height: 20px;
-        }
-
-        /* 作者位置自适应 */
-        /* 竖版 3:4 */
-        .ratio-3-4 .preview-author {
-            bottom: 30px;
-            right: 30px;
-            font-size: 1rem;
-        }
-        
-        /* 横版 4:3 */
-        .ratio-4-3 .preview-author {
-            bottom: 30px;
-            right: 30px;
-            font-size: 1rem;
-        }
-        
-        /* 长图 2:1 */
-        .ratio-2-1 .preview-author {
-            bottom: 70px; /* 大幅增加底部距离避免遮挡 */
-            right: 50px;
-            font-size: 0.9rem; /* 减小字体大小 */
-        }
-        
-        /* 方形 1:1 */
-        .ratio-1-1 .preview-author {
-            bottom: 25px;
-            right: 25px;
-            font-size: 1rem;
-        }
-        
-        /* 模板尺寸样式 */
-        .ratio-3-4 {
-            aspect-ratio: 3/4;
-        }
-        
-        .ratio-3-4 .preview-content {
-            padding: 40px 35px;
-        }
-        
-        .ratio-3-4 .preview-title {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-        }
-        
-        .ratio-3-4 .preview-subtitle {
-            font-size: 1.1rem;
-        }
-        
-        .ratio-4-3 {
-            aspect-ratio: 4/3;
-        }
-        
-        .ratio-4-3 .preview-content {
-            padding: 40px 50px;
-        }
-        
-        .ratio-4-3 .preview-title {
-            font-size: 2.8rem;
-            margin-bottom: 15px;
-        }
-        
-        .ratio-4-3 .preview-subtitle {
-            font-size: 1.2rem;
-        }
-        
-        .ratio-2-1 {
-            aspect-ratio: 2/1;
-        }
-        
-        .ratio-2-1 .preview-content {
-            padding: 40px 50px;
-        }
-        
-        .ratio-2-1 .preview-title {
-            font-size: 3.5rem;
-            margin-bottom: 15px;
-            max-width: 85%;
-        }
-        
-        .ratio-2-1 .preview-subtitle {
-            font-size: 1.3rem;
-            max-width: 85%;
-        }
-        
-        .ratio-1-1 {
-            aspect-ratio: 1/1;
-        }
-        
-        .ratio-1-1 .preview-content {
-            padding: 40px;
-        }
-        
-        .ratio-1-1 .preview-title {
-            font-size: 2.8rem;
-            margin-bottom: 15px;
-        }
-        
-        .ratio-1-1 .preview-subtitle {
-            font-size: 1.2rem;
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-
-        /* 移动端优化 */
-        @media (max-width: 768px) {
-            .title {
-                font-size: 2.5rem;
-            }
-            
-            .subtitle {
-                font-size: 1rem;
-            }
-            
-            .btn-group {
-                grid-template-columns: 1fr;
-            }
-            
-            .social-links {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .social-link {
-                min-width: auto;
-                justify-content: center;
-            }
-            
-            .preview-title {
-                font-size: 2.2rem !important;
-            }
-            
-            .preview-subtitle {
-                font-size: 1rem !important;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    
+    :root {
+      --primary-color: #0066cc;
+      --light-bg: rgba(255, 255, 255, 0.8);
+      --glass-border: 1px solid rgba(255, 255, 255, 0.7);
+      --shadow: 0 8px 32px rgba(0, 84, 166, 0.15);
+    }
+    
+    #universal-footer {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: var(--glass-border);
+      padding: 50px 20px 40px;
+      font-size: 14px;
+      color: #444;
+      box-shadow: 0 -2px 20px rgba(0, 102, 204, 0.08);
+      position: relative;
+      z-index: 10;
+    }
+    
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .promotion-section {
+      background: rgba(225, 242, 255, 0.6);
+      border-radius: 14px;
+      padding: 20px 25px;
+      margin-bottom: 40px;
+      border: 1px solid rgba(0, 102, 204, 0.15);
+    }
+    
+    .promotion-text {
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--primary-color);
+      text-align: center;
+    }
+    
+    .promotion-text a {
+      color: var(--primary-color);
+      font-weight: 600;
+      text-decoration: none;
+      position: relative;
+      transition: all 0.3s;
+      display: inline-block;
+      padding: 0 2px;
+    }
+    
+    .promotion-text a::after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: var(--primary-color);
+      transform: scaleX(0);
+      transform-origin: right;
+      transition: transform 0.3s;
+    }
+    
+    .promotion-text a:hover::after {
+      transform: scaleX(1);
+      transform-origin: left;
+    }
+    
+    .highlight {
+      display: block;
+      background: linear-gradient(120deg, rgba(255,255,255,0.6), rgba(230,247,255,0.8));
+      font-weight: 700;
+      padding: 15px;
+      border-radius: 12px;
+      text-align: center;
+      margin-top: 15px;
+      font-size: 18px;
+      animation: pulse 2s infinite;
+      box-shadow: 0 4px 15px rgba(0,102,204,0.15);
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 4px 15px rgba(0,102,204,0.15); }
+      50% { box-shadow: 0 4px 20px rgba(0,102,204,0.25); }
+      100% { box-shadow: 0 4px 15px rgba(0,102,204,0.15); }
+    }
+    
+    .footer-content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+      justify-content: space-between;
+      margin-bottom: 40px;
+    }
+    
+    .footer-column {
+      flex: 1;
+      min-width: 250px;
+    }
+    
+    .footer-column h3 {
+      font-size: 18px;
+      margin-bottom: 25px;
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+    
+    .footer-links {
+      list-style: none;
+    }
+    
+    .footer-links li {
+      margin-bottom: 14px;
+    }
+    
+    .footer-links a {
+      color: #555;
+      text-decoration: none;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    .footer-links a:hover {
+      color: var(--primary-color);
+      transform: translateX(5px);
+    }
+    
+    .footer-links a i {
+      margin-right: 8px;
+      font-size: 16px;
+    }
+    
+    .social-links {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .social-link {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,102,204,0.1);
+      color: var(--primary-color);
+      text-decoration: none;
+      transition: all 0.3s;
+      font-size: 18px;
+    }
+    
+    .social-link:hover {
+      background: var(--primary-color);
+      color: white;
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0,102,204,0.2);
+    }
+    
+    .wechat-popup {
+      position: relative;
+    }
+    
+    .wechat-popup:after {
+      content: attr(data-popup);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-bottom: 10px;
+      background: #333;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+      z-index: 10;
+    }
+    
+    .wechat-popup:before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-bottom: 2px;
+      border: 5px solid transparent;
+      border-top-color: #333;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+      z-index: 11;
+    }
+    
+    .wechat-popup.show-popup:after,
+    .wechat-popup.show-popup:before {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .copyright {
+      text-align: center;
+      padding-top: 30px;
+      border-top: 1px solid rgba(0,0,0,0.08);
+      font-size: 14px;
+      color: #666;
+    }
+    
+    @media (max-width: 768px) {
+      .footer-content {
+        flex-direction: column;
+        gap: 30px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1 class="title">CoverCanvas</h1>
-            <p class="subtitle">AI驱动的专业封面图生成工具，三分钟打造爆款设计</p>
-        </header>
-        
-        <div class="main-content">
-            <div class="control-panel">
-                <div class="form-group">
-                    <label for="mainTitle">主标题</label>
-                    <input type="text" id="mainTitle" placeholder="输入吸引眼球的标题" value="用AI打造爆款设计">
-                </div>
-                
-                <div class="form-group">
-                    <label for="subTitle">副标题</label>
-                    <input type="text" id="subTitle" placeholder="添加补充性信息" value="CoverCanvas帮你3分钟制作高质量封面图">
-                </div>
-                
-                <div class="form-group">
-                    <label for="author">作者</label>
-                    <input type="text" id="author" placeholder="作者名称" value="艾兜兜儿">
-                </div>
-                
-                <div class="form-group">
-                    <label>选择模板</label>
-                    <div class="templates-container">
-                        <div class="templates-scroller">
-                            <div class="template-item template-1 active" data-template="1"></div>
-                            <div class="template-item template-2" data-template="2"></div>
-                            <div class="template-item template-3" data-template="3"></div>
-                            <div class="template-item template-4" data-template="4"></div>
-                            <div class="template-item template-5" data-template="5"></div>
-                            <div class="template-item template-6" data-template="6"></div>
-                            <div class="template-item template-7" data-template="7"></div>
-                            <div class="template-item template-8" data-template="8"></div>
-                            <div class="template-item template-9" data-template="9"></div>
-                            <div class="template-item template-10" data-template="10"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>封面尺寸比例</label>
-                    <div class="aspect-ratio-selector">
-                        <div class="aspect-ratio-btn active" data-ratio="3/4">竖版 3:4</div>
-                        <div class="aspect-ratio-btn" data-ratio="4/3">横版 4:3</div>
-                        <div class="aspect-ratio-btn" data-ratio="2/1">长图 2:1</div>
-                        <div class="aspect-ratio-btn" data-ratio="1/1">方形 1:1</div>
-                    </div>
-                </div>
-                
-                <div class="btn-group">
-                    <button id="downloadBtn" class="btn btn-primary">下载封面图</button>
-                    <button id="resetBtn" class="btn btn-outline">恢复初始值</button>
-                </div>
-            </div>
-            
-            <div class="preview-area">
-                <div id="preview" class="preview-container ratio-3-4">
-                    <div class="preview-content">
-                        <h1 id="previewTitle" class="preview-title">用AI打造爆款设计</h1>
-                        <p id="previewSubtitle" class="preview-subtitle">CoverCanvas帮你3分钟制作高质量封面图</p>
-                        <p id="previewAuthor" class="preview-author">艾兜兜儿</p>
-                    </div>
-                </div>
-            </div>
+  <footer id="universal-footer">
+    <div class="footer-container">
+      <!-- 广告宣传区域 -->
+      <div class="promotion-section">
+        <p class="promotion-text">
+          我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」，<a href="https://t.zsxq.com/yL7L8" target="_blank">「一起加入讨论吧」</a>
+        </p>
+        <div class="highlight">支持点击、跳转，一起探索AI编程的新世界</div>
+      </div>
+      
+      <!-- 底部内容区域 -->
+      <div class="footer-content">
+        <!-- 技术支持列 -->
+        <div class="footer-column">
+          <h3>技术支持</h3>
+          <ul class="footer-links">
+            <li>
+              <a href="https://t.zsxq.com/11QO9" target="_blank">
+                <i class="fas fa-user-circle"></i> 艾兜兜儿
+              </a>
+            </li>
+            <li>
+              <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" target="_blank">
+                <i class="fas fa-book"></i> 我的AI编程日记
+              </a>
+            </li>
+          </ul>
+          
+          <h3 style="margin-top: 30px;">分享到平台</h3>
+          <div class="social-links">
+            <a href="#" class="social-link wechat-popup" id="wechat">
+              <i class="fab fa-weixin"></i>
+            </a>
+            <a href="#" class="social-link">
+              <i class="fab fa-weibo"></i>
+            </a>
+            <a href="#" class="social-link">
+              <i class="fab fa-qq"></i>
+            </a>
+          </div>
         </div>
         
-        <div class="footer">
-            <div class="social-links">
-                <a href="#" class="social-link" title="微信分享" onclick="copyContact(event)">
-                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M20,3H4C3.4,3,3,3.4,3,4v16c0,0.6,0.4,1,1,1h8.6v-6.9h-2.3v-2.7h2.3V9.2c0-2.3,1.5-3.5,3.7-3.5c0.8,0,1.5,0.1,2.2,0.2v2.5h-1.5c-1.2,0-1.4,0.5-1.4,1.3v1.8h2.8l-0.4,2.7h-2.3V21H20c0.6,0,1-0.4,1-1V4C21,3.4,20.6,3,20,3z"/></svg>
-                </a>
-                <a href="#" class="social-link" title="QQ分享" onclick="copyContact(event)">
-                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M10.7,15.8l4.1-2.4c0.4-0.3,0.4-0.8,0-1.1l-4.1-2.4c-0.5-0.3-1.1,0.1-1.1,0.6v4.7C9.6,15.7,10.2,16.1,10.7,15.8z M12,2C6.5,2,2,6.5,2,12c0,5.5,4.5,10,10,10s10-4.5,10-10C22,6.5,17.5,2,12,2z M12,20c-4.4,0-8-3.6-8-8c0-4.4,3.6-8,8-8c4.4,0,8,3.6,8,8C20,16.4,16.4,20,12,20z"/></svg>
-                </a>
-                <a href="#" class="social-link" title="微博分享" onclick="copyContact(event)">
-                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M10.9,13.8l3.1,1.9l1.5-1.5l4.4,2.5c0.2,0.1,0.4,0.1,0.6,0c0.3-0.1,0.4-0.4,0.4-0.7V7.4c0-0.3-0.2-0.6-0.4-0.7c-0.3-0.1-0.6,0-0.8,0.2l-3.7,3.1l-3.1-1.8c-0.2-0.1-0.4-0.1-0.6,0L7,11.4l-3.7-3c-0.2-0.2-0.5-0.2-0.8-0.2C2.3,8.2,2.1,8.5,2,8.8v9.4c0,0.3,0.1,0.5,0.4,0.7c0.3,0.1,0.5,0.1,0.7,0l3.9-2.2l3.3,1.9c0.2,0.1,0.4,0.1,0.6,0L10.9,13.8z M4,16.3V9l2.8,2.3L4,16.3z M12,4c4.4,0,8,3.6,8,8c0,4.4-3.6,8-8,8s-8-3.6-8-8C4,7.6,7.6,4,12,4z M12,3c-5,0-9,4-9,9s4,9,9,9s9-4,9-9S17,3,12,3z"/></svg>
-                </a>
-            </div>
-            
-            <div class="ad-text">
-                我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」，
-                <a href="https://t.zsxq.com/yL7L8" target="_blank" class="highlight">一起加入讨论吧</a>
-            </div>
-            
-            <div class="social-links">
-                <a href="https://t.zsxq.com/11QO9" class="social-link" target="_blank" title="艾兜兜儿">
-                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M12,2C6.5,2,2,6.5,2,12c0,5.5,4.5,10,10,10s10-4.5,10-10C22,6.5,17.5,2,12,2z M16.7,14.5c-0.2,0.1-0.5,0.2-0.8,0.2c-0.4,0-0.8-0.1-1.1-0.4l-0.6-0.5l-0.7,0.7c-0.4,0.4-1,0.7-1.7,0.7c-0.8,0-1.5-0.3-2-0.8l1.7-1.7c0.2,0.3,0.6,0.5,0.9,0.5c0.3,0,0.6-0.1,0.8-0.3l0.4-0.3c-0.2-0.1-0.4-0.2-0.5-0.4c-0.4-0.4-0.6-0.9-0.6-1.5c0-1.2,0.9-2.1,2.1-2.1c0.6,0,1.1,0.2,1.4,0.6l1.1-1.1c-0.5-0.6-1.3-1-2.1-1c-1.7,0-3.1,1.4-3.1,3.1c0,0.8,0.3,1.5,0.8,2l-0.8,0.8c-0.5-0.6-0.8-1.3-0.8-2.1c0-1.9,1.6-3.5,3.5-3.5c0.9,0,1.7,0.3,2.3,0.9l1.3-1.3c-0.8-0.8-1.9-1.3-3.1-1.3c-2.5,0-4.5,2-4.5,4.5c0,0.9,0.3,1.8,0.8,2.5l-2.3,2.3l0.7,0.7l2.3-2.3c0.7,0.5,1.5,0.8,2.4,0.8c0.5,0,0.9-0.1,1.4-0.2L16.7,14.5z"/></svg>
-                </a>
-                <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" class="social-link" target="_blank" title="我的AI编程日记">
-                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M8.3,17.2h1.5v-3.7h5.2v3.7h1.5V7.2h-1.5v3.6H9.8V7.2H8.3V17.2z M12,22c-5.5,0-10-4.5-10-10S6.5,2,12,2s10,4.5,10,10S17.5,22,12,22z M12,3.4c-4.7,0-8.6,3.9-8.6,8.6c0,4.7,3.9,8.6,8.6,8.6c4.7,0,8.6-3.9,8.6-8.6C20.6,7.2,16.7,3.4,12,3.4z"/></svg>
-                </a>
-            </div>
-            
-            <div class="copyright">
-                © <span id="currentYear"></span> CoverCanvas | 由AI驱动，让设计更简单
-            </div>
+        <!-- 网站导航列 -->
+        <div class="footer-column">
+          <h3>网站导航</h3>
+          <ul class="footer-links">
+            <li><a href="#"><i class="fas fa-chevron-right"></i> 关于我们</a></li>
+            <li><a href="#"><i class="fas fa-chevron-right"></i> 更新日志</a></li>
+            <li><a href="#"><i class="fas fa-chevron-right"></i> 联系我们</a></li>
+            <li><a href="#"><i class="fas fa-chevron-right"></i> 隐私政策</a></li>
+            <li><a href="#"><i class="fas fa-chevron-right"></i> 用户协议</a></li>
+          </ul>
         </div>
+        
+        <!-- 其他信息列 -->
+        <div class="footer-column">
+          <h3>项目信息</h3>
+          <ul class="footer-links">
+            <li><i class="fas fa-check-circle"></i> AI编程·垂直小流量商业化</li>
+            <li><i class="fas fa-check-circle"></i> 100个AI小工具挑战</li>
+            <li><i class="fas fa-check-circle"></i> Web前端开发</li>
+          </ul>
+          
+          <h3 style="margin-top: 30px;">合作伙伴</h3>
+          <p style="color: #666; line-height: 1.6; margin-top: 8px;">
+            技术交流与合作请联系：
+            <br>
+            <a href="mailto:contact@example.com" style="color: var(--primary-color);">contact@example.com</a>
+          </p>
+        </div>
+      </div>
+      
+      <!-- 版权信息 -->
+      <div class="copyright">
+        © <span id="currentYear"></span> 网站名称 | 保留所有权利 | 探索AI编程的未来
+      </div>
     </div>
-
-    <!-- Toast通知 -->
-    <div id="toast" class="toast">
-        <svg class="toast-icon" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" />
-        </svg>
-        <span id="toastMessage"></span>
-    </div>
-
-    <script>
-        // 全局变量
-        let currentTemplate = 1;
-        let currentAspectRatio = '3/4';
+  </footer>
+  
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <script>
+    // 设置当前年份
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+    
+    // 复制微信号功能
+    const wechatBtn = document.getElementById('wechat');
+    let popupTimeout;
+    
+    wechatBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      // 复制微信号到剪贴板
+      navigator.clipboard.writeText('857023577').then(() => {
+        // 显示提示效果
+        this.classList.add('show-popup');
+        this.setAttribute('data-popup', '已获取艾兜兜儿微信：857023577，快去联系吧');
         
-        // DOM元素
-        const mainTitleInput = document.getElementById('mainTitle');
-        const subTitleInput = document.getElementById('subTitle');
-        const authorInput = document.getElementById('author');
-        const templateItems = document.querySelectorAll('.template-item');
-        const aspectRatioBtns = document.querySelectorAll('.aspect-ratio-btn');
-        const preview = document.getElementById('preview');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const previewTitle = document.getElementById('previewTitle');
-        const previewSubtitle = document.getElementById('previewSubtitle');
-        const previewAuthor = document.getElementById('previewAuthor');
-        const currentYear = document.getElementById('currentYear');
-        const toast = document.getElementById('toast');
-        const toastMessage = document.getElementById('toastMessage');
-        
-        // 模板背景渐变
-        const gradients = {
-            1: 'linear-gradient(135deg, #4facfe 0%, #00c1fc 100%)',
-            2: 'linear-gradient(135deg, #ff7eb3 0%, #ff758c 100%)',
-            3: 'linear-gradient(135deg, #43cea2 0%, #185a9d 100%)',
-            4: 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)',
-            5: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            6: 'linear-gradient(135deg, #5ee7df 0%, #b490ca 100%)',
-            7: 'linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%)',
-            8: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-            9: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-            10: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)'
-        };
-        
-        // 模板文字颜色配置
-        const textColors = {
-            1: { title: '#ffffff', subtitle: 'rgba(255,255,255,0.9)', author: '#ffffff' },
-            2: { title: '#ffffff', subtitle: 'rgba(255,255,255,0.85)', author: '#ffffff' },
-            3: { title: '#ffffff', subtitle: 'rgba(255,255,255,0.85)', author: '#ffffff' },
-            4: { title: '#2d3748', subtitle: '#4a5568', author: '#2d3748' },
-            5: { title: '#ffffff', subtitle: 'rgba(255,255,255,0.9)', author: '#ffffff' },
-            6: { title: '#2d3748', subtitle: '#4a5568', author: '#2d3748' },
-            7: { title: '#2d3748', subtitle: '#4a5568', author: '#2d3748' },
-            8: { title: '#ffffff', subtitle: 'rgba(255,255,255,0.9)', author: '#ffffff' },
-            9: { title: '#2d3748', subtitle: '#4a5568', author: '#2d3748' },
-            10: { title: '#ffffff', subtitle: 'rgba(255,255,255,0.9)', author: '#ffffff' }
-        };
-        
-        // 复制联系方式功能
-        function copyContact(event) {
-            event.preventDefault();
-            const contactInfo = '857023577';
-            navigator.clipboard.writeText(contactInfo).then(() => {
-                showToast(`已获取作者联系方式：${contactInfo}，去链接吧！`);
-            }).catch(err => {
-                showToast('复制失败，请手动复制');
-                console.error('复制失败:', err);
-            });
-        }
-        
-        // 显示Toast通知
-        function showToast(message) {
-            toastMessage.textContent = message;
-            toast.classList.add('show');
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
-        }
-        
-        // 初始化
-        function init() {
-            // 设置当前年份
-            currentYear.textContent = new Date().getFullYear();
-            
-            // 随机选择一个模板
-            const randomTemplate = Math.floor(Math.random() * 10) + 1;
-            currentTemplate = randomTemplate;
-            
-            // 从本地存储加载数据
-            loadFromLocalStorage();
-            
-            // 初始化模板选择
-            templateItems.forEach(item => {
-                item.addEventListener('click', handleTemplateChange);
-                if (parseInt(item.dataset.template) === currentTemplate) {
-                    item.classList.add('active');
-                }
-            });
-            
-            // 初始化比例选择
-            aspectRatioBtns.forEach(btn => {
-                btn.addEventListener('click', handleAspectRatioChange);
-                if (btn.dataset.ratio === currentAspectRatio) {
-                    btn.classList.add('active');
-                }
-            });
-            
-            // 输入事件监听
-            [mainTitleInput, subTitleInput, authorInput].forEach(input => {
-                input.addEventListener('input', updatePreview);
-                input.addEventListener('input', checkInputVisibility);
-            });
-            
-            // 按钮事件绑定
-            downloadBtn.addEventListener('click', downloadImage);
-            resetBtn.addEventListener('click', resetForm);
-            
-            // 初始更新预览
-            updatePreviewBackground();
-            checkInputVisibility();
-            updatePreview();
-        }
-        
-        // 处理模板切换
-        function handleTemplateChange(e) {
-            const template = e.currentTarget.dataset.template;
-            
-            templateItems.forEach(item => {
-                item.classList.toggle('active', item === e.currentTarget);
-            });
-            
-            currentTemplate = parseInt(template);
-            updatePreviewBackground();
-            saveToLocalStorage();
-        }
-        
-        // 处理比例切换
-        function handleAspectRatioChange(e) {
-            const ratio = e.currentTarget.dataset.ratio;
-            
-            aspectRatioBtns.forEach(btn => {
-                btn.classList.toggle('active', btn === e.currentTarget);
-            });
-            
-            currentAspectRatio = ratio;
-            updatePreviewRatio();
-            saveToLocalStorage();
-        }
-        
-        // 更新预览比例
-        function updatePreviewRatio() {
-            // 移除所有比例类
-            preview.classList.remove('ratio-3-4', 'ratio-4-3', 'ratio-2-1', 'ratio-1-1');
-            
-            // 添加当前比例类
-            switch(currentAspectRatio) {
-                case '3/4':
-                    preview.classList.add('ratio-3-4');
-                    break;
-                case '4/3':
-                    preview.classList.add('ratio-4-3');
-                    break;
-                case '2/1':
-                    preview.classList.add('ratio-2-1');
-                    break;
-                case '1/1':
-                    preview.classList.add('ratio-1-1');
-                    break;
-            }
-        }
-        
-        // 更新预览背景
-        function updatePreviewBackground() {
-            preview.style.background = gradients[currentTemplate];
-            
-            // 更新文字颜色
-            const colors = textColors[currentTemplate];
-            previewTitle.style.color = colors.title;
-            previewSubtitle.style.color = colors.subtitle;
-            previewAuthor.style.color = colors.author;
-        }
-        
-        // 检查输入可见性
-        function checkInputVisibility() {
-            previewTitle.classList.toggle('hidden', !mainTitleInput.value);
-            previewSubtitle.classList.toggle('hidden', !subTitleInput.value);
-            previewAuthor.classList.toggle('hidden', !authorInput.value);
-        }
-        
-        // 更新预览内容
-        function updatePreview() {
-            // 安全处理：防止XSS攻击
-            const safeTitle = escapeHtml(mainTitleInput.value);
-            const safeSubtitle = escapeHtml(subTitleInput.value);
-            const safeAuthor = escapeHtml(authorInput.value);
-            
-            previewTitle.innerHTML = safeTitle;
-            previewSubtitle.innerHTML = safeSubtitle;
-            previewAuthor.innerHTML = safeAuthor;
-            
-            // 更新输入可见性
-            checkInputVisibility();
-            
-            saveToLocalStorage();
-        }
-        
-        // 下载封面图
-        function downloadImage() {
-            html2canvas(preview, {
-                useCORS: true,
-                scale: 2 // 高分辨率输出
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `covercanvas-${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                
-                // 显示下载成功提示
-                showToast('封面图下载成功！');
-            }).catch(error => {
-                console.error('下载失败:', error);
-                showToast('下载失败，请重试');
-            });
-        }
-        
-        // 重置表单
-        function resetForm() {
-            mainTitleInput.value = '用AI打造爆款设计';
-            subTitleInput.value = 'CoverCanvas帮你3分钟制作高质量封面图';
-            authorInput.value = '艾兜兜儿';
-            
-            // 重置模板选择
-            templateItems.forEach((item, index) => {
-                item.classList.toggle('active', index === 0);
-            });
-            currentTemplate = 1;
-            
-            // 重置比例选择
-            aspectRatioBtns.forEach((btn, index) => {
-                btn.classList.toggle('active', btn.dataset.ratio === '3/4');
-            });
-            currentAspectRatio = '3/4';
-            
-            // 更新布局和背景
-            updatePreviewRatio();
-            updatePreviewBackground();
-            
-            // 清除隐藏类
-            previewTitle.classList.remove('hidden');
-            previewSubtitle.classList.remove('hidden');
-            previewAuthor.classList.remove('hidden');
-            
-            // 清除本地存储
-            localStorage.removeItem('coverCanvasData');
-            
-            // 更新预览
-            updatePreview();
-            
-            // 显示重置成功提示
-            showToast('已恢复初始值');
-        }
-        
-        // HTML转义函数
-        function escapeHtml(unsafe) {
-            if (!unsafe) return '';
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-        
-        // 保存到本地存储
-        function saveToLocalStorage() {
-            const data = {
-                title: mainTitleInput.value,
-                subtitle: subTitleInput.value,
-                author: authorInput.value,
-                template: currentTemplate,
-                ratio: currentAspectRatio
-            };
-            localStorage.setItem('coverCanvasData', JSON.stringify(data));
-        }
-        
-        // 从本地存储加载
-        function loadFromLocalStorage() {
-            const data = localStorage.getItem('coverCanvasData');
-            if (!data) return;
-            
-            try {
-                const savedData = JSON.parse(data);
-                
-                if (savedData.title) mainTitleInput.value = savedData.title;
-                if (savedData.subtitle) subTitleInput.value = savedData.subtitle;
-                if (savedData.author) authorInput.value = savedData.author;
-                if (savedData.template) currentTemplate = savedData.template;
-                if (savedData.ratio) currentAspectRatio = savedData.ratio;
-                
-                // 更新模板UI
-                templateItems.forEach(item => {
-                    item.classList.toggle('active', parseInt(item.dataset.template) === currentTemplate);
-                });
-                
-                // 更新比例UI
-                aspectRatioBtns.forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.ratio === currentAspectRatio);
-                });
-                
-                // 更新预览
-                updatePreviewRatio();
-                updatePreviewBackground();
-                updatePreview();
-            } catch (e) {
-                console.error('Error loading saved data:', e);
-            }
-        }
-        
-        // 页面加载完成后初始化
-        window.addEventListener('DOMContentLoaded', init);
-    </script>
+        // 3秒后隐藏提示
+        clearTimeout(popupTimeout);
+        popupTimeout = setTimeout(() => {
+          this.classList.remove('show-popup');
+        }, 3000);
+      }).catch(err => {
+        alert('复制失败，请手动复制：857023577');
+      });
+    });
+  </script>
 </body>
 </html>
