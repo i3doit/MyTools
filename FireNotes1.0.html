@@ -1223,19 +1223,19 @@
                 <a href="#" class="share-link tooltip" data-tooltip="QQ" id="qq-share">
                     <i class="fab fa-qq"></i>
                 </a>
-                <a href="#" class="share-link tooltip" data-tooltip="微博">
+                <a href="#" class="share-link tooltip" data-tooltip="微博" id="weibo-share">
                     <i class="fab fa-weibo"></i>
                 </a>
-                <a href="#" class="share-link tooltip" data-tooltip="Instagram">
+                <a href="#" class="share-link tooltip" data-tooltip="Instagram" id="ins-share">
                     <i class="fab fa-instagram"></i>
                 </a>
-                <a href="#" class="share-link tooltip" data-tooltip="Facebook">
+                <a href="#" class="share-link tooltip" data-tooltip="Facebook" id="facebook-share">
                     <i class="fab fa-facebook-f"></i>
                 </a>
-                <a href="#" class="share-link tooltip" data-tooltip="WhatsApp">
+                <a href="#" class="share-link tooltip" data-tooltip="WhatsApp" id="whatsapp-share">
                     <i class="fab fa-whatsapp"></i>
                 </a>
-                <a href="#" class="share-link tooltip" data-tooltip="X">
+                <a href="#" class="share-link tooltip" data-tooltip="X" id="x-share">
                     <i class="fab fa-twitter"></i>
                 </a>
             </div>
@@ -1320,7 +1320,7 @@
         <i class="fas fa-plus"></i>
     </div>
     
-    <div class="toast" id="toast">复制成功，欢迎添加作者！</div>
+    <div class="toast" id="toast">已获取作者微信：857023577，去链接吧！</div>
     
     <audio id="reminder-alert" preload="auto">
         <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
@@ -2109,7 +2109,32 @@
                 showToast('成功获取作者联系方式，去链接TA吧！');
             });
             
-                        document.getElementById('qq-share').addEventListener('click', (e) => {
+            document.getElementById('qq-share').addEventListener('click', (e) => {
+                e.preventDefault();
+                navigator.clipboard.writeText('857023577');
+                showToast('成功获取作者联系方式，去链接TA吧！');
+            });
+            document.getElementById('weibo-share').addEventListener('click', (e) => {
+                e.preventDefault();
+                navigator.clipboard.writeText('857023577');
+                showToast('成功获取作者联系方式，去链接TA吧！');
+            });
+            document.getElementById('ins-share').addEventListener('click', (e) => {
+                e.preventDefault();
+                navigator.clipboard.writeText('857023577');
+                showToast('成功获取作者联系方式，去链接TA吧！');
+            });
+            document.getElementById('facebook-share').addEventListener('click', (e) => {
+                e.preventDefault();
+                navigator.clipboard.writeText('857023577');
+                showToast('成功获取作者联系方式，去链接TA吧！');
+            });
+            document.getElementById('whatsapp-share').addEventListener('click', (e) => {
+                e.preventDefault();
+                navigator.clipboard.writeText('857023577');
+                showToast('成功获取作者联系方式，去链接TA吧！');
+            });
+            document.getElementById('x-share').addEventListener('click', (e) => {
                 e.preventDefault();
                 navigator.clipboard.writeText('857023577');
                 showToast('成功获取作者联系方式，去链接TA吧！');
