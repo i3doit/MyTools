@@ -212,6 +212,8 @@
         }
         
         .feature-card {
+            display: block;
+            text-decoration: none; /* 移除全局下划线 */
             background-color: var(--card-bg);
             border-radius: 16px;
             padding: 30px;
@@ -269,6 +271,7 @@
             color: var(--primary-color);
             position: relative;
             z-index: 2;
+            text-decoration: none !important; /* 确保标题和段落无下划线 */
         }
         
         .feature-card p {
@@ -276,6 +279,7 @@
             font-size: 16px;
             position: relative;
             z-index: 2;
+            text-decoration: none !important; /* 确保标题和段落无下划线 */
         }
         
         /* 营销广告区域 */
