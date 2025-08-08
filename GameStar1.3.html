@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消灭星星 - 终极优化版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        :root {
+            --primary: #5e72e4;
+            --secondary: #ffce54;
+            --success: #2dce89;
+            --danger: #f5365c;
+            --warning: #fb6340;
+            --dark-bg: linear-gradient(135deg, #1a2a4f 0%, #0d1b33 100%);
+            --dark-card: rgba(30, 30, 60, 0.7);
+            --dark-text: #f7f9fc;
+            --light-bg: linear-gradient(135deg, #e0f7ff 0%, #bbdefb 100%);
+            --light-card: rgba(255, 255, 255, 0.7);
+            --light-text: #32325d;
+        }
+
+        body {
+            background: var(--dark-bg);
+            color: var(--dark-text);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.5s ease;
+        }
+
+        body.light-mode {
+            background: var(--light-bg);
+            color: var(--light-text);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .light-mode header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(94, 114, 228, 0.2);
+        }
+
+        .glass-card {
+            background: var(--dark-card);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 100, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .glass-card {
+            background: var(--light-card);
+            box-shadow: 0 8px 32px rgba(0, 0, 100, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 100, 0.15);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(94, 114, 228, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(94, 114, 228, 0.4);
+            background: #4a5ccc;
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+
+        #game-board-container {
+            position: relative;
+        }
+
+        #gameCanvas {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .light-mode #gameCanvas {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+        }
+
+        .light-mode .stat-card {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-top: 5px;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .light-mode .progress-bar {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .level-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .level-card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .light-mode .level-card {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .level-card:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .light-mode .level-card:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .level-card.completed {
+            background: rgba(45, 206, 137, 0.3);
+        }
+
+        .level-card.current {
+            box-shadow: 0 0 0 3px var(--primary);
+        }
+
+        .theme-switch {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+
+        .light-mode .theme-switch {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .switch-handle {
+            width: 22px;
+            height: 22px;
+            background: var(--primary);
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .light-mode .switch-handle {
+            background: var(--secondary);
+            transform: translateX(30px);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--dark-card);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            text-align: center;
+        }
+
+        .light-mode .modal-content {
+            background: var(--light-card);
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal h2 {
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .modal p {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .feedback {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark-card);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .light-mode .feedback {
+            background: var(--light-card);
+        }
+
+        .feedback.show {
+            opacity: 1;
+        }
+
+        .feedback.good {
+            color: var(--success);
+        }
+
+        .feedback.great {
+            color: var(--secondary);
+        }
+
+        .score-popup {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            z-index: 50;
+            opacity: 0;
+            transform: translateY(0);
+            transition: all 0.5s ease;
+        }
+
+        .score-popup.show {
+            opacity: 1;
+            transform: translateY(-20px);
+        }
+
+        .pass-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--success);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .hint-indicator {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 10px yellow;
+            z-index: 40;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        .remains-reward {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: var(--secondary);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: none;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .modal-buttons {
+                flex-direction: column;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            #gameCanvas {
+                max-width: 100%;
+                height: auto !important;
+            }
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <div class="container">
+        <header>
+            <h1>消灭星星 - 终极优化版</h1>
+            <div>
+                <button id="resetBtn" class="btn btn-danger">重置游戏</button>
+            </div>
+        </header>
+
+        <div class="game-area">
+            <div class="content-area">
+                <div class="glass-card">
+                    <h2>关卡 <span id="currentLevel">1</span></h2>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div>当前得分</div>
+                            <div class="stat-value" id="currentScore">0</div>
+                            <div class="pass-indicator" id="passIndicator">通关</div>
+                        </div>
+                        <div class="stat-card">
+                            <div>目标分数</div>
+                            <div class="stat-value" id="targetScore">1000</div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-container">
+                        <div>关卡进度</div>
+                        <div class="progress-bar">
+                            <div class="progress" id="levelProgress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="game-board-container">
+                        <canvas id="gameCanvas" width="600" height="600"></canvas>
+                        <div class="remains-reward" id="remainsReward"></div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button id="hintBtn" class="btn btn-secondary">提示</button>
+                        <button id="soundBtn" class="btn">音效: 开</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="glass-card">
+                    <h3>关卡选择</h3>
+                    <div class="level-container" id="levelContainer">
+                        <!-- 关卡将通过JS动态生成 -->
+                    </div>
+                </div>
+                
+                <div class="glass-card">
+                    <h3>游戏说明</h3>
+                    <p>点击相邻的同色星星可以消除它们，消除的星星越多，得分越高！</p>
+                    <p>每关需要达到目标分数才能进入下一关。</p>
+                    <p>游戏进度会自动保存，下次进入可继续游戏。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通关提示弹窗 -->
+    <div class="modal" id="levelCompleteModal">
+        <div class="modal-content">
+            <h2>🎉 恭喜通关! 🎉</h2>
+            <p>你已完成第 <span id="completedLevel">1</span> 关</p>
+            <p>获得分数: <span id="completedScore">0</span></p>
+            <button id="nextLevelBtn" class="btn">进入下一关</button>
+        </div>
+    </div>
+
+    <!-- 游戏结束弹窗 -->
+    <div class="modal" id="gameOverModal">
+        <div class="modal-content">
+            <h2>😭 游戏结束 😭</h2>
+            <p>没有可消除的星星了</p>
+            <p>最终得分: <span id="finalScore">0</span></p>
+            <button id="restartLevelBtn" class="btn">重新开始本关</button>
+        </div>
+    </div>
+
+    <!-- 分数不足弹窗 -->
+    <div class="modal" id="lowScoreModal">
+        <div class="modal-content">
+            <h2>分数不足</h2>
+            <p>当前得分 <span id="lowScore">0</span> 分，未达到100分</p>
+            <div class="modal-buttons">
+                <button id="shareBtn" class="btn btn-secondary">分享助力</button>
+                <button id="restartGameBtn" class="btn btn-danger">重新开始</button>
+                <button id="backHomeBtn" class="btn">返回主页</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 反馈消息 -->
+    <div class="feedback" id="feedback"></div>
+
+    <!-- 主题切换开关 -->
+    <div class="theme-switch" id="themeSwitch">
+        <div class="switch-handle"></div>
+    </div>
+
+    <script>
+        // 游戏配置和状态
+        const GameConfig = {
+            // 关卡配置
+            levels: [
+                { id: 1, target: 1000, colors: 5, rows: 10, cols: 10 },
+                { id: 2, target: 2000, colors: 5, rows: 10, cols: 10 },
+                { id: 3, target: 3500, colors: 5, rows: 10, cols: 10 },
+                { id: 4, target: 5500, colors: 5, rows: 10, cols: 10 },
+                { id: 5, target: 8000, colors: 5, rows: 10, cols: 10 },
+                { id: 6, target: 11000, colors: 5, rows: 10, cols: 10 },
+                { id: 7, target: 15000, colors: 5, rows: 10, cols: 10 },
+                { id: 8, target: 20000, colors: 5, rows: 10, cols: 10 },
+                { id: 9, target: 26000, colors: 5, rows: 10, cols: 10 },
+                { id: 10, target: 33000, colors: 5, rows: 10, cols: 10 }
+            ],
+            colors: [
+                { value: '#FF5252', bg: 'rgba(255, 82, 82, 0.15)', shadow: '#cc0000' }, // 红色
+                { value: '#FFD740', bg: 'rgba(255, 215, 64, 0.15)', shadow: '#cc9900' }, // 黄色
+                { value: '#69F0AE', bg: 'rgba(105, 240, 174, 0.15)', shadow: '#00cc66' }, // 绿色
+                { value: '#7C4DFF', bg: 'rgba(124, 77, 255, 0.15)', shadow: '#5500cc' }, // 紫色
+                { value: '#536DFE', bg: 'rgba(83, 109, 254, 0.15)', shadow: '#0033cc' }  // 蓝色
+            ],
+            starSize: 60,
+            soundEnabled: true,
+            theme: 'dark',
+            comboCount: 0,
+            consecutiveGreat: 0,
+            lastActiveTime: 0,
+            scoreMap: {
+                2: 20,
+                3: 45,
+                4: 80,
+                5: 125,
+                6: 180,
+                7: 245,
+                8: 320,
+                9: 405,
+                10: 500,
+                11: 605,
+                12: 720,
+                13: 845,
+                14: 980,
+                15: 1125
+            }
+        };
+
+        // 游戏状态
+        const GameState = {
+            currentLevel: 0,
+            currentScore: 0,
+            totalScore: 0,
+            board: [],
+            selectedStars: [],
+            gameActive: false,
+            passStatus: false
+        };
+
+        // DOM元素
+        const elements = {
+            canvas: null,
+            ctx: null,
+            currentScore: null,
+            targetScore: null,
+            levelProgress: null,
+            currentLevel: null,
+            levelContainer: null,
+            resetBtn: null,
+            hintBtn: null,
+            soundBtn: null,
+            levelCompleteModal: null,
+            gameOverModal: null,
+            nextLevelBtn: null,
+            restartLevelBtn: null,
+            themeSwitch: null,
+            lowScoreModal: null,
+            shareBtn: null,
+            restartGameBtn: null,
+            backHomeBtn: null,
+            feedback: null,
+            lowScore: null,
+            passIndicator: null,
+            remainsReward: null
+        };
+
+        // 音效资源
+        const audioFiles = {
+            select: 'data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAB/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAAgACADASIAAhEBAxEB/8QAFwAAAwEAAAAAAAAAAAAAAAAAAAQHCP/EAB8QAAICAwADAQAAAAAAAAAAAAECAAMREiExBAUTIv/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwDf+IiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgf/2Q==',
+            eliminate: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADpgCZmZmZmZmkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkp极简音效实现
+            win: 'data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAB/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAAgACADASIAAhEBAxEB/8QAFwAAAwEAAAAAAAAAAAAAAAAAAAQHCP/EAB8QAAICAwADAQAAAAAAAAAAAAECAAMREiExBAUTIv/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwDf+IiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgf/2Q==',
+            lose: 'data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAB/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAAgACADASIAAhEBAxEB/8QAFwAAAwEAAAAAAAAAAAAAAAAAAAQHCP/EAB8QAAICAwADAQAAAAAAAAAAAAECAAMREiExBAUTIv/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwDf+IiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgf/2Q==',
+            applause: 'data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAB/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAAgACADASIAAhEBAxEB/8QAFwAAAwEAAAAAAAAAAAAAAAAAAAQHCP/EAB8QAAICAwADAQAAAAAAAAAAAAECAAMREiExBAUTIv/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwDf+IiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgf/2Q==',
+            great: 'data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAB/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAAgACADASIAAhEBAxEB/8QAFwAAAwEAAAAAAAAAAAAAAAAAAAQHCP/EAB8QAAICAwADAQAAAAAAAAAAAAECAAMREiExBAUTIv/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwDf+IiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgf/2Q=='
+        };
+
+        // IndexedDB封装类
+        class GameDB {
+            constructor() {
+                this.dbName = "StarEliminatorDB";
+                this.storeName = "GameState";
+                this.db = null;
+            }
+
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, 1);
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            db.createObjectStore(this.storeName, { keyPath: "id" });
+                        }
+                    };
+                    
+                    request.onsuccess = (event) => {
+                        this.db = event.target.result;
+                        resolve();
+                    };
+                    
+                    request.onerror = (event) => {
+                        console.error("数据库打开失败:", event.target.error);
+                        reject(event.target.error);
+                    };
+                });
+            }
+
+            async saveGameState(state) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], "readwrite");
+                    const store = transaction.objectStore(this.storeName);
+                    
+                    const data = {
+                        id: "currentGame",
+                        state: state,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    const request = store.put(data);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = (event) => reject(event.target.error);
+                });
+            }
+
+            async getGameState() {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], "readonly");
+                    const store = transaction.objectStore(this.storeName);
+                    
+                    const request = store.get("currentGame");
+                    
+                    request.onsuccess = (event) => {
+                        if (event.target.result) {
+                            resolve(event.target.result.state);
+                        } else {
+                            resolve(null);
+                        }
+                    };
+                    
+                    request.onerror = (event) => reject(event.target.error);
+                });
+            }
+
+            async clearGameState() {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], "readwrite");
+                    const store = transaction.objectStore(this.storeName);
+                    
+                    const request = store.delete("currentGame");
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = (event) => reject(event.target.error);
+                });
+            }
+        }
+
+        // 游戏主类
+        class StarEliminatorGame {
+            constructor() {
+                this.gameDB = new GameDB();
+                this.initElements();
+                this.setupEventListeners();
+                this.initGame();
+            }
+
+            initElements() {
+                elements.canvas = document.getElementById('gameCanvas');
+                elements.ctx = elements.canvas.getContext('2d');
+                elements.currentScore = document.getElementById('currentScore');
+                elements.targetScore = document.getElementById('targetScore');
+                elements.levelProgress = document.getElementById('levelProgress');
+                elements.currentLevel = document.getElementById('currentLevel');
+                elements.levelContainer = document.getElementById('levelContainer');
+                elements.resetBtn = document.getElementById('resetBtn');
+                elements.hintBtn = document.getElementById('hintBtn');
+                elements.soundBtn = document.getElementById('soundBtn');
+                elements.levelCompleteModal = document.getElementById('levelCompleteModal');
+                elements.gameOverModal = document.getElementById('gameOverModal');
+                elements.nextLevelBtn = document.getElementById('nextLevelBtn');
+                elements.restartLevelBtn = document.getElementById('restartLevelBtn');
+                elements.themeSwitch = document.getElementById('themeSwitch');
+                elements.lowScoreModal = document.getElementById('lowScoreModal');
+                elements.shareBtn = document.getElementById('shareBtn');
+                elements.restartGameBtn = document.getElementById('restartGameBtn');
+                elements.backHomeBtn = document.getElementById('backHomeBtn');
+                elements.feedback = document.getElementById('feedback');
+                elements.lowScore = document.getElementById('lowScore');
+                elements.passIndicator = document.getElementById('passIndicator');
+                elements.remainsReward = document.getElementById('remainsReward');
+            }
+
+            setupEventListeners() {
+                // 画布点击事件
+                elements.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+                
+                // 重置游戏按钮
+                elements.resetBtn.addEventListener('click', () => this.resetGame());
+                
+                // 提示按钮
+                elements.hintBtn.addEventListener('click', () => this.provideHint());
+                
+                // 音效按钮
+                elements.soundBtn.addEventListener('click', () => this.toggleSound());
+                
+                // 下一关按钮
+                elements.nextLevelBtn.addEventListener('click', () => this.nextLevel());
+                
+                // 重新开始本关
+                elements.restartLevelBtn.addEventListener('click', () => this.restartLevel());
+                
+                // 主题切换
+                elements.themeSwitch.addEventListener('click', () => this.toggleTheme());
+                
+                // 低分弹窗按钮
+                elements.shareBtn.addEventListener('click', () => this.shareGame());
+                elements.restartGameBtn.addEventListener('click', () => this.restartLevel());
+                elements.backHomeBtn.addEventListener('click', () => this.backToHome());
+            }
+
+            async initGame() {
+                // 初始化数据库
+                await this.gameDB.init();
+                
+                // 尝试加载保存的游戏状态
+                const savedState = await this.gameDB.getGameState();
+                
+                if (savedState) {
+                    // 使用保存的状态
+                    Object.assign(GameState, savedState);
+                    this.setLevel(GameState.currentLevel);
+                } else {
+                    // 开始新游戏
+                    this.startNewGame();
+                }
+                
+                // 渲染关卡选择器
+                this.renderLevelSelector();
+                
+                // 开始游戏循环
+                this.gameLoop();
+            }
+
+            startNewGame() {
+                GameState.currentLevel = 0;
+                GameState.currentScore = 0;
+                GameState.totalScore = 0;
+                this.setLevel(0);
+            }
+
+            setLevel(levelIndex) {
+                GameState.currentLevel = levelIndex;
+                GameState.currentScore = 0;
+                GameState.selectedStars = [];
+                GameState.gameActive = true;
+                GameConfig.comboCount = 0;
+                GameConfig.consecutiveGreat = 0;
+                GameState.passStatus = false;
+                elements.passIndicator.style.display = 'none';
+                
+                const level = GameConfig.levels[levelIndex];
+                
+                // 更新UI
+                elements.currentLevel.textContent = level.id;
+                elements.targetScore.textContent = level.target;
+                elements.currentScore.textContent = GameState.currentScore;
+                this.updateProgress();
+                
+                // 生成游戏板
+                this.generateBoard(level.rows, level.cols, level.colors);
+                
+                // 调整画布大小
+                this.resizeCanvas();
+                
+                // 绘制初始游戏板
+                this.drawBoard();
+                
+                // 更新关卡选择器
+                this.renderLevelSelector();
+            }
+
+            generateBoard(rows, cols, colorCount) {
+                GameState.board = [];
+                
+                for (let row = 0; row < rows; row++) {
+                    GameState.board[row] = [];
+                    for (let col = 0; col < cols; col++) {
+                        // 随机选择一种颜色
+                        const colorIndex = Math.floor(Math.random() * colorCount);
+                        GameState.board[row][col] = colorIndex;
+                    }
+                }
+                
+                // 确保有可消除的组合
+                this.ensureSolvable();
+            }
+
+            ensureSolvable() {
+                // 检查是否存在可消除的组合
+                if (!this.hasMovableStars()) {
+                    // 如果没有，重新生成板
+                    this.generateBoard(
+                        GameConfig.levels[GameState.currentLevel].rows,
+                        GameConfig.levels[GameState.currentLevel].cols,
+                        GameConfig.levels[GameState.currentLevel].colors
+                    );
+                }
+            }
+
+            hasMovableStars() {
+                const rows = GameState.board.length;
+                const cols = GameState.board[0].length;
+                
+                // 检查相邻的相同颜色星星
+                for (let row = 0; row < rows; row++) {
+                    for (let col = 0; col < cols; col++) {
+                        const color = GameState.board[row][col];
+                        if (color === -1) continue;
+                        
+                        // 检查右侧
+                        if (col < cols - 1 && GameState.board[row][col + 1] === color) {
+                            return true;
+                        }
+                        
+                        // 检查下方
+                        if (row < rows - 1 && GameState.board[row + 1][col] === color) {
+                            return true;
+                        }
+                    }
+                }
+                
+                return false;
+            }
+
+            resizeCanvas() {
+                const level = GameConfig.levels[GameState.currentLevel];
+                const width = level.cols * GameConfig.starSize;
+                const height = level.rows * GameConfig.starSize;
+                
+                elements.canvas.width = width;
+                elements.canvas.height = height;
+            }
+
+            drawBoard() {
+                const ctx = elements.ctx;
+                ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+                
+                const rows = GameState.board.length;
+                const cols = GameState.board[0].length;
+                
+                // 绘制背景色
+                for (let row = 0; row < rows; row++) {
+                    for (let col = 0; col < cols; col++) {
+                        const colorIndex = GameState.board[row][col];
+                        if (colorIndex === -1) continue;
+                        
+                        const color = GameConfig.colors[colorIndex];
+                        const x = col * GameConfig.starSize;
+                        const y = row * GameConfig.starSize;
+                        
+                        // 绘制背景
+                        ctx.fillStyle = color.bg;
+                        ctx.fillRect(x, y, GameConfig.starSize, GameConfig.starSize);
+                    }
+                }
+                
+                // 绘制星星
+                for (let row = 0; row < rows; row++) {
+                    for (let col = 0; col < cols; col++) {
+                        const colorIndex = GameState.board[row][col];
+                        if (colorIndex === -1) continue;
+                        
+                        const color = GameConfig.colors[colorIndex];
+                        const x = col * GameConfig.starSize;
+                        const y = row * GameConfig.starSize;
+                        
+                        this.drawStar(ctx, x, y, color.value, color.shadow);
+                    }
+                }
+                
+                // 绘制选中的星星
+                GameState.selectedStars.forEach(pos => {
+                    const [row, col] = pos;
+                    const x = col * GameConfig.starSize;
+                    const y = row * GameConfig.starSize;
+                    
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x, y, GameConfig.starSize, GameConfig.starSize);
+                });
+            }
+
+            drawStar(ctx, x, y, color, shadowColor) {
+                // 绘制阴影效果
+                ctx.fillStyle = shadowColor;
+                ctx.beginPath();
+                ctx.arc(
+                    x + GameConfig.starSize / 2 + 2,
+                    y + GameConfig.starSize / 2 + 2,
+                    GameConfig.starSize / 2 - 2,
+                    0, Math.PI * 2
+                );
+                ctx.fill();
+                
+                // 绘制星星主体
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                
+                // 绘制五角星
+                const centerX = x + GameConfig.starSize / 2;
+                const centerY = y + GameConfig.starSize / 2;
+                const radius = GameConfig.starSize / 2 - 2;
+                
+                for (let i = 0; i < 5; i++) {
+                    const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+                    const nextAngle = ((i + 1) * 2 * Math.PI / 5) - Math.PI / 2;
+                    
+                    // 外点
+                    const outerX = centerX + radius * Math.cos(angle);
+                    const outerY = centerY + radius * Math.sin(angle);
+                    
+                    // 内点
+                    const innerX = centerX + (radius / 2) * Math.cos(angle + Math.PI / 5);
+                    const innerY = centerY + (radius / 2) * Math.sin(angle + Math.PI / 5);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(outerX, outerY);
+                    } else {
+                        ctx.lineTo(outerX, outerY);
+                    }
+                    
+                    ctx.lineTo(innerX, innerY);
+                }
+                
+                ctx.closePath();
+                ctx.fill();
+                
+                // 添加光泽效果
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.beginPath();
+                ctx.arc(
+                    centerX - radius/4, 
+                    centerY - radius/4, 
+                    radius/4, 
+                    0, Math.PI * 2
+                );
+                ctx.fill();
+            }
+
+            handleCanvasClick(event) {
+                if (!GameState.gameActive) return;
+                
+                <!-- 接续Canvas绘图上下文获取 -->
+const rect = elements.canvas.getBoundingClientRect();
+const x = event.clientX - rect.left;
+const y = event.clientY - rect.top;
+
+const col = Math.floor(x / GameConfig.starSize);
+const row = Math.floor(y / GameConfig.starSize);
+
+// 检查点击是否有效
+if (row >= 0 && row < GameState.board.length && 
+    col >= 0 && col < GameState.board[0].length &&
+    GameState.board[row][col] !== -1) {
+    
+    // 如果已经选中，取消选择
+    const index = GameState.selectedStars.findIndex(
+        pos => pos[0] === row && pos[1] === col
+    );
+    
+    if (index !== -1) {
+        GameState.selectedStars.splice(index, 1);
+    } else {
+        // 如果没有选中任何星星，或者点击的是同色星星，则选中
+        if (GameState.selectedStars.length === 0 || 
+            this.isSameColor(row, col, GameState.selectedStars[0])) {
+            
+            GameState.selectedStars.push([row, col]);
+            this.findAdjacentStars(row, col);
+        }
+    }
+    
+    // 重绘板
+    this.drawBoard();
+    
+    // 检查是否可以消除
+    if (GameState.selectedStars.length > 1) {
+        this.playSound('select');
+    }
+    
+    // 如果选择了两个或更多星星，消除它们
+    if (GameState.selectedStars.length > 1) {
+        setTimeout(() => this.removeSelectedStars(), 300);
+    }
+}
+
+isSameColor(row1, col1, pos) {
+    const [row2, col2] = pos;
+    return GameState.board[row1][col1] === GameState.board[row2][col2];
+}
+
+findAdjacentStars(startRow, startCol) {
+    const color = GameState.board[startRow][startCol];
+    const visited = new Set();
+    const stack = [[startRow, startCol]];
+    
+    while (stack.length > 0) {
+        const [row, col] = stack.pop();
+        const key = `${row},${col}`;
+        
+        if (visited.has(key)) continue;
+        visited.add(key);
+        
+        // 检查相邻的四个方向
+        const directions = [
+            [0, 1], [1, 0], [0, -1], [-1, 0] // 右、下、左、上
+        ];
+        
+        for (const [dr, dc] of directions) {
+            const newRow = row + dr;
+            const newCol = col + dc;
+            const newKey = `${newRow},${newCol}`;
+            
+            if (newRow >= 0 && newRow < GameState.board.length &&
+                newCol >= 0 && newCol < GameState.board[0].length &&
+                !visited.has(newKey) &&
+                GameState.board[newRow][newCol] === color) {
+                
+                // 添加到选中星星
+                if (!GameState.selectedStars.some(
+                    pos => pos[0] === newRow && pos[1] === newCol)) {
+                    GameState.selectedStars.push([newRow, newCol]);
+                }
+                
+                stack.push([newRow, newCol]);
+            }
+        }
+    }
+}
+
+removeSelectedStars() {
+    if (GameState.selectedStars.length < 2) {
+        GameState.selectedStars = [];
+        this.drawBoard();
+        return;
+    }
+    
+    // 计算得分
+    const count = GameState.selectedStars.length;
+    let points = count * count * 10; // 基础分
+
+    // 连击奖励
+    if (GameConfig.comboCount > 0) {
+        points += points * GameConfig.comboCount * 0.2;
+    }
+    
+    GameState.currentScore += points;
+    elements.currentScore.textContent = GameState.currentScore;
+    this.updateProgress();
+    this.playSound('eliminate');
+    
+    // 显示反馈
+    this.showFeedback(count);
+    
+    // 标记星星为已消除
+    GameState.selectedStars.forEach(([row, col]) => {
+        GameState.board[row][col] = -1;
+    });
+    
+    // 清除选择
+    GameState.selectedStars = [];
+    
+    // 让星星下落
+    this.dropStars();
+    
+    // 重绘板
+    this.drawBoard();
+    
+    // 检查游戏状态
+    setTimeout(() => this.checkGameState(), 500);
+}
+
+showFeedback(count) {
+    let text = "";
+    let className = "";
+    let sound = "";
+    
+    if (count < 5) {
+        text = "继续努力";
+        className = "";
+        sound = "select";
+        GameConfig.consecutiveGreat = 0;
+    } else if (count < 8) {
+        text = "好";
+        className = "good";
+        sound = "great";
+        GameConfig.consecutiveGreat = 0;
+    } else {
+        GameConfig.consecutiveGreat++;
+        
+        if (GameConfig.consecutiveGreat > 1) {
+            text = "太棒了";
+            className = "great";
+            sound = "applause";
+        } else {
+            text = "太棒了";
+            className = "great";
+            sound = "fireworks";
+        }
+    }
+    
+    // 播放语音
+    this.playSound(sound);
+    
+    // 显示文案
+    elements.feedback.textContent = text;
+    elements.feedback.className = `feedback show ${className}`;
+    
+    // 3秒后隐藏
+    setTimeout(() => {
+        elements.feedback.className = "feedback";
+    }, 3000);
+}
+
+dropStars() {
+    const cols = GameState.board[0].length;
+    const rows = GameState.board.length;
+    
+    // 按列处理
+    for (let col = 0; col < cols; col++) {
+        let emptyCount = 0;
+        
+        // 从底部向上遍历
+        for (let row = rows - 1; row >= 0; row--) {
+            if (GameState.board[row][col] === -1) {
+                emptyCount++;
+            } else if (emptyCount > 0) {
+                // 移动星星
+                GameState.board[row + emptyCount][col] = GameState.board[row][col];
+                GameState.board[row][col] = -1;
+            }
+        }
+    }
+    
+    // 增加连击计数
+    GameConfig.comboCount++;
+}
+
+checkGameState() {
+    // 检查是否通关
+    const level = GameConfig.levels[GameState.currentLevel];
+    if (GameState.currentScore >= level.target) {
+        this.levelComplete();
+        return;
+    }
+    
+    // 计算剩余星星数量
+    let remainingStars = 0;
+    for (let row = 0; row < GameState.board.length; row++) {
+        for (let col = 0; col < GameState.board[0].length; col++) {
+            if (GameState.board[row][col] !== -1) {
+                remainingStars++;
+            }
+        }
+    }
+    
+    // 检查是否还有可消除的星星
+    if (!this.hasMovableStars()) {
+        // 剩余星星奖励
+        if (remainingStars < 10) {
+            const bonus = remainingStars === 0 ? 2000 : remainingStars * 100;
+            GameState.currentScore += bonus;
+            elements.currentScore.textContent = GameState.currentScore;
+            
+            // 显示奖励信息
+            elements.remainsReward.textContent = 
+                `剩余:${remainingStars}个 奖励:${bonus}分`;
+            elements.remainsReward.style.display = 'block';
+            
+            setTimeout(() => {
+                elements.remainsReward.style.display = 'none';
+                this.levelComplete();
+            }, 3000);
+        } else if (GameState.currentScore < 100) {
+            this.showLowScoreModal();
+        } else {
+            this.gameOver();
+        }
+    } else {
+        // 重置连击计数
+        GameConfig.comboCount = 0;
+    }
+}
+
+levelComplete() {
+    GameState.gameActive = false;
+    this.playSound('win');
+    
+    // 显示通关标志
+    elements.passIndicator.style.display = 'block';
+    
+    // 保存游戏状态
+    this.saveGameState();
+    
+    // 3秒后自动进入下一关
+    setTimeout(() => {
+        this.nextLevel();
+    }, 3000);
+}
+
+// 后续方法实现...
