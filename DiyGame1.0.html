@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aidder简易小游戏 - 本地存储版</title>
+    <style>
+        :root {
+            --primary-color: #5e9fff;
+            --bg-gradient: linear-gradient(135deg, #e0f7ff, #bbdefb);
+            --glass-bg: rgba(255, 255, 255, 0.25);
+            --card-bg: rgba(255, 255, 255, 0.7);
+            --text-color: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.5s ease;
+        }
+
+        .dark-mode {
+            --bg-gradient: linear-gradient(135deg, #1a2a4f, #0d1b33);
+            --glass-bg: rgba(25, 40, 70, 0.3);
+            --card-bg: rgba(30, 50, 90, 0.7);
+            --text-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 100, 0.1);
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 100, 0.15);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            background: linear-gradient(45deg, #0066ff, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 102, 255, 0.1);
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            background: #4a86ff;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: var(--glass-bg);
+            border-radius: 50px;
+            padding: 5px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+
+        .level-progress {
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            height: 15px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #00c6ff, #0072ff);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .level-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .level-card {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .level-card:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .level-card.completed {
+            background: rgba(100, 221, 120, 0.3);
+        }
+
+        .level-card.current {
+            box-shadow: 0 0 0 3px var(--primary-color);
+        }
+
+        .leaderboard-list {
+            list-style: none;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .leaderboard-item:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: translateX(5px);
+        }
+
+        .rank {
+            font-weight: bold;
+            font-size: 1.2rem;
+            width: 30px;
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff9966, #ff5e62);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .user-info h3 {
+            margin-bottom: 5px;
+        }
+
+        .user-info p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .theme-switch {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+            z-index: 100;
+        }
+
+        .switch-handle {
+            width: 22px;
+            height: 22px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .dark-mode .switch-handle {
+            transform: translateX(30px);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .tabs {
+                flex-direction: column;
+                border-radius: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>简易小游戏</h1>
+            <div>
+                <button id="exportBtn" class="btn">导出数据</button>
+                <button id="importBtn" class="btn">导入数据</button>
+                <input type="file" id="importFile" accept=".json" hidden>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="home">主页</div>
+            <div class="tab" data-tab="levels">关卡</div>
+            <div class="tab" data-tab="leaderboard">排行榜</div>
+            <div class="tab" data-tab="profile">个人中心</div>
+        </div>
+
+        <div class="game-area">
+            <div class="content-area">
+                <!-- 主页内容 -->
+                <div class="glass-card" id="homeContent">
+                    <h2>欢迎来到简易小游戏</h2>
+                    <p>这是一款使用IndexedDB实现本地存储的简易游戏，您的所有游戏数据将保存在浏览器中。</p>
+                    <div class="level-progress">
+                        <h3>当前进度</h3>
+                        <div class="progress-bar">
+                            <div class="progress" id="globalProgress" style="width: 30%;"></div>
+                        </div>
+                        <p>已解锁关卡: <span id="unlockedLevels">3</span>/10</p>
+                    </div>
+                    <button id="playBtn" class="btn">开始游戏</button>
+                </div>
+
+                <!-- 关卡内容 -->
+                <div class="glass-card" id="levelsContent" style="display: none;">
+                    <h2>游戏关卡</h2>
+                    <p>选择关卡开始游戏，通关可获得积分并解锁新关卡</p>
+                    <div class="level-container" id="levelContainer">
+                        <!-- 关卡将通过JS动态生成 -->
+                    </div>
+                </div>
+
+                <!-- 排行榜内容 -->
+                <div class="glass-card" id="leaderboardContent" style="display: none;">
+                    <h2>排行榜</h2>
+                    <p>查看全球玩家的游戏进度和得分</p>
+                    <ul class="leaderboard-list" id="leaderboardList">
+                        <!-- 排行榜将通过JS动态生成 -->
+                    </ul>
+                </div>
+
+                <!-- 个人中心内容 -->
+                <div class="glass-card" id="profileContent" style="display: none;">
+                    <h2>个人中心</h2>
+                    <div class="profile">
+                        <div class="avatar">JS</div>
+                        <div>
+                            <h3 id="playerName">玩家1</h3>
+                            <p>最后游戏时间: <span id="lastPlayed">2023-09-15</span></p>
+                        </div>
+                    </div>
+                    <div class="stats">
+                        <h3>游戏数据</h3>
+                        <p>总积分: <span id="totalScore">450</span></p>
+                        <p>最高关卡: <span id="maxLevel">3</span>/10</p>
+                        <p>游戏次数: <span id="playCount">12</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="glass-card">
+                    <h3>最近活动</h3>
+                    <ul id="recentActivity">
+                        <li>完成了关卡2 (+50分)</li>
+                        <li>解锁了关卡3</li>
+                        <li>首次完成关卡1 (+100分)</li>
+                    </ul>
+                </div>
+                <div class="glass-card">
+                    <h3>游戏成就</h3>
+                    <div id="achievements">
+                        <p>新手玩家 - 完成第一关</p>
+                        <p>进阶玩家 - 达到100分</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户详情弹窗 -->
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <h2 id="modalUserName">玩家详情</h2>
+            <div id="userDetails">
+                <!-- 用户详情将通过JS动态填充 -->
+            </div>
+            <button class="btn" id="closeModal">关闭</button>
+        </div>
+    </div>
+
+    <!-- 主题切换开关 -->
+    <div class="theme-switch" id="themeSwitch">
+        <div class="switch-handle"></div>
+    </div>
+
+    <script>
+        // 游戏数据和状态
+        const gameData = {
+            playerName: "玩家1",
+            levels: [
+                { id: 1, name: "新手训练", completed: true, score: 100 },
+                { id: 2, name: "初级挑战", completed: true, score: 150 },
+                { id: 3, name: "进阶任务", completed: false, score: 0, current: true },
+                { id: 4, name: "高手试炼", completed: false },
+                { id: 5, name: "大师之路", completed: false },
+                { id: 6, name: "传奇领域", completed: false },
+                { id: 7, name: "终极考验", completed: false },
+            ],
+            totalScore: 450,
+            lastPlayed: "2023-09-15",
+            playCount: 12,
+            achievements: ["新手玩家", "进阶玩家"]
+        };
+
+        // 排行榜数据
+        const leaderboardData = [
+            { id: 1, name: "顶级玩家", score: 1250, level: 7, avatar: "TP" },
+            { id: 2, name: "游戏达人", score: 980, level: 6, avatar: "GD" },
+            { id: 3, name: "挑战者", score: 750, level: 5, avatar: "CZ" },
+            { id: 4, name: "普通玩家", score: 450, level: 3, avatar: "PT" },
+            { id: 5, name: "新手入门", score: 250, level: 2, avatar: "XS" }
+        ];
+
+        // IndexedDB封装类
+        class GameDB {
+            constructor() {
+                this.dbName = "GameDatabase";
+                this.storeName = "PlayerData";
+                this.db = null;
+            }
+
+            // 打开数据库
+            async openDB() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, 1);
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            db.createObjectStore(this.storeName, { keyPath: "id" });
+                        }
+                    };
+                    
+                    request.onsuccess = (event) => {
+                        this.db = event.target.result;
+                        resolve(this.db);
+                    };
+                    
+                    request.onerror = (event) => {
+                        console.error("数据库打开失败:", event.target.error);
+                        reject(event.target.error);
+                    };
+                });
+            }
+
+            // 保存游戏数据
+            async saveGameData(data) {
+                if (!this.db) await this.openDB();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], "readwrite");
+                    const store = transaction.objectStore(this.storeName);
+                    
+                    const request = store.put({
+                        id: "currentGame",
+                        data: data,
+                        timestamp: new Date().toISOString()
+                    });
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = (event) => reject(event.target.error);
+                });
+            }
+
+            // 获取游戏数据
+            async getGameData() {
+                if (!this.db) await this.openDB();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], "readonly");
+                    const store = transaction.objectStore(this.storeName);
+                    
+                    const request = store.get("currentGame");
+                    
+                    request.onsuccess = (event) => {
+                        if (event.target.result) {
+                            resolve(event.target.result.data);
+                        } else {
+                            resolve(null);
+                        }
+                    };
+                    
+                    request.onerror = (event) => reject(event.target.error);
+                });
+            }
+
+            // 导出游戏数据
+            async exportData() {
+                const data = await this.getGameData();
+                if (!data) {
+                    alert("没有找到可导出的游戏数据");
+                    return;
+                }
+                
+                const json = JSON.stringify(data, null, 2);
+                const blob = new Blob([json], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `game-data_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            // 导入游戏数据
+            async importData(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    
+                    reader.onload = async (event) => {
+                        try {
+                            const data = JSON.parse(event.target.result);
+                            
+                            // 数据验证
+                            if (!data || !data.playerName || !data.levels) {
+                                throw new Error("无效的游戏数据格式");
+                            }
+                            
+                            await this.saveGameData(data);
+                            resolve(data);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                    
+                    reader.onerror = (event) => reject(reader.error);
+                    reader.readAsText(file);
+                });
+            }
+        }
+
+        // DOM操作类
+        class GameUI {
+            constructor() {
+                this.gameDB = new GameDB();
+                this.init();
+            }
+
+            async init() {
+                // 加载保存的游戏数据
+                const savedData = await this.gameDB.getGameData();
+                if (savedData) {
+                    Object.assign(gameData, savedData);
+                }
+                
+                // 设置事件监听
+                this.setupEventListeners();
+                
+                // 渲染游戏界面
+                this.renderLevels();
+                this.renderLeaderboard();
+                this.updatePlayerInfo();
+            }
+
+            setupEventListeners() {
+                // 选项卡切换
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        document.getElementById('homeContent').style.display = 'none';
+                        document.getElementById('levelsContent').style.display = 'none';
+                        document.getElementById('leaderboardContent').style.display = 'none';
+                        document.getElementById('profileContent').style.display = 'none';
+                        
+                        document.getElementById(`${tab.dataset.tab}Content`).style.display = 'block';
+                    });
+                });
+
+                // 导出按钮
+                document.getElementById('exportBtn').addEventListener('click', () => {
+                    this.gameDB.exportData();
+                });
+
+                // 导入按钮
+                document.getElementById('importBtn').addEventListener('click', () => {
+                    document.getElementById('importFile').click();
+                });
+
+                // 文件选择
+                document.getElementById('importFile').addEventListener('change', async (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    try {
+                        const data = await this.gameDB.importData(file);
+                        Object.assign(gameData, data);
+                        this.renderLevels();
+                        this.renderLeaderboard();
+                        this.updatePlayerInfo();
+                        alert("游戏数据导入成功！");
+                    } catch (error) {
+                        alert(`导入失败: ${error.message}`);
+                    }
+                    event.target.value = '';
+                });
+
+                // 开始游戏按钮
+                document.getElementById('playBtn').addEventListener('click', () => {
+                    const currentLevel = gameData.levels.find(level => level.current);
+                    this.playLevel(currentLevel.id);
+                });
+
+                // 主题切换
+                document.getElementById('themeSwitch').addEventListener('click', () => {
+                    document.body.classList.toggle('dark-mode');
+                });
+
+                // 关闭模态框
+                document.getElementById('closeModal').addEventListener('click', () => {
+                    document.getElementById('userModal').classList.remove('active');
+                });
+            }
+
+            renderLevels() {
+                const container = document.getElementById('levelContainer');
+                container.innerHTML = '';
+                
+                gameData.levels.forEach(level => {
+                    const levelCard = document.createElement('div');
+                    levelCard.className = 'level-card';
+                    if (level.completed) levelCard.classList.add('completed');
+                    if (level.current) levelCard.classList.add('current');
+                    
+                    levelCard.innerHTML = `
+                        <h3>${level.id}</h3>
+                        <p>${level.name}</p>
+                        ${level.completed ? `<p>得分: ${level.score}</p>` : ''}
+                    `;
+                    
+                    levelCard.addEventListener('click', () => this.playLevel(level.id));
+                    container.appendChild(levelCard);
+                });
+                
+                // 更新进度
+                const unlockedLevels = gameData.levels.filter(l => l.completed).length;
+                document.getElementById('unlockedLevels').textContent = unlockedLevels;
+                document.getElementById('globalProgress').style.width = `${(unlockedLevels / gameData.levels.length) * 100}%`;
+            }
+
+            renderLeaderboard() {
+                const container = document.getElementById('leaderboardList');
+                container.innerHTML = '';
+                
+                leaderboardData.forEach((player, index) => {
+                    const item = document.createElement('li');
+                    item.className = 'leaderboard-item';
+                    
+                    item.innerHTML = `
+                        <div class="rank">${index + 1}</div>
+                        <div class="profile">
+                            <div class="avatar">${player.avatar}</div>
+                            <div class="user-info">
+                                <h3>${player.name}</h3>
+                                <p>等级 ${player.level} | 积分 ${player.score}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    item.addEventListener('click', () => this.showUserDetails(player));
+                    container.appendChild(item);
+                });
+            }
+
+            updatePlayerInfo() {
+                document.getElementById('playerName').textContent = gameData.playerName;
+                document.getElementById('lastPlayed').textContent = gameData.lastPlayed;
+                document.getElementById('totalScore').textContent = gameData.totalScore;
+                
+                const maxLevel = Math.max(...gameData.levels.map(l => l.completed ? l.id : 0));
+                document.getElementById('maxLevel').textContent = maxLevel;
+                
+                document.getElementById('playCount').textContent = gameData.playCount;
+            }
+
+            async playLevel(levelId) {
+                const level = gameData.levels.find(l => l.id === levelId);
+                
+                if (!level.completed && level.id > 1) {
+                    const prevLevel = gameData.levels.find(l => l.id === levelId - 1);
+                    if (!prevLevel.completed) {
+                        alert("请先完成前一关卡！");
+                        return;
+                    }
+                }
+                
+                // 模拟游戏过程
+                const scoreEarned = Math.floor(Math.random() * 100) + 50;
+                
+                // 更新游戏数据
+                level.completed = true;
+                level.score = scoreEarned;
+                level.current = false;
+                
+                gameData.totalScore += scoreEarned;
+                gameData.lastPlayed = new Date().toLocaleDateString();
+                gameData.playCount++;
+                
+                // 设置下一关为当前关卡
+                const nextLevel = gameData.levels.find(l => l.id === levelId + 1);
+                if (nextLevel) {
+                    nextLevel.current = true;
+                }
+                
+                // 保存游戏数据
+                await this.gameDB.saveGameData(gameData);
+                
+                // 更新UI
+                this.renderLevels();
+                this.updatePlayerInfo();
+                
+                alert(`恭喜完成 ${level.name}！获得 ${scoreEarned} 分`);
+            }
+
+            showUserDetails(user) {
+                document.getElementById('modalUserName').textContent = user.name;
+                
+                const details = document.getElementById('userDetails');
+                details.innerHTML = `
+                    <div class="profile" style="margin-bottom: 20px;">
+                        <div class="avatar" style="width: 60px; height: 60px; font-size: 1.5rem;">${user.avatar}</div>
+                        <div>
+                            <h3>${user.name}</h3>
+                            <p>全球排名: #${leaderboardData.findIndex(p => p.id === user.id) + 1}</p>
+                        </div>
+                    </div>
+                    <div class="stats">
+                        <p>等级: ${user.level}</p>
+                        <p>积分: ${user.score}</p>
+                        <p>游戏进度: ${Math.round((user.level / 7) * 100)}%</p>
+                    </div>
+                `;
+                
+                document.getElementById('userModal').classList.add('active');
+            }
+        }
+
+        // 初始化游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameUI = new GameUI();
+        });
+    </script>
+</body>
+</html>
