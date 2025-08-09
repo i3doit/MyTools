@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar Quest - 消灭星星</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'SF Pro Display', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        :root {
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --text-color: #ffffff;
+            --primary-color: #0a84ff;
+            --accent-color: #ff375f;
+            --success-color: #32d74b;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --border-radius: 16px;
+            --transition: all 0.4s cubic-bezier(0.2, 0.8, 0.4, 1);
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: var(--text-color);
+            overflow-x: hidden;
+            transition: background 0.8s ease;
+        }
+
+        body.day-mode {
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --text-color: #1c1c1e;
+            background: linear-gradient(135deg, #e4f1fe, #c5e3f6);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* 毛玻璃效果 */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow);
+            border-radius: var(--border-radius);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 32px;
+            transform: rotate(10deg);
+            color: #ffd60a;
+        }
+
+        .logo-text {
+            font-size: 3.2rem;
+            background: linear-gradient(to right, #ff9a9e, #fad0c4, #fad0c4, #a1c4fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            margin-top: 5px;
+            letter-spacing: 0.3px;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+            background: var(--card-bg);
+            transition: var(--transition);
+        }
+
+        .day-mode .game-info {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .info-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .info-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 2rem;
+            font-weight: 700;
+            transition: transform 0.3s ease;
+        }
+
+        .info-value.updated {
+            transform: scale(1.2);
+            color: var(--success-color);
+        }
+
+        .goal-passed {
+            display: inline-block;
+            background: var(--success-color);
+            color: white;
+            font-size: 0.7rem;
+            padding: 3px 10px;
+            border-radius: 10px;
+            margin-left: 8px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.9; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .game-container {
+            position: relative;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 25px;
+            transition: var(--transition);
+        }
+
+        .stars-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 6px;
+            margin: 0 auto;
+            max-width: 100%;
+            aspect-ratio: 1/1;
+        }
+
+        .star-cell {
+            position: relative;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.3s;
+            box-shadow: 
+                inset 0 -4px 10px rgba(0, 0, 0, 0.25),
+                0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .star {
+            position: absolute;
+            width: 70%;
+            height: 70%;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 0 15px rgba(255, 255, 255, 0.7),
+                inset 0 -5px 12px rgba(0, 0, 0, 0.3);
+            transform: rotate(-25deg);
+        }
+
+        /* 立体星星效果 */
+        .star::before {
+            content: '';
+            position: absolute;
+            top: -15%;
+            left: 15%;
+            width: 60%;
+            height: 60%;
+            background: inherit;
+            border-radius: 50%;
+            filter: brightness(1.4);
+            opacity: 0.6;
+            transform: rotate(15deg);
+        }
+
+        /* 优化星星配色 */
+        .star.red { background: linear-gradient(135deg, #ff375f, #ff1a44); }
+        .star.yellow { background: linear-gradient(135deg, #ffd60a, #ffcc00); }
+        .star.green { background: linear-gradient(135deg, #32d74b, #28cd41); }
+        .star.purple { background: linear-gradient(135deg, #bf5af2, #a04ddd); }
+        .star.blue { background: linear-gradient(135deg, #0a84ff, #0071e3); }
+
+        .empty-cell {
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .day-mode .empty-cell {
+            background: rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .score-popup {
+            position: absolute;
+            background: linear-gradient(135deg, #ff9a9e, #a1c4fd);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(0);
+            transition: opacity 0.3s, transform 0.5s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .score-popup.show {
+            opacity: 1;
+            transform: translateY(-40px);
+        }
+
+        .feedback-text {
+            position: absolute;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #ffd60a;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(0) scale(0.5);
+            transition: opacity 0.3s, transform 0.5s;
+            text-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .feedback-text.visible {
+            opacity: 1;
+            transform: translateY(-50px) scale(1);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            gap: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: var(--border-radius);
+            background: linear-gradient(135deg, #0a84ff, #0071e3);
+            color: white;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            letter-spacing: 0.3px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn.reset {
+            background: linear-gradient(135deg, #ff375f, #ff1a44);
+        }
+
+        .btn.theme {
+            background: linear-gradient(135deg, #bf5af2, #a04ddd);
+        }
+
+        .btn.import-export {
+            background: linear-gradient(135deg, #32d74b, #28cd41);
+        }
+
+        .level-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .level-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #2c2c2e, #3a3a3c);
+            color: #f5f5f7;
+            font-weight: 600;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: var(--transition);
+            font-size: 1.1rem;
+        }
+
+        .day-mode .level-btn {
+            background: linear-gradient(135deg, #e5e5ea, #d1d1d6);
+            color: #2c2c2e;
+        }
+
+        .level-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .level-btn.current {
+            background: linear-gradient(135deg, #ffd60a, #ffcc00);
+            color: #1c1c1e;
+            transform: scale(1.15);
+            box-shadow: 0 0 20px rgba(255, 214, 10, 0.4);
+        }
+
+        .level-btn.locked {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .level-btn.completed {
+            background: linear-gradient(135deg, #32d74b, #28cd41);
+            color: white;
+        }
+
+        .idle-hint {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1rem;
+            opacity: 0.8;
+            height: 22px;
+            transition: opacity 0.5s ease;
+        }
+
+        .idle-hint.highlight {
+            opacity: 1;
+            color: #0a84ff;
+            animation: highlight 2s ease-in-out;
+        }
+
+        @keyframes highlight {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2c2c2e, #3a3a3c);
+            padding: 35px;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.4, 1);
+        }
+
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .day-mode .modal-content {
+            background: linear-gradient(135deg, #f2f2f7, #e5e5ea);
+        }
+
+        .modal h2 {
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            color: #ffd60a;
+            font-weight: 700;
+        }
+
+        .day-mode .modal h2 {
+            color: #0a84ff;
+        }
+
+        .modal p {
+            margin-bottom: 25px;
+            font-size: 1.2rem;
+            line-height: 1.5;
+            opacity: 0.9;
+        }
+
+        .modal-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-btn {
+            padding: 15px;
+            border: none;
+            border-radius: var(--border-radius);
+            background: linear-gradient(135deg, #0a84ff, #0071e3);
+            color: white;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-3px);
+        }
+
+        .modal-btn.restart {
+            background: linear-gradient(135deg, #ff375f, #ff1a44);
+        }
+
+        .import-export-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            background: var(--card-bg);
+        }
+
+        .data-control {
+            display: flex;
+            gap: 15px;
+        }
+
+        .file-input-container {
+            position: relative;
+            flex: 1;
+        }
+
+        .file-input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-label {
+            display: block;
+            padding: 12px 0;
+            background: linear-gradient(135deg, #32d74b, #28cd41);
+            border-radius: var(--border-radius);
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            transition: var(--transition);
+        }
+
+        .file-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .day-mode .file-label {
+            color: white;
+        }
+
+        /* 烟花特效 */
+        .firework {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* 开关控件 */
+        .switch-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #32d74b;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .switch-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 500px) {
+            .logo-text {
+                font-size: 2.5rem;
+            }
+            
+            .info-value {
+                font-size: 1.8rem;
+            }
+            
+            .btn {
+                padding: 12px;
+                font-size: 0.95rem;
+            }
+            
+            .level-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 1rem;
+            }
+            
+            .modal-content {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body class="night-mode">
+    <div class="container glass">
+        <header>
+            <div class="logo">
+                <span class="logo-icon">⭐</span>
+                <h1 class="logo-text">Stellar Quest</h1>
+            </div>
+            <p class="subtitle">挑战极限，超越星辰！</p>
+        </header>
+        
+        <div class="switch-container">
+            <div class="switch-label">
+                <span>音效</span>
+                <label class="switch">
+                    <input type="checkbox" id="sound-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="switch-label">
+                <span>提示</span>
+                <label class="switch">
+                    <input type="checkbox" id="hint-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="game-info glass">
+            <div class="info-item">
+                <div class="info-label">当前关卡</div>
+                <div class="info-value" id="level">1</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">目标分数</div>
+                <div class="info-value" id="target-score">1000<span id="passed-indicator" class="goal-passed">通关</span></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">当前得分</div>
+                <div class="info-value" id="current-score">0</div>
+            </div>
+        </div>
+        
+        <div class="game-container glass">
+            <div class="stars-grid" id="stars-grid"></div>
+            <div class="idle-hint" id="idle-hint"></div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn reset" id="reset-btn">重置游戏</button>
+            <button class="btn theme" id="theme-btn">切换白天模式</button>
+        </div>
+        
+        <div class="level-selector" id="level-container"></div>
+        
+        <!-- 数据管理模块 -->
+        <div class="import-export-container glass">
+            <div class="controls">
+                <button class="btn import-export" id="export-btn">导出游戏数据</button>
+                <div class="file-input-container">
+                    <input type="file" id="import-input" class="file-input" accept=".json">
+                    <label for="import-input" class="file-label">导入游戏数据</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 通关弹窗 -->
+    <div class="modal" id="level-modal">
+        <div class="modal-content">
+            <h2>恭喜通关!</h2>
+            <p>您已成功完成第 <span id="completed-level">1</span> 关</p>
+            <p>获得 <span id="bonus-score">0</span> 分额外奖励</p>
+            <div class="modal-buttons">
+                <button class="modal-btn" id="next-level-btn">进入下一关</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 游戏结束弹窗 -->
+    <div class="modal" id="game-over-modal">
+        <div class="modal-content">
+            <h2>游戏结束</h2>
+            <p>目标分数不足</p>
+            <p>当前得分: <span id="final-score">0</span> / <span id="target-final-score">1000</span></p>
+            <div class="modal-buttons">
+                <button class="modal-btn" id="share-btn">分享助力</button>
+                <button class="modal-btn restart" id="restart-btn">重新开始</button>
+                <button class="modal-btn" id="home-btn">返回主页</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 语音控制器 -->
+    <audio id="great-sound" preload="auto">
+        <source src="data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg">
+    </audio>
+    
+    <audio id="good-sound" preload="auto">
+        <source src="data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg">
+    </audio>
+    
+    <audio id="applause-sound" preload="auto">
+        <source src="data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg">
+    </audio>
+    
+    <script>
+        // 游戏配置
+        const gameConfig = {
+            colors: ['red', 'yellow', 'green', 'purple', 'blue'],
+            cellCount: 10,
+            initLevel: 1,
+            targetScore: 1000,
+            scoreMultipliers: {
+                2: 20,
+                3: 45,
+                4: 80,
+                5: 125,
+                6: 180,
+                7: 245,
+                8: 320,
+                9: 405,
+                10: 500
+            },
+            voiceEnabled: true,
+            hintEnabled: true
+        };
+
+        // 游戏状态
+        const gameState = {
+            level: 1,
+            currentScore: 0,
+            levelScore: 0,
+            selectedStars: [],
+            grid: [],
+            targetScore: gameConfig.targetScore,
+            streak: 0,
+            idleTimer: null,
+            isPlaying: false,
+            gameTheme: 'night',
+            completedLevels: [],
+            maxLevel: 10,
+            lastAudioContext: null,
+            soundEnabled: true,
+            hintEnabled: true
+        };
+
+        // DOM元素
+        const domElements = {
+            grid: document.getElementById('stars-grid'),
+            level: document.getElementById('level'),
+            currentScore: document.getElementById('current-score'),
+            targetScore: document.getElementById('target-score'),
+            passedIndicator: document.getElementById('passed-indicator'),
+            resetBtn: document.getElementById('reset-btn'),
+            themeBtn: document.getElementById('theme-btn'),
+            levelContainer: document.getElementById('level-container'),
+            levelModal: document.getElementById('level-modal'),
+            gameOverModal: document.getElementById('game-over-modal'),
+            nextLevelBtn: document.getElementById('next-level-btn'),
+            shareBtn: document.getElementById('share-btn'),
+            restartBtn: document.getElementById('restart-btn'),
+            homeBtn: document.getElementById('home-btn'),
+            idleHint: document.getElementById('idle-hint'),
+            completedLevel: document.getElementById('completed-level'),
+            bonusScore: document.getElementById('bonus-score'),
+            finalScore: document.getElementById('final-score'),
+            targetFinalScore: document.getElementById('target-final-score'),
+            exportBtn: document.getElementById('export-btn'),
+            importInput: document.getElementById('import-input'),
+            greatSound: document.getElementById('great-sound'),
+            goodSound: document.getElementById('good-sound'),
+            applauseSound: document.getElementById('applause-sound'),
+            soundToggle: document.getElementById('sound-toggle'),
+            hintToggle: document.getElementById('hint-toggle')
+        };
+
+        // 初始化游戏
+        function initGame() {
+            loadGameState();
+            setupAudioContext();
+            renderLevelSelector();
+            createGrid();
+            
+            // 事件监听
+            domElements.resetBtn.addEventListener('click', resetGame);
+            domElements.themeBtn.addEventListener('click', toggleTheme);
+            domElements.nextLevelBtn.addEventListener('click', nextLevel);
+            domElements.shareBtn.addEventListener('click', shareGame);
+            domElements.restartBtn.addEventListener('click', restartGame);
+            domElements.homeBtn.addEventListener('click', () => {
+                domElements.gameOverModal.classList.remove('show');
+            });
+            
+            domElements.exportBtn.addEventListener('click', exportGameData);
+            domElements.importInput.addEventListener('change', importGameData);
+            
+            // 开关事件监听
+            domElements.soundToggle.addEventListener('change', toggleSound);
+            domElements.hintToggle.addEventListener('change', toggleHint);
+            
+            startIdleHint();
+            updateUI();
+        }
+
+        // 设置音频上下文
+        function setupAudioContext() {
+            // 创建一次性的点击事件以解除浏览器对音频的自动播放限制
+            document.body.addEventListener('click', function initAudio() {
+                // 创建一个音频上下文
+                if (!gameState.lastAudioContext && window.AudioContext) {
+                    try {
+                        gameState.lastAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        // 创建无声的音频缓冲区
+                        const buffer = gameState.lastAudioContext.createBuffer(1, 1, 22050);
+                        const source = gameState.lastAudioContext.createBufferSource();
+                        source.buffer = buffer;
+                        source.connect(gameState.lastAudioContext.destination);
+                        source.start(0);
+                    } catch(e) {
+                        console.log('音频上下文创建失败:', e);
+                    }
+                }
+                document.body.removeEventListener('click', initAudio);
+            }, { once: true });
+        }
+
+        // 播放语音
+        function playVoice(type) {
+            if (!gameState.soundEnabled) return;
+            
+            try {
+                let sound;
+                switch(type) {
+                    case 'great':
+                        sound = domElements.greatSound;
+                        break;
+                    case 'good':
+                        sound = domElements.goodSound;
+                        break;
+                    case 'applause':
+                        sound = domElements.applauseSound;
+                        break;
+                    default:
+                        return;
+                }
+                
+                // 重新加载声音以确保每次播放都是从头开始
+                sound.pause();
+                sound.currentTime = 0;
+                sound.play();
+            } catch(e) {
+                console.log('语音播放失败:', e);
+            }
+        }
+
+        // 切换音效
+        function toggleSound() {
+            gameState.soundEnabled = domElements.soundToggle.checked;
+            saveGameState();
+        }
+
+        // 切换提示
+        function toggleHint() {
+            gameState.hintEnabled = domElements.hintToggle.checked;
+            saveGameState();
+            
+            if (!gameState.hintEnabled) {
+                clearTimeout(gameState.idleTimer);
+                domElements.idleHint.textContent = '';
+            } else {
+                resetIdleTimer();
+            }
+        }
+
+        // 加载游戏状态
+        function loadGameState() {
+            const savedGame = localStorage.getItem('stellarQuestGameState');
+            if (savedGame) {
+                try {
+                    const parsed = JSON.parse(savedGame);
+                    gameState.level = parsed.level || 1;
+                    gameState.currentScore = parsed.currentScore || 0;
+                    gameState.levelScore = parsed.levelScore || 0;
+                    gameState.targetScore = parsed.targetScore || calculateLevelTarget(gameState.level);
+                    gameState.gameTheme = parsed.gameTheme || 'night';
+                    gameState.completedLevels = parsed.completedLevels || [];
+                    gameState.maxLevel = parsed.maxLevel || 10;
+                    gameState.soundEnabled = parsed.soundEnabled !== undefined ? parsed.soundEnabled : true;
+                    gameState.hintEnabled = parsed.hintEnabled !== undefined ? parsed.hintEnabled : true;
+                } catch (e) {
+                    console.error('加载游戏状态失败:', e);
+                }
+            }
+            
+            // 应用主题
+            document.body.className = `${gameState.gameTheme}-mode`;
+            domElements.themeBtn.textContent = gameState.gameTheme === 'night' ? 
+                '切换白天模式' : '切换夜晚模式';
+            
+            // 设置开关状态
+            domElements.soundToggle.checked = gameState.soundEnabled;
+            domElements.hintToggle.checked = gameState.hintEnabled;
+        }
+
+        // 保存游戏状态
+        function saveGameState() {
+            const gameStateData = {
+                level: gameState.level,
+                currentScore: gameState.currentScore,
+                levelScore: gameState.levelScore,
+                targetScore: gameState.targetScore,
+                gameTheme: gameState.gameTheme,
+                completedLevels: gameState.completedLevels,
+                maxLevel: gameState.maxLevel,
+                soundEnabled: gameState.soundEnabled,
+                hintEnabled: gameState.hintEnabled
+            };
+            
+            localStorage.setItem('stellarQuestGameState', JSON.stringify(gameStateData));
+        }
+
+        // 导出游戏数据
+        function exportGameData() {
+            const gameStateData = {
+                level: gameState.level,
+                currentScore: gameState.currentScore,
+                levelScore: gameState.levelScore,
+                targetScore: gameState.targetScore,
+                gameTheme: gameState.gameTheme,
+                completedLevels: gameState.completedLevels,
+                maxLevel: gameState.maxLevel,
+                soundEnabled: gameState.soundEnabled,
+                hintEnabled: gameState.hintEnabled
+            };
+            
+            const dataStr = JSON.stringify(gameStateData);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `stellar_quest_backup_${new Date().toISOString().slice(0, 10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+
+        // 导入游戏数据
+        function importGameData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    // 验证数据有效性
+                    if (!importedData.level || !importedData.currentScore) {
+                        alert('无效的游戏数据文件');
+                        return;
+                    }
+                    
+                    // 更新游戏状态
+                    gameState.level = importedData.level;
+                    gameState.currentScore = importedData.currentScore;
+                    gameState.levelScore = importedData.levelScore || 0;
+                    gameState.targetScore = importedData.targetScore || calculateLevelTarget(gameState.level);
+                    gameState.gameTheme = importedData.gameTheme || 'night';
+                    gameState.completedLevels = importedData.completedLevels || [];
+                    gameState.maxLevel = importedData.maxLevel || 10;
+                    gameState.soundEnabled = importedData.soundEnabled !== undefined ? importedData.soundEnabled : true;
+                    gameState.hintEnabled = importedData.hintEnabled !== undefined ? importedData.hintEnabled : true;
+                    
+                    // 应用主题
+                    document.body.className = `${gameState.gameTheme}-mode`;
+                    domElements.themeBtn.textContent = gameState.gameTheme === 'night' ? 
+                        '切换白天模式' : '切换夜晚模式';
+                    
+                    // 设置开关状态
+                    domElements.soundToggle.checked = gameState.soundEnabled;
+                    domElements.hintToggle.checked = gameState.hintEnabled;
+                    
+                    // 重新渲染游戏
+                    createGrid();
+                    renderLevelSelector();
+                    updateUI();
+                    
+                    // 关闭所有弹窗
+                    domElements.levelModal.classList.remove('show');
+                    domElements.gameOverModal.classList.remove('show');
+                    
+                    saveGameState();
+                } catch (e) {
+                    console.error('导入游戏数据失败:', e);
+                    alert('无法解析游戏数据文件');
+                }
+            };
+            reader.readAsText(file);
+            
+            // 重置输入框以允许再次上传相同文件
+            event.target.value = '';
+        }
+
+        // 创建游戏网格
+        function createGrid() {
+            domElements.grid.innerHTML = '';
+            const gridSize = gameConfig.cellCount * gameConfig.cellCount;
+            gameState.grid = [];
+            
+            for (let i = 0; i < gridSize; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'star-cell';
+                cell.dataset.index = i;
+                
+                // 随机分配星星颜色
+                const colorIndex = Math.floor(Math.random() * gameConfig.colors.length);
+                const colorClass = gameConfig.colors[colorIndex];
+                gameState.grid.push(colorClass);
+                
+                const star = document.createElement('div');
+                star.className = `star ${colorClass}`;
+                cell.appendChild(star);
+                
+                cell.addEventListener('click', () => handleCellClick(i, colorClass));
+                domElements.grid.appendChild(cell);
+            }
+            
+            gameState.isPlaying = true;
+            resetIdleTimer();
+        }
+
+        // 处理星星点击
+        function handleCellClick(index, color) {
+            if (!gameState.isPlaying) return;
+            
+            clearTimeout(gameState.idleTimer);
+            resetIdleTimer();
+            
+            // 重置选中状态
+            clearSelection();
+            
+            // 找出所有相邻的相同颜色星星
+            findSameColorNeighbors(index, color);
+            
+            if (gameState.selectedStars.length < 2) {
+                gameState.selectedStars = [];
+                return;
+            }
+            
+            // 消除星星
+            removeStars();
+            
+            // 计算得分
+            const score = calculateScore(gameState.selectedStars.length);
+            showScorePopup(score);
+            
+            // 分数反馈
+            showFeedback(gameState.selectedStars.length);
+            
+            // 更新分数
+            gameState.currentScore += score;
+            gameState.levelScore += score;
+            
+            // 应用重力效果（星星下落）
+            applyGravity();
+            
+            // 检查游戏状态
+            if (checkLevelPassed()) {
+                handleLevelPassed();
+            } else if (checkNoMoves()) {
+                handleNoMoves();
+            }
+            
+            // 更新UI
+            updateUI();
+            
+            // 重置选择
+            gameState.selectedStars = [];
+        }
+
+        // 应用重力效果（星星下落）
+        function applyGravity() {
+            const cells = document.querySelectorAll('.star-cell');
+            const gridSize = gameConfig.cellCount;
+            
+            // 按列处理
+            for (let col = 0; col < gridSize; col++) {
+                let emptyCells = [];
+                
+                // 从底部向上遍历每一列
+                for (let row = gridSize - 1; row >= 0; row--) {
+                    const index = row * gridSize + col;
+                    const cell = cells[index];
+                    
+                    if (cell.classList.contains('empty-cell')) {
+                        // 记录空单元格位置
+                        emptyCells.push(index);
+                    } else if (emptyCells.length > 0) {
+                        // 找到第一个可移动的星星
+                        const targetIndex = emptyCells.shift();
+                        const targetCell = cells[targetIndex];
+                        
+                        // 移动星星
+                        const star = cell.querySelector('.star');
+                        if (star) {
+                            // 添加下落动画
+                            star.style.transition = 'transform 0.5s ease';
+                            star.style.transform = 'translateY(0)';
+                            
+                            // 更新DOM
+                            targetCell.innerHTML = '';
+                            targetCell.appendChild(star);
+                            targetCell.classList.remove('empty-cell');
+                            
+                            cell.innerHTML = '';
+                            cell.classList.add('empty-cell');
+                            
+                            // 更新游戏状态
+                            gameState.grid[targetIndex] = gameState.grid[index];
+                            gameState.grid[index] = null;
+                            
+                            // 重置空单元格列表
+                            emptyCells.push(index);
+                        }
+                    }
+                }
+            }
+            
+            // 处理整列为空的情况（向左移动）
+            let emptyColumns = [];
+            
+            // 找出空列
+            for (let col = 0; col < gridSize; col++) {
+                let isEmpty = true;
+                for (let row = 0; row < gridSize; row++) {
+                    const index = row * gridSize + col;
+                    if (!cells[index].classList.contains('empty-cell')) {
+                        isEmpty = false;
+                        break;
+                    }
+                }
+                if (isEmpty) {
+                    emptyColumns.push(col);
+                }
+            }
+            
+            // 向左移动非空列
+            for (let i = 0; i < emptyColumns.length; i++) {
+                const emptyCol = emptyColumns[i];
+                
+                // 将右边的列向左移动
+                for (let col = emptyCol + 1; col < gridSize; col++) {
+                    for (let row = 0; row < gridSize; row++) {
+                        const srcIndex = row * gridSize + col;
+                        const targetIndex = row * gridSize + (col - 1);
+                        
+                        const srcCell = cells[srcIndex];
+                        const targetCell = cells[targetIndex];
+                        
+                        if (!srcCell.classList.contains('empty-cell')) {
+                            const star = srcCell.querySelector('.star');
+                            if (star) {
+                                // 添加左移动画
+                                star.style.transition = 'transform 0.5s ease';
+                                star.style.transform = 'translateX(0)';
+                                
+                                // 更新DOM
+                                targetCell.innerHTML = '';
+                                targetCell.appendChild(star);
+                                targetCell.classList.remove('empty-cell');
+                                
+                                srcCell.innerHTML = '';
+                                srcCell.classList.add('empty-cell');
+                                
+                                // 更新游戏状态
+                                gameState.grid[targetIndex] = gameState.grid[srcIndex];
+                                gameState.grid[srcIndex] = null;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 查找相邻同色星星
+        function findSameColorNeighbors(index, color) {
+            if (gameState.selectedStars.includes(index)) return;
+            
+            gameState.selectedStars.push(index);
+            
+            // 高亮显示选中的星星
+            const cell = document.querySelector(`.star-cell[data-index="${index}"]`);
+            if (cell) {
+                cell.style.transform = 'scale(1.1)';
+                cell.style.zIndex = '10';
+            }
+            
+            const row = Math.floor(index / gameConfig.cellCount);
+            const col = index % gameConfig.cellCount;
+            
+            // 检查上、下、左、右方向
+            const directions = [
+                {row: row - 1, col}, // 上
+                {row: row + 1, col}, // 下
+                {row, col: col - 1}, // 左
+                {row, col: col + 1}  // 右
+            ];
+            
+            directions.forEach(dir => {
+                if (dir.row >= 0 && dir.row < gameConfig.cellCount && 
+                    dir.col >= 0 && dir.col < gameConfig.cellCount) {
+                    const neighborIndex = dir.row * gameConfig.cellCount + dir.col;
+                    if (gameState.grid[neighborIndex] === color) {
+                        findSameColorNeighbors(neighborIndex, color);
+                    }
+                }
+            });
+        }
+
+        // 清除选中状态
+        function clearSelection() {
+            const cells = document.querySelectorAll('.star-cell');
+            cells.forEach(cell => {
+                cell.style.transform = '';
+                cell.style.zIndex = '';
+            });
+            gameState.selectedStars = [];
+        }
+
+        // 移除星星
+        function removeStars() {
+            gameState.selectedStars.forEach(index => {
+                const cell = document.querySelector(`.star-cell[data-index="${index}"]`);
+                if (cell) {
+                    // 添加移除动画
+                    cell.style.opacity = '0';
+                    cell.style.transform = 'scale(0.8)';
+                    
+                    setTimeout(() => {
+                        cell.innerHTML = '';
+                        cell.classList.add('empty-cell');
+                    }, 200);
+                }
+                gameState.grid[index] = null;
+            });
+        }
+
+        // 计算分数
+        function calculateScore(count) {
+            if (count < 2) return 0;
+            
+            // 基础分数计算
+            let baseScore = gameConfig.scoreMultipliers[count] || 5 * count * (count - 1);
+            
+            // 连击加成
+            if (gameState.streak > 0) {
+                baseScore += Math.floor(baseScore * (gameState.streak * 0.1));
+            }
+            
+            return baseScore;
+        }
+
+        // 显示分数弹窗
+        function showScorePopup(score) {
+            const lastSelected = gameState.selectedStars[Math.floor(gameState.selectedStars.length / 2)];
+            const cell = document.querySelector(`.star-cell[data-index="${lastSelected}"]`);
+            if (!cell) return;
+            
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            popup.textContent = `+${score}`;
+            
+            const rect = cell.getBoundingClientRect();
+            popup.style.top = `${rect.top}px`;
+            popup.style.left = `${rect.left + rect.width / 2}px`;
+            
+            document.body.appendChild(popup);
+            
+            // 显示动画
+            setTimeout(() => {
+                popup.classList.add('show');
+            }, 10);
+            
+            // 移除弹窗
+            setTimeout(() => {
+                popup.remove();
+            }, 1000);
+        }
+
+        // 显示反馈
+        function showFeedback(count) {
+            const centerIndex = gameState.selectedStars[Math.floor(gameState.selectedStars.length / 2)];
+            const cell = document.querySelector(`.star-cell[data-index="${centerIndex}"]`);
+            if (!cell) return;
+            
+            const feedback = document.createElement('div');
+            feedback.className = 'feedback-text';
+            
+            if (count >= 8) {
+                feedback.textContent = '太棒了!';
+                feedback.style.color = '#ffd60a';
+                playVoice('great');
+                gameState.streak++;
+                createFireworks(8); // 增加烟花数量
+            } else if (count >= 5) {
+                feedback.textContent = '好!';
+                feedback.style.color = '#32d74b';
+                playVoice('good');
+                gameState.streak++;
+                createConfetti();
+            } else {
+                playVoice('click');
+                gameState.streak = 0;
+            }
+            
+            const rect = cell.getBoundingClientRect();
+            feedback.style.top = `${rect.top}px`;
+            feedback.style.left = `${rect.left + rect.width / 2}px`;
+            
+            document.body.appendChild(feedback);
+            
+            // 显示动画
+            setTimeout(() => {
+                feedback.classList.add('visible');
+            }, 10);
+            
+            // 移除反馈
+            setTimeout(() => {
+                feedback.remove();
+            }, 1000);
+        }
+
+        // 检查关卡通过
+        function checkLevelPassed() {
+            return gameState.currentScore >= gameState.targetScore;
+        }
+
+        // 处理关卡通过
+        function handleLevelPassed() {
+            if (!gameState.completedLevels.includes(gameState.level)) {
+                gameState.completedLevels.push(gameState.level);
+                playVoice('applause');
+            }
+            
+            // 计算奖励
+            const bonus = 500 + gameState.level * 100;
+            gameState.currentScore += bonus;
+            
+            // 更新通关指示器
+            domElements.passedIndicator.style.display = 'inline-block';
+            
+            // 显示通关弹窗
+            domElements.completedLevel.textContent = gameState.level;
+            domElements.bonusScore.textContent = bonus;
+            domElements.levelModal.classList.add('show');
+            
+            // 更新最大关卡
+            if (gameState.level === gameState.maxLevel) {
+                gameState.maxLevel++;
+            }
+            
+            // 保存状态
+            saveGameState();
+        }
+
+        // 下一关
+        function nextLevel() {
+            gameState.level++;
+            gameState.levelScore = 0;
+            gameState.targetScore = calculateLevelTarget(gameState.level);
+            gameState.streak = 0;
+            
+            domElements.levelModal.classList.remove('show');
+            domElements.passedIndicator.style.display = 'none';
+            
+            updateUI();
+            renderLevelSelector();
+            createGrid();
+        }
+
+        // 计算关卡目标分数
+        function calculateLevelTarget(level) {
+            return Math.round(gameConfig.targetScore * Math.pow(1.4, level - 1));
+        }
+
+        // 检查是否无路可走
+        function checkNoMoves() {
+            // 简化逻辑：如果剩余星星少于10则判定为无路可走
+            const remaining = gameState.grid.filter(Boolean).length;
+            return remaining > 0 && remaining < 10;
+        }
+
+        // 处理无路可走
+        function handleNoMoves() {
+            const remaining = gameState.grid.filter(Boolean).length;
+            let bonus = 0;
+            
+            // 计算额外奖励
+            if (remaining === 0) {
+                bonus = 2000;
+            } else {
+                bonus = (10 - remaining) * 100;
+            }
+            
+            gameState.currentScore += bonus;
+            showScorePopup(bonus);
+            
+            // 如果达到目标分数则通关
+            if (checkLevelPassed()) {
+                handleLevelPassed();
+            } else {
+                // 显示游戏结束弹窗
+                domElements.finalScore.textContent = gameState.currentScore;
+                domElements.targetFinalScore.textContent = gameState.targetScore;
+                domElements.gameOverModal.classList.add('show');
+            }
+            
+            updateUI();
+        }
+
+        // 更新UI
+        function updateUI() {
+            const levelEl = domElements.level;
+            const scoreEl = domElements.currentScore;
+            
+            levelEl.textContent = gameState.level;
+            domElements.targetScore.textContent = gameState.targetScore;
+            
+            // 添加分数更新动画
+            scoreEl.textContent = gameState.currentScore;
+            scoreEl.classList.add('updated');
+            setTimeout(() => {
+                scoreEl.classList.remove('updated');
+            }, 300);
+            
+            // 隐藏通关指示器如果未通关
+            if (!checkLevelPassed()) {
+                domElements.passedIndicator.style.display = 'none';
+            }
+            
+            saveGameState();
+        }
+
+        // 重置游戏
+        function resetGame() {
+            gameState.level = 1;
+            gameState.currentScore = 0;
+            gameState.levelScore = 0;
+            gameState.targetScore = gameConfig.targetScore;
+            gameState.streak = 0;
+            gameState.completedLevels = [];
+            
+            domElements.passedIndicator.style.display = 'none';
+            createGrid();
+            updateUI();
+            renderLevelSelector();
+        }
+
+        // 重新开始游戏
+        function restartGame() {
+            resetGame();
+            domElements.gameOverModal.classList.remove('show');
+        }
+
+        // 分享游戏
+        function shareGame() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Stellar Quest',
+                    text: `我在 Stellar Quest 消灭星星游戏中达到了 ${gameState.currentScore} 分！`,
+                    url: window.location.href
+                }).catch(console.error);
+            } else {
+                alert(`分享功能不可用，请手动复制链接：${window.location.href}`);
+            }
+            domElements.gameOverModal.classList.remove('show');
+        }
+
+        // 切换主题
+        function toggleTheme() {
+            gameState.gameTheme = gameState.gameTheme === 'night' ? 'day' : 'night';
+            document.body.className = `${gameState.gameTheme}-mode`;
+            domElements.themeBtn.textContent = gameState.gameTheme === 'night' ? 
+                '切换白天模式' : '切换夜晚模式';
+            saveGameState();
+        }
+
+        // 创建等级选择器
+        function renderLevelSelector() {
+            domElements.levelContainer.innerHTML = '';
+            
+            for (let i = 1; i <= gameState.maxLevel; i++) {
+                const button = document.createElement('button');
+                button.className = 'level-btn';
+                button.textContent = i;
+                
+                if (i === gameState.level) {
+                    button.classList.add('current');
+                } else if (i > gameState.level && !gameState.completedLevels.includes(i)) {
+                    button.classList.add('locked');
+                    button.disabled = true;
+                } else if (gameState.completedLevels.includes(i)) {
+                    button.classList.add('completed');
+                }
+                
+                button.addEventListener('click', () => {
+                    if (i !== gameState.level && (i <= gameState.level || gameState.completedLevels.includes(i))) {
+                        gameState.level = i;
+                        gameState.levelScore = 0;
+                        gameState.targetScore = calculateLevelTarget(gameState.level);
+                        createGrid();
+                        updateUI();
+                        renderLevelSelector();
+                    } else {
+                        alert('请先完成当前关卡!');
+                    }
+                });
+                
+                domElements.levelContainer.appendChild(button);
+            }
+        }
+
+        // 空闲提示
+        function startIdleHint() {
+            resetIdleTimer();
+        }
+
+        // 重置空闲计时器
+        function resetIdleTimer() {
+            clearTimeout(gameState.idleTimer);
+            domElements.idleHint.textContent = '';
+            domElements.idleHint.classList.remove('highlight');
+            
+            if (gameState.hintEnabled) {
+                gameState.idleTimer = setTimeout(() => {
+                    showIdleHint();
+                }, 15000); // 15秒无操作
+            }
+        }
+
+        // 显示空闲提示
+        function showIdleHint() {
+            if (!gameState.hintEnabled) return;
+            
+            const hints = [
+                '点击相邻的同色星星进行消除',
+                '连击会获得额外分数！',
+                '组合5个以上星星有额外奖励',
+                '连续消除可获更高分数！',
+                '小贴士：尽量创建更大的星星组合'
+            ];
+            
+            const hint = hints[Math.floor(Math.random() * hints.length)];
+            domElements.idleHint.textContent = hint;
+            domElements.idleHint.classList.add('highlight');
+            
+            // 重置计时器
+            resetIdleTimer();
+        }
+
+        // 创建烟花特效
+        function createFireworks(count) {
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    const firework = document.createElement('div');
+                    firework.className = 'firework';
+                    firework.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 60%)`;
+                    firework.style.left = `${10 + Math.random() * 80}%`;
+                    firework.style.top = `${10 + Math.random() * 80}%`;
+                    
+                    document.body.appendChild(firework);
+                    
+                    // 动画效果
+                    const size = 5 + Math.random() * 10;
+                    firework.animate([
+                        { transform: 'scale(0)', opacity: 1, filter: 'blur(0px)' },
+                        { transform: `scale(${size})`, opacity: 0, filter: 'blur(10px)' }
+                    ], {
+                        duration: 1000 + Math.random() * 1000,
+                        easing: 'ease-out'
+                    });
+                    
+                    // 移除烟花
+                    setTimeout(() => {
+                        firework.remove();
+                    }, 2000);
+                }, i * 300);
+            }
+        }
+
+        // 创建彩色纸屑特效
+        function createConfetti() {
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'firework';
+                    confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 60%)`;
+                    confetti.style.width = '8px';
+                    confetti.style.height = '8px';
+                    confetti.style.borderRadius = '0';
+                    confetti.style.left = `${30 + Math.random() * 40}%`;
+                    confetti.style.top = '0';
+                    
+                    document.body.appendChild(confetti);
+                    
+                    // 动画效果
+                    const animate = confetti.animate([
+                        { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                        { 
+                            transform: `translateY(${window.innerHeight}px) rotate(${360 * (Math.random() > 0.5 ? 3 : -3)}deg)`,
+                            opacity: 0
+                        }
+                    ], {
+                        duration: 2000 + Math.random() * 1000,
+                        easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
+                    });
+                    
+                    // 移除纸屑
+                    animate.onfinish = () => confetti.remove();
+                }, i * 100);
+            }
+        }
+
+        // 初始化游戏
+        window.addEventListener('DOMContentLoaded', initGame);
+        window.addEventListener('beforeunload', saveGameState);
+    </script>
+</body>
+</html>
