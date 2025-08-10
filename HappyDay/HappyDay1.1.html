@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>开心盲盒笑哈哈😄</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Indie+Flower&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4FC0D0;
+            --accent: #FFD93D;
+            --text: #333;
+            --light: #F9F9F8;
+            --glass: rgba(255, 255, 255, 0.85);
+            --shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+            --card-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            --bg-gradient: linear-gradient(135deg, #e0f7fa 0%, #bbdefb 100%);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Comic Neue', cursive;
+        }
+        
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text);
+            transition: background 0.5s;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            color: #FF6B6B;
+            text-shadow: 3px 3px 0px #FFD93D;
+            font-family: 'Indie Flower', cursive;
+            margin-bottom: 10px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        /* 悬浮菜单按钮 */
+        .floating-menu-btn {
+            position: fixed;
+            top: 50%;
+            left: -30px; /* 只露出一半 */
+            transform: translateY(-50%);
+            width: 60px;
+            height: 60px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            z-index: 100;
+            transition: all 0.3s ease;
+            color: white;
+            font-size: 1.8rem;
+        }
+        
+        .floating-menu-btn:hover {
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+        
+        /* 悬浮菜单 */
+        .floating-menu {
+            position: fixed;
+            top: 50%;
+            left: 30px;
+            transform: translateY(-50%);
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 99;
+            transform: translateY(-50%) translateX(-20px);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+        
+        .floating-menu.active {
+            transform: translateY(-50%) translateX(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .menu-btn {
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #FFD6EC 0%, #FFB6C1 100%);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+            font-weight: bold;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .menu-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        
+        .menu-btn.active {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .menu-btn i {
+            font-size: 1.2rem;
+            width: 25px;
+        }
+        
+        .content-section {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            min-height: 400px;
+            display: none;
+        }
+        
+        .content-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease forwards;
+        }
+        
+        /* 转盘样式 */
+        .wheel-container {
+            text-align: center;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .wheel-wrapper {
+            display: inline-block;
+            position: relative;
+            margin: 0 auto 30px;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            transition: background 0.5s;
+        }
+        
+        .wheel {
+            width: 380px;
+            height: 380px;
+            border-radius: 50%;
+            position: relative;
+            transition: transform 3s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .wheel-pattern {
+            width: 100%;
+            height: 100%;
+            background: conic-gradient(
+                var(--wheel-color-1), var(--wheel-color-2), var(--wheel-color-3),
+                var(--wheel-color-4), var(--wheel-color-5), var(--wheel-color-6)
+            );
+        }
+        
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            z-index: 5;
+            cursor: pointer;
+        }
+        
+        .wheel-center-text {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--primary);
+            font-family: 'Indie Flower', cursive;
+        }
+        
+        .wheel-pointer {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+        
+        /* 文案库样式 */
+        .library-container {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .library-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .search-box {
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 2px solid var(--primary);
+            font-size: 1rem;
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(5px);
+        }
+        
+        .sentences-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .sentence-card {
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s;
+            position: relative;
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            cursor: pointer;
+            background: white;
+            animation: cardAppear 0.5s ease forwards;
+        }
+        
+        @keyframes cardAppear {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .sentence-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 25px rgba(0,0,0,0.15);
+        }
+        
+        .sentence-text {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            font-family: 'Indie Flower', cursive;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+        }
+        
+        .card-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .admin-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .sentence-card.admin-mode .admin-actions {
+            opacity: 1;
+        }
+        
+        .action-btn {
+            padding: 8px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .favorite-btn {
+            background: #FFD6EC;
+            color: #aaa;
+        }
+        
+        .favorite-btn.favorited {
+            background: #FF6B6B;
+            color: white;
+        }
+        
+        .color-btn {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .delete-btn {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .edit-btn {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        /* 统计样式 */
+        .stats-container {
+            text-align: center;
+        }
+        
+        .stats-cards {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            min-width: 200px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s;
+            cursor: pointer;
+            animation: cardAppear 0.5s ease forwards;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 25px rgba(0,0,0,0.15);
+        }
+        
+        .stat-value {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 10px 0;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .stat-value:hover {
+            transform: scale(1.1);
+        }
+        
+        .stat-label {
+            font-size: 1.2rem;
+            color: #555;
+        }
+        
+        .detail-container {
+            margin-top: 30px;
+            display: none;
+            animation: fadeIn 0.5s ease forwards;
+        }
+        
+        .detail-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        
+        .import-export {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        /* 分页样式 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .page-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 30px;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+            min-width: 40px;
+            box-shadow: var(--shadow);
+        }
+        
+        .page-btn.active {
+            background: var(--secondary);
+            font-weight: bold;
+        }
+        
+        .page-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease forwards;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: auto;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            animation: modalAppear 0.5s ease forwards;
+        }
+        
+        @keyframes modalAppear {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: #aaa;
+            transition: color 0.3s;
+        }
+        
+        .close-btn:hover {
+            color: var(--primary);
+        }
+        
+        .modal-text {
+            font-size: 1.4rem;
+            line-height: 1.7;
+            font-family: 'Indie Flower', cursive;
+            padding: 20px 0;
+            text-align: center;
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .modal-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow);
+        }
+        
+        .favorite-btn {
+            background: #FFD6EC;
+        }
+        
+        .favorite-btn.favorited {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .new-card-btn {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        /* 编辑弹窗 */
+        .edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .edit-modal.active {
+            display: flex;
+        }
+        
+        .edit-form {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+        
+        .edit-text {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px solid var(--primary);
+            font-size: 1.2rem;
+            font-family: 'Indie Flower', cursive;
+            margin: 20px 0;
+        }
+        
+        .edit-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .confirm-btn {
+            padding: 10px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+        
+        .cancel-btn {
+            padding: 10px 20px;
+            background: #ccc;
+            color: #333;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .wheel {
+                width: 320px;
+                height: 320px;
+            }
+            
+            .wheel-center {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .stats-cards {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .sentence-card {
+                height: 180px;
+            }
+            
+            .floating-menu-btn {
+                left: -25px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .wheel {
+                width: 280px;
+                height: 280px;
+            }
+            
+            .sentences-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .sentence-card {
+                height: auto;
+            }
+            
+            .modal-text {
+                font-size: 1.2rem;
+            }
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+        
+        /* 随机生成的马卡龙色变量 */
+        --wheel-color-1: #FFD6EC;
+        --wheel-color-2: #FFB6C1;
+        --wheel-color-3: #FFD6EC;
+        --wheel-color-4: #FFB6C1;
+        --wheel-color-5: #FFD6EC;
+        --wheel-color-6: #FFB6C1;
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>开心盲盒笑哈哈😄</h1>
+            <p>每天抽一句开心话，让笑容常驻你的脸庞</p>
+        </header>
+        
+        <!-- 悬浮菜单按钮 -->
+        <div class="floating-menu-btn" id="menu-btn">
+            <i class="fas fa-bars"></i>
+        </div>
+        
+        <!-- 悬浮菜单 -->
+        <div class="floating-menu" id="floating-menu">
+            <button class="menu-btn active" data-section="wheel">
+                <i class="fas fa-sync-alt"></i> 开心转盘
+            </button>
+            <button class="menu-btn" data-section="library">
+                <i class="fas fa-book"></i> 开心文库
+            </button>
+            <button class="menu-btn" data-section="add">
+                <i class="fas fa-plus-circle"></i> 新增文案
+            </button>
+            <button class="menu-btn" data-section="stats">
+                <i class="fas fa-chart-pie"></i> 数据统计
+            </button>
+        </div>
+        
+        <!-- 转盘部分 -->
+        <div class="content-section active" id="wheel-section">
+            <div class="wheel-container">
+                <div class="wheel-wrapper">
+                    <div class="wheel" id="wheel">
+                        <div class="wheel-pattern"></div>
+                        <div class="wheel-center">
+                            <div class="wheel-center-text">点击抽奖</div>
+                        </div>
+                    </div>
+                    <div class="wheel-pointer"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 文案库部分 -->
+        <div class="content-section" id="library-section">
+            <div class="library-container">
+                <div class="library-header">
+                    <input type="text" class="search-box" id="search-box" placeholder="搜索开心文案...">
+                    <button class="menu-btn" id="toggle-colors">
+                        <i class="fas fa-gift"></i> 开盲盒
+                    </button>
+                </div>
+                
+                <div class="sentences-grid" id="sentences-container">
+                    <!-- 文案卡片将通过JS动态生成 -->
+                </div>
+                
+                <div class="pagination" id="pagination">
+                    <button class="page-btn" id="prev-btn" disabled><i class="fas fa-chevron-left"></i></button>
+                    <span id="page-info">第 1 页 / 共 1 页</span>
+                    <button class="page-btn" id="next-btn">下一页 <i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 新增文案部分 -->
+        <div class="content-section" id="add-section">
+            <div class="add-container">
+                <div class="add-form">
+                    <div class="form-group">
+                        <label for="new-sentence">写下让你开心的句子：</label>
+                        <textarea id="new-sentence" placeholder="例如：今天的阳光特别温暖，就像你的笑容一样治愈..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>卡片预览：</label>
+                        <div class="color-preview" id="color-preview">
+                            新增后点击卡片可切换颜色
+                        </div>
+                    </div>
+                    
+                    <button class="submit-btn" id="add-sentence-btn">
+                        <i class="fas fa-plus-circle"></i> 添加开心文案
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 统计部分 -->
+        <div class="content-section" id="stats-section">
+            <div class="stats-container">
+                <h2>开心数据统计</h2>
+                
+                <div class="stats-cards">
+                    <div class="stat-card" id="total-card">
+                        <div class="stat-value" id="total-count">100</div>
+                        <div class="stat-label">总文案数</div>
+                    </div>
+                    
+                    <div class="stat-card" id="favorites-card">
+                        <div class="stat-value" id="favorites-count">0</div>
+                        <div class="stat-label">收藏总数</div>
+                    </div>
+                </div>
+                
+                <div class="detail-container" id="total-detail">
+                    <h3 class="detail-title">所有开心文案</h3>
+                    <div class="sentences-grid" id="all-sentences-list">
+                        <!-- 所有文案卡片将通过JS动态生成 -->
+                    </div>
+                </div>
+                
+                <div class="detail-container" id="favorites-detail">
+                    <h3 class="detail-title">收藏的开心文案</h3>
+                    <div class="sentences-grid" id="favorites-list">
+                        <!-- 收藏的文案卡片将通过JS动态生成 -->
+                    </div>
+                </div>
+                
+                <div class="import-export">
+                    <button class="menu-btn" id="export-btn">
+                        <i class="fas fa-file-export"></i> 导出数据
+                    </button>
+                    <button class="menu-btn" id="import-btn">
+                        <i class="fas fa-file-import"></i> 导入数据
+                    </button>
+                    <input type="file" id="import-file" accept=".json" style="display: none;">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 结果弹窗 -->
+    <div class="modal" id="result-modal">
+        <div class="modal-content">
+            <div class="modal-text" id="result-text"></div>
+            <div class="modal-actions">
+                <button class="modal-btn favorite-btn" id="modal-favorite-btn" title="收藏">
+                    <i class="far fa-heart"></i>
+                </button>
+                <button class="modal-btn new-card-btn" id="modal-new-btn" title="再抽一次">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 编辑弹窗 -->
+    <div class="edit-modal" id="edit-modal">
+        <div class="edit-form">
+            <button class="close-btn" id="close-edit">&times;</button>
+            <h2>编辑开心文案</h2>
+            <textarea class="edit-text" id="edit-text"></textarea>
+            <div class="edit-actions">
+                <button class="confirm-btn" id="confirm-edit">确认修改</button>
+                <button class="cancel-btn" id="cancel-edit">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始开心文案库
+        const initialSentences = [
+            "今天的阳光特别温暖，就像你的笑容一样治愈",
+            "世界上有那么多美好的事物，而你是其中最美好的一个",
+            "每一个困难都是一次成长的机会，你已经做得很棒了",
+            "你的存在本身就是一个奇迹，值得被庆祝",
+            "深呼吸，感受此刻的美好，一切都很好",
+            "即使是最小的进步，也值得为自己骄傲",
+            "你并不孤单，有人在乎你，有人爱你",
+            "每一天都是全新的开始，充满了无限可能",
+            "你的笑容有治愈世界的力量",
+            "记住，你是独一无二的存在，无可替代",
+            "生活中的小确幸，像星星一样点缀着你的每一天",
+            "你值得拥有快乐和幸福，就像花儿值得拥有阳光",
+            "每一次挑战都在让你变得更强大",
+            "给自己一个拥抱，感谢自己一直以来的努力",
+            "乌云终将散去，阳光总会重新照耀",
+            "你比自己想象的要坚强得多",
+            "美好的事物正在向你走来，请保持期待",
+            "你是自己人生的主角，编写属于自己的精彩故事",
+            "感受自己的心跳，那是生命最动听的节奏",
+            "每一个结束都是新旅程的开始",
+            "小小的善意可以改变世界，从对自己善良开始",
+            "你不需要完美，只需要真实地做自己",
+            "每一次呼吸都是新的开始",
+            "你的价值不因任何事而改变，你本身就足够珍贵",
+            "向前看，美好的未来在等着你",
+            "今天可能很难，但你已经度过了100%的昨天",
+            "你的感受很重要，你的声音值得被听见",
+            "给自己一点时间，给自己一点空间，慢慢来",
+            "每一次跌倒都是为了更坚定地站起来",
+            "你是勇敢的，你是坚强的，你正在前进",
+            "星星即使在最黑暗的夜晚也会闪耀，就像你一样",
+            "你的旅程是独特的，按照自己的节奏前进",
+            "每一个微笑都是送给世界的礼物",
+            "生命中最美好的事物往往是最简单的",
+            "你是自己生命中的光，照亮前方的道路",
+            "给自己一个微笑，你已经做得很好了",
+            "希望就像阳光，即使看不到，它依然存在",
+            "你的故事还没有结束，精彩的章节还在后面",
+            "每一次努力都在为未来的成功铺路",
+            "今天是你余生的第一天，让它变得有意义",
+            "即使是最小的步伐，也是前进的方向",
+            "你拥有改变自己生活的力量",
+            "爱自己是最重要的旅程，你值得被爱",
+            "每一次尝试都是勇敢的表现",
+            "你的潜力无限大，远超你的想象",
+            "美好正在向你靠近，请保持开放的心态",
+            "你是被宇宙眷顾的孩子",
+            "每一次呼吸都在提醒你，生命是珍贵的礼物",
+            "给自己一点温柔，就像对待最好的朋友",
+            "你的存在让这个世界变得更美好",
+            "即使感到迷茫，你仍然在正确的道路上",
+            "每一次日出都是新的机会，新的希望",
+            "你是自己生命中的英雄",
+            "困难只是暂时的，而你的力量是永恒的",
+            "你比自己想象的要勇敢得多",
+            "每一天都是重新开始的机会",
+            "你的价值不需要他人的认可来证明",
+            "每一个微笑都是胜利的标志",
+            "你的内心有足够的力量面对一切",
+            "美好的事物需要时间，请耐心等待",
+            "你正在成为最好的自己",
+            "每一次努力都在创造奇迹",
+            "你的故事正在书写中，充满无限可能",
+            "即使感到脆弱，那也是力量的一部分",
+            "你是被爱包围的，即使有时感觉不到",
+            "每一个结束都预示着新的开始",
+            "你的旅程独一无二，值得被珍视",
+            "给自己一个拥抱，你已经做得很好了",
+            "希望是黑暗中的灯塔，指引你前行",
+            "你比想象中更坚强",
+            "挑战塑造更好的你",
+            "你的存在就是美好",
+            "感受此刻的平静与安宁"
+        ];
+
+        // 数据管理
+        class HappinessData {
+            constructor() {
+                this.sentences = [];
+                this.currentPage = 1;
+                this.itemsPerPage = 10;
+                this.load();
+            }
+            
+            load() {
+                const savedData = localStorage.getItem('happinessData');
+                if (savedData) {
+                    const parsedData = JSON.parse(savedData);
+                    this.sentences = parsedData.sentences;
+                } else {
+                    // 初始化数据
+                    this.sentences = initialSentences.map((text, index) => ({
+                        id: index + 1,
+                        text: text,
+                        isFavorite: false,
+                        color: this.getRandomPastelColor(),
+                        createdAt: Date.now() - (initialSentences.length - index) * 1000
+                    }));
+                    this.save();
+                }
+            }
+            
+            save() {
+                const data = {
+                    sentences: this.sentences
+                };
+                localStorage.setItem('happinessData', JSON.stringify(data));
+            }
+            
+            addSentence(text) {
+                const newSentence = {
+                    id: Date.now(),
+                    text: text,
+                    isFavorite: false,
+                    color: this.getRandomPastelColor(),
+                    createdAt: Date.now()
+                };
+                this.sentences.unshift(newSentence);
+                this.save();
+                return newSentence;
+            }
+            
+            toggleFavorite(id) {
+                const sentence = this.sentences.find(s => s.id === id);
+                if (sentence) {
+                    sentence.isFavorite = !sentence.isFavorite;
+                    this.save();
+                    return sentence.isFavorite;
+                }
+                return false;
+            }
+            
+            updateColor(id) {
+                const sentence = this.sentences.find(s => s.id === id);
+                if (sentence) {
+                    sentence.color = this.getRandomPastelColor();
+                    this.save();
+                    return sentence.color;
+                }
+                return null;
+            }
+            
+            deleteSentence(id) {
+                const index = this.sentences.findIndex(s => s.id === id);
+                if (index !== -1) {
+                    this.sentences.splice(index, 1);
+                    this.save();
+                    return true;
+                }
+                return false;
+            }
+            
+            updateSentence(id, text) {
+                const sentence = this.sentences.find(s => s.id === id);
+                if (sentence) {
+                    sentence.text = text;
+                    sentence.createdAt = Date.now();
+                    this.save();
+                    return true;
+                }
+                return false;
+            }
+            
+            getRandomSentence() {
+                const randomIndex = Math.floor(Math.random() * this.sentences.length);
+                return this.sentences[randomIndex];
+            }
+            
+            getFavorites() {
+                return this.sentences.filter(s => s.isFavorite);
+            }
+            
+            getSortedSentences() {
+                return [...this.sentences].sort((a, b) => b.createdAt - a.createdAt);
+            }
+            
+            getPageSentences(page = this.currentPage) {
+                this.currentPage = page;
+                const startIndex = (page - 1) * this.itemsPerPage;
+                const endIndex = startIndex + this.itemsPerPage;
+                return this.getSortedSentences().slice(startIndex, endIndex);
+            }
+            
+            getTotalPages() {
+                return Math.ceil(this.sentences.length / this.itemsPerPage);
+            }
+            
+            searchSentences(query) {
+                if (!query) return this.getSortedSentences();
+                const lowerQuery = query.toLowerCase();
+                return this.sentences.filter(s => 
+                    s.text.toLowerCase().includes(lowerQuery)
+                ).sort((a, b) => b.createdAt - a.createdAt);
+            }
+            
+            getRandomPastelColor() {
+                const hue = Math.floor(Math.random() * 360);
+                return `hsl(${hue}, 100%, 85%)`;
+            }
+            
+            getRandomWheelColors() {
+                return Array(6).fill().map(() => {
+                    const hue = Math.floor(Math.random() * 360);
+                    return `hsl(${hue}, 100%, 85%)`;
+                });
+            }
+            
+            exportData() {
+                const data = {
+                    sentences: this.sentences,
+                    exportedAt: Date.now()
+                };
+                return JSON.stringify(data, null, 2);
+            }
+            
+            importData(jsonString) {
+                try {
+                    const data = JSON.parse(jsonString);
+                    if (data && Array.isArray(data.sentences)) {
+                        this.sentences = data.sentences;
+                        this.save();
+                        return true;
+                    }
+                } catch (e) {
+                    console.error('导入数据失败', e);
+                }
+                return false;
+            }
+        }
+
+        // DOM 元素
+        const domElements = {
+            menuBtn: document.getElementById('menu-btn'),
+            floatingMenu: document.getElementById('floating-menu'),
+            menuButtons: document.querySelectorAll('.menu-btn'),
+            contentSections: {
+                wheel: document.getElementById('wheel-section'),
+                library: document.getElementById('library-section'),
+                add: document.getElementById('add-section'),
+                stats: document.getElementById('stats-section')
+            },
+            wheel: document.getElementById('wheel'),
+            resultModal: document.getElementById('result-modal'),
+            resultText: document.getElementById('result-text'),
+            modalFavoriteBtn: document.getElementById('modal-favorite-btn'),
+            modalNewBtn: document.getElementById('modal-new-btn'),
+            sentencesContainer: document.getElementById('sentences-container'),
+            searchBox: document.getElementById('search-box'),
+            toggleColorsBtn: document.getElementById('toggle-colors'),
+            newSentenceInput: document.getElementById('new-sentence'),
+            addSentenceBtn: document.getElementById('add-sentence-btn'),
+            colorPreview: document.getElementById('color-preview'),
+            totalCount: document.getElementById('total-count'),
+            favoritesCount: document.getElementById('favorites-count'),
+            totalDetail: document.getElementById('total-detail'),
+            favoritesDetail: document.getElementById('favorites-detail'),
+            allSentencesList: document.getElementById('all-sentences-list'),
+            favoritesList: document.getElementById('favorites-list'),
+            exportBtn: document.getElementById('export-btn'),
+            importBtn: document.getElementById('import-btn'),
+            importFile: document.getElementById('import-file'),
+            prevBtn: document.getElementById('prev-btn'),
+            nextBtn: document.getElementById('next-btn'),
+            pageInfo: document.getElementById('page-info'),
+            editModal: document.getElementById('edit-modal'),
+            closeEdit: document.getElementById('close-edit'),
+            editText: document.getElementById('edit-text'),
+            confirmEdit: document.getElementById('confirm-edit'),
+            cancelEdit: document.getElementById('cancel-edit')
+        };
+
+        // 应用状态
+        const appState = {
+            currentSection: 'wheel',
+            currentSentence: null,
+            colorMode: true,
+            adminMode: false,
+            clickCount: 0,
+            editingSentence: null
+        };
+
+        // 数据管理实例
+        const happinessData = new HappinessData();
+
+        // 初始化应用
+        function initApp() {
+            setupEventListeners();
+            renderLibrary();
+            updatePagination();
+            updateStats();
+            updateWheelColors();
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 菜单按钮事件
+            domElements.menuBtn.addEventListener('click', () => {
+                domElements.floatingMenu.classList.toggle('active');
+            });
+            
+            // 菜单按钮事件
+            domElements.menuButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const section = btn.dataset.section;
+                    switchSection(section);
+                    
+                    // 更新菜单按钮状态
+                    domElements.menuButtons.forEach(b => {
+                        if (b === btn) {
+                            b.classList.add('active');
+                        } else {
+                            b.classList.remove('active');
+                        }
+                    });
+                    
+                    // 关闭悬浮菜单
+                    domElements.floatingMenu.classList.remove('active');
+                });
+            });
+            
+            // 转盘事件
+            domElements.wheel.addEventListener('click', spinWheel);
+            
+            // 收藏按钮事件
+            domElements.modalFavoriteBtn.addEventListener('click', toggleFavorite);
+            
+            // 再抽一次按钮
+            domElements.modalNewBtn.addEventListener('click', () => {
+                spinWheel();
+            });
+            
+            // 点击模态框外部关闭
+            domElements.resultModal.addEventListener('click', (e) => {
+                if (e.target === domElements.resultModal) {
+                    closeResultModal();
+                }
+            });
+            
+            // 搜索功能
+            domElements.searchBox.addEventListener('input', () => {
+                happinessData.currentPage = 1;
+                renderLibrary();
+            });
+            
+            // 切换颜色按钮
+            domElements.toggleColorsBtn.addEventListener('click', toggleColorMode);
+            
+            // 添加新文案
+            domElements.addSentenceBtn.addEventListener('click', addNewSentence);
+            
+            // 导出数据
+            domElements.exportBtn.addEventListener('click', exportData);
+            
+            // 导入数据
+            domElements.importBtn.addEventListener('click', () => {
+                domElements.importFile.click();
+            });
+            
+            domElements.importFile.addEventListener('change', importData);
+            
+            // 分页按钮
+            domElements.prevBtn.addEventListener('click', goToPrevPage);
+            domElements.nextBtn.addEventListener('click', goToNextPage);
+            
+            // 编辑弹窗关闭
+            domElements.closeEdit.addEventListener('click', closeEditModal);
+            domElements.cancelEdit.addEventListener('click', closeEditModal);
+            
+            // 确认编辑
+            domElements.confirmEdit.addEventListener('click', confirmEdit);
+            
+            // 按ESC关闭模态框
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeResultModal();
+                    closeEditModal();
+                }
+            });
+            
+            // 统计数字点击事件
+            domElements.totalCount.addEventListener('click', () => {
+                domElements.totalDetail.style.display = 'block';
+                domElements.favoritesDetail.style.display = 'none';
+                renderAllSentences();
+            });
+            
+            domElements.favoritesCount.addEventListener('click', () => {
+                domElements.favoritesDetail.style.display = 'block';
+                domElements.totalDetail.style.display = 'none';
+                renderFavorites();
+            });
+        }
+
+        // 切换部分
+        function switchSection(section) {
+            appState.currentSection = section;
+            
+            // 隐藏所有部分
+            Object.values(domElements.contentSections).forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // 显示当前部分
+            if (section === 'library') {
+                domElements.contentSections.library.classList.add('active');
+                renderLibrary();
+            } else if (section === 'add') {
+                domElements.contentSections.add.classList.add('active');
+            } else if (section === 'stats') {
+                domElements.contentSections.stats.classList.add('active');
+                updateStats();
+            } else {
+                domElements.contentSections.wheel.classList.add('active');
+            }
+        }
+
+        // 更新转盘颜色
+        function updateWheelColors() {
+            const colors = happinessData.getRandomWheelColors();
+            
+            // 应用新的颜色变量
+            document.documentElement.style.setProperty('--wheel-color-1', colors[0]);
+            document.documentElement.style.setProperty('--wheel-color-2', colors[1]);
+            document.documentElement.style.setProperty('--wheel-color-3', colors[2]);
+            document.documentElement.style.setProperty('--wheel-color-4', colors[3]);
+            document.documentElement.style.setProperty('--wheel-color-5', colors[4]);
+            document.documentElement.style.setProperty('--wheel-color-6', colors[5]);
+        }
+
+        // 旋转转盘
+        function spinWheel() {
+            // 更新转盘背景色
+            updateWheelColors();
+            
+            // 添加旋转动画
+            const rotations = 5 + Math.random() * 3;
+            const degrees = rotations * 360;
+            domElements.wheel.style.transform = `rotate(${degrees}deg)`;
+            
+            // 动画结束后显示结果
+            setTimeout(() => {
+                const sentence = happinessData.getRandomSentence();
+                appState.currentSentence = sentence;
+                showResult(sentence);
+            }, 3000);
+        }
+
+        // 显示结果
+        function showResult(sentence) {
+            domElements.resultText.textContent = sentence.text;
+            domElements.resultModal.classList.add('active');
+            domElements.resultModal.style.backgroundColor = sentence.color;
+            
+            // 更新收藏按钮状态
+            if (sentence.isFavorite) {
+                domElements.modalFavoriteBtn.innerHTML = '<i class="fas fa-heart"></i>';
+                domElements.modalFavoriteBtn.classList.add('favorited');
+            } else {
+                domElements.modalFavoriteBtn.innerHTML = '<i class="far fa-heart"></i>';
+                domElements.modalFavoriteBtn.classList.remove('favorited');
+            }
+        }
+
+        // 关闭结果弹窗
+        function closeResultModal() {
+            domElements.resultModal.classList.remove('active');
+            // 重置转盘位置
+            domElements.wheel.style.transform = 'rotate(0deg)';
+        }
+
+        // 切换收藏状态
+        function toggleFavorite() {
+            if (!appState.currentSentence) return;
+            
+            const newState = happinessData.toggleFavorite(appState.currentSentence.id);
+            
+            if (newState) {
+                domElements.modalFavoriteBtn.innerHTML = '<i class="fas fa-heart"></i>';
+                domElements.modalFavoriteBtn.classList.add('favorited');
+            } else {
+                domElements.modalFavoriteBtn.innerHTML = '<i class="far fa-heart"></i>';
+                domElements.modalFavoriteBtn.classList.remove('favorited');
+            }
+            
+            // 更新统计数据
+            updateStats();
+        }
+
+        // 渲染文案库
+        function renderLibrary() {
+            const query = domElements.searchBox.value;
+            const sentences = happinessData.searchSentences(query);
+            
+            // 计算分页
+            const page = happinessData.currentPage;
+            const totalPages = Math.ceil(sentences.length / happinessData.itemsPerPage);
+            
+            // 获取当前页面的句子
+            const startIndex = (page - 1) * happinessData.itemsPerPage;
+            const endIndex = Math.min(startIndex + happinessData.itemsPerPage, sentences.length);
+            const currentSentences = sentences.slice(startIndex, endIndex);
+            
+            domElements.sentencesContainer.innerHTML = '';
+            
+            currentSentences.forEach(sentence => {
+                const card = createSentenceCard(sentence);
+                domElements.sentencesContainer.appendChild(card);
+            });
+            
+            // 更新分页按钮状态
+            domElements.prevBtn.disabled = page <= 1;
+            domElements.nextBtn.disabled = page >= totalPages;
+            
+            // 更新页码信息
+            domElements.pageInfo.textContent = `第 ${page} 页 / 共 ${totalPages || 1} 页`;
+        }
+        
+        // 更新分页显示
+        function updatePagination() {
+            const page = happinessData.currentPage;
+            const totalPages = happinessData.getTotalPages();
+            
+            domElements.prevBtn.disabled = page <= 1;
+            domElements.nextBtn.disabled = page >= totalPages;
+            domElements.pageInfo.textContent = `第 ${page} 页 / 共 ${totalPages || 1} 页`;
+        }
+        
+        // 上一页
+        function goToPrevPage() {
+            if (happinessData.currentPage > 1) {
+                happinessData.currentPage--;
+                renderLibrary();
+                updatePagination();
+            }
+        }
+        
+        // 下一页
+        function goToNextPage() {
+            const totalPages = Math.ceil(
+                happinessData.searchSentences(domElements.searchBox.value).length / 
+                happinessData.itemsPerPage
+            );
+            
+            if (happinessData.currentPage < totalPages) {
+                happinessData.currentPage++;
+                renderLibrary();
+                updatePagination();
+            }
+        }
+
+        // 创建文案卡片
+        function createSentenceCard(sentence) {
+            const card = document.createElement('div');
+            card.className = 'sentence-card';
+            card.style.backgroundColor = appState.colorMode ? sentence.color : 'white';
+            card.dataset.id = sentence.id;
+            
+            const text = document.createElement('p');
+            text.className = 'sentence-text';
+            text.textContent = sentence.text;
+            card.appendChild(text);
+            
+            const actions = document.createElement('div');
+            actions.className = 'card-actions';
+            
+            // 收藏按钮
+            const favoriteBtn = document.createElement('button');
+            favoriteBtn.className = `action-btn favorite-btn ${sentence.isFavorite ? 'favorited' : ''}`;
+            favoriteBtn.innerHTML = sentence.isFavorite ? 
+                '<i class="fas fa-heart"></i>' : 
+                '<i class="far fa-heart"></i>';
+            favoriteBtn.title = sentence.isFavorite ? '取消收藏' : '收藏';
+            favoriteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const newState = happinessData.toggleFavorite(sentence.id);
+                favoriteBtn.innerHTML = newState ? 
+                    '<i class="fas fa-heart"></i>' : 
+                    '<i class="far fa-heart"></i>';
+                favoriteBtn.classList.toggle('favorited');
+                updateStats();
+            });
+            actions.appendChild(favoriteBtn);
+            
+            // 颜色按钮
+            const colorBtn = document.createElement('button');
+            colorBtn.className = 'action-btn color-btn';
+            colorBtn.innerHTML = '<i class="fas fa-palette"></i>';
+            colorBtn.title = '更换颜色';
+            colorBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const newColor = happinessData.updateColor(sentence.id);
+                card.style.backgroundColor = newColor;
+            });
+            actions.appendChild(colorBtn);
+            
+            card.appendChild(actions);
+            
+            // 管理员操作按钮（默认隐藏）
+            const adminActions = document.createElement('div');
+            adminActions.className = 'admin-actions';
+            
+            // 删除按钮
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'action-btn delete-btn';
+            deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+            deleteBtn.title = '删除文案';
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('确定要删除这条文案吗？')) {
+                    happinessData.deleteSentence(sentence.id);
+                    card.remove();
+                    updateStats();
+                    updatePagination();
+                }
+            });
+            adminActions.appendChild(deleteBtn);
+            
+            // 编辑按钮
+            const editBtn = document.createElement('button');
+            editBtn.className = 'action-btn edit-btn';
+            editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+            editBtn.title = '编辑文案';
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openEditModal(sentence);
+            });
+            adminActions.appendChild(editBtn);
+            
+            card.appendChild(adminActions);
+            
+            // 点击卡片空白处计数
+            card.addEventListener('click', (e) => {
+                // 只在点击卡片空白处（非按钮区域）时计数
+                if (e.target === card || e.target === text) {
+                    appState.clickCount++;
+                    
+                    if (appState.clickCount >= 5) {
+                        card.classList.add('admin-mode');
+                        appState.clickCount = 0;
+                        
+                        // 10秒后退出管理员模式
+                        setTimeout(() => {
+                            card.classList.remove('admin-mode');
+                        }, 10000);
+                    }
+                }
+            });
+            
+            return card;
+        }
+        
+        // 打开编辑模态框
+        function openEditModal(sentence) {
+            appState.editingSentence = sentence;
+            domElements.editText.value = sentence.text;
+            domElements.editModal.classList.add('active');
+        }
+        
+        // 关闭编辑模态框
+        function closeEditModal() {
+            domElements.editModal.classList.remove('active');
+            appState.editingSentence = null;
+        }
+        
+        // 确认编辑
+        function confirmEdit() {
+            if (!appState.editingSentence) return;
+            
+            const newText = domElements.editText.value.trim();
+            if (!newText) {
+                alert('文案不能为空！');
+                return;
+            }
+            
+            happinessData.updateSentence(appState.editingSentence.id, newText);
+            closeEditModal();
+            renderLibrary();
+        }
+
+        // 切换颜色模式
+        function toggleColorMode() {
+            appState.colorMode = !appState.colorMode;
+            domElements.toggleColorsBtn.innerHTML = appState.colorMode ? 
+                '<i class="fas fa-gift"></i> 单色模式' : 
+                '<i class="fas fa-gift"></i> 随机颜色';
+            renderLibrary();
+        }
+
+        // 添加新文案
+        function addNewSentence() {
+            const text = domElements.newSentenceInput.value.trim();
+            if (!text) {
+                alert('请输入开心的句子！');
+                return;
+            }
+            
+            const newSentence = happinessData.addSentence(text);
+            domElements.newSentenceInput.value = '';
+            
+            // 更新预览
+            domElements.colorPreview.style.backgroundColor = newSentence.color;
+            domElements.colorPreview.textContent = '新文案预览';
+            
+            // 切换到文案库并显示新添加的
+            switchSection('library');
+            happinessData.currentPage = 1;
+            renderLibrary();
+            updatePagination();
+        }
+
+        // 更新统计数据
+        function updateStats() {
+            const total = happinessData.sentences.length;
+            const favorites = happinessData.getFavorites().length;
+            
+            domElements.totalCount.textContent = total;
+            domElements.favoritesCount.textContent = favorites;
+        }
+
+        // 渲染所有文案
+        function renderAllSentences() {
+            const sentences = happinessData.getSortedSentences();
+            domElements.allSentencesList.innerHTML = '';
+            
+            sentences.forEach(sentence => {
+                const card = createSentenceCard(sentence);
+                domElements.allSentencesList.appendChild(card);
+            });
+        }
+        
+        // 渲染收藏列表
+        function renderFavorites() {
+            const favorites = happinessData.getFavorites();
+            domElements.favoritesList.innerHTML = '';
+            
+            favorites.forEach(sentence => {
+                const card = createSentenceCard(sentence);
+                domElements.favoritesList.appendChild(card);
+            });
+        }
+
+        // 导出数据
+        function exportData() {
+            const data = happinessData.exportData();
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `开心盲盒数据_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 0);
+        }
+
+        // 导入数据
+        function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const success = happinessData.importData(event.target.result);
+                if (success) {
+                    alert('数据导入成功！');
+                    renderLibrary();
+                    updateStats();
+                    updatePagination();
+                } else {
+                    alert('数据导入失败，请检查文件格式');
+                }
+            };
+            reader.readAsText(file);
+            
+            // 重置文件输入
+            e.target.value = '';
+        }
+
+        // 初始化应用
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
