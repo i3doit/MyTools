@@ -788,7 +788,7 @@
         
         // DOM元素
         const mainTitleInput = document.getElementById('mainTitle');
-        const subTitleInput = document.getElementById('subTitle');
+        const subTitleTextarea = document.getElementById('subTitle');
         const authorInput = document.getElementById('author');
         const templateItems = document.querySelectorAll('.template-item');
         const aspectRatioBtns = document.querySelectorAll('.aspect-ratio-btn');
@@ -881,7 +881,7 @@
             });
             
             // 输入事件监听
-            [mainTitleInput, subTitleInput, authorInput].forEach(input => {
+            [mainTitleInput, subTitleTextarea, authorInput].forEach(input => {
                 input.addEventListener('input', updatePreview);
                 input.addEventListener('input', checkInputVisibility);
             });
@@ -958,7 +958,7 @@
         // 检查输入可见性
         function checkInputVisibility() {
             previewTitle.classList.toggle('hidden', !mainTitleInput.value);
-            previewSubtitle.classList.toggle('hidden', !subTitleInput.value);
+            previewSubtitle.classList.toggle('hidden', !subTitleTextarea.value);
             previewAuthor.classList.toggle('hidden', !authorInput.value);
         }
         
@@ -966,7 +966,7 @@
         function updatePreview() {
             // 安全处理：防止XSS攻击
             const safeTitle = escapeHtml(mainTitleInput.value);
-            let safeSubtitle = escapeHtml(subTitleInput.value);
+            let safeSubtitle = escapeHtml(subTitleTextarea.value);
             const safeAuthor = escapeHtml(authorInput.value);
             
             // 在2:1比例下限制副标题长度为37个字符
@@ -1006,7 +1006,7 @@
         // 重置表单
         function resetForm() {
             mainTitleInput.value = '用AI打造爆款设计';
-            subTitleInput.value = 'CoverCanvas帮你3分钟制作高质量封面图';
+            subTitleTextarea.value = 'CoverCanvas帮你3分钟制作高质量封面图';
             authorInput.value = '艾兜兜儿';
             
             // 重置模板选择
@@ -1055,7 +1055,7 @@
         function saveToLocalStorage() {
             const data = {
                 title: mainTitleInput.value,
-                subtitle: subTitleInput.value,
+                subtitle: subTitleTextarea.value,
                 author: authorInput.value,
                 template: currentTemplate,
                 ratio: currentAspectRatio
@@ -1072,7 +1072,7 @@
                 const savedData = JSON.parse(data);
                 
                 if (savedData.title) mainTitleInput.value = savedData.title;
-                if (savedData.subtitle) subTitleInput.value = savedData.subtitle;
+                if (savedData.subtitle) subTitleTextarea.value = savedData.subtitle;
                 if (savedData.author) authorInput.value = savedData.author;
                 if (savedData.template) currentTemplate = savedData.template;
                 if (savedData.ratio) currentAspectRatio = savedData.ratio;
