@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StarEliminator - 消灭星星</title>
+    <style>
+        /* 基础样式与变量定义 */
+        :root {
+            --primary-color: #007AFF;
+            --background: #f5f7fa;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-color: #1c1c1e;
+            --secondary-text: #8e8e93;
+            --border-color: #d1d1d6;
+            --success-color: #34c759;
+            --warning-color: #ff9500;
+            --danger-color: #ff3b30;
+            --star-size: 32px;
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.18);
+            --glass-shadow: rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        .dark-theme {
+            --background: #121212;
+            --card-bg: rgba(30, 30, 32, 0.85);
+            --text-color: #f5f5f5;
+            --secondary-text: #98989d;
+            --border-color: #3a3a3c;
+            --glass-bg: rgba(45, 45, 47, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--text-color);
+            transition: var(--transition);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 卡片样式 - 毛玻璃效果 */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px var(--glass-shadow);
+            padding: 20px;
+            transition: var(--transition);
+        }
+
+        /* 顶部信息栏 */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+        }
+
+        .game-info {
+            display: flex;
+            gap: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .info-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--secondary-text);
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        /* 控制栏 */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            padding: 10px;
+        }
+
+        .control-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-color);
+            font-size: 20px;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .control-btn.refresh {
+            color: var(--primary-color);
+        }
+
+        .control-btn.hint {
+            color: var(--success-color);
+        }
+
+        .control-btn.reset {
+            color: var(--danger-color);
+        }
+
+        /* 游戏区域 */
+        .game-container {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 4px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .star {
+            width: var(--star-size);
+            height: var(--star-size);
+            border-radius: 8px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .star:after {
+            content: "★";
+            font-size: 20px;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .star:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 动画效果 */
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0); }
+        }
+
+        @keyframes fallDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+
+        @keyframes floatScore {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-30px); }
+        }
+
+        @keyframes fireworks {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        .eliminating {
+            animation: fadeOut 0.3s forwards;
+        }
+
+        .falling {
+            animation: fallDown 0.4s ease;
+        }
+
+        .score-float {
+            position: absolute;
+            font-weight: bold;
+            font-size: 16px;
+            pointer-events: none;
+            animation: floatScore 0.8s forwards;
+        }
+
+        .firework {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: fireworks 0.8s forwards;
+        }
+
+        /* 模态框 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal h2 {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .modal p {
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 设置面板 */
+        .settings-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-color);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--success-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+
+        /* 排行榜 */
+        .leaderboard-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .leaderboard-date {
+            color: var(--secondary-text);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 500px) {
+            .game-info {
+                gap: 8px;
+            }
+            
+            .info-value {
+                font-size: 16px;
+            }
+            
+            .star {
+                width: 28px;
+                height: 28px;
+            }
+            
+            .controls {
+                gap: 8px;
+            }
+            
+            .control-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="glass-card">
+            <div class="game-header">
+                <div class="game-info">
+                    <div class="info-item">
+                        <div class="info-label">关卡</div>
+                        <div class="info-value" id="level">1</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">得分</div>
+                        <div class="info-value" id="score">0</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">目标</div>
+                        <div class="info-value" id="target">1000</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">最高分</div>
+                        <div class="info-value" id="high-score">0</div>
+                    </div>
+                </div>
+                <div class="game-status" id="game-status"></div>
+            </div>
+        </div>
+        
+        <div class="glass-card">
+            <div class="controls">
+                <button class="control-btn refresh" id="refresh-btn" title="刷新">
+                    <i>🔄</i>
+                </button>
+                <button class="control-btn hint" id="hint-btn" title="提示">
+                    <i>💡</i>
+                </button>
+                <button class="control-btn theme" id="theme-btn" title="切换主题">
+                    <i>🌙</i>
+                </button>
+                <button class="control-btn settings" id="settings-btn" title="设置">
+                    <i>⚙️</i>
+                </button>
+                <button class="control-btn reset" id="reset-btn" title="重置游戏">
+                    <i>🔄</i>
+                </button>
+                <button class="control-btn leaderboard" id="leaderboard-btn" title="排行榜">
+                    <i>🏆</i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="glass-card">
+            <div class="game-container">
+                <div class="game-board" id="game-board"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 模态框 -->
+    <div class="modal" id="refresh-modal">
+        <div class="modal-content">
+            <h2>今日免费次数已用完</h2>
+            <p>已获取作者微信：857023577，去链接解锁吧</p>
+            <button class="btn btn-primary" id="copy-wechat">复制微信号</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="reset-modal">
+        <div class="modal-content">
+            <h2>重置游戏</h2>
+            <p>确定要重置当前游戏吗？所有进度将丢失！</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-reset">取消</button>
+                <button class="btn btn-danger" id="confirm-reset">确定重置</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <h2>游戏设置</h2>
+            <div class="settings-panel">
+                <div class="setting-item">
+                    <label>音效</label>
+                    <label class="switch">
+                        <input type="checkbox" id="sound-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>提示</label>
+                    <label class="switch">
+                        <input type="checkbox" id="hint-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>动画</label>
+                    <label class="switch">
+                        <input type="checkbox" id="animation-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>主题模式</label>
+                    <label class="switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="save-settings">保存设置</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="leaderboard-modal">
+        <div class="modal-content">
+            <h2>排行榜</h2>
+            <div class="leaderboard-list" id="leaderboard-list">
+                <!-- 排行榜内容将通过JS动态生成 -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="close-leaderboard">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="level-complete-modal">
+        <div class="modal-content">
+            <h2>关卡完成!</h2>
+            <p>恭喜通过第 <span id="completed-level">1</span> 关</p>
+            <p>获得额外奖励: <span id="bonus-score">0</span> 分</p>
+            <button class="btn btn-primary" id="next-level">进入下一关</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏核心类
+        class StarEliminator {
+            constructor() {
+                // 游戏状态
+                this.boardSize = 10;
+                this.starColors = ['#FF2D55', '#FF9500', '#FFCC00', '#4CD964', '#5AC8FA', '#007AFF', '#5856D6'];
+                this.board = [];
+                this.score = 0;
+                this.level = 1;
+                this.targetScore = 1000;
+                this.highScore = 0;
+                this.refreshCount = 5;
+                this.isDarkTheme = true;
+                this.gameStatus = '';
+                
+                // 设置状态
+                this.soundEnabled = true;
+                this.hintEnabled = true;
+                this.animationEnabled = true;
+                this.themeMode = 'dark';
+                
+                // DOM 引用
+                this.boardElement = document.getElementById('game-board');
+                this.levelElement = document.getElementById('level');
+                this.scoreElement = document.getElementById('score');
+                this.targetElement = document.getElementById('target');
+                this.highScoreElement = document.getElementById('high-score');
+                this.gameStatusElement = document.getElementById('game-status');
+                
+                // 初始化游戏
+                this.initGame();
+                this.setupEventListeners();
+                this.loadGameState();
+            }
+            
+            // 初始化游戏
+            initGame() {
+                this.generateBoard();
+                this.updateUI();
+                this.applyTheme();
+            }
+            
+            // 生成游戏板
+            generateBoard() {
+                this.board = [];
+                this.boardElement.innerHTML = '';
+                
+                // 创建10x10网格
+                for (let row = 0; row < this.boardSize; row++) {
+                    this.board[row] = [];
+                    for (let col = 0; col < this.boardSize; col++) {
+                        const colorIndex = Math.floor(Math.random() * this.starColors.length);
+                        this.board[row][col] = colorIndex;
+                        
+                        const star = document.createElement('div');
+                        star.className = 'star';
+                        star.dataset.row = row;
+                        star.dataset.col = col;
+                        star.style.backgroundColor = this.starColors[colorIndex];
+                        
+                        star.addEventListener('click', () => this.handleStarClick(row, col));
+                        this.boardElement.appendChild(star);
+                    }
+                }
+            }
+            
+            // 处理星星点击
+            handleStarClick(row, col) {
+                if (this.board[row][col] === -1) return; // 已消除的星星
+                
+                const color = this.board[row][col];
+                const connectedStars = this.findConnectedStars(row, col, color);
+                
+                if (connectedStars.length > 1) {
+                    this.eliminateStars(connectedStars);
+                }
+            }
+            
+            // 使用Flood Fill算法查找相邻同色星星
+            findConnectedStars(row, col, color, visited = []) {
+                const key = `${row},${col}`;
+                
+                // 边界检查
+                if (row < 0 || row >= this.boardSize || 
+                    col < 0 || col >= this.boardSize || 
+                    visited.includes(key) || 
+                    this.board[row][col] !== color) {
+                    return [];
+                }
+                
+                visited.push(key);
+                let connected = [{row, col}];
+                
+                // 检查四个方向
+                const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+                for (const [dx, dy] of directions) {
+                    const newRow = row + dx;
+                    const newCol = col + dy;
+                    
+                    if (newRow >= 0 && newRow < this.boardSize && 
+                        newCol >= 0 && newCol < this.boardSize) {
+                        const result = this.findConnectedStars(newRow, newCol, color, visited);
+                        connected = connected.concat(result);
+                    }
+                }
+                
+                return connected;
+            }
+            
+            // 消除星星
+            eliminateStars(stars) {
+                const count = stars.length;
+                const scoreEarned = count * count * 10; // 消除越多得分越高
+                
+                // 更新分数
+                this.score += scoreEarned;
+                this.updateUI();
+                
+                // 播放消除效果
+                this.playEliminationEffect(stars, scoreEarned);
+                
+                // 标记星星为已消除
+                for (const star of stars) {
+                    this.board[star.row][star.col] = -1;
+                }
+                
+                // 处理星星下落
+                this.handleStarFall();
+                
+                // 检查关卡完成
+                this.checkLevelCompletion();
+            }
+            
+            // 播放消除效果
+            playEliminationEffect(stars, score) {
+                // 播放音效
+                if (this.soundEnabled) {
+                    // 实际项目中这里会播放不同音效
+                    console.log(`播放消除${stars.length}个星星的音效`);
+                }
+                
+                // 显示分数浮动
+                if (this.animationEnabled) {
+                    const firstStar = document.querySelector(`.star[data-row="${stars[0].row}"][data-col="${stars[0].col}"]`);
+                    const rect = firstStar.getBoundingClientRect();
+                    
+                    const scoreElement = document.createElement('div');
+                    scoreElement.className = 'score-float';
+                    scoreElement.textContent = `+${score}`;
+                    scoreElement.style.left = `${rect.left + rect.width / 2}px`;
+                    scoreElement.style.top = `${rect.top}px`;
+                    scoreElement.style.color = this.starColors[this.board[stars[0].row][stars[0].col]];
+                    
+                    document.body.appendChild(scoreElement);
+                    
+                    // 动画结束后移除元素
+                    setTimeout(() => {
+                        scoreElement.remove();
+                    }, 800);
+                }
+                
+                // 播放不同规模的消除特效
+                if (stars.length >= 8) {
+                    this.playSpecialEffect('great', stars);
+                } else if (stars.length >= 5) {
+                    this.playSpecialEffect('good', stars);
+                }
+                
+                // 添加消除动画
+                if (this.animationEnabled) {
+                    for (const star of stars) {
+                        const starElement = document.querySelector(`.star[data-row="${star.row}"][data-col="${star.col}"]`);
+                        starElement.classList.add('eliminating');
+                        
+                        // 动画结束后移除元素
+                        setTimeout(() => {
+                            starElement.remove();
+                        }, 300);
+                    }
+                } else {
+                    // 如果不启用动画，直接移除星星
+                    for (const star of stars) {
+                        const starElement = document.querySelector(`.star[data-row="${star.row}"][data-col="${star.col}"]`);
+                        starElement.remove();
+                    }
+                }
+            }
+            
+            // 播放特殊效果
+            playSpecialEffect(type, stars) {
+                if (!this.animationEnabled) return;
+                
+                const centerStar = stars[Math.floor(stars.length / 2)];
+                const centerElement = document.querySelector(`.star[data-row="${centerStar.row}"][data-col="${centerStar.col}"]`);
+                const rect = centerElement.getBoundingClientRect();
+                
+                for (let i = 0; i < 15; i++) {
+                    const firework = document.createElement('div');
+                    firework.className = 'firework';
+                    
+                    // 随机位置
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 50 + Math.random() * 100;
+                    const x = Math.cos(angle) * distance;
+                    const y = Math.sin(angle) * distance;
+                    
+                    firework.style.left = `${rect.left + rect.width / 2}px`;
+                    firework.style.top = `${rect.top + rect.height / 2}px`;
+                    firework.style.backgroundColor = this.starColors[this.board[centerStar.row][centerStar.col]];
+                    
+                    if (type === 'great') {
+                        firework.style.width = '8px';
+                        firework.style.height = '8px';
+                    }
+                    
+                    document.body.appendChild(firework);
+                    
+                    // 动画结束后移除元素
+                    setTimeout(() => {
+                        firework.remove();
+                    }, 800);
+                }
+                
+                // 显示文字效果
+                if (this.animationEnabled) {
+                    const effectText = document.createElement('div');
+                    effectText.className = 'score-float';
+                    effectText.textContent = type === 'great' ? '太棒了!' : '好!';
+                    effectText.style.fontSize = '24px';
+                    effectText.style.fontWeight = 'bold';
+                    effectText.style.left = `${rect.left + rect.width / 2}px`;
+                    effectText.style.top = `${rect.top}px`;
+                    
+                    document.body.appendChild(effectText);
+                    
+                    // 动画结束后移除元素
+                    setTimeout(() => {
+                        effectText.remove();
+                    }, 1200);
+                }
+            }
+            
+            // 处理星星下落
+            handleStarFall() {
+                // 重力下落
+                for (let col = 0; col < this.boardSize; col++) {
+                    let emptySpaces = 0;
+                    
+                    // 从底部向上扫描
+                    for (let row = this.boardSize - 1; row >= 0; row--) {
+                        if (this.board[row][col] === -1) {
+                            emptySpaces++;
+                        } else if (emptySpaces > 0) {
+                            // 移动星星
+                            this.board[row + emptySpaces][col] = this.board[row][col];
+                            this.board[row][col] = -1;
+                        }
+                    }
+                }
+                
+                // 左移填补
+                let emptyColumns = 0;
+                for (let col = 0; col < this.boardSize; col++) {
+                    let isColumnEmpty = true;
+                    
+                    // 检查整列是否为空
+                    for (let row = 0; row < this.boardSize; row++) {
+                        if (this.board[row][col] !== -1) {
+                            isColumnEmpty = false;
+                            break;
+                        }
+                    }
+                    
+                    if (isColumnEmpty) {
+                        emptyColumns++;
+                    } else if (emptyColumns > 0) {
+                        // 移动整列
+                        for (let row = 0; row < this.boardSize; row++) {
+                            this.board[row][col - emptyColumns] = this.board[row][col];
+                            this.board[row][col] = -1;
+                        }
+                    }
+                }
+                
+                // 更新UI
+                this.updateBoardUI();
+            }
+            
+            // 更新游戏板UI
+            updateBoardUI() {
+                this.boardElement.innerHTML = '';
+                
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        if (this.board[row][col] === -1) continue;
+                        
+                        const star = document.createElement('div');
+                        star.className = 'star';
+                        star.dataset.row = row;
+                        star.dataset.col = col;
+                        star.style.backgroundColor = this.starColors[this.board[row][col]];
+                        
+                        star.addEventListener('click', () => this.handleStarClick(row, col));
+                        this.boardElement.appendChild(star);
+                    }
+                }
+            }
+            
+            // 检查关卡完成
+            checkLevelCompletion() {
+                // 检查是否达到目标分数
+                if (this.score >= this.targetScore) {
+                    this.gameStatus = '通过';
+                    
+                    // 计算剩余星星奖励
+                    const remainingStars = this.getRemainingStarsCount();
+                    let bonus = 0;
+                    
+                    if (remainingStars <= 10) {
+                        bonus = (11 - remainingStars) * 200;
+                        if (bonus > 2000) bonus = 2000;
+                        this.score += bonus;
+                    }
+                    
+                    // 显示通关界面
+                    this.showLevelComplete(bonus);
+                }
+                
+                // 检查是否没有可消除的星星
+                if (!this.hasValidMoves()) {
+                    if (this.score < this.targetScore) {
+                        this.gameStatus = '未通过';
+                    }
+                    
+                    // 自动刷新或结束游戏
+                    if (this.refreshCount > 0) {
+                        this.refreshBoard();
+                    } else {
+                        this.gameStatus = '游戏结束';
+                    }
+                }
+                
+                this.updateUI();
+            }
+            
+            // 获取剩余星星数量
+            getRemainingStarsCount() {
+                let count = 0;
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        if (this.board[row][col] !== -1) {
+                            count++;
+                        }
+                    }
+                }
+                return count;
+            }
+            
+            // 检查是否有有效移动
+            hasValidMoves() {
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        if (this.board[row][col] === -1) continue;
+                        
+                        const connected = this.findConnectedStars(row, col, this.board[row][col]);
+                        if (connected.length > 1) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+            
+            // 刷新游戏板
+            refreshBoard() {
+                if (this.refreshCount <= 0) {
+                    this.showRefreshModal();
+                    return;
+                }
+                
+                this.refreshCount--;
+                
+                // 只刷新现有的星星（不改变位置）
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        if (this.board[row][col] !== -1) {
+                            this.board[row][col] = Math.floor(Math.random() * this.starColors.length);
+                        }
+                    }
+                }
+                
+                this.updateBoardUI();
+            }
+            
+            // 显示提示
+            showHint() {
+                if (!this.hintEnabled) return;
+                
+                // 查找所有可能的消除
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        if (this.board[row][col] === -1) continue;
+                        
+                        const connected = this.findConnectedStars(row, col, this.board[row][col]);
+                        if (connected.length > 1) {
+                            // 高亮显示第一个星星
+                            const starElement = document.querySelector(`.star[data-row="${row}"][data-col="${col}"]`);
+                            starElement.style.boxShadow = '0 0 0 3px #FFCC00, 0 0 20px #FFCC00';
+                            
+                            // 3秒后移除高亮
+                            setTimeout(() => {
+                                starElement.style.boxShadow = '';
+                            }, 3000);
+                            
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            // 重置游戏
+            resetGame() {
+                this.score = 0;
+                this.level = 1;
+                this.targetScore = 1000;
+                this.refreshCount = 5;
+                this.generateBoard();
+                this.updateUI();
+            }
+            
+            // 进入下一关
+            nextLevel() {
+                this.level++;
+                // 每关难度增加40%
+                this.targetScore = Math.floor(this.targetScore * 1.4);
+                this.generateBoard();
+                this.updateUI();
+                
+                // 关闭通关模态框
+                document.getElementById('level-complete-modal').classList.remove('active');
+            }
+            
+            // 更新UI
+            updateUI() {
+                this.levelElement.textContent = this.level;
+                this.scoreElement.textContent = this.score;
+                this.targetElement.textContent = this.targetScore;
+                this.highScoreElement.textContent = this.highScore;
+                this.gameStatusElement.textContent = this.gameStatus;
+                
+                // 保存游戏状态
+                this.saveGameState();
+            }
+            
+            // 应用主题
+            applyTheme() {
+                const body = document.body;
+                if (this.isDarkTheme) {
+                    body.classList.add('dark-theme');
+                    document.getElementById('theme-btn').innerHTML = '🌙';
+                } else {
+                    body.classList.remove('dark-theme');
+                    document.getElementById('theme-btn').innerHTML = '☀️';
+                }
+            }
+            
+            // 切换主题
+            toggleTheme() {
+                this.isDarkTheme = !this.isDarkTheme;
+                this.applyTheme();
+            }
+            
+            // 显示刷新提示模态框
+            showRefreshModal() {
+                const modal = document.getElementById('refresh-modal');
+                modal.classList.add('active');
+                
+                setTimeout(() => {
+                    modal.classList.remove('active');
+                }, 2000);
+            }
+            
+            // 显示关卡完成模态框
+            showLevelComplete(bonus) {
+                const modal = document.getElementById('level-complete-modal');
+                document.getElementById('completed-level').textContent = this.level;
+                document.getElementById('bonus-score').textContent = bonus;
+                modal.classList.add('active');
+            }
+            
+            // 保存游戏状态
+            saveGameState() {
+                const gameState = {
+                    board: this.board,
+                    score: this.score,
+                    level: this.level,
+                    targetScore: this.targetScore,
+                    highScore: this.highScore,
+                    refreshCount: this.refreshCount,
+                    isDarkTheme: this.isDarkTheme,
+                    soundEnabled: this.soundEnabled,
+                    hintEnabled: this.hintEnabled,
+                    animationEnabled: this.animationEnabled
+                };
+                
+                localStorage.setItem('starEliminatorState', JSON.stringify(gameState));
+                
+                // 更新高分
+                if (this.score > this.highScore) {
+                    this.highScore = this.score;
+                    this.updateHighScores();
+                }
+            }
+            
+            // 加载游戏状态
+            loadGameState() {
+                const savedState = localStorage.getItem('starEliminatorState');
+                if (savedState) {
+                    const state = JSON.parse(savedState);
+                    
+                    this.board = state.board || [];
+                    this.score = state.score || 0;
+                    this.level = state.level || 1;
+                    this.targetScore = state.targetScore || 1000;
+                    this.highScore = state.highScore || 0;
+                    this.refreshCount = state.refreshCount || 5;
+                    this.isDarkTheme = state.isDarkTheme !== undefined ? state.isDarkTheme : true;
+                    this.soundEnabled = state.soundEnabled !== undefined ? state.soundEnabled : true;
+                    this.hintEnabled = state.hintEnabled !== undefined ? state.hintEnabled : true;
+                    this.animationEnabled = state.animationEnabled !== undefined ? state.animationEnabled : true;
+                    
+                    // 更新UI
+                    this.updateBoardUI();
+                    this.applyTheme();
+                }
+                
+                // 加载高分榜
+                this.loadHighScores();
+            }
+            
+            // 更新高分榜
+            updateHighScores() {
+                let highScores = JSON.parse(localStorage.getItem('starEliminatorHighScores')) || [];
+                
+                // 添加当前高分
+                highScores.push({
+                    score: this.highScore,
+                    date: new Date().toISOString().split('T')[0] // YYYY-MM-DD
+                });
+                
+                // 按分数排序（降序）
+                highScores.sort((a, b) => b.score - a.score);
+                
+                // 只保留前10名
+                highScores = highScores.slice(0, 10);
+                
+                localStorage.setItem('starEliminatorHighScores', JSON.stringify(highScores));
+            }
+            
+            // 加载高分榜
+            loadHighScores() {
+                const highScores = JSON.parse(localStorage.getItem('starEliminatorHighScores')) || [];
+                this.highScore = highScores.length > 0 ? Math.max(...highScores.map(s => s.score)) : 0;
+            }
+            
+            // 显示排行榜
+            showLeaderboard() {
+                const highScores = JSON.parse(localStorage.getItem('starEliminatorHighScores')) || [];
+                const leaderboardList = document.getElementById('leaderboard-list');
+                leaderboardList.innerHTML = '';
+                
+                if (highScores.length === 0) {
+                    leaderboardList.innerHTML = '<div class="leaderboard-item">暂无记录</div>';
+                    return;
+                }
+                
+                highScores.forEach((entry, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'leaderboard-item';
+                    item.innerHTML = `
+                        <div>${index + 1}. ${entry.score}</div>
+                        <div class="leaderboard-date">${entry.date}</div>
+                    `;
+                    leaderboardList.appendChild(item);
+                });
+                
+                document.getElementById('leaderboard-modal').classList.add('active');
+            }
+            
+            // 设置事件监听器
+            setupEventListeners() {
+                // 刷新按钮
+                document.getElementById('refresh-btn').addEventListener('click', () => {
+                    this.refreshBoard();
+                });
+                
+                // 提示按钮
+                document.getElementById('hint-btn').addEventListener('click', () => {
+                    this.showHint();
+                });
+                
+                // 主题切换按钮
+                document.getElementById('theme-btn').addEventListener('click', () => {
+                    this.toggleTheme();
+                });
+                
+                // 重置按钮
+                document.getElementById('reset-btn').addEventListener('click', () => {
+                    document.getElementById('reset-modal').classList.add('active');
+                });
+                
+                // 排行榜按钮
+                document.getElementById('leaderboard-btn').addEventListener('click', () => {
+                    this.showLeaderboard();
+                });
+                
+                // 设置按钮
+                document.getElementById('settings-btn').addEventListener('click', () => {
+                    document.getElementById('settings-modal').classList.add('active');
+                    
+                    // 设置当前选项状态
+                    document.getElementById('sound-toggle').checked = this.soundEnabled;
+                    document.getElementById('hint-toggle').checked = this.hintEnabled;
+                    document.getElementById('animation-toggle').checked = this.animationEnabled;
+                    document.getElementById('theme-toggle').checked = this.themeMode === 'dark';
+                });
+                
+                // 模态框事件
+                document.getElementById('copy-wechat').addEventListener('click', () => {
+                    navigator.clipboard.writeText('857023577');
+                    alert('微信号已复制到剪贴板');
+                });
+                
+                document.getElementById('cancel-reset').addEventListener('click', () => {
+                    document.getElementById('reset-modal').classList.remove('active');
+                });
+                
+                document.getElementById('confirm-reset').addEventListener('click', () => {
+                    this.resetGame();
+                    document.getElementById('reset-modal').classList.remove('active');
+                });
+                
+                document.getElementById('save-settings').addEventListener('click', () => {
+                    this.soundEnabled = document.getElementById('sound-toggle').checked;
+                    this.hintEnabled = document.getElementById('hint-toggle').checked;
+                    this.animationEnabled = document.getElementById('animation-toggle').checked;
+                    this.themeMode = document.getElementById('theme-toggle').checked ? 'dark' : 'light';
+                    document.getElementById('settings-modal').classList.remove('active');
+                    this.saveGameState();
+                });
+                
+                document.getElementById('close-leaderboard').addEventListener('click', () => {
+                    document.getElementById('leaderboard-modal').classList.remove('active');
+                });
+                
+                document.getElementById('next-level').addEventListener('click', () => {
+                    this.nextLevel();
+                });
+                
+                // 5秒不操作显示提示
+                setInterval(() => {
+                    if (this.hintEnabled && this.gameStatus === '') {
+                        this.showHint();
+                    }
+                }, 5000);
+            }
+        }
+
+        // 初始化游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            const game = new StarEliminator();
+        });
+    </script>
+</body>
+</html>
