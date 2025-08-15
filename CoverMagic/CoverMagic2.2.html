@@ -84,7 +84,7 @@
         .control-panel {
             background: var(--card-bg);
             border-radius: 20px;
-            padding: 15px;
+            padding: 25px;
             box-shadow: var(--shadow-light);
             backdrop-filter: blur(12px);
             border: 1px solid var(--card-border);
@@ -110,12 +110,12 @@
 
         input, select {
             width: 100%;
-            padding: 12px 13px;
+            padding: 14px 15px;
             border: none;
             background: rgba(255, 255, 255, 0.7);
             border-radius: 10px;
             font-family: 'Lato', sans-serif;
-            font-size: 0.9rem;
+            font-size: 1rem;
             color: var(--text-primary);
             outline: none;
             transition: all 0.3s;
@@ -147,25 +147,6 @@
           outline: none;              /* 移除默认轮廓 */
           box-shadow: 0 0 8px rgba(102, 175, 233, 0.6); /* 发光效果 */
         }
-        
-               /* 卡片样式关键部分 */
-        #displayCard {
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            min-height: 100px;
-            white-space: pre-wrap; /* 关键属性:保留空格和换行 */
-            word-wrap: break-word;
-        }
-        
-        /* 文本域样式 */
-        #textInput {
-            width: 100%;
-            min-height: 100px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
 
         .templates-container {
             position: relative;
@@ -195,8 +176,8 @@
         }
 
         .template-item {
-            flex: 0 0 60px;
-            height: 60px;
+            flex: 0 0 70px;
+            height: 70px;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
@@ -280,7 +261,6 @@
             overflow: hidden;
             box-shadow: var(--shadow-deep);
             transition: transform 0.3s;
-            white-space: pre-wrap; /* 关键属性:保留空格和换行 */
         }
 
         .preview-area:hover {
@@ -298,61 +278,43 @@
         .preview-content {
             padding: 40px;
             position: relative;
-            max-width: 100%;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
             justify-content: center;
             height: 100%;
             transition: padding 0.3s;
-            white-space: pre-wrap; /* 关键属性:保留空格和换行 */
         }
 
         .preview-title {
             font-family: 'Montserrat', sans-serif;
             font-weight: 800;
-            margin-bottom: 10px;
-            line-height: 1.2;
+            margin-bottom: 20px;
+            line-height: 1.3;
             text-shadow: 0 1px 1px rgba(0,0,0,0.05);
             transition: font-size 0.3s, margin-bottom 0.3s;
             word-break: break-word;
             max-width: 90%;
-            font-size: 1.8rem !important;
-            hyphens: auto;
         }
 
         .preview-subtitle {
             font-weight: 400;
-            margin-bottom: 15px;
+            margin-bottom: 25px;
             opacity: 0.9;
-            line-height: 1.4;
+            line-height: 1.6;
             transition: font-size 0.3s, margin-bottom 0.3s;
             word-break: break-word;
-            max-width: 95%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 1rem !important;
-            display: -webkit-box;
-            -webkit-line-clamp: 3; /* 限制显示行数 */
-            -webkit-box-orient: vertical;
+            max-width: 90%;
         }
 
         .preview-author {
             position: absolute;
             font-weight: 600;
-            padding: 6px 12px;
-            bottom: 15px;
+            padding: 8px 15px;
             border-radius: 8px;
             background: var(--glass-bg);
             backdrop-filter: blur(10px);
             border: 1px solid var(--glass-border);
             transition: all 0.3s;
-            font-size: 0.8rem;
-            right: 20px;
-            max-width: 60%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .aspect-ratio-selector {
@@ -363,10 +325,10 @@
         }
 
         .aspect-ratio-btn {
-            padding: 6px 12px;
+            padding: 8px 15px;
             background: rgba(79, 172, 254, 0.1);
             border-radius: 8px;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.3s;
         }
@@ -425,14 +387,8 @@
             font-size: 1rem;
         }
         
-        /* 小图 2:1 */
+        /* 长图 2:1 */
         .ratio-2-1 .preview-author {
-            bottom: 10px; /* 修改为10px */
-            right: 50px;
-            font-size: 0.9rem;
-        }
-         /* 公众号 2.35:1 */
-        .ratio-2-35-1 .preview-author {
             bottom: 10px; /* 修改为10px */
             right: 50px;
             font-size: 0.9rem;
@@ -451,20 +407,16 @@
         }
         
         .ratio-3-4 .preview-content {
-            padding: 20px 25px;
-            word-wrap: break-word;
-            white-space: pre-wrap; /* 关键属性:保留空格和换行 */
+            padding: 40px 35px;
         }
         
         .ratio-3-4 .preview-title {
-            font-size: 2rem !important;
+            font-size: 2.5rem;
             margin-bottom: 15px;
-            word-wrap: break-word;
         }
         
         .ratio-3-4 .preview-subtitle {
-            font-size: 1.1rem !important;
-            word-wrap: break-word;
+            font-size: 1.1rem;
         }
         
         .ratio-4-3 {
@@ -472,20 +424,16 @@
         }
         
         .ratio-4-3 .preview-content {
-            padding: 20px 25px;
-            white-space: pre-wrap; /* 关键属性:保留空格和换行 */
-            word-wrap: break-word;
+            padding: 40px 50px;
         }
         
         .ratio-4-3 .preview-title {
             font-size: 2.8rem;
             margin-bottom: 15px;
-            word-wrap: break-word;
         }
         
         .ratio-4-3 .preview-subtitle {
             font-size: 1.2rem;
-            word-wrap: break-word;
         }
         
         .ratio-2-1 {
@@ -494,54 +442,47 @@
         
         .ratio-2-1 .preview-content {
             padding: 40px 50px;
-            white-space: pre-wrap; /* 关键属性:保留空格和换行 */
-            word-wrap: break-word;
         }
         
         .ratio-2-1 .preview-title {
             font-size: 3.5rem;
             margin-bottom: 15px;
             max-width: 85%;
-            word-wrap: break-word;
         }
-        
         
         .ratio-2-1 .preview-subtitle {
             font-size: 1.3rem;
             max-width: 85%;
-            word-wrap: break-word;
         }
         
-        /* 2.35:1宽屏比例专属样式 */
+        /* 新增2.35:1比例样式 */
         .ratio-2-35-1 {
             aspect-ratio: 2.35/1;
         }
         
         .ratio-2-35-1 .preview-content {
             padding: 40px 60px;
-            word-wrap: break-word;
-            white-space: pre-wrap; /* 关键属性:保留空格和换行 */
         }
         
         .ratio-2-35-1 .preview-title {
             font-size: 3.8rem;
             margin-bottom: 15px;
             max-width: 90%;
-            word-wrap: break-word;
         }
         
         .ratio-2-35-1 .preview-subtitle {
             font-size: 1.4rem;
             max-width: 90%;
-            word-wrap: break-word;
         }
         
-        
+        /* 作者位置自适应 */
         .ratio-2-35-1 .preview-author {
             bottom: 10px;
             right: 40px;
             font-size: 0.9rem;
         }
+
+        
         .ratio-1-1 {
             aspect-ratio: 1/1;
         }
@@ -553,12 +494,10 @@
         .ratio-1-1 .preview-title {
             font-size: 2.8rem;
             margin-bottom: 15px;
-            word-wrap: break-word;
         }
         
         .ratio-1-1 .preview-subtitle {
             font-size: 1.2rem;
-            word-wrap: break-word;
         }
         
         .hidden {
@@ -767,7 +706,7 @@
                 
                 <div class="form-group">
                     <label for="subTitle">封面描述（可选）</label>
-                    <textarea name="message"  id="kebTitle" placeholder="添加补充性信息" value="CoverCanvas帮你3分钟制作高质量封面图" rows="2" cols="40" placeholder="请输入封面描述"maxlength="200"></textarea>
+                    <textarea name="message"  id="subTitle" placeholder="添加补充性信息" value="CoverCanvas帮你3分钟制作高质量封面图" rows="2" cols="40" placeholder="请输入封面描述"maxlength="200"></textarea>
                 </div>
                 
                 <div class="form-group">
@@ -798,7 +737,7 @@
                     <div class="aspect-ratio-selector">
                         <div class="aspect-ratio-btn active" data-ratio="3/4">竖版 3:4</div>
                         <div class="aspect-ratio-btn" data-ratio="4/3">横版 4:3</div>
-                        <div class="aspect-ratio-btn" data-ratio="2/1">小图 2:1</div>     
+                        <div class="aspect-ratio-btn" data-ratio="2/1">长图 2:1</div>
                          <div class="aspect-ratio-btn" data-ratio="2.35/1">宽屏 2.35:1</div>
                         <div class="aspect-ratio-btn" data-ratio="1/1">方形 1:1</div>
                     </div>
@@ -892,16 +831,6 @@
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toastMessage');
         
-        subTitle.addEventListener('Textarea', function() {
-            // 直接同步内容 (保留所有格式)
-            preview.subTitleTextarea = subTitle.value;
-            
-            // 空内容时显示占位符
-            if (!subTitle.value.trim()) {
-                preview.subTitleTextarea = '输入内容将在此显示';
-            }
-        });
-
         // 模板背景渐变
         const gradients = {
             1: 'linear-gradient(135deg, #4facfe 0%, #00c1fc 100%)',
@@ -1025,7 +954,7 @@
         // 更新预览比例
         function updatePreviewRatio() {
             // 移除所有比例类
-            preview.classList.remove('ratio-3-4', 'ratio-4-3', 'ratio-2-1','ratio-2-35-1', 'ratio-1-1');
+            preview.classList.remove('ratio-3-4', 'ratio-4-3', 'ratio-2-1', 'ratio-2-35-1', 'ratio-1-1');
             
             // 添加当前比例类
             switch(currentAspectRatio) {
@@ -1076,10 +1005,7 @@
             if (currentAspectRatio === '2/1' && safeSubtitle.length > 37) {
                 safeSubtitle = safeSubtitle.substring(0, 37) + '...';
             }
-             // 在2.35:1比例下限制副标题长度为37个字符
-            if (currentAspectRatio === '2.35/1' && safeSubtitle.length > 37) {
-                safeSubtitle = safeSubtitle.substring(0, 37) + '...';
-            }
+            
             previewTitle.innerHTML = safeTitle;
             previewSubtitle.innerHTML = safeSubtitle;
             previewAuthor.innerHTML = safeAuthor;
