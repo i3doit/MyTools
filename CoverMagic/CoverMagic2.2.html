@@ -408,8 +408,14 @@
             font-size: 1rem;
         }
         
-        /* 长图 2:1 */
+        /* 小图 2:1 */
         .ratio-2-1 .preview-author {
+            bottom: 10px; /* 修改为10px */
+            right: 50px;
+            font-size: 0.9rem;
+        }
+         /* 公众号 2.35:1 */
+        .ratio-2.35-1 .preview-author {
             bottom: 10px; /* 修改为10px */
             right: 50px;
             font-size: 0.9rem;
@@ -429,15 +435,19 @@
         
         .ratio-3-4 .preview-content {
             padding: 40px 35px;
+            word-wrap: break-word;
+            white-space: pre-wrap; /* 关键属性:保留空格和换行 */
         }
         
         .ratio-3-4 .preview-title {
             font-size: 2.5rem;
             margin-bottom: 15px;
+            word-wrap: break-word;
         }
         
         .ratio-3-4 .preview-subtitle {
             font-size: 1.1rem;
+            word-wrap: break-word;
         }
         
         .ratio-4-3 {
@@ -447,15 +457,18 @@
         .ratio-4-3 .preview-content {
             padding: 40px 50px;
             white-space: pre-wrap; /* 关键属性:保留空格和换行 */
+            word-wrap: break-word;
         }
         
         .ratio-4-3 .preview-title {
             font-size: 2.8rem;
             margin-bottom: 15px;
+            word-wrap: break-word;
         }
         
         .ratio-4-3 .preview-subtitle {
             font-size: 1.2rem;
+            word-wrap: break-word;
         }
         
         .ratio-2-1 {
@@ -465,17 +478,20 @@
         .ratio-2-1 .preview-content {
             padding: 40px 50px;
             white-space: pre-wrap; /* 关键属性:保留空格和换行 */
+            word-wrap: break-word;
         }
         
         .ratio-2-1 .preview-title {
             font-size: 3.5rem;
             margin-bottom: 15px;
             max-width: 85%;
+            word-wrap: break-word;
         }
         
         .ratio-2-1 .preview-subtitle {
             font-size: 1.3rem;
             max-width: 85%;
+            word-wrap: break-word;
         }
         .ratio-2.35-1 {
             aspect-ratio: 2.35/1;
@@ -483,6 +499,7 @@
         
         .ratio-2.35-1 .preview-content {
             padding: 40px 50px;
+            word-wrap: break-word;
             white-space: pre-wrap; /* 关键属性:保留空格和换行 */
         }
         
@@ -490,11 +507,13 @@
             font-size: 3.5rem;
             margin-bottom: 15px;
             max-width: 85%;
+            word-wrap: break-word;
         }
         
         .ratio-2.35-1 .preview-subtitle {
             font-size: 1.3rem;
             max-width: 85%;
+            word-wrap: break-word;
         }
         
         .ratio-1-1 {
@@ -508,10 +527,12 @@
         .ratio-1-1 .preview-title {
             font-size: 2.8rem;
             margin-bottom: 15px;
+            word-wrap: break-word;
         }
         
         .ratio-1-1 .preview-subtitle {
             font-size: 1.2rem;
+            word-wrap: break-word;
         }
         
         .hidden {
@@ -751,8 +772,8 @@
                     <div class="aspect-ratio-selector">
                         <div class="aspect-ratio-btn active" data-ratio="3/4">竖版 3:4</div>
                         <div class="aspect-ratio-btn" data-ratio="4/3">横版 4:3</div>
-                        <div class="aspect-ratio-btn" data-ratio="2/1">长图 2:1</div>     
-                         <div class="aspect-ratio-btn" data-ratio="2.35/1">长图 2.35:1</div>
+                        <div class="aspect-ratio-btn" data-ratio="2/1">小图 2:1</div>     
+                         <div class="aspect-ratio-btn" data-ratio="2.35/1">公众号 2.35:1</div>
                         <div class="aspect-ratio-btn" data-ratio="1/1">方形 1:1</div>
                     </div>
                 </div>
@@ -1029,7 +1050,10 @@
             if (currentAspectRatio === '2/1' && safeSubtitle.length > 37) {
                 safeSubtitle = safeSubtitle.substring(0, 37) + '...';
             }
-            
+             // 在2.35:1比例下限制副标题长度为37个字符
+            if (currentAspectRatio === '2.35/1' && safeSubtitle.length > 37) {
+                safeSubtitle = safeSubtitle.substring(0, 37) + '...';
+            }
             previewTitle.innerHTML = safeTitle;
             previewSubtitle.innerHTML = safeSubtitle;
             previewAuthor.innerHTML = safeAuthor;
