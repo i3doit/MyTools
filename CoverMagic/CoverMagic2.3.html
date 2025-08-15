@@ -455,6 +455,34 @@
             max-width: 85%;
         }
         
+        /* 新增2.35:1比例样式 */
+        .ratio-2-35-1 {
+            aspect-ratio: 2.35/1;
+        }
+        
+        .ratio-2-35-1 .preview-content {
+            padding: 40px 60px;
+        }
+        
+        .ratio-2-35-1 .preview-title {
+            font-size: 3.8rem;
+            margin-bottom: 15px;
+            max-width: 90%;
+        }
+        
+        .ratio-2-35-1 .preview-subtitle {
+            font-size: 1.4rem;
+            max-width: 90%;
+        }
+        
+        /* 作者位置自适应 */
+        .ratio-2-35-1 .preview-author {
+            bottom: 10px;
+            right: 40px;
+            font-size: 0.9rem;
+        }
+
+        
         .ratio-1-1 {
             aspect-ratio: 1/1;
         }
@@ -710,6 +738,7 @@
                         <div class="aspect-ratio-btn active" data-ratio="3/4">竖版 3:4</div>
                         <div class="aspect-ratio-btn" data-ratio="4/3">横版 4:3</div>
                         <div class="aspect-ratio-btn" data-ratio="2/1">长图 2:1</div>
+                         <div class="aspect-ratio-btn" data-ratio="2.35/1">宽屏 2.35:1</div>
                         <div class="aspect-ratio-btn" data-ratio="1/1">方形 1:1</div>
                     </div>
                 </div>
@@ -925,7 +954,7 @@
         // 更新预览比例
         function updatePreviewRatio() {
             // 移除所有比例类
-            preview.classList.remove('ratio-3-4', 'ratio-4-3', 'ratio-2-1', 'ratio-1-1');
+            preview.classList.remove('ratio-3-4', 'ratio-4-3', 'ratio-2-1', 'ratio-2-35-1', 'ratio-1-1');
             
             // 添加当前比例类
             switch(currentAspectRatio) {
@@ -937,6 +966,9 @@
                     break;
                 case '2/1':
                     preview.classList.add('ratio-2-1');
+                    break;
+                case '2.35/1':
+                    preview.classList.add('ratio-2-35-1');
                     break;
                 case '1/1':
                     preview.classList.add('ratio-1-1');
