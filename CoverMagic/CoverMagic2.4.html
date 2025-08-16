@@ -140,12 +140,42 @@
           box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); /* 内阴影 */
           background: rgba(255, 255, 255, 0.7);
         }
-        
-        /* 聚焦状态 */
+            /* 聚焦状态 */
         input[type="textarea"]:focus, textarea:focus {
           border-color: #66afe9;      /* 高亮边框色 */
           outline: none;              /* 移除默认轮廓 */
           box-shadow: 0 0 8px rgba(102, 175, 233, 0.6); /* 发光效果 */
+        }
+        
+            /* 输入区域优化 */
+        .form-group textarea {
+            width: 100%;
+            padding: 14px 15px;
+            border: none;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            font-family: 'Lato', sans-serif;
+            font-size: 1rem;
+            color: var(--text-primary);
+            outline: none;
+            transition: all 0.3s;
+            border: 1px solid rgba(79, 172, 254, 0.2);
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .form-group textarea:focus {
+            background: rgba(255, 255, 255, 1);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.3);
+        }
+        
+                /* 字符计数器 */
+        .char-counter {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: right;
+            margin-top: 5px;
         }
 
         .templates-container {
@@ -275,13 +305,15 @@
             background-color: white;
         }
 
+        /* 新增排版优化样式 */
         .preview-content {
-            padding: 40px;
-            position: relative;
             display: flex;
             flex-direction: column;
             justify-content: center;
             height: 100%;
+            padding: 40px;
+            position: relative;
+            box-sizing: border-box;
             transition: padding 0.3s;
         }
 
@@ -291,19 +323,29 @@
             margin-bottom: 20px;
             line-height: 1.3;
             text-shadow: 0 1px 1px rgba(0,0,0,0.05);
-            transition: font-size 0.3s, margin-bottom 0.3s;
             word-break: break-word;
-            max-width: 90%;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3; /* 最多显示3行 */
+            -webkit-box-orient: vertical;
+            transition: font-size 0.3s, margin-bottom 0.3s;
         }
-
+        
         .preview-subtitle {
             font-weight: 400;
             margin-bottom: 25px;
             opacity: 0.9;
             line-height: 1.6;
-            transition: font-size 0.3s, margin-bottom 0.3s;
             word-break: break-word;
-            max-width: 90%;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 4; /* 最多显示4行 */
+            -webkit-box-orient: vertical;
+            transition: font-size 0.3s, margin-bottom 0.3s;
         }
 
         .preview-author {
@@ -413,10 +455,12 @@
         .ratio-3-4 .preview-title {
             font-size: 2.5rem;
             margin-bottom: 15px;
+            -webkit-line-clamp: 4; /* 竖版可显示更多行 */
         }
         
         .ratio-3-4 .preview-subtitle {
             font-size: 1.1rem;
+            -webkit-line-clamp: 5;
         }
         
         .ratio-4-3 {
@@ -704,13 +748,17 @@
             <div class="control-panel">
                 <div class="form-group">
                     <label for="mainTitle">封面主题</label>
-                    <input type="text" id="mainTitle" placeholder="输入吸引眼球的标题" value="用AI打造爆款设计">
+                    <textarea id="mainTitle" placeholder="输入吸引眼球的标题"value="用AI打造爆款设计"></textarea>
+                    <div class="char-counter">
+                        <span id="titleCounter">0</span>/100
+                    </div>
                 </div>
                 
                 <div class="form-group">
                     <label for="subTitle">封面描述（可选）</label>
                     <textarea name="message"  id="subTitle" placeholder="添加补充性信息" value="CoverCanvas帮你3分钟制作高质量封面图" rows="2" cols="40" placeholder="请输入封面描述"maxlength="200"></textarea>
-                </div>
+                   <div class="char-counter"><span id="subtitleCounter">0</span>/200</div>
+                 </div>
                 
                 <div class="form-group">
                     <label for="author">作者（可选）</label>
@@ -912,11 +960,20 @@
                 }
             });
             
+                  // 添加输入事件监听
+            mainTitleInput.addEventListener('input', handleTextInput);
+            subTitleInput.addEventListener('input', handleTextInput);
+            
+            // 初始化字符计数器
+            titleCounter.textContent = mainTitleInput.value.length;
+            subtitleCounter.textContent = subTitleInput.value.length;
+            
             // 输入事件监听
             [mainTitleInput, subTitleTextarea, authorInput].forEach(input => {
                 input.addEventListener('input', updatePreview);
                 input.addEventListener('input', checkInputVisibility);
             });
+        
             
             // 按钮事件绑定
             downloadBtn.addEventListener('click', downloadImage);
@@ -928,6 +985,25 @@
             updatePreview();
         }
         
+                // 新增文本处理功能
+        function handleTextInput() {
+            // 安全处理：防止XSS攻击
+            const safeTitle = escapeHtml(mainTitleInput.value);
+            const safeSubtitle = escapeHtml(subTitleInput.value);
+            
+            // 更新预览内容
+            previewTitle.innerHTML = safeTitle;
+            previewSubtitle.innerHTML = safeSubtitle;
+            
+            // 更新字符计数器
+            titleCounter.textContent = mainTitleInput.value.length;
+            subtitleCounter.textContent = subTitleInput.value.length;
+            
+            // 检查输入可见性
+            checkInputVisibility();
+            
+            saveToLocalStorage();
+        }
         // 处理模板切换
         function handleTemplateChange(e) {
             const template = e.currentTarget.dataset.template;
