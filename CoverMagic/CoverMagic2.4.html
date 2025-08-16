@@ -910,6 +910,25 @@
             10: { title: '#ffffff', subtitle: 'rgba(255,255,255,0.9)', author: '#ffffff' }
         };
         
+        mainTitleInput.addEventListener('input', function() {
+            // 直接同步内容 (保留所有格式)
+            preview.textContent = mainTitleInput.value;
+            
+            // 空内容时显示占位符
+            if (!mainTitleInput.value.trim()) {
+                preview.textContent = '输入内容将在此显示';
+            }
+        });
+        subTitleTextarea.addEventListener('input', function() {
+            // 直接同步内容 (保留所有格式)
+            preview.textContent = subTitleTextarea.value;
+            
+            // 空内容时显示占位符
+            if (!subTitleTextarea.value.trim()) {
+                preview.textContent = '输入内容将在此显示';
+            }
+        });
+        
         // 复制联系方式功能
         function copyContact(event) {
             event.preventDefault();
