@@ -913,11 +913,11 @@
         
         subTitleTextarea.addEventListener('input', function() {
             // 直接同步内容 (保留所有格式)
-            preview.textContent = subTitleTextarea.value;
+            previewSubtitle.textContent = subTitleTextarea.value;
             
             // 空内容时显示占位符
             if (!subTitleTextarea.value.trim()) {
-                preview.textContent = '输入内容将在此显示';
+                previewSubtitle.textContent = '输入内容将在此显示';
             }
         });
         
