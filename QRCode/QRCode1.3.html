@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高级二维码生成器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #f5f7fa;
+            --bg-secondary: #ffffff;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --accent: #0071e3;
+            --accent-hover: #0077ed;
+            --border: #d2d2d7;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            --success: #34c759;
+            --error: #ff453a;
+            --warning: #ff9f0a;
+            --danger: #ff3b30;
+            --radius: 12px;
+            --transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --text-primary: #f5f5f7;
+            --text-secondary: #a1a1a6;
+            --border: #424245;
+            --glass-bg: rgba(30, 30, 30, 0.7);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            transition: var(--transition);
+        }
+
+        body[data-theme="dark"] {
+            background: linear-gradient(135deg, #121212 0%, #2c2c2e 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        .app-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, var(--accent), #7d7df7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .url-input-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .url-input {
+            width: 100%;
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: var(--transition);
+            padding-right: 130px; /* 为协议按钮预留空间 */
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
+        }
+
+        .protocol-buttons {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 8px;
+        }
+
+        .protocol-btn {
+            padding: 4px 8px;
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .protocol-btn:hover {
+            background: rgba(0, 113, 227, 0.1);
+        }
+
+        .expiry-section {
+            margin-bottom: 20px;
+        }
+
+        .expiry-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 10px;
+        }
+
+        .expiry-option {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .expiry-option input[type="radio"] {
+            margin-right: 8px;
+        }
+
+        .expiry-option:hover, .expiry-option.active {
+            border-color: var(--accent);
+            background: rgba(0, 113, 227, 0.05);
+        }
+
+        .expiry-option.active {
+            background: rgba(0, 113, 227, 0.1);
+            border: 2px solid var(--accent);
+        }
+
+        .custom-date-container {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+
+        .custom-date-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .custom-date-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .date-time-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .reset-date-btn {
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+            align-self: flex-end;
+        }
+
+        .reset-date-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: nowrap;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ff2a1f;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .qr-preview-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .qr-preview {
+            width: 250px;
+            height: 250px;
+            background: white;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #qrcode {
+            padding: 15px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-style-options {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .style-option {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: var(--transition);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .style-option.active {
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .style-default {
+            background: white;
+            color: #000;
+        }
+
+        .style-gradient {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+        }
+
+        .style-cartoon {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+            color: #ff6b6b;
+        }
+
+        .style-heart {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff9f7f 100%);
+            color: white;
+        }
+
+        .download-btn {
+            padding: 12px 20px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .download-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .expiry-info {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: var(--radius);
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 300px;
+            margin-top: 15px;
+        }
+
+        .examples-section {
+            margin-bottom: 30px;
+        }
+
+        .examples-title {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+        }
+
+        .examples-grid {
+            display: flex;
+            overflow-x: auto;
+            gap: 15px;
+            padding: 10px 0;
+            scrollbar-width: thin;
+        }
+
+        .example-item {
+            flex: 0 0 auto;
+            width: 180px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid var(--border);
+        }
+
+        .example-item:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+        }
+
+        .example-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .example-label {
+            padding: 10px;
+            background: var(--bg-secondary);
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .history-section {
+            margin-top: 20px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .history-title {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .history-items {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 10px 0;
+            scrollbar-width: thin;
+        }
+
+        .history-item {
+            flex: 0 0 auto;
+            width: 80px;
+            cursor: pointer;
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+        }
+
+        .history-item:hover {
+            transform: scale(1.05);
+        }
+
+        .history-item img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .empty-history {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            z-index: 100;
+            font-size: 1.4rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 15px 25px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: var(--transition);
+            z-index: 1000;
+            border: 1px solid var(--border);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--error);
+        }
+
+        .toast.warning {
+            border-left: 4px solid var(--warning);
+        }
+
+        .toast-icon {
+            font-size: 1.2rem;
+        }
+
+        .toast-message {
+            font-size: 0.9rem;
+        }
+
+        .instructions {
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--glass-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .instructions h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+
+        .instruction-steps {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .instruction-steps li {
+            margin-bottom: 15px;
+            padding-left: 30px;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        .instruction-steps li:before {
+            content: counter(step-counter);
+            counter-increment: step-counter;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: var(--accent);
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .app-card {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .action-buttons {
+                flex-direction: row;
+                flex-wrap: nowrap;
+            }
+            
+            .btn {
+                font-size: 1rem;
+            }
+            
+            .protocol-buttons {
+                position: relative;
+                top: auto;
+                right: auto;
+                transform: none;
+                margin-top: 10px;
+                justify-content: flex-end;
+            }
+            
+            .url-input {
+                padding-right: 16px;
+            }
+            
+            .examples-grid {
+                padding-bottom: 10px;
+            }
+            
+            .qr-style-options {
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                padding: 10px 0;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .expiry-options {
+                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            }
+            
+            .expiry-option {
+                padding: 8px 10px;
+                font-size: 0.9rem;
+            }
+            
+            .btn {
+                padding: 14px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-toggle" id="themeToggle">
+        <i class="fas fa-moon"></i>
+    </div>
+
+    <div class="toast" id="toast">
+        <i class="toast-icon"></i>
+        <span class="toast-message"></span>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>高级二维码生成器</h1>
+            <p class="subtitle">创建具有时效性的精美二维码</p>
+        </header>
+
+        <main>
+            <div class="app-card">
+                <div class="input-group">
+                    <label for="urlInput">请输入生成二维码图片的网址</label>
+                    <div class="url-input-container">
+                        <input type="url" id="urlInput" class="url-input" value="https://t.zsxq.com/pBPcv" autocomplete="off">
+                        <div class="protocol-buttons">
+                            <button class="protocol-btn" data-protocol="http://">http://</button>
+                            <button class="protocol-btn" data-protocol="https://">https://</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>二维码有效期</label>
+                    <div class="expiry-section">
+                        <div class="expiry-options">
+                            <div class="expiry-option" data-days="7">
+                                <input type="radio" name="expiry" id="expiry7"> <label for="expiry7">7天</label>
+                            </div>
+                            <div class="expiry-option active" data-days="15">
+                                <input type="radio" name="expiry" id="expiry15" checked> <label for="expiry15">15天</label>
+                            </div>
+                            <div class="expiry-option" data-days="30">
+                                <input type="radio" name="expiry" id="expiry30"> <label for="expiry30">30天</label>
+                            </div>
+                            <div class="expiry-option" data-days="0">
+                                <input type="radio" name="expiry" id="expiryPermanent"> <label for="expiryPermanent">永久有效</label>
+                            </div>
+                            <div class="expiry-option custom" data-days="custom">
+                                <input type="radio" name="expiry" id="expiryCustom"> <label for="expiryCustom">自定义</label>
+                            </div>
+                        </div>
+                        
+                        <div class="custom-date-container" id="customDateContainer">
+                            <div class="custom-date-row">
+                                <div class="custom-date-group">
+                                    <label for="expiryDate">截止日期</label>
+                                    <input type="date" id="expiryDate" class="date-time-input">
+                                </div>
+                                <button class="reset-date-btn" id="resetDateBtn">设为今天</button>
+                            </div>
+                            
+                            <div class="custom-date-row">
+                                <div class="custom-date-group">
+                                    <label for="expiryTime">截止时间</label>
+                                    <input type="time" id="expiryTime" class="date-time-input" value="23:59">
+                                </div>
+                                <button class="reset-date-btn" id="resetTimeBtn">重置时间</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="generateBtn">
+                        <i class="fas fa-qrcode"></i> 生成二维码
+                    </button>
+                    <button class="btn btn-danger" id="resetBtn">
+                        <i class="fas fa-redo"></i> 重置
+                    </button>
+                </div>
+
+                <div class="qr-preview-container">
+                    <div class="qr-preview">
+                        <div id="qrcode"></div>
+                    </div>
+                    
+                    <div class="qr-style-options">
+                        <div class="style-option style-default active" data-style="default">
+                            <i class="fas fa-qrcode"></i>
+                        </div>
+                        <div class="style-option style-gradient" data-style="gradient">
+                            <i class="fas fa-cloud"></i>
+                        </div>
+                        <div class="style-option style-cartoon" data-style="cartoon">
+                            <i class="fas fa-smile"></i>
+                        </div>
+                        <div class="style-option style-heart" data-style="heart">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                    </div>
+                    
+                    <button class="download-btn" id="downloadBtn">
+                        <i class="fas fa-download"></i> 下载二维码
+                    </button>
+                    
+                    <div class="expiry-info" id="expiryInfo">
+                        二维码未生成
+                    </div>
+                </div>
+
+                <div class="examples-section">
+                    <div class="examples-title">案例展示（点击生成）</div>
+                    <div class="examples-grid">
+                        <div class="example-item" data-url="https://deepseek.idoxu.com/aidder/CoverMagic2.4.html">
+                            <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80" alt="案例1">
+                            <div class="example-label">封面魔法</div>
+                        </div>
+                        <div class="example-item" data-url="https://deepseek.idoxu.com/aidder/FireNotes2.0.html">
+                            <img src="https://images.unsplash.com/photo-1543285198-3af15c4622d9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80" alt="案例2">
+                            <div class="example-label">灵感笔记</div>
+                        </div>
+                        <div class="example-item" data-url="https://deepseek.idoxu.com/aidder/AnimeSketchMarker2.html">
+                            <img src="https://images.unsplash.com/photo-1542051841857-5f90071e7989?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80" alt="案例3">
+                            <div class="example-label">动漫手绘</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-card history-section">
+                <div class="history-header">
+                    <div class="history-title">生成历史</div>
+                    <button class="btn btn-danger small" title="清空历史记录" id="clearHistoryBtn">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+                
+                <div class="history-items" id="historyItems">
+                    <div class="empty-history" id="emptyHistory">暂无历史记录</div>
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <h2>使用说明</h2>
+                <ol class="instruction-steps">
+                    <li>在输入框中输入要生成二维码的完整网址</li>
+                    <li>选择二维码的有效期（默认15天），自定义选项可设置精确的失效时间</li>
+                    <li>点击"生成二维码"按钮创建二维码，选择不同的样式模板</li>
+                    <li>使用"下载二维码"按钮保存图片，在历史记录中查看之前生成的二维码</li>
+                </ol>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <script>
+        // DOM元素引用
+        const elements = {
+            urlInput: document.getElementById('urlInput'),
+            qrcodeContainer: document.getElementById('qrcode'),
+            expiryInfo: document.getElementById('expiryInfo'),
+            generateBtn: document.getElementById('generateBtn'),
+            resetBtn: document.getElementById('resetBtn'),
+            themeToggle: document.getElementById('themeToggle'),
+            toast: document.getElementById('toast'),
+            expiryOptions: document.querySelectorAll('.expiry-option'),
+            customDateContainer: document.getElementById('customDateContainer'),
+            expiryDate: document.getElementById('expiryDate'),
+            expiryTime: document.getElementById('expiryTime'),
+            resetDateBtn: document.getElementById('resetDateBtn'),
+            resetTimeBtn: document.getElementById('resetTimeBtn'),
+            historyItems: document.getElementById('historyItems'),
+            clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+            emptyHistory: document.getElementById('emptyHistory'),
+            exampleItems: document.querySelectorAll('.example-item'),
+            protocolButtons: document.querySelectorAll('.protocol-btn'),
+            styleOptions: document.querySelectorAll('.style-option'),
+            downloadBtn: document.getElementById('downloadBtn')
+        };
+
+        // 状态管理
+        let state = {
+            currentQR: null,
+            expiryDays: 15,
+            expiryType: 'days',
+            customExpiry: null,
+            qrStyle: 'default',
+            history: JSON.parse(localStorage.getItem('qrHistory')) || [],
+            theme: localStorage.getItem('theme') || 'light'
+        };
+
+        // 初始化应用
+        function initApp() {
+            // 设置主题
+            document.body.setAttribute('data-theme', state.theme);
+            elements.themeToggle.innerHTML = state.theme === 'dark' ? 
+                '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            
+            // 设置默认日期时间为明天23:59
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            elements.expiryDate.valueAsDate = tomorrow;
+            
+            // 更新历史记录显示
+            updateHistoryDisplay();
+            
+            // 绑定事件监听器
+            setupEventListeners();
+            
+            // 检查URL参数
+            checkUrlParams();
+            
+            // 初始生成二维码
+            setTimeout(generateQRCode, 500);
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 主题切换
+            elements.themeToggle.addEventListener('click', toggleTheme);
+            
+            // 生成二维码按钮
+            elements.generateBtn.addEventListener('click', generateQRCode);
+            
+            // 重置按钮
+            elements.resetBtn.addEventListener('click', resetForm);
+            
+            // 有效期选项点击事件
+            elements.expiryOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    const radio = option.querySelector('input[type="radio"]');
+                    radio.checked = true;
+                    selectExpiryOption(option);
+                });
+            });
+            
+            // 自定义日期时间变化
+            elements.expiryDate.addEventListener('change', updateCustomExpiry);
+            elements.expiryTime.addEventListener('change', updateCustomExpiry);
+            
+            // 重置日期按钮
+            elements.resetDateBtn.addEventListener('click', resetCustomDate);
+            elements.resetTimeBtn.addEventListener('click', resetCustomTime);
+            
+            // 清除历史记录
+            elements.clearHistoryBtn.addEventListener('click', clearHistory);
+            
+            // 案例点击事件
+            elements.exampleItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const url = item.dataset.url;
+                    elements.urlInput.value = url;
+                    generateQRCode();
+                });
+            });
+            
+            // 协议按钮点击事件
+            elements.protocolButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const protocol = btn.dataset.protocol;
+                    elements.urlInput.value = protocol;
+                    elements.urlInput.focus();
+                });
+            });
+            
+            // 样式选项点击
+            elements.styleOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    const style = option.dataset.style;
+                    selectStyleOption(option, style);
+                });
+            });
+            
+            // 下载按钮
+            elements.downloadBtn.addEventListener('click', downloadQRCode);
+            
+            // 输入验证
+            elements.urlInput.addEventListener('input', validateUrlInput);
+            elements.urlInput.addEventListener('focus', clearDefaultUrl);
+        }
+
+        // 清除默认URL
+        function clearDefaultUrl() {
+            if (elements.urlInput.value === 'https://t.zsxq.com/pBPcv') {
+                elements.urlInput.value = '';
+            }
+        }
+
+        // 切换主题
+        function toggleTheme() {
+            const newTheme = state.theme === 'light' ? 'dark' : 'light';
+            state.theme = newTheme;
+            document.body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            elements.themeToggle.innerHTML = newTheme === 'dark' ? 
+                '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        }
+
+        // 选择有效期选项
+        function selectExpiryOption(option) {
+            // 移除所有active类
+            elements.expiryOptions.forEach(opt => opt.classList.remove('active'));
+            
+            // 添加active类到当前选项
+            option.classList.add('active');
+            
+            // 处理自定义选项
+            if (option.classList.contains('custom')) {
+                elements.customDateContainer.style.display = 'block';
+                updateCustomExpiry();
+            } else {
+                elements.customDateContainer.style.display = 'none';
+                state.expiryType = 'days';
+                state.expiryDays = parseInt(option.dataset.days);
+                state.customExpiry = null;
+            }
+            
+            if (option.dataset.days === '0') {
+                state.expiryType = 'permanent';
+                state.customExpiry = null;
+            }
+        }
+
+        // 更新自定义过期时间
+        function updateCustomExpiry() {
+            const date = elements.expiryDate.valueAsDate;
+            const time = elements.expiryTime.value;
+            
+            if (date && time) {
+                const [hours, minutes] = time.split(':').map(Number);
+                date.setHours(hours, minutes, 0, 0);
+                
+                // 确保日期在未来
+                const now = new Date();
+                if (date < now) {
+                    showToast('过期时间必须在未来', 'warning');
+                    resetCustomDate();
+                    return;
+                }
+                
+                state.customExpiry = date;
+                state.expiryType = 'custom';
+            }
+        }
+
+        // 重置自定义日期
+        function resetCustomDate() {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            elements.expiryDate.valueAsDate = tomorrow;
+            updateCustomExpiry();
+        }
+
+        // 重置自定义时间
+        function resetCustomTime() {
+            elements.expiryTime.value = '23:59';
+            updateCustomExpiry();
+        }
+
+        // 选择样式选项
+        function selectStyleOption(option, style) {
+            // 移除所有active类
+            elements.styleOptions.forEach(opt => opt.classList.remove('active'));
+            
+            // 添加active类到当前选项
+            option.classList.add('active');
+            state.qrStyle = style;
+            
+            // 重新生成二维码以应用新样式
+            if (state.currentQR) {
+                generateQRCode();
+            }
+        }
+
+        // 验证URL输入
+        function validateUrlInput() {
+            const url = elements.urlInput.value.trim();
+            const isValid = url && isValidUrl(url);
+            
+            if (url && !isValid) {
+                showToast('请输入有效的URL地址', 'error');
+            }
+        }
+
+        // 检查URL有效性
+        function isValidUrl(url) {
+            try {
+                new URL(url);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // 生成二维码
+        function generateQRCode() {
+            let url = elements.urlInput.value.trim();
+            
+            // 自动添加协议前缀
+            if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+                elements.urlInput.value = url;
+            }
+            
+            // 验证URL
+            if (!url) {
+                showToast('请输入URL地址', 'error');
+                return;
+            }
+            
+            if (!isValidUrl(url)) {
+                showToast('请输入有效的URL地址', 'error');
+                return;
+            }
+            
+            // 清除现有二维码
+            elements.qrcodeContainer.innerHTML = '';
+            
+            // 计算过期时间
+            let expiryDate = null;
+            
+            if (state.expiryType === 'days') {
+                expiryDate = new Date();
+                expiryDate.setDate(expiryDate.getDate() + state.expiryDays);
+                expiryDate.setHours(23, 59, 0, 0);
+            } else if (state.expiryType === 'custom') {
+                expiryDate = new Date(state.customExpiry);
+            } else if (state.expiryType === 'permanent') {
+                expiryDate = null;
+            }
+            
+            // 创建二维码数据对象
+            const qrData = {
+                url: url,
+                expiryDate: expiryDate ? expiryDate.toISOString() : null,
+                generatedAt: new Date().toISOString(),
+                style: state.qrStyle
+            };
+            
+            // 生成二维码
+            new QRCode(elements.qrcodeContainer, {
+                text: url,
+                width: 220,
+                height: 220,
+                colorDark: getStyleColor('dark'),
+                colorLight: getStyleColor('light'),
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // 应用样式效果
+            applyStyleEffects();
+            
+            // 更新状态
+            state.currentQR = qrData;
+            
+            // 更新过期信息显示
+            updateExpiryInfo();
+            
+            // 添加到历史记录
+            addToHistory(qrData);
+            
+            // 显示成功消息
+            showToast('二维码已生成', 'success');
+        }
+
+        // 获取样式颜色
+        function getStyleColor(type) {
+            switch (state.qrStyle) {
+                case 'gradient':
+                    return type === 'dark' ? '#1a237e' : '#bbdefb';
+                case 'cartoon':
+                    return type === 'dark' ? '#e91e63' : '#ffe0e9';
+                case 'heart':
+                    return type === 'dark' ? '#c62828' : '#ffebee';
+                default: // default
+                    return type === 'dark' ? '#000000' : '#ffffff';
+            }
+        }
+
+        // 应用样式效果
+        function applyStyleEffects() {
+            const qrImg = elements.qrcodeContainer.querySelector('img');
+            if (qrImg) {
+                // 移除旧样式
+                qrImg.style.filter = '';
+                qrImg.style.mixBlendMode = '';
+                
+                // 应用新样式
+                switch (state.qrStyle) {
+                    case 'gradient':
+                        qrImg.style.filter = 'drop-shadow(0 0 4px rgba(38, 50, 207, 0.5))';
+                        break;
+                    case 'cartoon':
+                        qrImg.style.filter = 'drop-shadow(0 0 4px rgba(233, 30, 99, 0.3))';
+                        break;
+                    case 'heart':
+                        qrImg.style.filter = 'drop-shadow(0 0 4px rgba(198, 40, 40, 0.3))';
+                        qrImg.style.mixBlendMode = 'multiply';
+                        break;
+                }
+            }
+        }
+
+        // 更新过期信息显示
+        function updateExpiryInfo() {
+            if (!state.currentQR || !state.currentQR.expiryDate) {
+                elements.expiryInfo.innerHTML = '二维码永久有效';
+                return;
+            }
+            
+            const expiryDate = new Date(state.currentQR.expiryDate);
+            const now = new Date();
+            const diffTime = Math.abs(expiryDate - now);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            const formattedDate = expiryDate.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            elements.expiryInfo.innerHTML = `
+                <div>二维码有效期至: ${formattedDate}</div>
+                <div>剩余: ${diffDays}天</div>
+            `;
+        }
+
+        // 添加到历史记录
+        function addToHistory(qrData) {
+            // 创建数据URL用于预览
+            const img = elements.qrcodeContainer.querySelector('img');
+            if (img) {
+                qrData.dataURL = img.src;
+                
+                // 添加到历史记录开头
+                state.history.unshift(qrData);
+                
+                // 限制历史记录数量
+                if (state.history.length > 10) {
+                    state.history = state.history.slice(0, 10);
+                }
+                
+                // 保存到localStorage
+                localStorage.setItem('qrHistory', JSON.stringify(state.history));
+                
+                // 更新显示
+                updateHistoryDisplay();
+            }
+        }
+
+        // 更新历史记录显示
+        function updateHistoryDisplay() {
+            if (state.history.length === 0) {
+                elements.emptyHistory.style.display = 'block';
+                return;
+            }
+            
+            elements.emptyHistory.style.display = 'none';
+            elements.historyItems.innerHTML = '';
+            
+            state.history.forEach((item, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.title = `生成于: ${new Date(item.generatedAt).toLocaleString()}`;
+                historyItem.innerHTML = `
+                    <img src="${item.dataURL}" alt="历史记录 ${index + 1}">
+                `;
+                
+                historyItem.addEventListener('click', () => {
+                    // 恢复生成状态
+                    elements.urlInput.value = item.url;
+                    
+                    // 设置样式
+                    const selectedStyle = document.querySelector(`.style-option[data-style="${item.style}"]`);
+                    if (selectedStyle) {
+                        selectStyleOption(selectedStyle, item.style);
+                    }
+                    
+                    // 设置有效期类型
+                    if (item.expiryDate) {
+                        const expiryOption = document.querySelector(`.expiry-option[data-days="custom"]`);
+                        if (expiryOption) {
+                            expiryOption.click();
+                            const expiryDate = new Date(item.expiryDate);
+                            elements.expiryDate.valueAsDate = expiryDate;
+                            elements.expiryTime.value = `${String(expiryDate.getHours()).padStart(2, '0')}:${String(expiryDate.getMinutes()).padStart(2, '0')}`;
+                            state.customExpiry = expiryDate;
+                        }
+                    } else {
+                        const permanentOption = document.querySelector(`.expiry-option[data-days="0"]`);
+                        if (permanentOption) {
+                            permanentOption.click();
+                        }
+                    }
+                    
+                    // 重新生成二维码
+                    generateQRCode();
+                    
+                    // 滚动到顶部
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+                
+                elements.historyItems.appendChild(historyItem);
+            });
+        }
+
+        // 清除历史记录
+        function clearHistory() {
+            state.history = [];
+            localStorage.removeItem('qrHistory');
+            updateHistoryDisplay();
+            showToast('历史记录已清除', 'success');
+        }
+
+        // 重置表单
+        function resetForm() {
+            elements.urlInput.value = 'https://t.zsxq.com/pBPcv';
+            elements.qrcodeContainer.innerHTML = '';
+            elements.expiryInfo.textContent = '二维码未生成';
+            state.currentQR = null;
+            
+            // 重置有效期选项（15天）
+            const days15Option = document.querySelector('.expiry-option[data-days="15"]');
+            if (days15Option) {
+                days15Option.click();
+            }
+            
+            // 重置样式为默认
+            const defaultStyle = document.querySelector('.style-option[data-style="default"]');
+            if (defaultStyle) {
+                selectStyleOption(defaultStyle, 'default');
+            }
+            
+            // 隐藏自定义日期容器
+            elements.customDateContainer.style.display = 'none';
+            
+            // 重新生成默认二维码
+            setTimeout(generateQRCode, 300);
+            
+            showToast('表单已重置', 'success');
+        }
+
+        // 下载二维码
+        function downloadQRCode() {
+            const img = elements.qrcodeContainer.querySelector('img');
+            if (!img) {
+                showToast('请先生成二维码', 'error');
+                return;
+            }
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const size = 300;
+            
+            canvas.width = size;
+            canvas.height = size;
+            
+            // 绘制白色背景（用于透明区域）
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, size, size);
+            
+            // 绘制二维码
+            const qrImage = new Image();
+            qrImage.crossOrigin = 'anonymous';
+            qrImage.src = img.src;
+            
+            qrImage.onload = function() {
+                ctx.drawImage(qrImage, (size - 220) / 2, (size - 220) / 2, 220, 220);
+                
+                // 添加样式效果（可选）
+                const link = document.createElement('a');
+                link.download = '二维码-' + new Date().toISOString().slice(0, 10) + '.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                showToast('二维码已下载', 'success');
+            };
+        }
+
+        // 显示通知
+        function showToast(message, type = 'info') {
+            const toast = elements.toast;
+            const toastIcon = toast.querySelector('.toast-icon');
+            const toastMessage = toast.querySelector('.toast-message');
+            
+            // 设置内容和样式
+            toastMessage.textContent = message;
+            toast.className = `toast ${type}`;
+            
+            // 设置图标
+            let iconClass;
+            switch (type) {
+                case 'success':
+                    iconClass = 'fas fa-check-circle';
+                    break;
+                case 'error':
+                    iconClass = 'fas fa-exclamation-circle';
+                    break;
+                case 'warning':
+                    iconClass = 'fas fa-exclamation-triangle';
+                    break;
+                default:
+                    iconClass = 'fas fa-info-circle';
+            }
+            
+            toastIcon.className = `toast-icon ${iconClass}`;
+            
+            // 显示toast
+            toast.classList.add('show');
+            
+            // 3秒后隐藏
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 检查URL参数
+        function checkUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const targetUrl = params.get('url');
+            
+            if (targetUrl) {
+                try {
+                    // 直接跳转到目标URL（不显示JSON）
+                    window.location.href = targetUrl;
+                } catch (e) {
+                    console.error('Error redirecting:', e);
+                }
+            }
+        }
+
+        // 初始化应用
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
