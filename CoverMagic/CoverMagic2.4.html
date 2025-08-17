@@ -1004,13 +1004,20 @@
             let safeSubtitle = escapeHtml(subTitleTextarea.value);
             const safeAuthor = escapeHtml(authorInput.value);
             
-            // 在2:1比例下限制副标题长度为37个字符
+            // 处理换行：将\n替换为<br>（保留分段）
+            safeSubtitle = safeSubtitle.replace(/\n/g, '<br>');
+            
+            // 在2:1比例下限制副标题长度
             if (currentAspectRatio === '2/1' && safeSubtitle.length > 37) {
-                safeSubtitle = safeSubtitle.substring(0, 37) + '...';
+                // 移除<br>标签后计算纯文本长度
+                const plainText = safeSubtitle.replace(/<br>/g, '');
+                if (plainText.length > 37) {
+                    safeSubtitle = plainText.substring(0, 37) + '...';
+                }
             }
             
             previewTitle.innerHTML = safeTitle;
-            previewSubtitle.innerHTML = safeSubtitle;
+            previewSubtitle.innerHTML = safeSubtitle; // 直接注入含<br>的HTML
             previewAuthor.innerHTML = safeAuthor;
             
             // 更新输入可见性
@@ -1018,6 +1025,7 @@
             
             saveToLocalStorage();
         }
+        
         
         // 下载封面图
         function downloadImage() {
