@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Magic Generator - 简约二维码生成工具</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #f5f7fa;
+            --bg-secondary: #ffffff;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --accent: #0071e3;
+            --accent-hover: #0077ed;
+            --border: #d2d2d7;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            --success: #34c759;
+            --error: #ff453a;
+            --warning: #ff9f0a;
+            --radius: 12px;
+            --transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --text-primary: #f5f5f7;
+            --text-secondary: #a1a1a6;
+            --border: #424245;
+            --glass-bg: rgba(30, 30, 30, 0.7);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            transition: var(--transition);
+        }
+
+        body[data-theme="dark"] {
+            background: linear-gradient(135deg, #121212 0%, #2c2c2e 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        .app-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, var(--accent), #7d7df7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .url-input {
+            width: 100%;
+            padding: 16px 120px 16px 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
+        }
+
+        .protocol-buttons {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 8px;
+        }
+
+        .protocol-btn {
+            padding: 4px 8px;
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .protocol-btn:hover {
+            background: rgba(0, 113, 227, 0.1);
+            border-color: var(--accent);
+        }
+
+        .expiry-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .expiry-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .expiry-option input[type="radio"] {
+            margin: 0;
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent);
+        }
+
+        .expiry-option label {
+            margin-bottom: 0;
+            font-weight: normal;
+        }
+
+        .custom-date {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 30px;
+        }
+
+        .custom-date input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            max-width: 200px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: nowrap;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 69, 58, 0.1);
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--error);
+            border: none;
+            padding: 6px;
+            border-radius: 50%;
+            width: 34px;
+            height: 34px;
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 69, 58, 0.1);
+        }
+
+        .small-btn {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+
+        .qr-preview-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .qr-preview {
+            width: 200px;
+            height: 200px;
+            background: white;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        #qrcode {
+            padding: 10px;
+        }
+
+        .expiry-info {
+            background: var(--bg-secondary);
+            padding: 12px;
+            border-radius: var(--radius);
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .examples-section {
+            margin-bottom: 30px;
+        }
+
+        .examples-title {
+            font-size: 1rem;
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .example-item {
+            border-radius: var(--radius);
+            overflow: hidden;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid var(--border);
+        }
+
+        .example-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+
+        .example-item img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .example-label {
+            padding: 8px;
+            background: var(--bg-secondary);
+            text-align: center;
+            font-size: 0.8rem;
+        }
+
+        .history-section {
+            margin-top: 30px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .history-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .history-items {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 10px 0;
+            scrollbar-width: thin;
+        }
+
+        .history-item {
+            flex: 0 0 auto;
+            width: 70px;
+            cursor: pointer;
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+        }
+
+        .history-item:hover {
+            transform: scale(1.05);
+        }
+
+        .history-item img {
+            width: 100%;
+            height: 70px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .empty-history {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-secondary);
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            z-index: 100;
+            font-size: 1.2rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: var(--transition);
+            z-index: 1000;
+            border: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--error);
+        }
+
+        .toast.warning {
+            border-left: 4px solid var(--warning);
+        }
+
+        .toast-icon {
+            font-size: 1.1rem;
+        }
+
+        .toast-message {
+            font-size: 0.85rem;
+        }
+
+        .instructions {
+            background: rgba(0, 113, 227, 0.07);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--accent);
+            font-size: 0.9rem;
+        }
+
+        .instructions h3 {
+            margin-bottom: 8px;
+            color: var(--accent);
+        }
+
+        .instructions ol {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .app-card {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .protocol-buttons {
+                top: 40px;
+                transform: none;
+                right: 16px;
+                gap: 5px;
+            }
+            
+            .protocol-btn {
+                padding: 3px 6px;
+                font-size: 0.7rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                padding: 10px 0;
+            }
+            
+            h1 {
+                font-size: 1.6rem;
+            }
+            
+            .subtitle {
+                font-size: 0.9rem;
+            }
+            
+            .app-card {
+                padding: 15px;
+            }
+            
+            .custom-date {
+                margin-left: 0;
+                max-width: 100%;
+            }
+            
+            .custom-date input {
+                max-width: none;
+            }
+            
+            .examples-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .qr-preview {
+                width: 180px;
+                height: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-toggle" id="themeToggle">
+        <i class="fas fa-moon"></i>
+    </div>
+
+    <div class="toast" id="toast">
+        <i class="toast-icon"></i>
+        <span class="toast-message"></span>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>QR Magic Generator</h1>
+            <p class="subtitle">简约风格二维码生成工具 - 创建具有时效性的精美二维码</p>
+        </header>
+
+        <main>
+            <div class="app-card">
+                <div class="instructions">
+                    <h3>使用说明：</h3>
+                    <ol>
+                        <li>输入需要转换为二维码的网址</li>
+                        <li>选择二维码的有效期（默认15天）</li>
+                        <li>点击"生成二维码"按钮创建</li>
+                        <li>扫描二维码可直接访问目标网站</li>
+                    </ol>
+                </div>
+                
+                <div class="input-group">
+                    <label for="urlInput">输入网址</label>
+                    <input type="url" id="urlInput" class="url-input" value="https://t.zsxq.com/pBPcv" autocomplete="off">
+                    <div class="protocol-buttons">
+                        <button class="protocol-btn" id="httpBtn">http://</button>
+                        <button class="protocol-btn" id="httpsBtn">https://</button>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>二维码有效期</label>
+                    <div class="expiry-section">
+                        <div class="expiry-option">
+                            <input type="radio" id="option7" name="expiry" value="7">
+                            <label for="option7">7天</label>
+                        </div>
+                        <div class="expiry-option">
+                            <input type="radio" id="option15" name="expiry" value="15" checked>
+                            <label for="option15">15天</label>
+                        </div>
+                        <div class="expiry-option">
+                            <input type="radio" id="option30" name="expiry" value="30">
+                            <label for="option30">30天</label>
+                        </div>
+                        <div class="expiry-option">
+                            <input type="radio" id="optionPermanent" name="expiry" value="0">
+                            <label for="optionPermanent">永久有效</label>
+                        </div>
+                        <div class="expiry-option">
+                            <input type="radio" id="optionCustom" name="expiry" value="custom">
+                            <label for="optionCustom">自定义日期</label>
+                        </div>
+                        <div class="custom-date">
+                            <input type="date" id="customDate">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="generateBtn">
+                        <i class="fas fa-qrcode"></i> 生成二维码
+                    </button>
+                    <button class="btn btn-secondary" id="resetBtn">
+                        <i class="fas fa-redo"></i> 重置
+                    </button>
+                </div>
+
+                <div class="qr-preview-container">
+                    <div class="qr-preview">
+                        <div id="qrcode"></div>
+                    </div>
+                    <div class="expiry-info" id="expiryInfo">
+                        二维码未生成
+                    </div>
+                </div>
+
+                <div class="examples-section">
+                    <div class="examples-title">案例展示（点击生成）</div>
+                    <div class="examples-grid">
+                        <div class="example-item" data-url="https://deepseek.idoxu.com/aidder/CoverMagic2.4.html">
+                            <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80" alt="案例1">
+                            <div class="example-label">封面魔法</div>
+                        </div>
+                        <div class="example-item" data-url="https://deepseek.idoxu.com/aidder/FireNotes2.0.html">
+                            <img src="https://images.unsplash.com/photo-1543285198-3af15c4622d9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80" alt="案例2">
+                            <div class="example-label">灵感笔记</div>
+                        </div>
+                        <div class="example-item" data-url="https://deepseek.idoxu.com/aidder/AnimeSketchMarker2.html">
+                            <img src="https://images.unsplash.com/photo-1542051841857-5f90071e7989?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80" alt="案例3">
+                            <div class="example-label">动漫手绘</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-card history-section">
+                <div class="history-header">
+                    <div class="history-title">生成历史</div>
+                    <button class="btn btn-danger" id="clearHistoryBtn" title="清空历史记录">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+                
+                <div class="history-items" id="historyItems">
+                    <div class="empty-history" id="emptyHistory">暂无历史记录</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <script>
+        // DOM元素引用
+        const elements = {
+            urlInput: document.getElementById('urlInput'),
+            qrcodeContainer: document.getElementById('qrcode'),
+            expiryInfo: document.getElementById('expiryInfo'),
+            generateBtn: document.getElementById('generateBtn'),
+            resetBtn: document.getElementById('resetBtn'),
+            themeToggle: document.getElementById('themeToggle'),
+            toast: document.getElementById('toast'),
+            customDate: document.getElementById('customDate'),
+            historyItems: document.getElementById('historyItems'),
+            clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+            emptyHistory: document.getElementById('emptyHistory'),
+            exampleItems: document.querySelectorAll('.example-item'),
+            httpBtn: document.getElementById('httpBtn'),
+            httpsBtn: document.getElementById('httpsBtn')
+        };
+
+        // 状态管理
+        let state = {
+            currentQR: null,
+            expiryDays: 15,
+            history: JSON.parse(localStorage.getItem('qrHistory')) || [],
+            theme: localStorage.getItem('theme') || 'light'
+        };
+
+        // 初始化应用
+        function initApp() {
+            // 设置主题
+            document.body.setAttribute('data-theme', state.theme);
+            elements.themeToggle.innerHTML = state.theme === 'dark' ? 
+                '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            
+            // 设置日期输入默认值为明天
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            elements.customDate.valueAsDate = tomorrow;
+            
+            // 更新历史记录显示
+            updateHistoryDisplay();
+            
+            // 绑定事件监听器
+            setupEventListeners();
+            
+            // 检查URL参数
+            checkUrlParams();
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 主题切换
+            elements.themeToggle.addEventListener('click', toggleTheme);
+            
+            // 生成二维码按钮
+            elements.generateBtn.addEventListener('click', generateQRCode);
+            
+            // 重置按钮
+            elements.resetBtn.addEventListener('click', resetForm);
+            
+            // 有效期选项变化事件
+            document.querySelectorAll('input[name="expiry"]').forEach(radio => {
+                radio.addEventListener('change', handleExpiryChange);
+            });
+            
+            // 自定义日期变化
+            elements.customDate.addEventListener('change', () => {
+                document.getElementById('optionCustom').checked = true;
+                state.expiryDays = calculateExpiryDays();
+            });
+            
+            // 清除历史记录
+            elements.clearHistoryBtn.addEventListener('click', clearHistory);
+            
+            // 案例点击事件
+            elements.exampleItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const url = item.dataset.url;
+                    elements.urlInput.value = url;
+                    
+                    // 设置为永久有效
+                    document.getElementById('optionPermanent').checked = true;
+                    state.expiryDays = 0;
+                    
+                    // 生成二维码
+                    generateQRCode();
+                });
+            });
+            
+            // 输入验证
+            elements.urlInput.addEventListener('input', validateUrlInput);
+            
+            // 协议快捷按钮
+            elements.httpBtn.addEventListener('click', () => setProtocol('http://'));
+            elements.httpsBtn.addEventListener('click', () => setProtocol('https://'));
+            
+            // 输入框点击清空默认内容
+            elements.urlInput.addEventListener('click', function() {
+                if (this.value === "https://t.zsxq.com/pBPcv") {
+                    this.value = "";
+                }
+            });
+        }
+
+        // 计算有效期天数
+        function calculateExpiryDays() {
+            const selectedDate = new Date(elements.customDate.value);
+            const today = new Date();
+            const diffTime = Math.abs(selectedDate - today);
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        // 处理有效期变化
+        function handleExpiryChange(event) {
+            const value = event.target.value;
+            
+            if (value === 'custom') {
+                state.expiryDays = calculateExpiryDays();
+            } else {
+                state.expiryDays = parseInt(value);
+            }
+        }
+
+        // 设置协议快捷方式
+        function setProtocol(protocol) {
+            let currentValue = elements.urlInput.value.trim();
+            
+            // 如果当前有值且不包含协议，则先清空
+            if (currentValue && !currentValue.includes('://')) {
+                currentValue = '';
+            }
+            
+            // 清空输入框并设置协议
+            elements.urlInput.value = protocol;
+            elements.urlInput.focus();
+        }
+
+        // 验证URL输入
+        function validateUrlInput() {
+            const url = elements.urlInput.value.trim();
+            const isValid = url && isValidUrl(url);
+            
+            if (url && !isValid) {
+                showToast('请输入有效的URL地址', 'error');
+            }
+        }
+
+        // 检查URL有效性
+        function isValidUrl(url) {
+            try {
+                new URL(url);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // 生成二维码
+        function generateQRCode() {
+            let url = elements.urlInput.value.trim();
+            
+            // 自动添加协议前缀
+            if (url && !url.includes('://')) {
+                url = 'https://' + url;
+                elements.urlInput.value = url;
+            }
+            
+            // 验证URL
+            if (!url) {
+                showToast('请输入URL地址', 'error');
+                return;
+            }
+            
+            if (!isValidUrl(url)) {
+                showToast('请输入有效的URL地址', 'error');
+                return;
+            }
+            
+            // 清除现有二维码
+            elements.qrcodeContainer.innerHTML = '';
+            
+            // 创建二维码跳转链接
+            const redirectUrl = `${window.location.origin}${window.location.pathname}?qrUrl=${encodeURIComponent(url)}`;
+            
+            // 生成二维码
+            new QRCode(elements.qrcodeContainer, {
+                text: redirectUrl,
+                width: 180,
+                height: 180,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // 创建二维码数据对象
+            const qrData = {
+                url: url,
+                expiryDays: state.expiryDays,
+                generatedAt: new Date().toISOString(),
+                redirectUrl: redirectUrl
+            };
+            
+            // 如果设置了有效期，计算过期日期
+            if (state.expiryDays > 0) {
+                const expiryDate = new Date();
+                expiryDate.setDate(expiryDate.getDate() + state.expiryDays);
+                qrData.expiryDate = expiryDate.toISOString();
+            }
+            
+            // 更新状态
+            state.currentQR = qrData;
+            
+            // 更新过期信息显示
+            updateExpiryInfo();
+            
+            // 添加到历史记录
+            addToHistory(qrData);
+            
+            // 显示成功消息
+            showToast('二维码已生成', 'success');
+        }
+
+        // 更新过期信息显示
+        function updateExpiryInfo() {
+            if (!state.currentQR) return;
+            
+            if (state.currentQR.expiryDays > 0) {
+                const expiryDate = new Date(state.currentQR.expiryDate);
+                const formattedDate = expiryDate.toLocaleDateString('zh-CN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                elements.expiryInfo.innerHTML = `
+                    <div>二维码有效期至: ${formattedDate}</div>
+                    <div>${state.currentQR.expiryDays}天后过期</div>
+                `;
+            } else {
+                elements.expiryInfo.innerHTML = '二维码永久有效';
+            }
+        }
+
+        // 添加到历史记录
+        function addToHistory(qrData) {
+            // 创建数据URL用于预览
+            const img = elements.qrcodeContainer.querySelector('img');
+            if (img) {
+                qrData.dataURL = img.src;
+                
+                // 添加到历史记录开头
+                state.history.unshift(qrData);
+                
+                // 限制历史记录数量
+                if (state.history.length > 10) {
+                    state.history = state.history.slice(0, 10);
+                }
+                
+                // 保存到localStorage
+                localStorage.setItem('qrHistory', JSON.stringify(state.history));
+                
+                // 更新显示
+                updateHistoryDisplay();
+            }
+        }
+
+        // 更新历史记录显示
+        function updateHistoryDisplay() {
+            if (state.history.length === 0) {
+                elements.emptyHistory.style.display = 'block';
+                return;
+            }
+            
+            elements.emptyHistory.style.display = 'none';
+            elements.historyItems.innerHTML = '';
+            
+            state.history.forEach((item, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `
+                    <img src="${item.dataURL}" alt="历史记录 ${index + 1}">
+                `;
+                
+                historyItem.addEventListener('click', () => {
+                    // 显示历史二维码
+                    elements.qrcodeContainer.innerHTML = '';
+                    new QRCode(elements.qrcodeContainer, {
+                        text: item.redirectUrl,
+                        width: 180,
+                        height: 180,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                    
+                    // 更新状态
+                    state.currentQR = item;
+                    
+                    // 更新过期信息显示
+                    updateExpiryInfo();
+                    
+                    // 滚动到顶部
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+                
+                elements.historyItems.appendChild(historyItem);
+            });
+        }
+
+        // 清除历史记录
+        function clearHistory() {
+            if (confirm('确定要清空所有历史记录吗？')) {
+                state.history = [];
+                localStorage.removeItem('qrHistory');
+                updateHistoryDisplay();
+                showToast('历史记录已清除', 'success');
+            }
+        }
+
+        // 重置表单
+        function resetForm() {
+            elements.urlInput.value = "https://t.zsxq.com/pBPcv";
+            elements.qrcodeContainer.innerHTML = '';
+            elements.expiryInfo.textContent = '二维码未生成';
+            state.currentQR = null;
+            
+            // 重置有效期选项
+            document.getElementById('option15').checked = true;
+            state.expiryDays = 15;
+            
+            showToast('表单已重置', 'success');
+        }
+
+        // 显示通知
+        function showToast(message, type = 'info') {
+            const toast = elements.toast;
+            const toastIcon = toast.querySelector('.toast-icon');
+            const toastMessage = toast.querySelector('.toast-message');
+            
+            // 设置内容和样式
+            toastMessage.textContent = message;
+            toast.className = `toast ${type}`;
+            
+            // 设置图标
+            let iconClass;
+            switch (type) {
+                case 'success':
+                    iconClass = 'fas fa-check-circle';
+                    break;
+                case 'error':
+                    iconClass = 'fas fa-exclamation-circle';
+                    break;
+                case 'warning':
+                    iconClass = 'fas fa-exclamation-triangle';
+                    break;
+                default:
+                    iconClass = 'fas fa-info-circle';
+            }
+            
+            toastIcon.className = `toast-icon ${iconClass}`;
+            
+            // 显示toast
+            toast.classList.add('show');
+            
+            // 2.5秒后隐藏
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // 检查URL参数
+        function checkUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const qrUrl = params.get('qrUrl');
+            
+            if (qrUrl) {
+                try {
+                    // 检查是否过期
+                    const expiry = new Date(new URLSearchParams(window.location.search).get('expiry'));
+                    const now = new Date();
+                    
+                    if (expiry && now > expiry) {
+                        // 二维码已过期
+                        showToast('二维码已过期，已复制作者微信：857023577', 'warning');
+                        
+                        // 复制微信到剪贴板
+                        navigator.clipboard.writeText('857023577');
+                        
+                        // 2秒后关闭提示
+                        setTimeout(() => {
+                            window.location.href = window.location.origin + window.location.pathname;
+                        }, 2000);
+                    } else {
+                        // 跳转到原始URL
+                        window.location.href = decodeURIComponent(qrUrl);
+                    }
+                } catch (e) {
+                    console.error('Error processing QR data:', e);
+                    // 无效的二维码数据，直接重定向到主页面
+                    window.location.href = window.location.origin + window.location.pathname;
+                }
+            }
+        }
+
+        // 切换主题
+        function toggleTheme() {
+            const newTheme = state.theme === 'light' ? 'dark' : 'light';
+            state.theme = newTheme;
+            document.body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            elements.themeToggle.innerHTML = newTheme === 'dark' ? 
+                '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        }
+
+        // 初始化应用
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
