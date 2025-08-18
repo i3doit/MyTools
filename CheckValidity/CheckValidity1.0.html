@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物品过期提醒工具</title>
+    <!-- 引入字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 引入Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 引入图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0071e3;
+            --primary-light: rgba(0, 113, 227, 0.1);
+            --secondary: #64748b;
+            --background: #f5f7fa;
+            --card-bg: rgba(255, 255, 255, 0.3);
+            --text-dark: #1e293b;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #ef4444;
+            --border-radius: 20px;
+            --box-shadow: 0 12px 48px rgba(0, 113, 227, 0.08);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--background);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxkZWZzPjxyYWRpYWxHcmFkaWVudCBpZD0iYSIgY3g9IjUwJSIgY3k9IjUwJSIgcj0iNTAlIiBmeD0iNTAlIiBmeT0iNTAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZjBmN2ZmIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjZTNmMGZmIi8+PC9yYWRpYWxHcmFkaWVudD48L2RlZnM+PHJlY3QgZmlsbD0idXJsKCNhKSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIvPjwvc3ZnPg==');
+            background-size: cover;
+            background-attachment: fixed;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border-radius: var(--border-radius);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: var(--box-shadow);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 113, 227, 0.1), 0 8px 10px -6px rgba(0, 113, 227, 0.1);
+        }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            padding: 1.2rem 2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.35rem 1rem;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-normal {
+            background-color: rgba(74, 222, 128, 0.2);
+            color: #166534;
+        }
+
+        .status-warning {
+            background-color: rgba(251, 191, 36, 0.2);
+            color: #854d0e;
+        }
+
+        .status-urgent {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #b91c1c;
+            animation: pulse 2s infinite;
+        }
+
+        .status-expired {
+            background-color: rgba(239, 68, 68, 0.3);
+            color: #7f1d1d;
+            text-decoration: line-through;
+        }
+
+        .item-title {
+            font-weight: 600;
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-detail {
+            display: flex;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .item-detail i {
+            width: 24px;
+            color: var(--secondary);
+            margin-right: 0.75rem;
+        }
+
+        .btn-apple {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-apple:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-outline-apple {
+            background-color: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-apple:hover {
+            background-color: var(--primary-light);
+        }
+
+        .form-control, .form-select {
+            border-radius: 12px;
+            padding: 0.75rem 1.25rem;
+            border: 1px solid #e2e8f0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+        }
+
+        .modal-content {
+            border-radius: var(--border-radius);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .days-left {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .search-container {
+            position: relative;
+            max-width: 300px;
+        }
+
+        .search-container i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary);
+        }
+
+        .search-container input {
+            padding-left: 45px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.9; }
+            50% { opacity: 0.7; }
+            100% { opacity: 0.9; }
+        }
+
+        .fade-enter-active {
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .fade-enter-from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .glass-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部导航 -->
+        <div class="glass-header">
+            <h1><i class="fas fa-box-open me-3"></i>物品过期提醒</h1>
+            <div class="d-flex header-actions gap-2">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="form-control" placeholder="搜索物品..." v-model="searchQuery">
+                </div>
+                <button class="btn btn-apple" @click="openAddModal">
+                    <i class="fas fa-plus me-2"></i>添加物品
+                </button>
+            </div>
+        </div>
+        
+        <!-- 状态统计 -->
+        <div class="d-flex justify-content-between mb-4 flex-wrap gap-2">
+            <div>
+                <span class="status-badge status-normal me-2">
+                    <i class="fas fa-check-circle me-1"></i>正常 {{ statusCounts.normal }}
+                </span>
+                <span class="status-badge status-warning me-2">
+                    <i class="fas fa-exclamation-triangle me-1"></i>预警 {{ statusCounts.warning }}
+                </span>
+                <span class="status-badge status-urgent me-2">
+                    <i class="fas fa-bell me-1"></i>紧急 {{ statusCounts.urgent }}
+                </span>
+                <span class="status-badge status-expired">
+                    <i class="fas fa-times-circle me-1"></i>过期 {{ statusCounts.expired }}
+                </span>
+            </div>
+            <div>
+                <button class="btn btn-outline-apple me-2" @click="exportData">
+                    <i class="fas fa-file-export me-1"></i>导出数据
+                </button>
+                <button class="btn btn-outline-apple" @click="importData">
+                    <i class="fas fa-file-import me-1"></i>导入数据
+                </button>
+            </div>
+        </div>
+        
+        <!-- 物品列表 -->
+        <transition-group name="fade" tag="div" class="row">
+            <div class="col-12 col-md-6 col-lg-4" v-for="item in filteredItems" :key="item.id">
+                <div class="glass-card" :class="getStatusClass(item)">
+                    <div class="item-title">
+                        <span>{{ item.name }}</span>
+                        <span class="status-badge" :class="getStatusBadgeClass(item)">
+                            {{ getStatusText(item) }}
+                        </span>
+                    </div>
+                    
+                    <div class="item-detail">
+                        <i class="fas fa-tag"></i>
+                        <span>分类: {{ item.category || '未分类' }}</span>
+                    </div>
+                    
+                    <div class="item-detail">
+                        <i class="fas fa-calendar"></i>
+                        <span>生产日期: {{ formatDate(item.productionDate) }}</span>
+                    </div>
+                    
+                    <div class="item-detail">
+                        <i class="fas fa-hourglass-half"></i>
+                        <span>保质期: {{ item.shelfLife.value }} {{ getUnitText(item.shelfLife.unit) }}</span>
+                    </div>
+                    
+                    <div class="item-detail">
+                        <i class="fas fa-location-dot"></i>
+                        <span>位置: {{ item.location || '未指定' }}</span>
+                    </div>
+                    
+                    <div class="item-detail">
+                        <i class="fas fa-calendar-xmark"></i>
+                        <span>到期日期: {{ formatDate(calculateExpiryDate(item)) }}</span>
+                    </div>
+                    
+                    <div class="item-detail">
+                        <i class="fas fa-clock"></i>
+                        <span class="days-left">剩余: {{ calculateDaysLeft(item) }} 天</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end mt-3">
+                        <button class="btn btn-outline-apple me-2" @click="openEditModal(item)">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-apple" @click="deleteItem(item.id)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition-group>
+        
+        <div v-if="filteredItems.length === 0" class="text-center py-5">
+            <i class="fas fa-box-open fa-3x mb-3" style="color: var(--secondary);"></i>
+            <h4>暂无物品记录</h4>
+            <p>点击右上角"添加物品"按钮开始记录</p>
+        </div>
+        
+        <!-- 添加/编辑模态框 -->
+        <div class="modal" :class="{ 'd-block': showModal }" tabindex="-1" v-show="showModal">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ editingItem.id ? '编辑物品' : '添加新物品' }}</h5>
+                        <button type="button" class="btn-close" @click="closeModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">物品名称</label>
+                            <input type="text" class="form-control" v-model="editingItem.name" placeholder="例如：牛奶">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">分类</label>
+                                <input type="text" class="form-control" v-model="editingItem.category" placeholder="例如：食品">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">存放位置</label>
+                                <input type="text" class="form-control" v-model="editingItem.location" placeholder="例如：冰箱上层">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">生产日期</label>
+                            <input type="date" class="form-control" v-model="editingItem.productionDate" :max="today">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">保质期时长</label>
+                                <input type="number" min="1" class="form-control" v-model="editingItem.shelfLife.value" placeholder="例如：7">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">单位</label>
+                                <select class="form-select" v-model="editingItem.shelfLife.unit">
+                                    <option value="days">天</option>
+                                    <option value="weeks">周</option>
+                                    <option value="months">月</option>
+                                    <option value="years">年</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" v-if="editingItem.id">
+                            <label class="form-label">到期日期</label>
+                            <input type="date" class="form-control" :value="formatDate(calculateExpiryDate(editingItem))" disabled>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-apple" @click="closeModal">取消</button>
+                        <button type="button" class="btn btn-apple" @click="saveItem">
+                            {{ editingItem.id ? '保存修改' : '添加物品' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop fade show" v-if="showModal"></div>
+        
+        <!-- 导入导出模态框 -->
+        <div class="modal" :class="{ 'd-block': showImportExportModal }" tabindex="-1" v-show="showImportExportModal">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ importExportMode === 'export' ? '导出数据' : '导入数据' }}</h5>
+                        <button type="button" class="btn-close" @click="closeImportExportModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="importExportMode === 'export'">
+                            <p>导出所有物品数据为JSON文件：</p>
+                            <textarea class="form-control mb-3" rows="6" readonly>{{ exportJson }}</textarea>
+                            <button class="btn btn-apple w-100" @click="downloadExport">
+                                <i class="fas fa-download me-2"></i>下载JSON文件
+                            </button>
+                        </div>
+                        <div v-else>
+                            <p>导入JSON格式的物品数据：</p>
+                            <textarea class="form-control mb-3" rows="6" placeholder="粘贴JSON数据..." v-model="importJson"></textarea>
+                            <div class="alert alert-danger" v-if="importError">
+                                {{ importError }}
+                            </div>
+                            <button class="btn btn-apple w-100" @click="confirmImport">
+                                <i class="fas fa-upload me-2"></i>导入数据
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop fade show" v-if="showImportExportModal"></div>
+    </div>
+
+    <!-- 引入Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp, ref, reactive, computed, onMounted } = Vue;
+        
+        createApp({
+            setup() {
+                // 状态管理
+                const items = ref([]);
+                const showModal = ref(false);
+                const showImportExportModal = ref(false);
+                const importExportMode = ref('export'); // 'export' or 'import'
+                const importJson = ref('');
+                const importError = ref('');
+                const searchQuery = ref('');
+                const today = new Date().toISOString().split('T')[0];
+                
+                // 初始化编辑对象
+                const editingItem = reactive({
+                    id: null,
+                    name: '',
+                    category: '',
+                    productionDate: today,
+                    shelfLife: { value: 7, unit: 'days' },
+                    location: ''
+                });
+                
+                // 计算属性
+                const filteredItems = computed(() => {
+                    if (!searchQuery.value) return items.value;
+                    const query = searchQuery.value.toLowerCase();
+                    return items.value.filter(item => 
+                        item.name.toLowerCase().includes(query) || 
+                        (item.category && item.category.toLowerCase().includes(query)) ||
+                        (item.location && item.location.toLowerCase().includes(query))
+                    );
+                });
+                
+                const statusCounts = computed(() => {
+                    const counts = { normal: 0, warning: 0, urgent: 0, expired: 0 };
+                    items.value.forEach(item => {
+                        const status = getItemStatus(item);
+                        counts[status]++;
+                    });
+                    return counts;
+                });
+                
+                const exportJson = computed(() => {
+                    return JSON.stringify(items.value, null, 2);
+                });
+                
+                // 方法
+                const openAddModal = () => {
+                    Object.assign(editingItem, {
+                        id: null,
+                        name: '',
+                        category: '',
+                        productionDate: today,
+                        shelfLife: { value: 7, unit: 'days' },
+                        location: ''
+                    });
+                    showModal.value = true;
+                };
+                
+                const openEditModal = (item) => {
+                    Object.assign(editingItem, JSON.parse(JSON.stringify(item)));
+                    showModal.value = true;
+                };
+                
+                const closeModal = () => {
+                    showModal.value = false;
+                };
+                
+                const saveItem = () => {
+                    if (!editingItem.name || !editingItem.productionDate || !editingItem.shelfLife.value) {
+                        alert('请填写物品名称、生产日期和保质期');
+                        return;
+                    }
+                    
+                    if (editingItem.id) {
+                        // 更新现有物品
+                        const index = items.value.findIndex(item => item.id === editingItem.id);
+                        if (index !== -1) {
+                            items.value[index] = {...editingItem};
+                        }
+                    } else {
+                        // 添加新物品
+                        items.value.push({
+                            ...editingItem,
+                            id: Date.now().toString() // 使用时间戳作为ID
+                        });
+                    }
+                    
+                    saveToLocalStorage();
+                    showModal.value = false;
+                };
+                
+                const deleteItem = (id) => {
+                    if (confirm('确定要删除这个物品吗？')) {
+                        items.value = items.value.filter(item => item.id !== id);
+                        saveToLocalStorage();
+                    }
+                };
+                
+                const exportData = () => {
+                    importExportMode.value = 'export';
+                    showImportExportModal.value = true;
+                };
+                
+                const importData = () => {
+                    importExportMode.value = 'import';
+                    importJson.value = '';
+                    importError.value = '';
+                    showImportExportModal.value = true;
+                };
+                
+                const closeImportExportModal = () => {
+                    showImportExportModal.value = false;
+                };
+                
+                const downloadExport = () => {
+                    const blob = new Blob([exportJson.value], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `物品过期数据_${new Date().toISOString().slice(0, 10)}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                };
+                
+                const confirmImport = () => {
+                    try {
+                        const parsed = JSON.parse(importJson.value);
+                        if (!Array.isArray(parsed)) {
+                            throw new Error('数据格式不正确，必须是数组');
+                        }
+                        
+                        // 简单验证数据
+                        const isValid = parsed.every(item => 
+                            item.id && item.name && item.productionDate && item.shelfLife
+                        );
+                        
+                        if (!isValid) {
+                            throw new Error('数据格式不正确，缺少必要字段');
+                        }
+                        
+                        items.value = parsed;
+                        saveToLocalStorage();
+                        showImportExportModal.value = false;
+                        alert(`成功导入 ${parsed.length} 条物品记录`);
+                    } catch (error) {
+                        importError.value = `导入失败: ${error.message}`;
+                    }
+                };
+                
+                const calculateExpiryDate = (item) => {
+                    const productionDate = new Date(item.productionDate);
+                    const expiryDate = new Date(productionDate);
+                    
+                    switch(item.shelfLife.unit) {
+                        case 'days':
+                            expiryDate.setDate(expiryDate.getDate() + parseInt(item.shelfLife.value));
+                            break;
+                        case 'weeks':
+                            expiryDate.setDate(expiryDate.getDate() + parseInt(item.shelfLife.value) * 7);
+                            break;
+                        case 'months':
+                            expiryDate.setMonth(expiryDate.getMonth() + parseInt(item.shelfLife.value));
+                            break;
+                        case 'years':
+                            expiryDate.setFullYear(expiryDate.getFullYear() + parseInt(item.shelfLife.value));
+                            break;
+                    }
+                    
+                    return expiryDate;
+                };
+                
+                const calculateDaysLeft = (item) => {
+                    const expiryDate = calculateExpiryDate(item);
+                    const today = new Date();
+                    const timeDiff = expiryDate - today;
+                    const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                    return daysLeft > 0 ? daysLeft : 0;
+                };
+                
+                const getItemStatus = (item) => {
+                    const daysLeft = calculateDaysLeft(item);
+                    
+                    if (daysLeft <= 0) return 'expired';
+                    if (daysLeft <= 7) return 'urgent';
+                    if (daysLeft <= 30) return 'warning';
+                    return 'normal';
+                };
+                
+                const getStatusClass = (item) => {
+                    const status = getItemStatus(item);
+                    return `status-${status}`;
+                };
+                
+                const getStatusBadgeClass = (item) => {
+                    const status = getItemStatus(item);
+                    return `status-${status}`;
+                };
+                
+                const getStatusText = (item) => {
+                    const status = getItemStatus(item);
+                    const daysLeft = calculateDaysLeft(item);
+                    
+                    switch(status) {
+                        case 'expired': return '已过期';
+                        case 'urgent': return `剩${daysLeft}天`;
+                        case 'warning': return `剩${daysLeft}天`;
+                        default: return `剩${daysLeft}天`;
+                    }
+                };
+                
+                const getUnitText = (unit) => {
+                    switch(unit) {
+                        case 'days': return '天';
+                        case 'weeks': return '周';
+                        case 'months': return '月';
+                        case 'years': return '年';
+                        default: return unit;
+                    }
+                };
+                
+                const formatDate = (date) => {
+                    if (!(date instanceof Date)) date = new Date(date);
+                    return date.toISOString().split('T')[0];
+                };
+                
+                const saveToLocalStorage = () => {
+                    localStorage.setItem('itemRecords', JSON.stringify(items.value));
+                };
+                
+                const loadFromLocalStorage = () => {
+                    const saved = localStorage.getItem('itemRecords');
+                    if (saved) {
+                        items.value = JSON.parse(saved);
+                    }
+                };
+                
+                // 检查过期物品并发送通知
+                const checkExpirations = () => {
+                    // 获取上次检查日期
+                    const lastChecked = localStorage.getItem('lastChecked');
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    // 如果今天已经检查过，则跳过
+                    if (lastChecked === today) return;
+                    
+                    // 检查过期物品
+                    const expiredItems = items.value.filter(item => getItemStatus(item) === 'expired');
+                    const urgentItems = items.value.filter(item => getItemStatus(item) === 'urgent');
+                    
+                    // 发送通知
+                    if (Notification.permission === 'granted') {
+                        if (expiredItems.length > 0) {
+                            new Notification('物品过期提醒', {
+                                body: `有 ${expiredItems.length} 个物品已过期`
+                            });
+                        }
+                        
+                        if (urgentItems.length > 0) {
+                            new Notification('物品过期提醒', {
+                                body: `有 ${urgentItems.length} 个物品即将过期`
+                            });
+                        }
+                    }
+                    
+                    // 更新最后检查日期
+                    localStorage.setItem('lastChecked', today);
+                };
+                
+                // 请求通知权限
+                const requestNotificationPermission = () => {
+                    if (!('Notification' in window)) return;
+                    
+                    if (Notification.permission !== 'denied' && Notification.permission !== 'granted') {
+                        Notification.requestPermission();
+                    }
+                };
+                
+                // 初始化
+                onMounted(() => {
+                    loadFromLocalStorage();
+                    requestNotificationPermission();
+                    checkExpirations();
+                });
+                
+                return {
+                    items,
+                    showModal,
+                    showImportExportModal,
+                    importExportMode,
+                    importJson,
+                    importError,
+                    searchQuery,
+                    editingItem,
+                    today,
+                    filteredItems,
+                    statusCounts,
+                    exportJson,
+                    openAddModal,
+                    openEditModal,
+                    closeModal,
+                    saveItem,
+                    deleteItem,
+                    exportData,
+                    importData,
+                    closeImportExportModal,
+                    downloadExport,
+                    confirmImport,
+                    calculateExpiryDate,
+                    calculateDaysLeft,
+                    getItemStatus,
+                    getStatusClass,
+                    getStatusBadgeClass,
+                    getStatusText,
+                    getUnitText,
+                    formatDate
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
