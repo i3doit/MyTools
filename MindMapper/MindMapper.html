@@ -23,6 +23,7 @@
             --border-color: rgba(210, 210, 215, 0.4);
             --shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
             --transition: all 0.3s ease;
+            --glass: rgba(255, 255, 255, 0.8);
         }
 
         * {
@@ -38,6 +39,14 @@
             min-height: 100vh;
             padding: 20px;
             position: relative;
+            background-size: 300% 300%;
+            animation: gradientAnimation 15s ease infinite;
+        }
+
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         body::before {
@@ -72,6 +81,13 @@
             color: transparent;
             margin-bottom: 15px;
             letter-spacing: -1.5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.9; }
+            50% { opacity: 1; }
+            100% { opacity: 0.9; }
         }
 
         .tagline {
@@ -96,7 +112,7 @@
         }
 
         .card {
-            background: var(--card-bg);
+            background: var(--glass);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             box-shadow: var(--shadow);
@@ -107,7 +123,7 @@
 
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         }
 
         .card-title {
@@ -117,6 +133,8 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
         }
 
         .card-title i {
@@ -133,6 +151,7 @@
             resize: vertical;
             background: rgba(255, 255, 255, 0.7);
             transition: var(--transition);
+            font-family: monospace;
         }
 
         textarea:focus {
@@ -148,6 +167,7 @@
             border-radius: 16px;
             overflow: hidden;
             border: 1px solid var(--border-color);
+            position: relative;
         }
 
         #jsmind_container {
@@ -173,6 +193,13 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            background: white;
+            box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
         }
 
         .btn-primary {
@@ -200,6 +227,60 @@
 
         .btn-success:hover {
             background: #30be52;
+        }
+
+        .example-toggle {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
         }
 
         .share-section {
@@ -235,7 +316,7 @@
         }
 
         .social-icon:hover {
-            transform: translateY(-5px);
+            transform: translateY(-5px) scale(1.1);
         }
 
         .wechat { background: #2aae67; }
@@ -252,18 +333,41 @@
             padding: 25px;
             text-align: center;
             margin: 40px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ad-card::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%);
+            pointer-events: none;
+            animation: rotate 12s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .ad-title {
             font-size: 1.4rem;
             margin-bottom: 15px;
             color: var(--primary-color);
+            position: relative;
+            z-index: 2;
         }
 
         .ad-content {
             font-size: 1.1rem;
             margin-bottom: 20px;
             color: var(--text-color);
+            position: relative;
+            z-index: 2;
         }
 
         .highlight {
@@ -300,10 +404,23 @@
             text-decoration: none;
             transition: var(--transition);
             font-weight: 500;
+            position: relative;
+            padding-bottom: 2px;
         }
 
-        .footer-link:hover {
-            color: var(--primary-color);
+        .footer-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        .footer-link:hover::after {
+            width: 100%;
         }
 
         .copyright {
@@ -323,15 +440,29 @@
             z-index: 1000;
             align-items: center;
             justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .modal-content {
-            background: var(--card-bg);
+            background: var(--glass);
             border-radius: 20px;
             width: 90%;
             max-width: 500px;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
             overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transform: scale(0.95);
+            animation: scaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes scaleUp {
+            to { transform: scale(1); }
         }
 
         .modal-header {
@@ -387,6 +518,9 @@
             padding: 10px;
             background: white;
             border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .modal-actions {
@@ -394,6 +528,7 @@
             gap: 12px;
             justify-content: center;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
 
         .avatar-upload {
@@ -432,10 +567,35 @@
             z-index: 1100;
             transform: translateX(150%);
             transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .notification.show {
             transform: translateX(0);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+
+        .close-modal:hover {
+            background: rgba(0,0,0,0.2);
+            transform: rotate(90deg);
         }
 
         /* 响应式调整 */
@@ -454,6 +614,33 @@
                 height: 50px;
                 font-size: 1.5rem;
             }
+            .main-content {
+                gap: 20px;
+            }
+            .btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* 加载动画 */
+        .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0, 113, 227, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+            z-index: 10;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
         }
     </style>
 </head>
@@ -467,6 +654,15 @@
         <div class="main-content">
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-edit"></i> 输入思维内容</h2>
+                
+                <div class="example-toggle">
+                    <span>显示示例内容</span>
+                    <label class="switch">
+                        <input type="checkbox" id="example-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
                 <textarea id="mindmap-input" placeholder="在此处输入或粘贴您的思维导图内容，例如：
 中心主题
   分支主题1
@@ -474,7 +670,20 @@
     子主题2
   分支主题2
     子主题3
-    子主题4"></textarea>
+    子主题4">项目计划
+  需求分析
+    用户需求
+    功能需求
+  技术选型
+    前端框架
+    后端技术
+  时间规划
+    阶段一
+    阶段二
+  团队成员
+    开发
+    设计
+    测试</textarea>
                 
                 <div class="actions">
                     <button id="preview-btn" class="btn btn-primary">
@@ -486,13 +695,17 @@
                     <button id="import-btn" class="btn btn-secondary">
                         <i class="fas fa-file-import"></i> 导入数据
                     </button>
-                    <input type="file" id="import-file" accept=".json" style="display: none;">
+                    <button id="export-btn" class="btn btn-success">
+                        <i class="fas fa-file-export"></i> 导出数据
+                    </button>
+                    <input type="file" id="import-file" accept=".json,.txt" style="display: none;">
                 </div>
             </div>
 
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-project-diagram"></i> 思维导图预览</h2>
                 <div class="preview-container">
+                    <div class="loader"></div>
                     <div id="jsmind_container"></div>
                 </div>
                 
@@ -506,6 +719,9 @@
                     <button id="export-json" class="btn btn-secondary">
                         <i class="fas fa-code"></i> 导出JSON
                     </button>
+                    <button id="fullscreen-btn" class="btn btn-secondary">
+                        <i class="fas fa-expand"></i> 全屏预览
+                    </button>
                 </div>
             </div>
         </div>
@@ -513,22 +729,22 @@
         <div class="share-section">
             <h2 class="share-title">分享 MindMapper</h2>
             <div class="social-icons">
-                <div class="social-icon wechat" onclick="openShareModal('微信')">
+                <div class="social-icon wechat" data-platform="微信">
                     <i class="fab fa-weixin"></i>
                 </div>
-                <div class="social-icon qq" onclick="openShareModal('QQ')">
+                <div class="social-icon qq" data-platform="QQ">
                     <i class="fab fa-qq"></i>
                 </div>
-                <div class="social-icon weibo" onclick="openShareModal('微博')">
+                <div class="social-icon weibo" data-platform="微博">
                     <i class="fab fa-weibo"></i>
                 </div>
-                <div class="social-icon facebook" onclick="openShareModal('Facebook')">
+                <div class="social-icon facebook" data-platform="Facebook">
                     <i class="fab fa-facebook-f"></i>
                 </div>
-                <div class="social-icon instagram" onclick="openShareModal('Instagram')">
+                <div class="social-icon instagram" data-platform="Instagram">
                     <i class="fab fa-instagram"></i>
                 </div>
-                <div class="social-icon twitter" onclick="openShareModal('X')">
+                <div class="social-icon twitter" data-platform="X">
                     <i class="fab fa-twitter"></i>
                 </div>
             </div>
@@ -559,6 +775,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>分享到 <span id="platform-name">微信</span></h2>
+                <div class="close-modal">&times;</div>
             </div>
             <div class="modal-body">
                 <div class="share-card">
@@ -570,7 +787,9 @@
                         <p class="system-name">智能思维导图转换工具</p>
                     </div>
                     
-                    <div class="qr-code" id="qrcode"></div>
+                    <div class="qr-code" id="qrcode">
+                        <canvas></canvas>
+                    </div>
                     
                     <div class="modal-actions">
                         <button id="copy-wechat" class="btn btn-primary">
@@ -597,6 +816,56 @@
         // 初始化变量
         let jm = null;
         const currentYear = new Date().getFullYear();
+        let isFullscreen = false;
+        
+        // 示例思维导图结构
+        const exampleData = {
+            "meta": {
+                "name": "项目计划",
+                "author": "MindMapper",
+                "version": "1.0"
+            },
+            "format": "node_tree",
+            "data": {
+                "id": "root",
+                "topic": "项目计划",
+                "children": [
+                    {
+                        "id": "child1",
+                        "topic": "需求分析",
+                        "children": [
+                            {"id": "subchild1", "topic": "用户需求"},
+                            {"id": "subchild2", "topic": "功能需求"}
+                        ]
+                    },
+                    {
+                        "id": "child2",
+                        "topic": "技术选型",
+                        "children": [
+                            {"id": "subchild3", "topic": "前端框架"},
+                            {"id": "subchild4", "topic": "后端技术"}
+                        ]
+                    },
+                    {
+                        "id": "child3",
+                        "topic": "时间规划",
+                        "children": [
+                            {"id": "subchild5", "topic": "阶段一"},
+                            {"id": "subchild6", "topic": "阶段二"}
+                        ]
+                    },
+                    {
+                        "id": "child4",
+                        "topic": "团队成员",
+                        "children": [
+                            {"id": "subchild7", "topic": "开发"},
+                            {"id": "subchild8", "topic": "设计"},
+                            {"id": "subchild9", "topic": "测试"}
+                        ]
+                    }
+                ]
+            }
+        };
         
         // 设置版权年份
         document.getElementById('copyright-year').textContent = 
@@ -615,62 +884,63 @@
                 }
             };
             
-            // 初始数据
-            const initialData = {
-                "meta": {
-                    "name": "思维导图示例",
-                    "author": "MindMapper",
-                    "version": "1.0"
-                },
-                "format": "node_tree",
-                "data": {
-                    "id": "root",
-                    "topic": "中心主题",
-                    "children": [
-                        {
-                            "id": "child1",
-                            "topic": "分支主题1",
-                            "children": [
-                                {"id": "subchild1", "topic": "子主题1"},
-                                {"id": "subchild2", "topic": "子主题2"}
-                            ]
-                        },
-                        {
-                            "id": "child2",
-                            "topic": "分支主题2",
-                            "children": [
-                                {"id": "subchild3", "topic": "子主题3"},
-                                {"id": "subchild4", "topic": "子主题4"}
-                            ]
-                        }
-                    ]
-                }
-            };
-            
             jm = new jsMind(options);
-            jm.show(initialData);
             
-            // 从localStorage加载数据
+            // 尝试从localStorage加载数据
             const savedData = localStorage.getItem('mindmapData');
+            const savedText = localStorage.getItem('mindmapText') || '';
+            
             if (savedData) {
                 try {
                     const parsedData = JSON.parse(savedData);
                     jm.show(parsedData);
-                    document.getElementById('mindmap-input').value = localStorage.getItem('mindmapText') || '';
+                    document.getElementById('mindmap-input').value = savedText;
                 } catch (e) {
                     console.error("解析本地数据失败", e);
+                    // 加载示例数据
+                    loadExampleData();
                 }
+            } else {
+                // 如果没有保存数据，加载示例
+                loadExampleData();
             }
+        }
+        
+        // 加载示例数据
+        function loadExampleData() {
+            jm.show(exampleData);
+            // 保存到localStorage
+            const textContent = `项目计划
+  需求分析
+    用户需求
+    功能需求
+  技术选型
+    前端框架
+    后端技术
+  时间规划
+    阶段一
+    阶段二
+  团队成员
+    开发
+    设计
+    测试`;
+            
+            document.getElementById('mindmap-input').value = textContent;
+            localStorage.setItem('mindmapData', JSON.stringify(exampleData));
+            localStorage.setItem('mindmapText', textContent);
         }
 
         // 解析文本为思维导图数据结构
         function parseTextToMind(text) {
+            if (!text.trim()) return null;
+            
             const lines = text.split('\n');
-            if (lines.length === 0) return null;
+            const rootText = lines[0].trim();
+            if (!rootText) return null;
             
             const root = {
                 id: 'root',
-                topic: lines[0].trim(),
+                topic: rootText,
                 children: []
             };
             
@@ -681,7 +951,7 @@
                 if (!line.trim()) continue;
                 
                 // 计算缩进级别
-                const level = line.search(/\S/);
+                const level = line.search(/\S|$/);
                 const content = line.trim();
                 
                 // 创建新节点
@@ -698,7 +968,11 @@
                 
                 // 添加到父节点
                 const parent = stack[stack.length - 1].node;
-                parent.children.push(newNode);
+                if (parent.children) {
+                    parent.children.push(newNode);
+                } else {
+                    parent.children = [newNode];
+                }
                 
                 // 添加到堆栈
                 stack.push({node: newNode, level: level});
@@ -706,13 +980,19 @@
             
             return {
                 "meta": {
-                    "name": "解析的思维导图",
-                    "author": "MindMapper",
+                    "name": "我的思维导图",
+                    "author": "用户生成",
                     "version": "1.0"
                 },
                 "format": "node_tree",
                 "data": root
             };
+        }
+
+        // 显示加载动画
+        function showLoader(show) {
+            const loader = document.querySelector('.loader');
+            loader.style.display = show ? 'block' : 'none';
         }
 
         // 显示通知
@@ -727,32 +1007,107 @@
                 notification.classList.remove('show');
             }, duration);
         }
+        
+        // 全屏功能
+        function toggleFullscreen() {
+            const container = document.getElementById('jsmind_container');
+            
+            if (!isFullscreen) {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.mozRequestFullScreen) {
+                    container.mozRequestFullScreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                }
+                isFullscreen = true;
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                isFullscreen = false;
+            }
+        }
+        
+        // 数据导出
+        function exportData() {
+            const mindData = jm.get_data();
+            const dataStr = JSON.stringify(mindData, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mindmap_data.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('数据导出成功');
+        }
 
         // 初始化事件监听
         function initEvents() {
+            // 示例开关
+            document.getElementById('example-toggle').addEventListener('change', function() {
+                if (this.checked) {
+                    loadExampleData();
+                } else {
+                    document.getElementById('mindmap-input').value = '';
+                    localStorage.removeItem('mindmapData');
+                    localStorage.removeItem('mindmapText');
+                }
+            });
+            
             // 预览按钮
             document.getElementById('preview-btn').addEventListener('click', () => {
                 const text = document.getElementById('mindmap-input').value;
-                if (!text.trim()) {
-                    showNotification('请输入思维导图内容');
-                    return;
-                }
+                showLoader(true);
                 
-                const mindData = parseTextToMind(text);
-                if (mindData) {
-                    jm.show(mindData);
-                    // 保存到localStorage
-                    localStorage.setItem('mindmapData', JSON.stringify(mindData));
-                    localStorage.setItem('mindmapText', text);
-                    showNotification('思维导图已更新');
-                }
+                setTimeout(() => {
+                    const mindData = parseTextToMind(text);
+                    if (mindData) {
+                        jm.show(mindData);
+                        // 保存到localStorage
+                        localStorage.setItem('mindmapData', JSON.stringify(mindData));
+                        localStorage.setItem('mindmapText', text);
+                        showNotification('思维导图已更新');
+                    } else {
+                        showNotification('请输入有效的内容');
+                    }
+                    showLoader(false);
+                }, 500);
             });
             
             // 清空按钮
             document.getElementById('clear-btn').addEventListener('click', () => {
                 document.getElementById('mindmap-input').value = '';
-                const initialData = parseTextToMind('中心主题');
-                jm.show(initialData);
+                document.getElementById('example-toggle').checked = false;
+                
+                // 创建空思维导图
+                const emptyData = {
+                    "meta": {
+                        "name": "空白导图",
+                        "author": "MindMapper",
+                        "version": "1.0"
+                    },
+                    "format": "node_tree",
+                    "data": {
+                        "id": "root",
+                        "topic": "中心主题"
+                    }
+                };
+                
+                jm.show(emptyData);
                 localStorage.removeItem('mindmapData');
                 localStorage.removeItem('mindmapText');
                 showNotification('内容已清空');
@@ -763,6 +1118,9 @@
                 document.getElementById('import-file').click();
             });
             
+            // 导出按钮
+            document.getElementById('export-btn').addEventListener('click', exportData);
+            
             // 文件导入处理
             document.getElementById('import-file').addEventListener('change', function(e) {
                 const file = e.target.files[0];
@@ -771,27 +1129,41 @@
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     try {
-                        const mindData = JSON.parse(event.target.result);
-                        jm.show(mindData);
-                        // 尝试从数据中提取文本
+                        let mindData;
                         let text = '';
-                        function extractText(node, level) {
-                            text += '  '.repeat(level) + node.topic + '\n';
-                            if (node.children) {
-                                node.children.forEach(child => extractText(child, level + 1));
+                        
+                        if (file.name.endsWith('.json')) {
+                            mindData = JSON.parse(event.target.result);
+                            
+                            // 尝试从数据中提取文本
+                            function extractText(node, level) {
+                                text += '  '.repeat(level) + node.topic + '\n';
+                                if (node.children) {
+                                    node.children.forEach(child => extractText(child, level + 1));
+                                }
                             }
+                            
+                            extractText(mindData.data, 0);
+                        } else {
+                            // 处理文本文件
+                            text = event.target.result;
+                            mindData = parseTextToMind(text);
                         }
                         
-                        extractText(mindData.data, 0);
-                        document.getElementById('mindmap-input').value = text.trim();
-                        
-                        // 保存到localStorage
-                        localStorage.setItem('mindmapData', JSON.stringify(mindData));
-                        localStorage.setItem('mindmapText', text.trim());
-                        
-                        showNotification('导入成功');
+                        if (mindData) {
+                            jm.show(mindData);
+                            document.getElementById('mindmap-input').value = text.trim();
+                            
+                            // 保存到localStorage
+                            localStorage.setItem('mindmapData', JSON.stringify(mindData));
+                            localStorage.setItem('mindmapText', text.trim());
+                            
+                            showNotification('导入成功');
+                        } else {
+                            showNotification('导入失败：无效的文件格式');
+                        }
                     } catch (error) {
-                        showNotification('导入失败：无效的JSON格式');
+                        showNotification('导入失败：文件解析错误');
                         console.error('导入失败:', error);
                     }
                 };
@@ -800,27 +1172,35 @@
             
             // 导出为PNG
             document.getElementById('export-png').addEventListener('click', () => {
-                jm.screenshot.shootDownload();
+                showLoader(true);
+                setTimeout(() => {
+                    jm.screenshot.shootDownload();
+                    showLoader(false);
+                }, 500);
             });
             
             // 导出为PDF
             document.getElementById('export-pdf').addEventListener('click', () => {
-                html2canvas(document.getElementById('jsmind_container')).then(canvas => {
-                    const imgData = canvas.toDataURL('image/png');
-                    const pdf = new jspdf.jsPDF({
-                        orientation: 'landscape',
-                        unit: 'mm',
-                        format: 'a4'
+                showLoader(true);
+                setTimeout(() => {
+                    html2canvas(document.getElementById('jsmind_container')).then(canvas => {
+                        const imgData = canvas.toDataURL('image/png');
+                        const pdf = new jspdf.jsPDF({
+                            orientation: 'landscape',
+                            unit: 'mm',
+                            format: 'a4'
+                        });
+                        
+                        const imgProps = pdf.getImageProperties(imgData);
+                        const pdfWidth = pdf.internal.pageSize.getWidth();
+                        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                        
+                        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                        pdf.save('mindmap.pdf');
+                        showNotification('PDF导出成功');
+                        showLoader(false);
                     });
-                    
-                    const imgProps = pdf.getImageProperties(imgData);
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                    
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                    pdf.save('mindmap.pdf');
-                    showNotification('PDF导出成功');
-                });
+                }, 500);
             });
             
             // 导出为JSON
@@ -840,6 +1220,22 @@
                 
                 showNotification('JSON导出成功');
             });
+            
+            // 全屏按钮
+            document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+            
+            // 全屏状态变化事件
+            document.addEventListener('fullscreenchange', exitHandler);
+            document.addEventListener('mozfullscreenchange', exitHandler);
+            document.addEventListener('webkitfullscreenchange', exitHandler);
+            document.addEventListener('msfullscreenchange', exitHandler);
+            
+            function exitHandler() {
+                if (!document.fullscreenElement && !document.mozFullScreenElement &&
+                    !document.webkitFullscreenElement && !document.msFullscreenElement) {
+                    isFullscreen = false;
+                }
+            }
             
             // 分享模态框事件
             document.getElementById('copy-wechat').addEventListener('click', () => {
@@ -862,6 +1258,19 @@
                 link.click();
                 showNotification('二维码已下载');
             });
+            
+            // 分享平台图标点击事件
+            document.querySelectorAll('.social-icon').forEach(icon => {
+                icon.addEventListener('click', function() {
+                    const platform = this.getAttribute('data-platform');
+                    openShareModal(platform);
+                });
+            });
+            
+            // 关闭模态框
+            document.querySelector('.close-modal').addEventListener('click', function() {
+                document.getElementById('share-modal').style.display = 'none';
+            });
         }
         
         // 打开分享模态框
@@ -874,16 +1283,24 @@
             const qrElement = document.getElementById('qrcode');
             qrElement.innerHTML = '';
             
-            QRCode.toCanvas(qrElement, window.location.href, {
-                width: 180,
-                margin: 1,
-                color: {
-                    dark: '#1d1d1f',
-                    light: '#ffffff'
-                }
-            }, function(error) {
-                if (error) console.error('二维码生成失败:', error);
-            });
+            try {
+                QRCode.toCanvas(qrElement, window.location.href, {
+                    width: 160,
+                    margin: 1,
+                    color: {
+                        dark: '#1d1d1f',
+                        light: '#ffffff'
+                    }
+                }, function(error) {
+                    if (error) {
+                        console.error('二维码生成失败:', error);
+                        qrElement.innerHTML = '<p>二维码生成失败</p>';
+                    }
+                });
+            } catch (e) {
+                console.error('二维码生成异常:', e);
+                qrElement.innerHTML = '<p>二维码生成异常</p>';
+            }
             
             // 点击模态框外部关闭
             modal.addEventListener('click', function(e) {
