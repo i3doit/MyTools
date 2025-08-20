@@ -3,99 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MindMapper - 思维导图转换工具</title>
+    <title>MindMapper Pro - 思维导图转换工具</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/jsmind@0.6.6/es6/jsmind.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsmind@0.6.6/es6/jsmind.draggable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsmind@0.6.6/es6/jsmind.screenshot.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <style>
         :root {
-            --primary-color: #0071e3;
-            --primary-hover: #0077ed;
-            --secondary-color: #34c759;
-            --background: rgba(255, 255, 255, 0.85);
-            --card-bg: rgba(255, 255, 255, 0.95);
-            --text-color: #1d1d1f;
-            --light-text: #86868b;
-            --border-color: rgba(210, 210, 215, 0.4);
-            --shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+            --primary-color: #007AFF;
+            --secondary-color: #5856D6;
+            --background-color: #F5F7FA;
+            --card-bg-color: rgba(255, 255, 255, 0.8);
+            --text-color: #333;
+            --border-radius: 12px;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
             --transition: all 0.3s ease;
-            --glass: rgba(255, 255, 255, 0.8);
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+            background: linear-gradient(135deg, #E3F2FD 0%, #F3E5F5 100%);
             color: var(--text-color);
+            line-height: 1.6;
             min-height: 100vh;
             padding: 20px;
-            position: relative;
-            background-size: 300% 300%;
-            animation: gradientAnimation 15s ease infinite;
-        }
-
-        @keyframes gradientAnimation {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="none" stroke="rgba(52, 199, 89, 0.05)" stroke-width="1"/></svg>');
-            opacity: 0.4;
-            z-index: -1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .container {
-            max-width: 1400px;
+            width: 100%;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
         header {
             text-align: center;
-            padding: 30px 20px;
             margin-bottom: 30px;
+            width: 100%;
         }
 
         .logo {
-            font-size: 3.5rem;
+            font-size: 2.8rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            margin-bottom: 15px;
-            letter-spacing: -1.5px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.9; }
-            50% { opacity: 1; }
-            100% { opacity: 0.9; }
+            padding: 10px;
         }
 
         .tagline {
-            font-size: 1.4rem;
-            color: var(--light-text);
-            max-width: 700px;
-            margin: 0 auto;
-            line-height: 1.5;
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 30px;
         }
 
         .main-content {
@@ -112,94 +78,70 @@
         }
 
         .card {
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: var(--shadow);
+            background: var(--card-bg-color);
+            border-radius: var(--border-radius);
             padding: 25px;
-            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             transition: var(--transition);
         }
 
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
         }
 
         .card-title {
             font-size: 1.5rem;
-            font-weight: 600;
             margin-bottom: 20px;
+            color: var(--primary-color);
             display: flex;
             align-items: center;
             gap: 10px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
         }
 
-        .card-title i {
-            color: var(--primary-color);
+        .input-area {
+            display: flex;
+            flex-direction: column;
         }
 
         textarea {
             width: 100%;
-            min-height: 350px;
-            padding: 20px;
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
+            min-height: 300px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
             font-size: 1rem;
             resize: vertical;
-            background: rgba(255, 255, 255, 0.7);
             transition: var(--transition);
-            font-family: monospace;
+            background: rgba(255, 255, 255, 0.7);
         }
 
         textarea:focus {
             outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
         }
 
-        .preview-container {
-            width: 100%;
-            height: 500px;
-            background: white;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            position: relative;
-        }
-
-        #jsmind_container {
-            width: 100%;
-            height: 100%;
-        }
-
-        .actions {
+        .button-group {
             display: flex;
+            gap: 10px;
+            margin-top: 15px;
             flex-wrap: wrap;
-            gap: 12px;
-            margin-top: 20px;
         }
 
         .btn {
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 500;
-            font-size: 1rem;
+            padding: 12px 20px;
             border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
             transition: var(--transition);
-            display: inline-flex;
+            display: flex;
             align-items: center;
             gap: 8px;
-            background: white;
-            box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
         }
 
         .btn-primary {
@@ -208,226 +150,167 @@
         }
 
         .btn-primary:hover {
-            background: var(--primary-hover);
+            background: #0062CC;
         }
 
         .btn-secondary {
-            background: #f5f5f7;
-            color: var(--text-color);
+            background: #6C757D;
+            color: white;
         }
 
         .btn-secondary:hover {
-            background: #e9e9ed;
+            background: #5A6268;
         }
 
         .btn-success {
-            background: var(--secondary-color);
+            background: #28A745;
             color: white;
         }
 
         .btn-success:hover {
-            background: #30be52;
+            background: #218838;
         }
 
-        .example-toggle {
+        .preview-area {
             display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            gap: 10px;
-            font-size: 0.9rem;
-            color: var(--light-text);
+            flex-direction: column;
         }
 
-        .switch {
+        .preview-content {
+            flex: 1;
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            min-height: 300px;
+            overflow: auto;
+            border: 1px solid #eee;
+        }
+
+        .mindmap {
             position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
+            padding: 20px;
         }
 
-        .switch input { 
-            opacity: 0;
-            width: 0;
-            height: 0;
+        .node {
+            padding: 10px 15px;
+            background: #E8F4FF;
+            border-radius: 8px;
+            margin: 8px 0;
+            border-left: 4px solid var(--primary-color);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
+        .node-main {
+            font-weight: 600;
+            background: #D1E9FF;
         }
 
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
+        .subnode {
+            margin-left: 30px;
+            background: #F0F8FF;
         }
 
-        input:checked + .slider {
-            background-color: var(--primary-color);
+        .export-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
         }
 
-        input:checked + .slider:before {
-            transform: translateX(26px);
+        .export-card {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .export-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
         }
 
         .share-section {
             margin: 40px 0;
-        }
-
-        .share-title {
             text-align: center;
-            font-size: 1.4rem;
-            margin-bottom: 25px;
-            color: var(--text-color);
         }
 
-        .social-icons {
+        .share-icons {
             display: flex;
             justify-content: center;
-            gap: 25px;
+            gap: 15px;
+            margin-top: 20px;
             flex-wrap: wrap;
         }
 
-        .social-icon {
-            width: 60px;
-            height: 60px;
+        .share-icon {
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.8rem;
             color: white;
+            font-size: 1.5rem;
             cursor: pointer;
             transition: var(--transition);
-            box-shadow: var(--shadow);
         }
 
-        .social-icon:hover {
-            transform: translateY(-5px) scale(1.1);
+        .share-icon:hover {
+            transform: scale(1.1);
         }
 
-        .wechat { background: #2aae67; }
-        .qq { background: #12b7f5; }
-        .weibo { background: #e6162d; }
-        .facebook { background: #1877f2; }
-        .instagram { background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d); }
-        .twitter { background: #1da1f2; }
+        .wechat { background: #2AAB29; }
+        .qq { background: #12B7F5; }
+        .weibo { background: #E6162D; }
+        .facebook { background: #3B5998; }
+        .instagram { background: linear-gradient(45deg, #FCAF45, #833AB4, #405DE6); }
+        .twitter { background: #1DA1F2; }
 
-        .ad-card {
-            background: linear-gradient(135deg, #f0f7ff, #e6f4ff);
-            border: 1px solid rgba(0, 113, 227, 0.2);
-            border-radius: 16px;
-            padding: 25px;
+        .ad-area {
+            background: linear-gradient(45deg, #6A11CB, #2575FC);
+            color: white;
+            padding: 15px 25px;
+            border-radius: var(--border-radius);
+            margin: 30px 0;
             text-align: center;
-            margin: 40px 0;
-            position: relative;
-            overflow: hidden;
+            width: 100%;
         }
 
-        .ad-card::before {
-            content: "";
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%);
-            pointer-events: none;
-            animation: rotate 12s linear infinite;
-        }
-
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .ad-title {
-            font-size: 1.4rem;
-            margin-bottom: 15px;
-            color: var(--primary-color);
-            position: relative;
-            z-index: 2;
-        }
-
-        .ad-content {
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-            color: var(--text-color);
-            position: relative;
-            z-index: 2;
-        }
-
-        .highlight {
-            color: var(--primary-color);
+        .ad-link {
+            color: #FFD700;
             font-weight: 600;
             text-decoration: none;
-            transition: var(--transition);
         }
 
-        .highlight:hover {
-            color: var(--primary-hover);
+        .ad-link:hover {
             text-decoration: underline;
         }
 
         footer {
+            margin-top: auto;
             text-align: center;
-            padding: 30px 0;
-            color: var(--light-text);
-            font-size: 1rem;
-            border-top: 1px solid var(--border-color);
-            margin-top: 40px;
+            padding: 20px;
+            width: 100%;
+            color: #666;
+            font-size: 0.9rem;
         }
 
         .footer-links {
             display: flex;
             justify-content: center;
-            gap: 30px;
-            margin-bottom: 20px;
+            gap: 20px;
+            margin-top: 10px;
             flex-wrap: wrap;
         }
 
         .footer-link {
-            color: var(--text-color);
+            color: var(--primary-color);
             text-decoration: none;
-            transition: var(--transition);
-            font-weight: 500;
-            position: relative;
-            padding-bottom: 2px;
         }
 
-        .footer-link::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: var(--primary-color);
-            transition: width 0.3s ease;
+        .footer-link:hover {
+            text-decoration: underline;
         }
 
-        .footer-link:hover::after {
-            width: 100%;
-        }
-
-        .copyright {
-            margin-top: 15px;
-        }
-
-        /* 模态框样式 */
         .modal {
             display: none;
             position: fixed;
@@ -440,881 +323,379 @@
             z-index: 1000;
             align-items: center;
             justify-content: center;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
         }
 
         .modal-content {
-            background: var(--glass);
-            border-radius: 20px;
-            width: 90%;
+            background: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
             max-width: 500px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
-            transform: scale(0.95);
-            animation: scaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-
-        @keyframes scaleUp {
-            to { transform: scale(1); }
-        }
-
-        .modal-header {
-            padding: 20px;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
+            width: 90%;
             text-align: center;
         }
 
-        .modal-body {
-            padding: 25px;
-        }
-
-        .share-card {
-            text-align: center;
-            padding: 20px;
-        }
-
-        .author-info {
-            margin-bottom: 20px;
-        }
-
-        .author-avatar {
+        .modal-avatar {
             width: 100px;
             height: 100px;
             border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid var(--primary-color);
-            margin: 0 auto 15px;
-            background: #f5f5f7;
+            background: #ddd;
+            margin: 0 auto 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 2.5rem;
-            color: var(--primary-color);
+            color: #777;
         }
 
-        .author-name {
-            font-size: 1.4rem;
-            margin-bottom: 5px;
+        .tooltip {
+            position: relative;
+            display: inline-block;
         }
 
-        .system-name {
-            font-size: 1.1rem;
-            color: var(--light-text);
-            margin-bottom: 20px;
-        }
-
-        .qr-code {
-            width: 180px;
-            height: 180px;
-            margin: 0 auto 20px;
-            padding: 10px;
-            background: white;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        .avatar-upload {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .avatar-preview {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            background: #f5f5f7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            border: 2px dashed var(--border-color);
-        }
-
-        .avatar-preview img {
-            max-width: 100%;
-            max-height: 100%;
-        }
-
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            background: var(--secondary-color);
-            color: white;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            z-index: 1100;
-            transform: translateX(150%);
-            transition: transform 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
-
-        .close-modal {
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
             position: absolute;
-            top: 15px;
-            right: 15px;
-            background: rgba(0,0,0,0.1);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: white;
-            font-size: 1.2rem;
-            transition: all 0.3s;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
-        .close-modal:hover {
-            background: rgba(0,0,0,0.2);
-            transform: rotate(90deg);
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
         }
 
         /* 响应式调整 */
-        @media (max-width: 768px) {
+        @media (max-width: 600px) {
             .logo {
-                font-size: 2.5rem;
+                font-size: 2rem;
             }
-            .tagline {
-                font-size: 1.1rem;
+            
+            .button-group {
+                flex-direction: column;
             }
-            .card-title {
-                font-size: 1.3rem;
-            }
-            .social-icon {
-                width: 50px;
-                height: 50px;
-                font-size: 1.5rem;
-            }
-            .main-content {
-                gap: 20px;
-            }
+            
             .btn {
-                padding: 10px 15px;
-                font-size: 0.9rem;
+                width: 100%;
+                justify-content: center;
             }
-        }
-
-        /* 加载动画 */
-        .loader {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(0, 113, 227, 0.2);
-            border-radius: 50%;
-            border-top-color: var(--primary-color);
-            animation: spin 1s linear infinite;
-            z-index: 10;
-            display: none;
-        }
-
-        @keyframes spin {
-            to { transform: translate(-50%, -50%) rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1 class="logo">MindMapper</h1>
-            <p class="tagline">将复杂想法转化为清晰可视的思维导图，提升您的思维效率</p>
+            <h1 class="logo">MindMapper Pro</h1>
+            <p class="tagline">将您的想法转换为精美的思维导图</p>
         </header>
 
         <div class="main-content">
-            <div class="card">
-                <h2 class="card-title"><i class="fas fa-edit"></i> 输入思维内容</h2>
-                
-                <div class="example-toggle">
-                    <span>显示示例内容</span>
-                    <label class="switch">
-                        <input type="checkbox" id="example-toggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                
-                <textarea id="mindmap-input" placeholder="在此处输入或粘贴您的思维导图内容，例如：
-中心主题
+            <div class="card input-area">
+                <h2 class="card-title"><i class="fas fa-edit"></i> 输入思维导图内容</h2>
+                <textarea id="mindmap-input" placeholder="请输入思维导图内容...">中心主题
   分支主题1
-    子主题1
-    子主题2
+    子主题1.1
+    子主题1.2
   分支主题2
-    子主题3
-    子主题4">项目计划
-  需求分析
-    用户需求
-    功能需求
-  技术选型
-    前端框架
-    后端技术
-  时间规划
-    阶段一
-    阶段二
-  团队成员
-    开发
-    设计
-    测试</textarea>
-                
-                <div class="actions">
-                    <button id="preview-btn" class="btn btn-primary">
-                        <i class="fas fa-eye"></i> 预览导图
+    子主题2.1
+    子主题2.2
+  分支主题3
+    子主题3.1
+    子主题3.2</textarea>
+                <div class="button-group">
+                    <button class="btn btn-primary" id="preview-btn">
+                        <i class="fas fa-eye"></i> 预览
                     </button>
-                    <button id="clear-btn" class="btn btn-secondary">
-                        <i class="fas fa-trash-alt"></i> 清空内容
+                    <button class="btn btn-secondary" id="clear-btn">
+                        <i class="fas fa-trash-alt"></i> 清空
                     </button>
-                    <button id="import-btn" class="btn btn-secondary">
-                        <i class="fas fa-file-import"></i> 导入数据
+                    <button class="btn btn-secondary" id="reset-btn">
+                        <i class="fas fa-undo"></i> 恢复默认
                     </button>
-                    <button id="export-btn" class="btn btn-success">
-                        <i class="fas fa-file-export"></i> 导出数据
+                    <button class="btn btn-success" id="save-btn">
+                        <i class="fas fa-save"></i> 保存
                     </button>
-                    <input type="file" id="import-file" accept=".json,.txt" style="display: none;">
                 </div>
             </div>
 
-            <div class="card">
-                <h2 class="card-title"><i class="fas fa-project-diagram"></i> 思维导图预览</h2>
-                <div class="preview-container">
-                    <div class="loader"></div>
-                    <div id="jsmind_container"></div>
+            <div class="card preview-area">
+                <h2 class="card-title"><i class="fas fa-project-diagram"></i> 预览</h2>
+                <div class="preview-content">
+                    <div class="mindmap" id="mindmap-preview">
+                        <!-- 预览内容将通过JS动态生成 -->
+                    </div>
                 </div>
-                
-                <div class="actions">
-                    <button id="export-png" class="btn btn-primary">
-                        <i class="fas fa-download"></i> 保存为图片
-                    </button>
-                    <button id="export-pdf" class="btn btn-primary">
-                        <i class="fas fa-file-pdf"></i> 导出为PDF
-                    </button>
-                    <button id="export-json" class="btn btn-secondary">
-                        <i class="fas fa-code"></i> 导出JSON
-                    </button>
-                    <button id="fullscreen-btn" class="btn btn-secondary">
-                        <i class="fas fa-expand"></i> 全屏预览
-                    </button>
-                </div>
+            </div>
+        </div>
+
+        <div class="export-options">
+            <div class="card export-card">
+                <i class="fas fa-file-image export-icon"></i>
+                <h3>保存为图片</h3>
+                <p>将思维导图导出为PNG图片</p>
+                <button class="btn btn-primary">
+                    <i class="fas fa-download"></i> 下载
+                </button>
+            </div>
+            
+            <div class="card export-card">
+                <i class="fas fa-file-pdf export-icon"></i>
+                <h3>保存为PDF</h3>
+                <p>将思维导图导出为PDF文档</p>
+                <button class="btn btn-primary">
+                    <i class="fas fa-download"></i> 下载
+                </button>
+            </div>
+            
+            <div class="card export-card">
+                <i class="fas fa-code export-icon"></i>
+                <h3>思维导图格式</h3>
+                <p>导出为通用思维导图格式</p>
+                <button class="btn btn-primary">
+                    <i class="fas fa-download"></i> 下载
+                </button>
             </div>
         </div>
 
         <div class="share-section">
-            <h2 class="share-title">分享 MindMapper</h2>
-            <div class="social-icons">
-                <div class="social-icon wechat" data-platform="微信">
+            <h2>分享到其他平台</h2>
+            <div class="share-icons">
+                <div class="share-icon wechat tooltip" id="share-wechat">
                     <i class="fab fa-weixin"></i>
+                    <span class="tooltiptext">分享到微信</span>
                 </div>
-                <div class="social-icon qq" data-platform="QQ">
+                <div class="share-icon qq tooltip" id="share-qq">
                     <i class="fab fa-qq"></i>
+                    <span class="tooltiptext">分享到QQ</span>
                 </div>
-                <div class="social-icon weibo" data-platform="微博">
+                <div class="share-icon weibo tooltip" id="share-weibo">
                     <i class="fab fa-weibo"></i>
+                    <span class="tooltiptext">分享到微博</span>
                 </div>
-                <div class="social-icon facebook" data-platform="Facebook">
+                <div class="share-icon facebook tooltip" id="share-facebook">
                     <i class="fab fa-facebook-f"></i>
+                    <span class="tooltiptext">分享到Facebook</span>
                 </div>
-                <div class="social-icon instagram" data-platform="Instagram">
+                <div class="share-icon instagram tooltip" id="share-instagram">
                     <i class="fab fa-instagram"></i>
+                    <span class="tooltiptext">分享到Instagram</span>
                 </div>
-                <div class="social-icon twitter" data-platform="X">
-                    <i class="fab fa-twitter"></i>
+                <div class="share-icon twitter tooltip" id="share-twitter">
+                    <i class="fab fa-x-twitter"></i>
+                    <span class="tooltiptext">分享到X</span>
                 </div>
             </div>
         </div>
 
-        <div class="ad-card">
-            <h3 class="ad-title">加入AI编程社区</h3>
-            <p class="ad-content">
-                我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」，
-                <a href="https://t.zsxq.com/yL7L8" target="_blank" class="highlight">「一起加入讨论吧」</a>
-            </p>
+        <div class="ad-area">
+            <p>我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」，<a href="https://t.zsxq.com/yL7L8" class="ad-link">一起加入讨论吧</a></p>
         </div>
 
         <footer>
+            <p>&copy; <span id="copyright-year">2025</span> MindMapper Pro - 您的智能思维导图助手</p>
             <div class="footer-links">
-                <a href="https://t.zsxq.com/11QO9" target="_blank" class="footer-link">技术支持：艾兜兜儿</a>
-                <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" target="_blank" class="footer-link">挑战100个小工具</a>
-                <a href="https://i3doit.github.io/AI_Tools_2.6.html" target="_blank" class="footer-link">工具主页</a>
-            </div>
-            <div class="copyright">
-                © <span id="copyright-year">2025</span> MindMapper - 您的智能思维导图助手
+                <a href="https://t.zsxq.com/11QO9" class="footer-link">技术支持：艾兜兜儿</a>
+                <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" class="footer-link">挑战100个小工具</a>
+                <a href="https://i3doit.github.io/AI_Tools_2.6.html" class="footer-link">主页</a>
             </div>
         </footer>
     </div>
 
     <!-- 分享模态框 -->
-    <div id="share-modal" class="modal">
+    <div class="modal" id="share-modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2>分享到 <span id="platform-name">微信</span></h2>
-                <div class="close-modal">&times;</div>
+            <div class="modal-avatar">
+                <i class="fas fa-user"></i>
             </div>
-            <div class="modal-body">
-                <div class="share-card">
-                    <div class="author-info">
-                        <div class="author-avatar" id="author-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <h3 class="author-name">MindMapper</h3>
-                        <p class="system-name">智能思维导图转换工具</p>
-                    </div>
-                    
-                    <div class="qr-code" id="qrcode">
-                        <canvas></canvas>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button id="copy-wechat" class="btn btn-primary">
-                            <i class="fas fa-copy"></i> 复制作者微信
-                        </button>
-                        <button id="copy-link" class="btn btn-primary">
-                            <i class="fas fa-link"></i> 复制链接
-                        </button>
-                        <button id="download-qr" class="btn btn-success">
-                            <i class="fas fa-download"></i> 下载二维码
-                        </button>
-                    </div>
-                </div>
+            <h2>分享 MindMapper Pro</h2>
+            <p>系统名称: MindMapper Pro</p>
+            <p>功能描述: 强大的思维导图转换工具</p>
+            <p>作者昵称: <span id="author-name">857023577</span></p>
+            <div class="button-group" style="margin-top: 20px;">
+                <button class="btn btn-primary" id="copy-author">
+                    <i class="fas fa-copy"></i> 复制作者信息
+                </button>
+                <button class="btn btn-secondary" id="close-modal">
+                    <i class="fas fa-times"></i> 关闭
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- 通知消息 -->
-    <div id="notification" class="notification">
-        <i class="fas fa-check-circle"></i> <span id="notification-text">操作成功！</span>
-    </div>
-
     <script>
-        // 初始化变量
-        let jm = null;
-        const currentYear = new Date().getFullYear();
-        let isFullscreen = false;
+        // DOM元素
+        const mindmapInput = document.getElementById('mindmap-input');
+        const mindmapPreview = document.getElementById('mindmap-preview');
+        const previewBtn = document.getElementById('preview-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const shareModal = document.getElementById('share-modal');
+        const copyAuthorBtn = document.getElementById('copy-author');
+        const closeModalBtn = document.getElementById('close-modal');
+        const copyrightYear = document.getElementById('copyright-year');
         
-        // 示例思维导图结构
-        const exampleData = {
-            "meta": {
-                "name": "项目计划",
-                "author": "MindMapper",
-                "version": "1.0"
-            },
-            "format": "node_tree",
-            "data": {
-                "id": "root",
-                "topic": "项目计划",
-                "children": [
-                    {
-                        "id": "child1",
-                        "topic": "需求分析",
-                        "children": [
-                            {"id": "subchild1", "topic": "用户需求"},
-                            {"id": "subchild2", "topic": "功能需求"}
-                        ]
-                    },
-                    {
-                        "id": "child2",
-                        "topic": "技术选型",
-                        "children": [
-                            {"id": "subchild3", "topic": "前端框架"},
-                            {"id": "subchild4", "topic": "后端技术"}
-                        ]
-                    },
-                    {
-                        "id": "child3",
-                        "topic": "时间规划",
-                        "children": [
-                            {"id": "subchild5", "topic": "阶段一"},
-                            {"id": "subchild6", "topic": "阶段二"}
-                        ]
-                    },
-                    {
-                        "id": "child4",
-                        "topic": "团队成员",
-                        "children": [
-                            {"id": "subchild7", "topic": "开发"},
-                            {"id": "subchild8", "topic": "设计"},
-                            {"id": "subchild9", "topic": "测试"}
-                        ]
-                    }
-                ]
-            }
-        };
+        // 分享按钮
+        const shareButtons = document.querySelectorAll('.share-icon');
         
-        // 设置版权年份
-        document.getElementById('copyright-year').textContent = 
-            currentYear > 2025 ? `2025 - ${currentYear}` : '2025';
-
-        // 初始化思维导图
-        function initMindMap() {
-            const options = {
-                container: 'jsmind_container',
-                editable: false,
-                theme: 'primary',
-                layout: {
-                    hspace: 60,
-                    vspace: 30,
-                    pspace: 20
-                }
-            };
-            
-            jm = new jsMind(options);
-            
-            // 尝试从localStorage加载数据
-            const savedData = localStorage.getItem('mindmapData');
-            const savedText = localStorage.getItem('mindmapText') || '';
-            
-            if (savedData) {
-                try {
-                    const parsedData = JSON.parse(savedData);
-                    jm.show(parsedData);
-                    document.getElementById('mindmap-input').value = savedText;
-                } catch (e) {
-                    console.error("解析本地数据失败", e);
-                    // 加载示例数据
-                    loadExampleData();
-                }
-            } else {
-                // 如果没有保存数据，加载示例
-                loadExampleData();
-            }
-        }
+        // 默认内容
+        const defaultContent = `中心主题
+  分支主题1
+    子主题1.1
+    子主题1.2
+  分支主题2
+    子主题2.1
+    子主题2.2
+  分支主题3
+    子主题3.1
+    子主题3.2`;
         
-        // 加载示例数据
-        function loadExampleData() {
-            jm.show(exampleData);
-            // 保存到localStorage
-            const textContent = `项目计划
-  需求分析
-    用户需求
-    功能需求
-  技术选型
-    前端框架
-    后端技术
-  时间规划
-    阶段一
-    阶段二
-  团队成员
-    开发
-    设计
-    测试`;
-            
-            document.getElementById('mindmap-input').value = textContent;
-            localStorage.setItem('mindmapData', JSON.stringify(exampleData));
-            localStorage.setItem('mindmapText', textContent);
-        }
-
-        // 解析文本为思维导图数据结构
-        function parseTextToMind(text) {
-            if (!text.trim()) return null;
-            
-            const lines = text.split('\n');
-            const rootText = lines[0].trim();
-            if (!rootText) return null;
-            
-            const root = {
-                id: 'root',
-                topic: rootText,
-                children: []
-            };
-            
-            let stack = [{node: root, level: 0}];
-            
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i];
-                if (!line.trim()) continue;
-                
-                // 计算缩进级别
-                const level = line.search(/\S|$/);
-                const content = line.trim();
-                
-                // 创建新节点
-                const newNode = {
-                    id: 'node_' + i,
-                    topic: content,
-                    children: []
-                };
-                
-                // 找到父节点
-                while (stack.length > 1 && stack[stack.length - 1].level >= level) {
-                    stack.pop();
-                }
-                
-                // 添加到父节点
-                const parent = stack[stack.length - 1].node;
-                if (parent.children) {
-                    parent.children.push(newNode);
-                } else {
-                    parent.children = [newNode];
-                }
-                
-                // 添加到堆栈
-                stack.push({node: newNode, level: level});
-            }
-            
-            return {
-                "meta": {
-                    "name": "我的思维导图",
-                    "author": "用户生成",
-                    "version": "1.0"
-                },
-                "format": "node_tree",
-                "data": root
-            };
-        }
-
-        // 显示加载动画
-        function showLoader(show) {
-            const loader = document.querySelector('.loader');
-            loader.style.display = show ? 'block' : 'none';
-        }
-
-        // 显示通知
-        function showNotification(message, duration = 2000) {
-            const notification = document.getElementById('notification');
-            const notificationText = document.getElementById('notification-text');
-            
-            notificationText.textContent = message;
-            notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, duration);
-        }
-        
-        // 全屏功能
-        function toggleFullscreen() {
-            const container = document.getElementById('jsmind_container');
-            
-            if (!isFullscreen) {
-                if (container.requestFullscreen) {
-                    container.requestFullscreen();
-                } else if (container.mozRequestFullScreen) {
-                    container.mozRequestFullScreen();
-                } else if (container.webkitRequestFullscreen) {
-                    container.webkitRequestFullscreen();
-                } else if (container.msRequestFullscreen) {
-                    container.msRequestFullscreen();
-                }
-                isFullscreen = true;
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.mozCancelFullScreen) {
-                    document.mozCancelFullScreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
-                }
-                isFullscreen = false;
-            }
-        }
-        
-        // 数据导出
-        function exportData() {
-            const mindData = jm.get_data();
-            const dataStr = JSON.stringify(mindData, null, 2);
-            const blob = new Blob([dataStr], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'mindmap_data.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            showNotification('数据导出成功');
-        }
-
-        // 初始化事件监听
-        function initEvents() {
-            // 示例开关
-            document.getElementById('example-toggle').addEventListener('change', function() {
-                if (this.checked) {
-                    loadExampleData();
-                } else {
-                    document.getElementById('mindmap-input').value = '';
-                    localStorage.removeItem('mindmapData');
-                    localStorage.removeItem('mindmapText');
-                }
-            });
-            
-            // 预览按钮
-            document.getElementById('preview-btn').addEventListener('click', () => {
-                const text = document.getElementById('mindmap-input').value;
-                showLoader(true);
-                
-                setTimeout(() => {
-                    const mindData = parseTextToMind(text);
-                    if (mindData) {
-                        jm.show(mindData);
-                        // 保存到localStorage
-                        localStorage.setItem('mindmapData', JSON.stringify(mindData));
-                        localStorage.setItem('mindmapText', text);
-                        showNotification('思维导图已更新');
-                    } else {
-                        showNotification('请输入有效的内容');
-                    }
-                    showLoader(false);
-                }, 500);
-            });
-            
-            // 清空按钮
-            document.getElementById('clear-btn').addEventListener('click', () => {
-                document.getElementById('mindmap-input').value = '';
-                document.getElementById('example-toggle').checked = false;
-                
-                // 创建空思维导图
-                const emptyData = {
-                    "meta": {
-                        "name": "空白导图",
-                        "author": "MindMapper",
-                        "version": "1.0"
-                    },
-                    "format": "node_tree",
-                    "data": {
-                        "id": "root",
-                        "topic": "中心主题"
-                    }
-                };
-                
-                jm.show(emptyData);
-                localStorage.removeItem('mindmapData');
-                localStorage.removeItem('mindmapText');
-                showNotification('内容已清空');
-            });
-            
-            // 导入按钮
-            document.getElementById('import-btn').addEventListener('click', () => {
-                document.getElementById('import-file').click();
-            });
-            
-            // 导出按钮
-            document.getElementById('export-btn').addEventListener('click', exportData);
-            
-            // 文件导入处理
-            document.getElementById('import-file').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    try {
-                        let mindData;
-                        let text = '';
-                        
-                        if (file.name.endsWith('.json')) {
-                            mindData = JSON.parse(event.target.result);
-                            
-                            // 尝试从数据中提取文本
-                            function extractText(node, level) {
-                                text += '  '.repeat(level) + node.topic + '\n';
-                                if (node.children) {
-                                    node.children.forEach(child => extractText(child, level + 1));
-                                }
-                            }
-                            
-                            extractText(mindData.data, 0);
-                        } else {
-                            // 处理文本文件
-                            text = event.target.result;
-                            mindData = parseTextToMind(text);
-                        }
-                        
-                        if (mindData) {
-                            jm.show(mindData);
-                            document.getElementById('mindmap-input').value = text.trim();
-                            
-                            // 保存到localStorage
-                            localStorage.setItem('mindmapData', JSON.stringify(mindData));
-                            localStorage.setItem('mindmapText', text.trim());
-                            
-                            showNotification('导入成功');
-                        } else {
-                            showNotification('导入失败：无效的文件格式');
-                        }
-                    } catch (error) {
-                        showNotification('导入失败：文件解析错误');
-                        console.error('导入失败:', error);
-                    }
-                };
-                reader.readAsText(file);
-            });
-            
-            // 导出为PNG
-            document.getElementById('export-png').addEventListener('click', () => {
-                showLoader(true);
-                setTimeout(() => {
-                    jm.screenshot.shootDownload();
-                    showLoader(false);
-                }, 500);
-            });
-            
-            // 导出为PDF
-            document.getElementById('export-pdf').addEventListener('click', () => {
-                showLoader(true);
-                setTimeout(() => {
-                    html2canvas(document.getElementById('jsmind_container')).then(canvas => {
-                        const imgData = canvas.toDataURL('image/png');
-                        const pdf = new jspdf.jsPDF({
-                            orientation: 'landscape',
-                            unit: 'mm',
-                            format: 'a4'
-                        });
-                        
-                        const imgProps = pdf.getImageProperties(imgData);
-                        const pdfWidth = pdf.internal.pageSize.getWidth();
-                        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                        
-                        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                        pdf.save('mindmap.pdf');
-                        showNotification('PDF导出成功');
-                        showLoader(false);
-                    });
-                }, 500);
-            });
-            
-            // 导出为JSON
-            document.getElementById('export-json').addEventListener('click', () => {
-                const mindData = jm.get_data();
-                const dataStr = JSON.stringify(mindData, null, 2);
-                const blob = new Blob([dataStr], {type: 'application/json'});
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'mindmap.json';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                showNotification('JSON导出成功');
-            });
-            
-            // 全屏按钮
-            document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
-            
-            // 全屏状态变化事件
-            document.addEventListener('fullscreenchange', exitHandler);
-            document.addEventListener('mozfullscreenchange', exitHandler);
-            document.addEventListener('webkitfullscreenchange', exitHandler);
-            document.addEventListener('msfullscreenchange', exitHandler);
-            
-            function exitHandler() {
-                if (!document.fullscreenElement && !document.mozFullScreenElement &&
-                    !document.webkitFullscreenElement && !document.msFullscreenElement) {
-                    isFullscreen = false;
-                }
-            }
-            
-            // 分享模态框事件
-            document.getElementById('copy-wechat').addEventListener('click', () => {
-                navigator.clipboard.writeText('857023577').then(() => {
-                    showNotification('已复制作者微信: 857023577');
-                });
-            });
-            
-            document.getElementById('copy-link').addEventListener('click', () => {
-                navigator.clipboard.writeText(window.location.href).then(() => {
-                    showNotification('已复制当前页面链接');
-                });
-            });
-            
-            document.getElementById('download-qr').addEventListener('click', () => {
-                const canvas = document.querySelector('#qrcode canvas');
-                const link = document.createElement('a');
-                link.download = 'mindmapper_qrcode.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                showNotification('二维码已下载');
-            });
-            
-            // 分享平台图标点击事件
-            document.querySelectorAll('.social-icon').forEach(icon => {
-                icon.addEventListener('click', function() {
-                    const platform = this.getAttribute('data-platform');
-                    openShareModal(platform);
-                });
-            });
-            
-            // 关闭模态框
-            document.querySelector('.close-modal').addEventListener('click', function() {
-                document.getElementById('share-modal').style.display = 'none';
-            });
-        }
-        
-        // 打开分享模态框
-        function openShareModal(platform) {
-            document.getElementById('platform-name').textContent = platform;
-            const modal = document.getElementById('share-modal');
-            modal.style.display = 'flex';
-            
-            // 生成二维码
-            const qrElement = document.getElementById('qrcode');
-            qrElement.innerHTML = '';
-            
-            try {
-                QRCode.toCanvas(qrElement, window.location.href, {
-                    width: 160,
-                    margin: 1,
-                    color: {
-                        dark: '#1d1d1f',
-                        light: '#ffffff'
-                    }
-                }, function(error) {
-                    if (error) {
-                        console.error('二维码生成失败:', error);
-                        qrElement.innerHTML = '<p>二维码生成失败</p>';
-                    }
-                });
-            } catch (e) {
-                console.error('二维码生成异常:', e);
-                qrElement.innerHTML = '<p>二维码生成异常</p>';
-            }
-            
-            // 点击模态框外部关闭
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        }
-
         // 初始化
-        window.onload = function() {
-            initMindMap();
-            initEvents();
-        };
+        function init() {
+            // 设置版权年份
+            const currentYear = new Date().getFullYear();
+            if (currentYear > 2025) {
+                copyrightYear.textContent = `2025 - ${currentYear}`;
+            } else {
+                copyrightYear.textContent = '2025';
+            }
+            
+            // 从localStorage加载数据或使用默认内容
+            const savedContent = localStorage.getItem('mindmapContent');
+            if (savedContent) {
+                mindmapInput.value = savedContent;
+            } else {
+                mindmapInput.value = defaultContent;
+            }
+            
+            // 初始预览
+            updatePreview();
+            
+            // 设置输入框焦点事件
+            mindmapInput.addEventListener('focus', function() {
+                if (this.value === defaultContent) {
+                    this.value = '';
+                }
+            });
+            
+            // 设置输入框失去焦点事件
+            mindmapInput.addEventListener('blur', function() {
+                if (this.value.trim() === '') {
+                    this.value = defaultContent;
+                    updatePreview();
+                }
+            });
+            
+            // 添加输入事件监听
+            mindmapInput.addEventListener('input', function() {
+                updatePreview();
+                // 实时保存到localStorage
+                localStorage.setItem('mindmapContent', this.value);
+            });
+        }
+        
+        // 更新预览
+        function updatePreview() {
+            const content = mindmapInput.value;
+            const lines = content.split('\n');
+            
+            let html = '';
+            lines.forEach(line => {
+                const depth = (line.match(/^\s*/) || [''])[0].length;
+                const text = line.trim();
+                
+                if (text) {
+                    let className = 'node';
+                    if (depth === 0) {
+                        className += ' node-main';
+                    } else if (depth > 4) {
+                        className += ' subnode';
+                    }
+                    
+                    html += `<div class="${className}" style="margin-left: ${depth * 20}px">${text}</div>`;
+                }
+            });
+            
+            mindmapPreview.innerHTML = html;
+        }
+        
+        // 清空输入框
+        function clearInput() {
+            mindmapInput.value = '';
+            mindmapInput.focus();
+            updatePreview();
+            localStorage.setItem('mindmapContent', '');
+        }
+        
+        // 重置为默认内容
+        function resetToDefault() {
+            mindmapInput.value = defaultContent;
+            updatePreview();
+            localStorage.setItem('mindmapContent', defaultContent);
+        }
+        
+        // 保存内容
+        function saveContent() {
+            localStorage.setItem('mindmapContent', mindmapInput.value);
+            alert('内容已保存！');
+        }
+        
+        // 显示分享模态框
+        function showShareModal() {
+            shareModal.style.display = 'flex';
+        }
+        
+        // 隐藏分享模态框
+        function hideShareModal() {
+            shareModal.style.display = 'none';
+        }
+        
+        // 复制作者信息
+        function copyAuthorInfo() {
+            const authorName = document.getElementById('author-name').textContent;
+            navigator.clipboard.writeText(authorName)
+                .then(() => {
+                    alert('已获取作者微信，去链接吧');
+                    setTimeout(() => {
+                        hideShareModal();
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('复制失败:', err);
+                });
+        }
+        
+        // 事件监听
+        previewBtn.addEventListener('click', updatePreview);
+        clearBtn.addEventListener('click', clearInput);
+        resetBtn.addEventListener('click', resetToDefault);
+        saveBtn.addEventListener('click', saveContent);
+        copyAuthorBtn.addEventListener('click', copyAuthorInfo);
+        closeModalBtn.addEventListener('click', hideShareModal);
+        
+        // 分享按钮事件
+        shareButtons.forEach(button => {
+            button.addEventListener('click', showShareModal);
+        });
+        
+        // 点击模态框外部关闭
+        window.addEventListener('click', function(event) {
+            if (event.target === shareModal) {
+                hideShareModal();
+            }
+        });
+        
+        // 初始化应用
+        init();
     </script>
 </body>
 </html>
