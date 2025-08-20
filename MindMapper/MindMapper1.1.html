@@ -1,1 +1,1320 @@
-姐姐
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindMapper - 思维导图转换工具</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsmind@0.6.6/es6/jsmind.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsmind@0.6.6/es6/jsmind.draggable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsmind@0.6.6/es6/jsmind.screenshot.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #0071e3;
+            --primary-hover: #0077ed;
+            --secondary-color: #34c759;
+            --background: rgba(255, 255, 255, 0.85);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-color: #1d1d1f;
+            --light-text: #86868b;
+            --border-color: rgba(210, 210, 215, 0.4);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+            --transition: all 0.3s ease;
+            --glass: rgba(255, 255, 255, 0.8);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            background-size: 300% 300%;
+            animation: gradientAnimation 15s ease infinite;
+        }
+
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="none" stroke="rgba(52, 199, 89, 0.05)" stroke-width="1"/></svg>');
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 15px;
+            letter-spacing: -1.5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.9; }
+            50% { opacity: 1; }
+            100% { opacity: 0.9; }
+        }
+
+        .tagline {
+            font-size: 1.4rem;
+            color: var(--light-text);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .card-title i {
+            color: var(--primary-color);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 350px;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            font-size: 1rem;
+            resize: vertical;
+            background: rgba(255, 255, 255, 0.7);
+            transition: var(--transition);
+            font-family: monospace;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+        }
+
+        .preview-container {
+            width: 100%;
+            height: 500px;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        #jsmind_container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: #f5f5f7;
+            color: var(--text-color);
+        }
+
+        .btn-secondary:hover {
+            background: #e9e9ed;
+        }
+
+        .btn-success {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #30be52;
+        }
+
+        .example-toggle {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .share-section {
+            margin: 40px 0;
+        }
+
+        .share-title {
+            text-align: center;
+            font-size: 1.4rem;
+            margin-bottom: 25px;
+            color: var(--text-color);
+        }
+
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+
+        .social-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+        }
+
+        .social-icon:hover {
+            transform: translateY(-5px) scale(1.1);
+        }
+
+        .wechat { background: #2aae67; }
+        .qq { background: #12b7f5; }
+        .weibo { background: #e6162d; }
+        .facebook { background: #1877f2; }
+        .instagram { background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d); }
+        .twitter { background: #1da1f2; }
+
+        .ad-card {
+            background: linear-gradient(135deg, #f0f7ff, #e6f4ff);
+            border: 1px solid rgba(0, 113, 227, 0.2);
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            margin: 40px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ad-card::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%);
+            pointer-events: none;
+            animation: rotate 12s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .ad-title {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            position: relative;
+            z-index: 2;
+        }
+
+        .ad-content {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: var(--text-color);
+            position: relative;
+            z-index: 2;
+        }
+
+        .highlight {
+            color: var(--primary-color);
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .highlight:hover {
+            color: var(--primary-hover);
+            text-decoration: underline;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--light-text);
+            font-size: 1rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 40px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: var(--text-color);
+            text-decoration: none;
+            transition: var(--transition);
+            font-weight: 500;
+            position: relative;
+            padding-bottom: 2px;
+        }
+
+        .footer-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        .footer-link:hover::after {
+            width: 100%;
+        }
+
+        .copyright {
+            margin-top: 15px;
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: var(--glass);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transform: scale(0.95);
+            animation: scaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes scaleUp {
+            to { transform: scale(1); }
+        }
+
+        .modal-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            text-align: center;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .share-card {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .author-info {
+            margin-bottom: 20px;
+        }
+
+        .author-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary-color);
+            margin: 0 auto 15px;
+            background: #f5f5f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: var(--primary-color);
+        }
+
+        .author-name {
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+        }
+
+        .system-name {
+            font-size: 1.1rem;
+            color: var(--light-text);
+            margin-bottom: 20px;
+        }
+
+        .qr-code {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 20px;
+            padding: 10px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .avatar-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .avatar-preview {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: #f5f5f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 2px dashed var(--border-color);
+        }
+
+        .avatar-preview img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: var(--secondary-color);
+            color: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            z-index: 1100;
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+
+        .close-modal:hover {
+            background: rgba(0,0,0,0.2);
+            transform: rotate(90deg);
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2.5rem;
+            }
+            .tagline {
+                font-size: 1.1rem;
+            }
+            .card-title {
+                font-size: 1.3rem;
+            }
+            .social-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.5rem;
+            }
+            .main-content {
+                gap: 20px;
+            }
+            .btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* 加载动画 */
+        .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0, 113, 227, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+            z-index: 10;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="logo">MindMapper</h1>
+            <p class="tagline">将复杂想法转化为清晰可视的思维导图，提升您的思维效率</p>
+        </header>
+
+        <div class="main-content">
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-edit"></i> 输入思维内容</h2>
+                
+                <div class="example-toggle">
+                    <span>显示示例内容</span>
+                    <label class="switch">
+                        <input type="checkbox" id="example-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <textarea id="mindmap-input" placeholder="在此处输入或粘贴您的思维导图内容，例如：
+中心主题
+  分支主题1
+    子主题1
+    子主题2
+  分支主题2
+    子主题3
+    子主题4">项目计划
+  需求分析
+    用户需求
+    功能需求
+  技术选型
+    前端框架
+    后端技术
+  时间规划
+    阶段一
+    阶段二
+  团队成员
+    开发
+    设计
+    测试</textarea>
+                
+                <div class="actions">
+                    <button id="preview-btn" class="btn btn-primary">
+                        <i class="fas fa-eye"></i> 预览导图
+                    </button>
+                    <button id="clear-btn" class="btn btn-secondary">
+                        <i class="fas fa-trash-alt"></i> 清空内容
+                    </button>
+                    <button id="import-btn" class="btn btn-secondary">
+                        <i class="fas fa-file-import"></i> 导入数据
+                    </button>
+                    <button id="export-btn" class="btn btn-success">
+                        <i class="fas fa-file-export"></i> 导出数据
+                    </button>
+                    <input type="file" id="import-file" accept=".json,.txt" style="display: none;">
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-project-diagram"></i> 思维导图预览</h2>
+                <div class="preview-container">
+                    <div class="loader"></div>
+                    <div id="jsmind_container"></div>
+                </div>
+                
+                <div class="actions">
+                    <button id="export-png" class="btn btn-primary">
+                        <i class="fas fa-download"></i> 保存为图片
+                    </button>
+                    <button id="export-pdf" class="btn btn-primary">
+                        <i class="fas fa-file-pdf"></i> 导出为PDF
+                    </button>
+                    <button id="export-json" class="btn btn-secondary">
+                        <i class="fas fa-code"></i> 导出JSON
+                    </button>
+                    <button id="fullscreen-btn" class="btn btn-secondary">
+                        <i class="fas fa-expand"></i> 全屏预览
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="share-section">
+            <h2 class="share-title">分享 MindMapper</h2>
+            <div class="social-icons">
+                <div class="social-icon wechat" data-platform="微信">
+                    <i class="fab fa-weixin"></i>
+                </div>
+                <div class="social-icon qq" data-platform="QQ">
+                    <i class="fab fa-qq"></i>
+                </div>
+                <div class="social-icon weibo" data-platform="微博">
+                    <i class="fab fa-weibo"></i>
+                </div>
+                <div class="social-icon facebook" data-platform="Facebook">
+                    <i class="fab fa-facebook-f"></i>
+                </div>
+                <div class="social-icon instagram" data-platform="Instagram">
+                    <i class="fab fa-instagram"></i>
+                </div>
+                <div class="social-icon twitter" data-platform="X">
+                    <i class="fab fa-twitter"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="ad-card">
+            <h3 class="ad-title">加入AI编程社区</h3>
+            <p class="ad-content">
+                我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」，
+                <a href="https://t.zsxq.com/yL7L8" target="_blank" class="highlight">「一起加入讨论吧」</a>
+            </p>
+        </div>
+
+        <footer>
+            <div class="footer-links">
+                <a href="https://t.zsxq.com/11QO9" target="_blank" class="footer-link">技术支持：艾兜兜儿</a>
+                <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" target="_blank" class="footer-link">挑战100个小工具</a>
+                <a href="https://i3doit.github.io/AI_Tools_2.6.html" target="_blank" class="footer-link">工具主页</a>
+            </div>
+            <div class="copyright">
+                © <span id="copyright-year">2025</span> MindMapper - 您的智能思维导图助手
+            </div>
+        </footer>
+    </div>
+
+    <!-- 分享模态框 -->
+    <div id="share-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>分享到 <span id="platform-name">微信</span></h2>
+                <div class="close-modal">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div class="share-card">
+                    <div class="author-info">
+                        <div class="author-avatar" id="author-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <h3 class="author-name">MindMapper</h3>
+                        <p class="system-name">智能思维导图转换工具</p>
+                    </div>
+                    
+                    <div class="qr-code" id="qrcode">
+                        <canvas></canvas>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button id="copy-wechat" class="btn btn-primary">
+                            <i class="fas fa-copy"></i> 复制作者微信
+                        </button>
+                        <button id="copy-link" class="btn btn-primary">
+                            <i class="fas fa-link"></i> 复制链接
+                        </button>
+                        <button id="download-qr" class="btn btn-success">
+                            <i class="fas fa-download"></i> 下载二维码
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知消息 -->
+    <div id="notification" class="notification">
+        <i class="fas fa-check-circle"></i> <span id="notification-text">操作成功！</span>
+    </div>
+
+    <script>
+        // 初始化变量
+        let jm = null;
+        const currentYear = new Date().getFullYear();
+        let isFullscreen = false;
+        
+        // 示例思维导图结构
+        const exampleData = {
+            "meta": {
+                "name": "项目计划",
+                "author": "MindMapper",
+                "version": "1.0"
+            },
+            "format": "node_tree",
+            "data": {
+                "id": "root",
+                "topic": "项目计划",
+                "children": [
+                    {
+                        "id": "child1",
+                        "topic": "需求分析",
+                        "children": [
+                            {"id": "subchild1", "topic": "用户需求"},
+                            {"id": "subchild2", "topic": "功能需求"}
+                        ]
+                    },
+                    {
+                        "id": "child2",
+                        "topic": "技术选型",
+                        "children": [
+                            {"id": "subchild3", "topic": "前端框架"},
+                            {"id": "subchild4", "topic": "后端技术"}
+                        ]
+                    },
+                    {
+                        "id": "child3",
+                        "topic": "时间规划",
+                        "children": [
+                            {"id": "subchild5", "topic": "阶段一"},
+                            {"id": "subchild6", "topic": "阶段二"}
+                        ]
+                    },
+                    {
+                        "id": "child4",
+                        "topic": "团队成员",
+                        "children": [
+                            {"id": "subchild7", "topic": "开发"},
+                            {"id": "subchild8", "topic": "设计"},
+                            {"id": "subchild9", "topic": "测试"}
+                        ]
+                    }
+                ]
+            }
+        };
+        
+        // 设置版权年份
+        document.getElementById('copyright-year').textContent = 
+            currentYear > 2025 ? `2025 - ${currentYear}` : '2025';
+
+        // 初始化思维导图
+        function initMindMap() {
+            const options = {
+                container: 'jsmind_container',
+                editable: false,
+                theme: 'primary',
+                layout: {
+                    hspace: 60,
+                    vspace: 30,
+                    pspace: 20
+                }
+            };
+            
+            jm = new jsMind(options);
+            
+            // 尝试从localStorage加载数据
+            const savedData = localStorage.getItem('mindmapData');
+            const savedText = localStorage.getItem('mindmapText') || '';
+            
+            if (savedData) {
+                try {
+                    const parsedData = JSON.parse(savedData);
+                    jm.show(parsedData);
+                    document.getElementById('mindmap-input').value = savedText;
+                } catch (e) {
+                    console.error("解析本地数据失败", e);
+                    // 加载示例数据
+                    loadExampleData();
+                }
+            } else {
+                // 如果没有保存数据，加载示例
+                loadExampleData();
+            }
+        }
+        
+        // 加载示例数据
+        function loadExampleData() {
+            jm.show(exampleData);
+            // 保存到localStorage
+            const textContent = `项目计划
+  需求分析
+    用户需求
+    功能需求
+  技术选型
+    前端框架
+    后端技术
+  时间规划
+    阶段一
+    阶段二
+  团队成员
+    开发
+    设计
+    测试`;
+            
+            document.getElementById('mindmap-input').value = textContent;
+            localStorage.setItem('mindmapData', JSON.stringify(exampleData));
+            localStorage.setItem('mindmapText', textContent);
+        }
+
+        // 解析文本为思维导图数据结构
+        function parseTextToMind(text) {
+            if (!text.trim()) return null;
+            
+            const lines = text.split('\n');
+            const rootText = lines[0].trim();
+            if (!rootText) return null;
+            
+            const root = {
+                id: 'root',
+                topic: rootText,
+                children: []
+            };
+            
+            let stack = [{node: root, level: 0}];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                if (!line.trim()) continue;
+                
+                // 计算缩进级别
+                const level = line.search(/\S|$/);
+                const content = line.trim();
+                
+                // 创建新节点
+                const newNode = {
+                    id: 'node_' + i,
+                    topic: content,
+                    children: []
+                };
+                
+                // 找到父节点
+                while (stack.length > 1 && stack[stack.length - 1].level >= level) {
+                    stack.pop();
+                }
+                
+                // 添加到父节点
+                const parent = stack[stack.length - 1].node;
+                if (parent.children) {
+                    parent.children.push(newNode);
+                } else {
+                    parent.children = [newNode];
+                }
+                
+                // 添加到堆栈
+                stack.push({node: newNode, level: level});
+            }
+            
+            return {
+                "meta": {
+                    "name": "我的思维导图",
+                    "author": "用户生成",
+                    "version": "1.0"
+                },
+                "format": "node_tree",
+                "data": root
+            };
+        }
+
+        // 显示加载动画
+        function showLoader(show) {
+            const loader = document.querySelector('.loader');
+            loader.style.display = show ? 'block' : 'none';
+        }
+
+        // 显示通知
+        function showNotification(message, duration = 2000) {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notification-text');
+            
+            notificationText.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+        
+        // 全屏功能
+        function toggleFullscreen() {
+            const container = document.getElementById('jsmind_container');
+            
+            if (!isFullscreen) {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.mozRequestFullScreen) {
+                    container.mozRequestFullScreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                }
+                isFullscreen = true;
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                isFullscreen = false;
+            }
+        }
+        
+        // 数据导出
+        function exportData() {
+            const mindData = jm.get_data();
+            const dataStr = JSON.stringify(mindData, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mindmap_data.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('数据导出成功');
+        }
+
+        // 初始化事件监听
+        function initEvents() {
+            // 示例开关
+            document.getElementById('example-toggle').addEventListener('change', function() {
+                if (this.checked) {
+                    loadExampleData();
+                } else {
+                    document.getElementById('mindmap-input').value = '';
+                    localStorage.removeItem('mindmapData');
+                    localStorage.removeItem('mindmapText');
+                }
+            });
+            
+            // 预览按钮
+            document.getElementById('preview-btn').addEventListener('click', () => {
+                const text = document.getElementById('mindmap-input').value;
+                showLoader(true);
+                
+                setTimeout(() => {
+                    const mindData = parseTextToMind(text);
+                    if (mindData) {
+                        jm.show(mindData);
+                        // 保存到localStorage
+                        localStorage.setItem('mindmapData', JSON.stringify(mindData));
+                        localStorage.setItem('mindmapText', text);
+                        showNotification('思维导图已更新');
+                    } else {
+                        showNotification('请输入有效的内容');
+                    }
+                    showLoader(false);
+                }, 500);
+            });
+            
+            // 清空按钮
+            document.getElementById('clear-btn').addEventListener('click', () => {
+                document.getElementById('mindmap-input').value = '';
+                document.getElementById('example-toggle').checked = false;
+                
+                // 创建空思维导图
+                const emptyData = {
+                    "meta": {
+                        "name": "空白导图",
+                        "author": "MindMapper",
+                        "version": "1.0"
+                    },
+                    "format": "node_tree",
+                    "data": {
+                        "id": "root",
+                        "topic": "中心主题"
+                    }
+                };
+                
+                jm.show(emptyData);
+                localStorage.removeItem('mindmapData');
+                localStorage.removeItem('mindmapText');
+                showNotification('内容已清空');
+            });
+            
+            // 导入按钮
+            document.getElementById('import-btn').addEventListener('click', () => {
+                document.getElementById('import-file').click();
+            });
+            
+            // 导出按钮
+            document.getElementById('export-btn').addEventListener('click', exportData);
+            
+            // 文件导入处理
+            document.getElementById('import-file').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        let mindData;
+                        let text = '';
+                        
+                        if (file.name.endsWith('.json')) {
+                            mindData = JSON.parse(event.target.result);
+                            
+                            // 尝试从数据中提取文本
+                            function extractText(node, level) {
+                                text += '  '.repeat(level) + node.topic + '\n';
+                                if (node.children) {
+                                    node.children.forEach(child => extractText(child, level + 1));
+                                }
+                            }
+                            
+                            extractText(mindData.data, 0);
+                        } else {
+                            // 处理文本文件
+                            text = event.target.result;
+                            mindData = parseTextToMind(text);
+                        }
+                        
+                        if (mindData) {
+                            jm.show(mindData);
+                            document.getElementById('mindmap-input').value = text.trim();
+                            
+                            // 保存到localStorage
+                            localStorage.setItem('mindmapData', JSON.stringify(mindData));
+                            localStorage.setItem('mindmapText', text.trim());
+                            
+                            showNotification('导入成功');
+                        } else {
+                            showNotification('导入失败：无效的文件格式');
+                        }
+                    } catch (error) {
+                        showNotification('导入失败：文件解析错误');
+                        console.error('导入失败:', error);
+                    }
+                };
+                reader.readAsText(file);
+            });
+            
+            // 导出为PNG
+            document.getElementById('export-png').addEventListener('click', () => {
+                showLoader(true);
+                setTimeout(() => {
+                    jm.screenshot.shootDownload();
+                    showLoader(false);
+                }, 500);
+            });
+            
+            // 导出为PDF
+            document.getElementById('export-pdf').addEventListener('click', () => {
+                showLoader(true);
+                setTimeout(() => {
+                    html2canvas(document.getElementById('jsmind_container')).then(canvas => {
+                        const imgData = canvas.toDataURL('image/png');
+                        const pdf = new jspdf.jsPDF({
+                            orientation: 'landscape',
+                            unit: 'mm',
+                            format: 'a4'
+                        });
+                        
+                        const imgProps = pdf.getImageProperties(imgData);
+                        const pdfWidth = pdf.internal.pageSize.getWidth();
+                        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                        
+                        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                        pdf.save('mindmap.pdf');
+                        showNotification('PDF导出成功');
+                        showLoader(false);
+                    });
+                }, 500);
+            });
+            
+            // 导出为JSON
+            document.getElementById('export-json').addEventListener('click', () => {
+                const mindData = jm.get_data();
+                const dataStr = JSON.stringify(mindData, null, 2);
+                const blob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'mindmap.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showNotification('JSON导出成功');
+            });
+            
+            // 全屏按钮
+            document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+            
+            // 全屏状态变化事件
+            document.addEventListener('fullscreenchange', exitHandler);
+            document.addEventListener('mozfullscreenchange', exitHandler);
+            document.addEventListener('webkitfullscreenchange', exitHandler);
+            document.addEventListener('msfullscreenchange', exitHandler);
+            
+            function exitHandler() {
+                if (!document.fullscreenElement && !document.mozFullScreenElement &&
+                    !document.webkitFullscreenElement && !document.msFullscreenElement) {
+                    isFullscreen = false;
+                }
+            }
+            
+            // 分享模态框事件
+            document.getElementById('copy-wechat').addEventListener('click', () => {
+                navigator.clipboard.writeText('857023577').then(() => {
+                    showNotification('已复制作者微信: 857023577');
+                });
+            });
+            
+            document.getElementById('copy-link').addEventListener('click', () => {
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    showNotification('已复制当前页面链接');
+                });
+            });
+            
+            document.getElementById('download-qr').addEventListener('click', () => {
+                const canvas = document.querySelector('#qrcode canvas');
+                const link = document.createElement('a');
+                link.download = 'mindmapper_qrcode.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showNotification('二维码已下载');
+            });
+            
+            // 分享平台图标点击事件
+            document.querySelectorAll('.social-icon').forEach(icon => {
+                icon.addEventListener('click', function() {
+                    const platform = this.getAttribute('data-platform');
+                    openShareModal(platform);
+                });
+            });
+            
+            // 关闭模态框
+            document.querySelector('.close-modal').addEventListener('click', function() {
+                document.getElementById('share-modal').style.display = 'none';
+            });
+        }
+        
+        // 打开分享模态框
+        function openShareModal(platform) {
+            document.getElementById('platform-name').textContent = platform;
+            const modal = document.getElementById('share-modal');
+            modal.style.display = 'flex';
+            
+            // 生成二维码
+            const qrElement = document.getElementById('qrcode');
+            qrElement.innerHTML = '';
+            
+            try {
+                QRCode.toCanvas(qrElement, window.location.href, {
+                    width: 160,
+                    margin: 1,
+                    color: {
+                        dark: '#1d1d1f',
+                        light: '#ffffff'
+                    }
+                }, function(error) {
+                    if (error) {
+                        console.error('二维码生成失败:', error);
+                        qrElement.innerHTML = '<p>二维码生成失败</p>';
+                    }
+                });
+            } catch (e) {
+                console.error('二维码生成异常:', e);
+                qrElement.innerHTML = '<p>二维码生成异常</p>';
+            }
+            
+            // 点击模态框外部关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // 初始化
+        window.onload = function() {
+            initMindMap();
+            initEvents();
+        };
+    </script>
+</body>
+</html>
