@@ -6,6 +6,7 @@
     <title>MindMapper Pro - 思维导图转换工具</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
             --primary-color: #007AFF;
@@ -147,6 +148,11 @@
                 gap: 10px;
                 width: 100%;
             }
+            
+            .template-buttons {
+                grid-template-columns: 1fr 1fr !important;
+                grid-template-rows: 1fr 1fr;
+            }
         }
 
         .btn {
@@ -209,18 +215,27 @@
         }
         
         .template-buttons {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
             gap: 10px;
-            flex-wrap: wrap;
+        }
+        
+        @media (max-width: 480px) {
+            .template-buttons {
+                grid-template-columns: 1fr 1fr !important;
+                grid-template-rows: 1fr 1fr;
+            }
         }
         
         .template-btn {
-            padding: 8px 15px;
+            padding: 8px 5px;
             border: 1px solid #ddd;
             border-radius: 20px;
             background: white;
             cursor: pointer;
             transition: var(--transition);
+            font-size: 0.9rem;
+            text-align: center;
         }
         
         .template-btn.active {
@@ -229,90 +244,91 @@
             border-color: var(--primary-color);
         }
 
-        .preview-content {
+        .preview-container {
             flex: 1;
             background: white;
             border-radius: var(--border-radius);
-            padding: 20px;
-            min-height: 300px;
+            min-height: 350px;
             overflow: auto;
             border: 1px solid #eee;
-        }
-
-        .mindmap {
             position: relative;
-            padding: 20px;
         }
 
-        /* 默认风格 */
-        .node {
+        #mindmap-canvas {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: auto;
+            background: white;
+            border-radius: var(--border-radius);
+            border: 1px solid #eee;
+        }
+        
+        .mindmap-wrapper {
+            width: 1000px;
+            height: 800px;
+            position: relative;
+            transform-origin: 0 0;
+        }
+
+        /* 思维导图节点样式 */
+        .mindmap-node {
+            position: absolute;
             padding: 10px 15px;
-            background: #E8F4FF;
             border-radius: 8px;
-            margin: 8px 0;
-            border-left: 4px solid var(--primary-color);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            transition: var(--transition);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transform: translate(-50%, -50%);
+            min-width: 100px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            z-index: 2;
         }
-
+        
+        .mindmap-node:hover {
+            transform: translate(-50%, -50%) scale(1.05);
+            z-index: 3;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .node-central {
+            background: #4CAF50;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2em;
+            z-index: 10;
+        }
+        
         .node-main {
-            font-weight: 600;
-            background: #D1E9FF;
-        }
-
-        .subnode {
-            margin-left: 30px;
-        }
-        
-        /* 简约风格 */
-        .style-minimal .node {
-            background: transparent;
-            border-left: 3px solid #666;
-            box-shadow: none;
-            border-radius: 0;
-        }
-        
-        .style-minimal .node-main {
-            background: transparent;
-            border-left: 4px solid #000;
-            font-weight: 700;
-        }
-        
-        /* 多彩风格 */
-        .style-colorful .node {
-            background: linear-gradient(135deg, #E8F4FF, #D1E9FF);
-            border-left: 4px solid #FF6B6B;
-            border-radius: 15px;
-        }
-        
-        .style-colorful .node-main {
-            background: linear-gradient(135deg, #D1E9FF, #A5D8FF);
-            border-left: 4px solid #4ECDC4;
-        }
-        
-        .style-colorful .subnode:nth-child(2n) .node {
-            border-left: 4px solid #FFE66D;
-        }
-        
-        .style-colorful .subnode:nth-child(3n) .node {
-            border-left: 4px solid #4ECDC4;
-        }
-        
-        /* 深色风格 */
-        .style-dark .preview-content {
-            background: #2D3748;
+            background: #2196F3;
             color: white;
+            font-weight: bold;
         }
         
-        .style-dark .node {
-            background: #4A5568;
-            border-left: 4px solid #63B3ED;
+        .node-sub {
+            background: #FFC107;
+            color: #333;
+        }
+        
+        .node-detail {
+            background: #E91E63;
             color: white;
+            font-size: 0.9em;
         }
         
-        .style-dark .node-main {
-            background: #2D3748;
-            border: 2px solid #63B3ED;
+        .mindmap-connection {
+            position: absolute;
+            background: #999;
+            transform-origin: 0 0;
+            z-index: 1;
         }
 
         .export-options {
@@ -486,11 +502,13 @@
             }
             
             .template-buttons {
-                flex-direction: column;
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr 1fr;
             }
             
             .template-btn {
                 width: 100%;
+                padding: 10px;
             }
         }
         
@@ -535,6 +553,33 @@
             transform: translateX(0);
             opacity: 1;
         }
+        
+        .zoom-controls {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+        
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: var(--transition);
+        }
+        
+        .zoom-btn:hover {
+            background: #f5f5f5;
+        }
     </style>
 </head>
 <body>
@@ -547,16 +592,28 @@
         <div class="main-content">
             <div class="card input-area">
                 <h2 class="card-title"><i class="fas fa-edit"></i> 输入思维导图内容</h2>
-                <textarea id="mindmap-input" placeholder="请输入思维导图内容...">中心主题
-  分支主题1
-    子主题1.1
-    子主题1.2
-  分支主题2
-    子主题2.1
-    子主题2.2
-  分支主题3
-    子主题3.1
-    子主题3.2</textarea>
+                <textarea id="mindmap-input" placeholder="请输入思维导图内容...">思维导图应用案例
+  教育创新
+    美术教学案例：使用思维导图进行艺术史教学，帮助学生理解艺术流派发展脉络
+    德育管理案例：通过思维导图规划德育活动，提升学生道德素养
+  企业培训
+    员工培训案例：利用思维导图设计培训课程，提高培训效果
+    团队建设案例：通过思维导图规划团队活动，增强团队凝聚力
+  个人效能
+    时间管理案例：使用思维导图规划每日任务，提高工作效率
+    目标设定案例：通过思维导图分解长期目标，制定可行计划
+  创意设计
+    广告创意案例：利用思维导图进行头脑风暴，产生创新广告创意
+    产品设计案例：通过思维导图分析用户需求，优化产品功能
+  技术应用
+    软件开发案例：使用思维导图设计软件架构，明确模块关系
+    项目管理案例：通过思维导图规划项目进度，确保按时交付
+  文学分析
+    小说分析案例：利用思维导图分析小说结构，理解作者意图
+    诗歌鉴赏案例：通过思维导图解析诗歌意象，深入理解诗歌内涵
+  跨学科整合
+    STEM教育案例：使用思维导图整合科学、技术、工程和数学知识
+    艺术与科学案例：通过思维导图探索艺术与科学的交叉领域，激发创新思维</textarea>
                 <div class="button-group">
                     <div class="button-group-row">
                         <button class="btn btn-primary" id="preview-btn">
@@ -588,9 +645,20 @@
                         <button class="template-btn" data-style="dark">深色风格</button>
                     </div>
                 </div>
-                <div class="preview-content" id="preview-container">
-                    <div class="mindmap style-default" id="mindmap-preview">
-                        <!-- 预览内容将通过JS动态生成 -->
+                <div class="canvas-container" id="canvas-container">
+                    <div class="mindmap-wrapper" id="mindmap-wrapper">
+                        <!-- 思维导图将通过JS动态生成 -->
+                    </div>
+                    <div class="zoom-controls">
+                        <div class="zoom-btn" id="zoom-in">
+                            <i class="fas fa-search-plus"></i>
+                        </div>
+                        <div class="zoom-btn" id="zoom-out">
+                            <i class="fas fa-search-minus"></i>
+                        </div>
+                        <div class="zoom-btn" id="reset-zoom">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -704,8 +772,8 @@
     <script>
         // DOM元素
         const mindmapInput = document.getElementById('mindmap-input');
-        const mindmapPreview = document.getElementById('mindmap-preview');
-        const previewContainer = document.getElementById('preview-container');
+        const mindmapWrapper = document.getElementById('mindmap-wrapper');
+        const canvasContainer = document.getElementById('canvas-container');
         const previewBtn = document.getElementById('preview-btn');
         const clearBtn = document.getElementById('clear-btn');
         const resetBtn = document.getElementById('reset-btn');
@@ -721,24 +789,42 @@
         const loadingIndicator = document.getElementById('loading-indicator');
         const notification = document.getElementById('notification');
         const notificationText = document.getElementById('notification-text');
+        const zoomInBtn = document.getElementById('zoom-in');
+        const zoomOutBtn = document.getElementById('zoom-out');
+        const resetZoomBtn = document.getElementById('reset-zoom');
         
         // 分享按钮
         const shareButtons = document.querySelectorAll('.share-icon');
         
-        // 当前风格
+        // 当前风格和缩放级别
         let currentStyle = 'default';
+        let scale = 1;
+        let isDragging = false;
+        let startX, startY, scrollLeft, scrollTop;
         
         // 默认内容
-        const defaultContent = `中心主题
-  分支主题1
-    子主题1.1
-    子主题1.2
-  分支主题2
-    子主题2.1
-    子主题2.2
-  分支主题3
-    子主题3.1
-    子主题3.2`;
+        const defaultContent = `思维导图应用案例
+  教育创新
+    美术教学案例：使用思维导图进行艺术史教学，帮助学生理解艺术流派发展脉络
+    德育管理案例：通过思维导图规划德育活动，提升学生道德素养
+  企业培训
+    员工培训案例：利用思维导图设计培训课程，提高培训效果
+    团队建设案例：通过思维导图规划团队活动，增强团队凝聚力
+  个人效能
+    时间管理案例：使用思维导图规划每日任务，提高工作效率
+    目标设定案例：通过思维导图分解长期目标，制定可行计划
+  创意设计
+    广告创意案例：利用思维导图进行头脑风暴，产生创新广告创意
+    产品设计案例：通过思维导图分析用户需求，优化产品功能
+  技术应用
+    软件开发案例：使用思维导图设计软件架构，明确模块关系
+    项目管理案例：通过思维导图规划项目进度，确保按时交付
+  文学分析
+    小说分析案例：利用思维导图分析小说结构，理解作者意图
+    诗歌鉴赏案例：通过思维导图解析诗歌意象，深入理解诗歌内涵
+  跨学科整合
+    STEM教育案例：使用思维导图整合科学、技术、工程和数学知识
+    艺术与科学案例：通过思维导图探索艺术与科学的交叉领域，激发创新思维`;
         
         // 初始化
         function init() {
@@ -782,6 +868,19 @@
                 // 实时保存到localStorage
                 localStorage.setItem('mindmapContent', this.value);
             });
+            
+            // 添加拖拽功能
+            canvasContainer.addEventListener('mousedown', startDrag);
+            canvasContainer.addEventListener('touchstart', startDrag);
+            window.addEventListener('mouseup', stopDrag);
+            window.addEventListener('touchend', stopDrag);
+            window.addEventListener('mousemove', doDrag);
+            window.addEventListener('touchmove', doDrag);
+            
+            // 缩放功能
+            zoomInBtn.addEventListener('click', () => adjustZoom(0.1));
+            zoomOutBtn.addEventListener('click', () => adjustZoom(-0.1));
+            resetZoomBtn.addEventListener('click', resetZoom);
         }
         
         // 更新预览
@@ -789,23 +888,190 @@
             const content = mindmapInput.value;
             const lines = content.split('\n');
             
-            let html = '';
-            lines.forEach(line => {
-                const depth = (line.match(/^\s*/) || [''])[0].length;
+            // 解析内容为节点树
+            const nodes = parseContentToNodes(lines);
+            
+            // 渲染思维导图
+            renderMindmap(nodes);
+        }
+        
+        // 解析内容为节点树
+        function parseContentToNodes(lines) {
+            const nodes = [];
+            const stack = [];
+            
+            lines.forEach((line, index) => {
+                if (!line.trim()) return;
+                
+                // 计算缩进级别
+                const indent = line.search(/\S|$/);
                 const text = line.trim();
                 
-                if (text) {
-                    let className = 'node';
-                    if (depth === 0) {
-                        className += ' node-main';
+                // 创建节点
+                const node = {
+                    id: index,
+                    text: text,
+                    level: Math.floor(indent / 2),
+                    children: []
+                };
+                
+                // 根据级别添加到树中
+                if (stack.length === 0) {
+                    nodes.push(node);
+                    stack.push(node);
+                } else {
+                    while (stack.length > 0 && stack[stack.length - 1].level >= node.level) {
+                        stack.pop();
                     }
                     
-                    html += `<div class="${className}" style="margin-left: ${depth * 20}px">${text}</div>`;
+                    if (stack.length > 0) {
+                        stack[stack.length - 1].children.push(node);
+                    } else {
+                        nodes.push(node);
+                    }
+                    
+                    stack.push(node);
                 }
             });
             
-            mindmapPreview.innerHTML = html;
-            applyStyle(currentStyle);
+            return nodes;
+        }
+        
+        // 渲染思维导图
+        function renderMindmap(nodes) {
+            // 清空现有内容
+            mindmapWrapper.innerHTML = '';
+            
+            if (nodes.length === 0) return;
+            
+            // 获取容器尺寸
+            const containerWidth = canvasContainer.clientWidth;
+            const containerHeight = canvasContainer.clientHeight;
+            
+            // 计算中心位置
+            const centerX = containerWidth / 2;
+            const centerY = containerHeight / 2;
+            
+            // 创建中心节点
+            const centralNode = nodes[0];
+            const centralElement = createNodeElement(centralNode, centerX, centerY, 'central');
+            mindmapWrapper.appendChild(centralElement);
+            
+            // 计算主要分支的角度分布
+            const mainBranches = centralNode.children;
+            const angleStep = (2 * Math.PI) / mainBranches.length;
+            
+            // 创建主要分支
+            mainBranches.forEach((branch, i) => {
+                const angle = i * angleStep;
+                const distance = 150;
+                
+                const x = centerX + Math.cos(angle) * distance;
+                const y = centerY + Math.sin(angle) * distance;
+                
+                // 创建主要分支节点
+                const branchElement = createNodeElement(branch, x, y, 'main');
+                mindmapWrapper.appendChild(branchElement);
+                
+                // 创建连接线
+                const connection = createConnection(centerX, centerY, x, y);
+                mindmapWrapper.appendChild(connection);
+                
+                // 创建子分支
+                createSubBranches(branch, x, y, angle);
+            });
+        }
+        
+        // 创建子分支
+        function createSubBranches(node, startX, startY, angle) {
+            if (!node.children || node.children.length === 0) return;
+            
+            const subAngleStep = Math.PI / 6; // 30度
+            const distance = 120;
+            
+            node.children.forEach((child, i) => {
+                // 计算子分支角度 (在主要分支两侧分布)
+                const subAngle = angle - Math.PI/4 + (i * Math.PI/6);
+                
+                const x = startX + Math.cos(subAngle) * distance;
+                const y = startY + Math.sin(subAngle) * distance;
+                
+                // 创建子分支节点
+                const childElement = createNodeElement(child, x, y, 'sub');
+                mindmapWrapper.appendChild(childElement);
+                
+                // 创建连接线
+                const connection = createConnection(startX, startY, x, y);
+                mindmapWrapper.appendChild(connection);
+                
+                // 创建详情节点（如果有）
+                createDetailBranches(child, x, y, subAngle);
+            });
+        }
+        
+        // 创建详情分支
+        function createDetailBranches(node, startX, startY, angle) {
+            if (!node.children || node.children.length === 0) return;
+            
+            const detailDistance = 100;
+            
+            node.children.forEach((detail, i) => {
+                // 计算详情节点位置 (沿着相同方向)
+                const x = startX + Math.cos(angle) * detailDistance;
+                const y = startY + Math.sin(angle) * detailDistance;
+                
+                // 创建详情节点
+                const detailElement = createNodeElement(detail, x, y, 'detail');
+                mindmapWrapper.appendChild(detailElement);
+                
+                // 创建连接线
+                const connection = createConnection(startX, startY, x, y);
+                mindmapWrapper.appendChild(connection);
+            });
+        }
+        
+        // 创建节点元素
+        function createNodeElement(node, x, y, type) {
+            const element = document.createElement('div');
+            element.className = `mindmap-node node-${type}`;
+            element.style.left = `${x}px`;
+            element.style.top = `${y}px`;
+            element.textContent = node.text;
+            
+            // 添加点击事件
+            element.addEventListener('click', () => {
+                mindmapInput.focus();
+                // 找到文本在输入框中的位置
+                const lines = mindmapInput.value.split('\n');
+                const lineIndex = lines.findIndex(line => line.trim() === node.text);
+                if (lineIndex !== -1) {
+                    // 计算光标位置
+                    let position = 0;
+                    for (let i = 0; i < lineIndex; i++) {
+                        position += lines[i].length + 1; // +1 for newline
+                    }
+                    mindmapInput.setSelectionRange(position, position);
+                }
+            });
+            
+            return element;
+        }
+        
+        // 创建连接线
+        function createConnection(x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            
+            const connection = document.createElement('div');
+            connection.className = 'mindmap-connection';
+            connection.style.width = `${length}px`;
+            connection.style.left = `${x1}px`;
+            connection.style.top = `${y1}px`;
+            connection.style.transform = `rotate(${angle}deg)`;
+            
+            return connection;
         }
         
         // 应用样式
@@ -813,10 +1079,10 @@
             currentStyle = style;
             
             // 移除所有样式类
-            mindmapPreview.classList.remove('style-default', 'style-minimal', 'style-colorful', 'style-dark');
+            document.body.classList.remove('style-default', 'style-minimal', 'style-colorful', 'style-dark');
             
             // 添加当前样式类
-            mindmapPreview.classList.add(`style-${style}`);
+            document.body.classList.add(`style-${style}`);
             
             // 更新激活的模板按钮
             templateButtons.forEach(btn => {
@@ -826,6 +1092,50 @@
                     btn.classList.remove('active');
                 }
             });
+            
+            // 重新渲染思维导图以应用新样式
+            updatePreview();
+        }
+        
+        // 拖拽功能
+        function startDrag(e) {
+            isDragging = true;
+            startX = e.pageX || e.touches[0].pageX;
+            startY = e.pageY || e.touches[0].pageY;
+            scrollLeft = canvasContainer.scrollLeft;
+            scrollTop = canvasContainer.scrollTop;
+            canvasContainer.style.cursor = 'grabbing';
+            e.preventDefault();
+        }
+        
+        function stopDrag() {
+            isDragging = false;
+            canvasContainer.style.cursor = 'grab';
+        }
+        
+        function doDrag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const x = e.pageX || e.touches[0].pageX;
+            const y = e.pageY || e.touches[0].pageY;
+            const walkX = (x - startX) * 2;
+            const walkY = (y - startY) * 2;
+            canvasContainer.scrollLeft = scrollLeft - walkX;
+            canvasContainer.scrollTop = scrollTop - walkY;
+        }
+        
+        // 缩放功能
+        function adjustZoom(factor) {
+            scale += factor;
+            scale = Math.max(0.5, Math.min(scale, 3)); // 限制缩放范围
+            mindmapWrapper.style.transform = `scale(${scale})`;
+        }
+        
+        function resetZoom() {
+            scale = 1;
+            mindmapWrapper.style.transform = 'scale(1)';
+            canvasContainer.scrollLeft = (mindmapWrapper.offsetWidth - canvasContainer.offsetWidth) / 2;
+            canvasContainer.scrollTop = (mindmapWrapper.offsetHeight - canvasContainer.offsetHeight) / 2;
         }
         
         // 清空输入框
@@ -853,8 +1163,11 @@
         function exportAsImage() {
             loadingIndicator.style.display = 'block';
             
-            // 使用html2canvas将预览区域转换为图片
-            html2canvas(previewContainer).then(canvas => {
+            // 使用html2canvas将思维导图区域转换为图片
+            html2canvas(mindmapWrapper, {
+                backgroundColor: '#ffffff',
+                scale: 2 // 提高导出图片质量
+            }).then(canvas => {
                 // 创建下载链接
                 const link = document.createElement('a');
                 link.download = 'mindmap.png';
@@ -868,12 +1181,42 @@
         
         // 导出为PDF
         function exportAsPdf() {
-            showNotification('PDF导出功能即将推出！');
+            loadingIndicator.style.display = 'block';
+            
+            // 使用html2canvas将思维导图区域转换为图片
+            html2canvas(mindmapWrapper, {
+                backgroundColor: '#ffffff',
+                scale: 2 // 提高导出图片质量
+            }).then(canvas => {
+                // 创建PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm'
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                const imgProps = doc.getImageProperties(imgData);
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                doc.save('mindmap.pdf');
+                
+                loadingIndicator.style.display = 'none';
+                showNotification('PDF已下载！');
+            });
         }
         
         // 导出为思维导图格式
         function exportAsMindmap() {
-            showNotification('思维导图格式导出功能即将推出！');
+            const content = mindmapInput.value;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.download = 'mindmap.txt';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            showNotification('思维导图已下载！');
         }
         
         // 显示分享模态框
