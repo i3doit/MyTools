@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MindMapper Pro - 思维导图转换工具</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         :root {
             --primary-color: #007AFF;
@@ -131,6 +132,23 @@
             flex-wrap: wrap;
         }
 
+        @media (max-width: 600px) {
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .button-group .btn {
+                width: 100%;
+            }
+            
+            .button-group-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                width: 100%;
+            }
+        }
+
         .btn {
             padding: 12px 20px;
             border: none;
@@ -142,6 +160,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            justify-content: center;
         }
 
         .btn-primary {
@@ -170,10 +189,44 @@
         .btn-success:hover {
             background: #218838;
         }
+        
+        .btn-danger {
+            background: #DC3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #C82333;
+        }
 
         .preview-area {
             display: flex;
             flex-direction: column;
+        }
+        
+        .template-selector {
+            margin-bottom: 15px;
+        }
+        
+        .template-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .template-btn {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .template-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
         }
 
         .preview-content {
@@ -191,6 +244,7 @@
             padding: 20px;
         }
 
+        /* 默认风格 */
         .node {
             padding: 10px 15px;
             background: #E8F4FF;
@@ -198,6 +252,7 @@
             margin: 8px 0;
             border-left: 4px solid var(--primary-color);
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
         }
 
         .node-main {
@@ -207,7 +262,57 @@
 
         .subnode {
             margin-left: 30px;
-            background: #F0F8FF;
+        }
+        
+        /* 简约风格 */
+        .style-minimal .node {
+            background: transparent;
+            border-left: 3px solid #666;
+            box-shadow: none;
+            border-radius: 0;
+        }
+        
+        .style-minimal .node-main {
+            background: transparent;
+            border-left: 4px solid #000;
+            font-weight: 700;
+        }
+        
+        /* 多彩风格 */
+        .style-colorful .node {
+            background: linear-gradient(135deg, #E8F4FF, #D1E9FF);
+            border-left: 4px solid #FF6B6B;
+            border-radius: 15px;
+        }
+        
+        .style-colorful .node-main {
+            background: linear-gradient(135deg, #D1E9FF, #A5D8FF);
+            border-left: 4px solid #4ECDC4;
+        }
+        
+        .style-colorful .subnode:nth-child(2n) .node {
+            border-left: 4px solid #FFE66D;
+        }
+        
+        .style-colorful .subnode:nth-child(3n) .node {
+            border-left: 4px solid #4ECDC4;
+        }
+        
+        /* 深色风格 */
+        .style-dark .preview-content {
+            background: #2D3748;
+            color: white;
+        }
+        
+        .style-dark .node {
+            background: #4A5568;
+            border-left: 4px solid #63B3ED;
+            color: white;
+        }
+        
+        .style-dark .node-main {
+            background: #2D3748;
+            border: 2px solid #63B3ED;
         }
 
         .export-options {
@@ -380,14 +485,55 @@
                 font-size: 2rem;
             }
             
-            .button-group {
+            .template-buttons {
                 flex-direction: column;
             }
             
-            .btn {
+            .template-btn {
                 width: 100%;
-                justify-content: center;
             }
+        }
+        
+        /* 加载动画 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
         }
     </style>
 </head>
@@ -412,25 +558,38 @@
     子主题3.1
     子主题3.2</textarea>
                 <div class="button-group">
-                    <button class="btn btn-primary" id="preview-btn">
-                        <i class="fas fa-eye"></i> 预览
-                    </button>
-                    <button class="btn btn-secondary" id="clear-btn">
-                        <i class="fas fa-trash-alt"></i> 清空
-                    </button>
-                    <button class="btn btn-secondary" id="reset-btn">
-                        <i class="fas fa-undo"></i> 恢复默认
-                    </button>
-                    <button class="btn btn-success" id="save-btn">
-                        <i class="fas fa-save"></i> 保存
-                    </button>
+                    <div class="button-group-row">
+                        <button class="btn btn-primary" id="preview-btn">
+                            <i class="fas fa-eye"></i> 预览
+                        </button>
+                        <button class="btn btn-secondary" id="clear-btn">
+                            <i class="fas fa-trash-alt"></i> 清空
+                        </button>
+                    </div>
+                    <div class="button-group-row">
+                        <button class="btn btn-secondary" id="reset-btn">
+                            <i class="fas fa-undo"></i> 恢复默认
+                        </button>
+                        <button class="btn btn-success" id="save-btn">
+                            <i class="fas fa-save"></i> 保存
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div class="card preview-area">
                 <h2 class="card-title"><i class="fas fa-project-diagram"></i> 预览</h2>
-                <div class="preview-content">
-                    <div class="mindmap" id="mindmap-preview">
+                <div class="template-selector">
+                    <h3>选择风格:</h3>
+                    <div class="template-buttons">
+                        <button class="template-btn active" data-style="default">默认风格</button>
+                        <button class="template-btn" data-style="minimal">简约风格</button>
+                        <button class="template-btn" data-style="colorful">多彩风格</button>
+                        <button class="template-btn" data-style="dark">深色风格</button>
+                    </div>
+                </div>
+                <div class="preview-content" id="preview-container">
+                    <div class="mindmap style-default" id="mindmap-preview">
                         <!-- 预览内容将通过JS动态生成 -->
                     </div>
                 </div>
@@ -442,7 +601,7 @@
                 <i class="fas fa-file-image export-icon"></i>
                 <h3>保存为图片</h3>
                 <p>将思维导图导出为PNG图片</p>
-                <button class="btn btn-primary">
+                <button class="btn btn-primary" id="export-image">
                     <i class="fas fa-download"></i> 下载
                 </button>
             </div>
@@ -451,7 +610,7 @@
                 <i class="fas fa-file-pdf export-icon"></i>
                 <h3>保存为PDF</h3>
                 <p>将思维导图导出为PDF文档</p>
-                <button class="btn btn-primary">
+                <button class="btn btn-primary" id="export-pdf">
                     <i class="fas fa-download"></i> 下载
                 </button>
             </div>
@@ -460,7 +619,7 @@
                 <i class="fas fa-code export-icon"></i>
                 <h3>思维导图格式</h3>
                 <p>导出为通用思维导图格式</p>
-                <button class="btn btn-primary">
+                <button class="btn btn-primary" id="export-mindmap">
                     <i class="fas fa-download"></i> 下载
                 </button>
             </div>
@@ -530,11 +689,23 @@
             </div>
         </div>
     </div>
+    
+    <!-- 加载指示器 -->
+    <div class="loading" id="loading-indicator">
+        <div class="loading-spinner"></div>
+        <p>正在生成图片，请稍候...</p>
+    </div>
+    
+    <!-- 通知 -->
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i> <span id="notification-text"></span>
+    </div>
 
     <script>
         // DOM元素
         const mindmapInput = document.getElementById('mindmap-input');
         const mindmapPreview = document.getElementById('mindmap-preview');
+        const previewContainer = document.getElementById('preview-container');
         const previewBtn = document.getElementById('preview-btn');
         const clearBtn = document.getElementById('clear-btn');
         const resetBtn = document.getElementById('reset-btn');
@@ -543,9 +714,19 @@
         const copyAuthorBtn = document.getElementById('copy-author');
         const closeModalBtn = document.getElementById('close-modal');
         const copyrightYear = document.getElementById('copyright-year');
+        const templateButtons = document.querySelectorAll('.template-btn');
+        const exportImageBtn = document.getElementById('export-image');
+        const exportPdfBtn = document.getElementById('export-pdf');
+        const exportMindmapBtn = document.getElementById('export-mindmap');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notification-text');
         
         // 分享按钮
         const shareButtons = document.querySelectorAll('.share-icon');
+        
+        // 当前风格
+        let currentStyle = 'default';
         
         // 默认内容
         const defaultContent = `中心主题
@@ -617,8 +798,6 @@
                     let className = 'node';
                     if (depth === 0) {
                         className += ' node-main';
-                    } else if (depth > 4) {
-                        className += ' subnode';
                     }
                     
                     html += `<div class="${className}" style="margin-left: ${depth * 20}px">${text}</div>`;
@@ -626,6 +805,27 @@
             });
             
             mindmapPreview.innerHTML = html;
+            applyStyle(currentStyle);
+        }
+        
+        // 应用样式
+        function applyStyle(style) {
+            currentStyle = style;
+            
+            // 移除所有样式类
+            mindmapPreview.classList.remove('style-default', 'style-minimal', 'style-colorful', 'style-dark');
+            
+            // 添加当前样式类
+            mindmapPreview.classList.add(`style-${style}`);
+            
+            // 更新激活的模板按钮
+            templateButtons.forEach(btn => {
+                if (btn.dataset.style === style) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
         }
         
         // 清空输入框
@@ -646,7 +846,34 @@
         // 保存内容
         function saveContent() {
             localStorage.setItem('mindmapContent', mindmapInput.value);
-            alert('内容已保存！');
+            showNotification('内容已保存！');
+        }
+        
+        // 导出为图片
+        function exportAsImage() {
+            loadingIndicator.style.display = 'block';
+            
+            // 使用html2canvas将预览区域转换为图片
+            html2canvas(previewContainer).then(canvas => {
+                // 创建下载链接
+                const link = document.createElement('a');
+                link.download = 'mindmap.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                loadingIndicator.style.display = 'none';
+                showNotification('图片已下载！');
+            });
+        }
+        
+        // 导出为PDF
+        function exportAsPdf() {
+            showNotification('PDF导出功能即将推出！');
+        }
+        
+        // 导出为思维导图格式
+        function exportAsMindmap() {
+            showNotification('思维导图格式导出功能即将推出！');
         }
         
         // 显示分享模态框
@@ -664,14 +891,25 @@
             const authorName = document.getElementById('author-name').textContent;
             navigator.clipboard.writeText(authorName)
                 .then(() => {
-                    alert('已获取作者微信，去链接吧');
+                    showNotification('已获取作者微信，去链接吧');
                     setTimeout(() => {
                         hideShareModal();
                     }, 2000);
                 })
                 .catch(err => {
                     console.error('复制失败:', err);
+                    showNotification('复制失败，请手动复制');
                 });
+        }
+        
+        // 显示通知
+        function showNotification(message) {
+            notificationText.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
         }
         
         // 事件监听
@@ -681,6 +919,16 @@
         saveBtn.addEventListener('click', saveContent);
         copyAuthorBtn.addEventListener('click', copyAuthorInfo);
         closeModalBtn.addEventListener('click', hideShareModal);
+        exportImageBtn.addEventListener('click', exportAsImage);
+        exportPdfBtn.addEventListener('click', exportAsPdf);
+        exportMindmapBtn.addEventListener('click', exportAsMindmap);
+        
+        // 模板按钮事件
+        templateButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                applyStyle(this.dataset.style);
+            });
+        });
         
         // 分享按钮事件
         shareButtons.forEach(button => {
