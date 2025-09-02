@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消灭星星 - 护眼深色版</title>
+    <style>
+        :root {
+            --bg-color: rgba(30, 30, 40, 0.9);
+            --text-color: #e0e0e0;
+            --primary-color: #4CAF50;
+            --secondary-color: #2196F3;
+            --accent-color: #FF9800;
+            --danger-color: #f44336;
+            --success-color: #4CAF50;
+            --glass-bg: rgba(40, 40, 50, 0.5);
+            --glass-border: rgba(60, 60, 70, 0.3);
+        }
+
+        [data-theme="light"] {
+            --bg-color: rgba(240, 240, 245, 0.9);
+            --text-color: #333;
+            --glass-bg: rgba(240, 240, 245, 0.5);
+            --glass-border: rgba(220, 220, 230, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: saturate(180%) blur(10px);
+            -webkit-backdrop-filter: saturate(180%) blur(10px);
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            margin: 20px;
+            width: 100%;
+            max-width: 500px;
+            will-change: transform, backdrop-filter;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .game-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .game-info {
+            display: flex;
+            gap: 10px;
+        }
+
+        .info-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        .info-value {
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            touch-action: manipulation;
+        }
+
+        .game-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-refresh {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-share {
+            background-color: var(--accent-color);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--glass-bg);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+        }
+
+        .modal-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 300px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .modal-text {
+            margin-bottom: 15px;
+            opacity: 0.8;
+        }
+
+        .modal-btn {
+            padding: 8px 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+
+        .modal-btn:hover {
+            opacity: 0.9;
+        }
+
+        .modal-btn + .modal-btn {
+            margin-left: 10px;
+        }
+
+        .modal-btn-danger {
+            background-color: var(--danger-color);
+        }
+
+        .modal-btn-success {
+            background-color: var(--success-color);
+        }
+
+        .leaderboard {
+            margin-top: 20px;
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--glass-bg);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .leaderboard th, .leaderboard td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .leaderboard th {
+            background: rgba(0, 0, 0, 0.2);
+            font-weight: bold;
+        }
+
+        .leaderboard tr:nth-child(even) {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .leaderboard tr:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .score-popup {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: var(--primary-color);
+            animation: fadeUp 1s forwards;
+            pointer-events: none;
+            z-index: 10;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes fadeUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-30px); }
+        }
+
+        .combo-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .combo-text {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            animation: scaleInOut 0.5s forwards;
+        }
+
+        @keyframes scaleInOut {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+
+        .share-preview {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 15px 0;
+            position: relative;
+            color: #333;
+        }
+
+        .share-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .share-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .share-nickname {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            word-break: break-all;
+        }
+
+        .qr-code-container {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-color);
+        }
+
+        .avatar-upload-label {
+            display: inline-block;
+            padding: 8px 15px;
+            background: var(--secondary-color);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .avatar-upload {
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .game-info {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .info-box {
+                min-width: 45%;
+                margin-bottom: 5px;
+            }
+            
+            .game-controls {
+                flex-wrap: wrap;
+                gap: 5px;
+            }
+            
+            .btn {
+                flex: 1 1 40%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-toggle" id="theme-toggle">
+        <svg class="icon" viewBox="0 0 24 24">
+            <path d="M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36c-0.98,1.37-2.58,2.26-4.4,2.26 c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"/>
+        </svg>
+    </div>
+    
+    <div class="glass-panel">
+        <div class="game-header">
+            <div class="game-title">消灭星星</div>
+            <div class="game-info">
+                <div class="info-box">
+                    <div class="info-label">分数</div>
+                    <div class="info-value" id="score">0</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">目标</div>
+                    <div class="info-value" id="target">1000</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">关卡</div>
+                    <div class="info-value" id="level">1</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">刷新</div>
+                    <div class="info-value" id="refresh-count">5</div>
+                </div>
+            </div>
+        </div>
+        
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        
+        <div class="game-controls">
+            <button class="btn btn-refresh btn-icon" id="reset-btn" title="重置棋盘">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M12,4C14.1,4 16.1,4.8 17.6,6.3C20.7,9.4 20.7,14.5 17.6,17.6C15.8,19.5 13.3,20.2 10.9,19.9L11.4,17.9C13.1,18.1 14.9,17.5 16.2,16.2C18.5,13.9 18.5,10.1 16.2,7.8C15.1,6.7 13.5,6 12,6V10.6L7,5.6L12,0.6V4M6.3,17.6C3.7,15 3.3,11 5.1,7.9L6.6,9.4C5.5,11.6 5.9,14.4 7.8,16.2C9.1,17.5 11,18.1 12.7,17.9L13.2,19.9C10.8,20.2 8.3,19.5 6.3,17.6Z"/>
+                </svg>
+            </button>
+            <button class="btn btn-icon" id="new-game-btn" title="新游戏">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+                </svg>
+            </button>
+            <button class="btn btn-icon" id="continue-btn" style="display: none;" title="继续游戏">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M14,10H19.5L14,4.5V10M5,3H15L7,9V21H5V3Z"/>
+                </svg>
+            </button>
+            <button class="btn btn-icon" id="leaderboard-btn" title="排行榜">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M3,3H21V5H3V3M4,7H20V9H4V7M5,11H19V13H5V11M6,15H18V17H6V15M7,19H17V21H7V19Z"/>
+                </svg>
+            </button>
+            <button class="btn btn-share btn-icon" id="share-btn" title="分享">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M18,16.08C17.24,16.08 16.56,16.38 16.04,16.85L8.91,12.7C8.96,12.47 9,12.24 9,12C9,11.76 8.96,11.53 8.91,11.3L15.96,7.19C16.5,7.69 17.21,8 18,8A3,3 0 0,0 21,5A3,3 0 0,0 18,2A3,3 0 0,0 15,5C15,5.24 15.04,5.47 15.09,5.7L8.04,9.81C7.5,9.31 6.79,9 6,9A3,3 0 0,0 3,12A3,3 0 0,0 6,15C6.79,15 7.5,14.69 8.04,14.19L15.16,18.34C15.11,18.55 15.08,18.77 15.08,19C15.08,20.61 16.39,21.91 18,21.91C19.61,21.91 20.92,20.61 20.92,19A2.92,2.92 0 0,0 18,16.08Z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <!-- 模态框 -->
+    <div class="modal" id="game-over-modal">
+        <div class="modal-content">
+            <div class="modal-title">游戏结束</div>
+            <div class="modal-text" id="game-over-text"></div>
+            <button class="modal-btn modal-btn-success" id="game-over-new-btn">新游戏</button>
+            <button class="modal-btn btn-share" id="game-over-share-btn">分享</button>
+            <button class="modal-btn modal-btn-danger" id="game-over-btn">返回</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="refresh-modal">
+        <div class="modal-content">
+            <div class="modal-title">提示</div>
+            <div class="modal-text" id="refresh-text"></div>
+            <button class="modal-btn" id="refresh-modal-btn">确定</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="continue-modal">
+        <div class="modal-content">
+            <div class="modal-title">发现游戏进度</div>
+            <div class="modal-text">检测到有未完成的游戏，是否继续？</div>
+            <button class="modal-btn modal-btn-success" id="continue-yes-btn">继续游戏</button>
+            <button class="modal-btn" id="continue-no-btn">新游戏</button>
+            <button class="modal-btn modal-btn-danger" id="continue-home-btn">返回首页</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="leaderboard-modal">
+        <div class="modal-content">
+            <div class="modal-title">排行榜</div>
+            <table class="leaderboard">
+                <thead>
+                    <tr>
+                        <th>排名</th>
+                        <th>玩家</th>
+                        <th>分数</th>
+                        <th>关卡</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    <!-- 排行榜数据将通过JS动态生成 -->
+                </tbody>
+            </table>
+            <button class="modal-btn" id="close-leaderboard-btn" style="margin-top: 15px;">关闭</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="share-modal">
+        <div class="modal-content">
+            <div class="modal-title">分享游戏</div>
+            
+            <div class="share-preview" id="share-preview">
+                <div class="share-avatar" id="share-avatar">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="#666">
+                        <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/>
+                    </svg>
+                </div>
+                <div class="share-nickname" id="share-nickname">消灭星星玩家</div>
+                <div class="qr-code-container" id="qr-code-container"></div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="author-name">昵称</label>
+                <input type="text" id="author-name" class="form-input" placeholder="输入你的昵称">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="qr-url">二维码链接</label>
+                <input type="text" id="qr-url" class="form-input" placeholder="输入自定义URL" value="">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">头像</label>
+                <label for="avatar-upload" class="avatar-upload-label">上传头像</label>
+                <input type="file" id="avatar-upload" class="avatar-upload" accept="image/*">
+            </div>
+            
+            <button class="modal-btn" id="download-share-btn">下载分享图</button>
+            <button class="modal-btn" id="copy-link-btn">复制链接</button>
+            <button class="modal-btn" id="copy-wechat-btn">复制微信</button>
+            <button class="modal-btn modal-btn-danger" id="close-share-btn">关闭</button>
+        </div>
+    </div>
+    
+    <audio id="click-sound" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..."></audio>
+    <audio id="combo-sound" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..."></audio>
+    <audio id="win-sound" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..."></audio>
+    
+    <script src=" https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js "></script>
+    <script src=" https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js "></script>
+    
+    <script>
+        // 游戏常量
+        const ROWS = 10;
+        const COLS = 10;
+        const STAR_SIZE = 36;
+        const STAR_GAP = 4;
+        const COLORS = ['#FF5252', '#FFD740', '#4CAF50', '#2196F3', '#9C27B0'];
+        const BASE_TARGET_SCORE = 1000;
+        const BONUS_SCORE = 2000;
+        const MAX_REFRESH_COUNT = 5;
+        
+        // 奖励规则
+        const REWARD_RULES = {
+            0: 2000,
+            1: 1980,
+            3: 1820,
+            4: 1680,
+            5: 1500,
+            7: 1020,
+            8: 720,
+            10: 0,
+            11: 0
+        };
+        
+        // 游戏变量
+        let stars = [];
+        let score = 0;
+        let totalScore = 0; // 累计分数
+        let targetScore = BASE_TARGET_SCORE;
+        let level = 1;
+        let comboCount = 0;
+        let refreshCount = MAX_REFRESH_COUNT;
+        let gameActive = false;
+        let lastClickTime = 0;
+        let highestScores = JSON.parse(localStorage.getItem('starsHighestScores')) || [];
+        
+        // DOM元素
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const targetElement = document.getElementById('target');
+        const levelElement = document.getElementById('level');
+        const refreshCountElement = document.getElementById('refresh-count');
+        const resetBtn = document.getElementById('reset-btn');
+        const newGameBtn = document.getElementById('new-game-btn');
+        const continueBtn = document.getElementById('continue-btn');
+        const leaderboardBtn = document.getElementById('leaderboard-btn');
+        const shareBtn = document.getElementById('share-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const gameOverModal = document.getElementById('game-over-modal');
+        const gameOverText = document.getElementById('game-over-text');
+        const gameOverBtn = document.getElementById('game-over-btn');
+        const gameOverNewBtn = document.getElementById('game-over-new-btn');
+        const gameOverShareBtn = document.getElementById('game-over-share-btn');
+        const refreshModal = document.getElementById('refresh-modal');
+        const refreshText = document.getElementById('refresh-text');
+        const refreshModalBtn = document.getElementById('refresh-modal-btn');
+        const continueModal = document.getElementById('continue-modal');
+        const continueYesBtn = document.getElementById('continue-yes-btn');
+        const continueNoBtn = document.getElementById('continue-no-btn');
+        const continueHomeBtn = document.getElementById('continue-home-btn');
+        const leaderboardModal = document.getElementById('leaderboard-modal');
+        const leaderboardBody = document.getElementById('leaderboard-body');
+        const closeLeaderboardBtn = document.getElementById('close-leaderboard-btn');
+        const shareModal = document.getElementById('share-modal');
+        const closeShareBtn = document.getElementById('close-share-btn');
+        const downloadShareBtn = document.getElementById('download-share-btn');
+        const copyLinkBtn = document.getElementById('copy-link-btn');
+        const copyWechatBtn = document.getElementById('copy-wechat-btn');
+        const authorNameInput = document.getElementById('author-name');
+        const qrUrlInput = document.getElementById('qr-url');
+        const avatarUpload = document.getElementById('avatar-upload');
+        const sharePreview = document.getElementById('share-preview');
+        const shareAvatar = document.getElementById('share-avatar');
+        const shareNickname = document.getElementById('share-nickname');
+        const qrCodeContainer = document.getElementById('qr-code-container');
+        const clickSound = document.getElementById('click-sound');
+        const comboSound = document.getElementById('combo-sound');
+        const winSound = document.getElementById('win-sound');
+        
+        // 初始化游戏
+        function initGame() {
+            stars = [];
+            score = 0;
+            targetScore = Math.floor(BASE_TARGET_SCORE * Math.pow(1.4, level - 1));
+            comboCount = 0;
+            refreshCount = MAX_REFRESH_COUNT;
+            gameActive = true;
+            
+            // 初始化星星数组
+            for (let i = 0; i < ROWS; i++) {
+                stars[i] = [];
+                for (let j = 0; j < COLS; j++) {
+                    stars[i][j] = Math.floor(Math.random() * COLORS.length);
+                }
+            }
+            
+            // 确保初始状态有可消除的星星
+            while (!hasValidMoves()) {
+                for (let i = 0; i < ROWS; i++) {
+                    for (let j = 0; j < COLS; j++) {
+                        stars[i][j] = Math.floor(Math.random() * COLORS.length);
+                    }
+                }
+            }
+            
+            updateUI();
+            drawStars();
+            saveGameState();
+        }
+        
+        // 继续游戏
+        function continueGame() {
+            loadGameState();
+            gameActive = true;
+            updateUI();
+            drawStars();
+        }
+        
+        // 更新UI
+        function updateUI() {
+            scoreElement.textContent = score;
+            targetElement.textContent = targetScore;
+            levelElement.textContent = level;
+            refreshCountElement.textContent = refreshCount;
+            
+            if (score >= targetScore) {
+                targetElement.style.color = '#4CAF50';
+            } else {
+                targetElement.style.color = 'inherit';
+            }
+        }
+        
+        // 绘制星星
+        function drawStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制网格背景
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            for (let i = 0; i < ROWS; i++) {
+                for (let j = 0; j < COLS; j++) {
+                    const x = j * (STAR_SIZE + STAR_GAP) + STAR_GAP;
+                    const y = i * (STAR_SIZE + STAR_GAP) + STAR_GAP;
+                    ctx.beginPath();
+                    ctx.roundRect(x, y, STAR_SIZE, STAR_SIZE, 8);
+                    ctx.fill();
+                }
+            }
+            
+            for (let i = 0; i < ROWS; i++) {
+                for (let j = 0; j < COLS; j++) {
+                    if (stars[i][j] !== null) {
+                        const x = j * (STAR_SIZE + STAR_GAP) + STAR_GAP;
+                        const y = i * (STAR_SIZE + STAR_GAP) + STAR_GAP;
+                        
+                        // 绘制星星背景
+                        ctx.fillStyle = COLORS[stars[i][j]];
+                        ctx.beginPath();
+                        ctx.roundRect(x, y, STAR_SIZE, STAR_SIZE, 8);
+                        ctx.fill();
+                        
+                        // 绘制星星形状
+                        ctx.fillStyle = COLORS[stars[i][j]];
+                        ctx.beginPath();
+                        
+                        const centerX = x + STAR_SIZE / 2;
+                        const centerY = y + STAR_SIZE / 2;
+                        const outerRadius = STAR_SIZE / 2 - 4;
+                        const innerRadius = outerRadius / 2;
+                        const spikes = 5;
+                        let rot = Math.PI / 2 * 3;
+                        let xPos = centerX;
+                        let yPos = centerY;
+                        const step = Math.PI / spikes;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(centerX, centerY - outerRadius);
+                        
+                        for (let k = 0; k < spikes; k++) {
+                            xPos = centerX + Math.cos(rot) * outerRadius;
+                            yPos = centerY + Math.sin(rot) * outerRadius;
+                            ctx.lineTo(xPos, yPos);
+                            rot += step;
+                            
+                            xPos = centerX + Math.cos(rot) * innerRadius;
+                            yPos = centerY + Math.sin(rot) * innerRadius;
+                            ctx.lineTo(xPos, yPos);
+                            rot += step;
+                        }
+                        
+                        ctx.lineTo(centerX, centerY - outerRadius);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // 添加高光效果
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                        ctx.beginPath();
+                        ctx.arc(centerX - outerRadius/3, centerY - outerRadius/3, outerRadius/4, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        // 绘制空白格子
+                        const x = j * (STAR_SIZE + STAR_GAP) + STAR_GAP;
+                        const y = i * (STAR_SIZE + STAR_GAP) + STAR_GAP;
+                        
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.roundRect(x, y, STAR_SIZE, STAR_SIZE, 8);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        
+        // 处理点击事件
+        canvas.addEventListener('click', function(e) {
+            if (!gameActive) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 计算点击的格子位置
+            let col = -1, row = -1;
+            for (let j = 0; j < COLS; j++) {
+                const left = j * (STAR_SIZE + STAR_GAP) + STAR_GAP;
+                const right = left + STAR_SIZE;
+                if (x >= left && x <= right) {
+                    col = j;
+                    break;
+                }
+            }
+            
+            for (let i = 0; i < ROWS; i++) {
+                const top = i * (STAR_SIZE + STAR_GAP) + STAR_GAP;
+                const bottom = top + STAR_SIZE;
+                if (y >= top && y <= bottom) {
+                    row = i;
+                    break;
+                }
+            }
+            
+            if (row < 0 || row >= ROWS || col < 0 || col >= COLS || stars[row][col] === null) {
+                return;
+            }
+            
+            const color = stars[row][col];
+            const toRemove = [];
+            
+            findConnectedStars(row, col, color, toRemove);
+            
+            if (toRemove.length > 1) {
+                // 播放点击音效
+                clickSound.currentTime = 0;
+                clickSound.play();
+                
+                // 计算当前时间与上次点击时间的间隔
+                const currentTime = Date.now();
+                if (currentTime - lastClickTime < 1000) {
+                    comboCount++;
+                    
+                    // 显示连击效果
+                    showComboEffect(comboCount);
+                    
+                    // 播放连击音效
+                    if (comboCount > 1) {
+                        comboSound.currentTime = 0;
+                        comboSound.play();
+                    }
+                } else {
+                    comboCount = 1;
+                }
+                lastClickTime = currentTime;
+                
+                // 移除星星并计算分数
+                removeStars(toRemove);
+                
+                // 显示得分动画
+                showScorePopup(toRemove.length, row, col);
+                
+                // 处理星星掉落
+                dropStars();
+                
+                // 处理左侧空白列
+                shiftColumns();
+                
+                // 检查游戏状态
+                checkGameState();
+                
+                // 保存游戏状态
+                saveGameState();
+                
+                // 更新UI和重绘
+                updateUI();
+                drawStars();
+            }
+        });
+        
+        // 查找相连的同色星星
+        function findConnectedStars(row, col, color, toRemove) {
+            if (row < 0 || row >= ROWS || col < 0 || col >= COLS || 
+                stars[row][col] !== color || toRemove.includes(`${row},${col}`)) {
+                return;
+            }
+            
+            toRemove.push(`${row},${col}`);
+            
+            // 检查上下左右的星星
+            findConnectedStars(row - 1, col, color, toRemove); // 上
+            findConnectedStars(row + 1, col, color, toRemove); // 下
+            findConnectedStars(row, col - 1, color, toRemove); // 左
+            findConnectedStars(row, col + 1, color, toRemove); // 右
+        }
+        
+        // 移除星星
+        function removeStars(toRemove) {
+            const removedCount = toRemove.length;
+            const scoreToAdd = removedCount * removedCount * 5; // 分数 = 消除数量^2 * 5
+            
+            score += scoreToAdd;
+            totalScore += scoreToAdd;
+            
+            // 应用连击奖励
+            if (comboCount > 1) {
+                const comboBonus = Math.floor(scoreToAdd * (comboCount - 1) * 0.2);
+                score += comboBonus;
+                totalScore += comboBonus;
+            }
+            
+            // 移除星星
+            toRemove.forEach(pos => {
+                const [row, col] = pos.split(',').map(Number);
+                stars[row][col] = null;
+            });
+        }
+        
+        // 显示得分弹窗
+        function showScorePopup(count, row, col) {
+            const score = count * count * 5;
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            popup.textContent = `+${score}`;
+            
+            // 设置位置
+            const x = col * (STAR_SIZE + STAR_GAP) + STAR_SIZE / 2;
+            const y = row * (STAR_SIZE + STAR_GAP) + STAR_SIZE / 2;
+            
+            popup.style.left = `${x - 30}px`;
+            popup.style.top = `${y - 15}px`;
+            
+            document.body.appendChild(popup);
+            
+            // 动画结束后移除
+            setTimeout(() => {
+                popup.remove();
+            }, 1000);
+        }
+        
+        // 显示连击效果
+        function showComboEffect(count) {
+            if (count < 2) return;
+            
+            const effect = document.createElement('div');
+            effect.className = 'combo-effect';
+            
+            const text = document.createElement('div');
+            text.className = 'combo-text';
+            text.textContent = `${count}连击!`;
+            
+            effect.appendChild(text);
+            document.body.appendChild(effect);
+            
+            // 动画结束后移除
+            setTimeout(() => {
+                effect.remove();
+            }, 1000);
+        }
+        
+        // 星星掉落
+        function dropStars() {
+            for (let col = 0; col < COLS; col++) {
+                let emptyRow = ROWS - 1;
+                
+                for (let row = ROWS - 1; row >= 0; row--) {
+                    if (stars[row][col] !== null) {
+                        if (emptyRow !== row) {
+                            stars[emptyRow][col] = stars[row][col];
+                            stars[row][col] = null;
+                        }
+                        emptyRow--;
+                    }
+                }
+            }
+        }
+        
+        // 左侧空白列向右靠拢
+        function shiftColumns() {
+            let emptyCol = 0;
+            
+            for (let col = 0; col < COLS; col++) {
+                let isEmpty = true;
+                
+                for (let row = 0; row < ROWS; row++) {
+                    if (stars[row][col] !== null) {
+                        isEmpty = false;
+                        break;
+                    }
+                }
+                
+                if (!isEmpty) {
+                    if (emptyCol !== col) {
+                        for (let row = 0; row < ROWS; row++) {
+                            stars[row][emptyCol] = stars[row][col];
+                            stars[row][col] = null;
+                        }
+                    }
+                    emptyCol++;
+                }
+            }
+        }
+        
+        // 检查游戏状态
+        function checkGameState() {
+            // 检查是否无法继续
+            if (!hasValidMoves()) {
+                // 计算剩余星星数量
+                const remainingStars = countRemainingStars();
+                
+                // 根据剩余星星数量计算奖励
+                const reward = calculateReward(remainingStars);
+                
+                if (reward > 0) {
+                    score += reward;
+                    totalScore += reward;
+                    
+                    // 显示奖励得分
+                    showRewardPopup(reward);
+                    
+                    // 播放胜利音效
+                    winSound.currentTime = 0;
+                    winSound.play();
+                    
+                    setTimeout(() => {
+                        levelUp();
+                    }, 1000);
+                } else {
+                    // 检查是否达到目标分数
+                    if (score >= targetScore) {
+                        levelUp();
+                    } else {
+                        endGame(false);
+                    }
+                }
+            }
+        }
+        
+        // 计算剩余星星数量
+        function countRemainingStars() {
+            let count = 0;
+            for (let i = 0; i < ROWS; i++) {
+                for (let j = 0; j < COLS; j++) {
+                    if (stars[i][j] !== null) count++;
+                }
+            }
+            return count;
+        }
+        
+        // 计算奖励分数
+        function calculateReward(count) {
+            // 找到最接近的奖励规则
+            const keys = Object.keys(REWARD_RULES).map(Number).sort((a, b) => a - b);
+            let closestKey = keys[0];
+            
+            for (let i = 0; i < keys.length; i++) {
+                if (count >= keys[i]) {
+                    closestKey = keys[i];
+                } else {
+                    break;
+                }
+            }
+            
+            return REWARD_RULES[closestKey];
+        }
+        
+        // 显示奖励得分
+        function showRewardPopup(reward) {
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            popup.textContent = `额外奖励 +${reward}`;
+            popup.style.color = '#FFD740';
+            
+            popup.style.left = '50%';
+            popup.style.top = '50%';
+            popup.style.transform = 'translate(-50%, -50%)';
+            
+            document.body.appendChild(popup);
+            
+            // 动画结束后移除
+            setTimeout(() => {
+                popup.remove();
+            }, 1500);
+        }
+        
+        // 检查是否有有效移动
+        function hasValidMoves() {
+            for (let i = 0; i < ROWS; i++) {
+                for (let j = 0; j < COLS; j++) {
+                    if (stars[i][j] !== null) {
+                        const color = stars[i][j];
+                        let count = 0;
+                        
+                        // 检查上方
+                        if (i > 0 && stars[i-1][j] === color) count++;
+                        // 检查下方
+                        if (i < ROWS-1 && stars[i+1][j] === color) count++;
+                        // 检查左侧
+                        if (j > 0 && stars[i][j-1] === color) count++;
+                        // 检查右侧
+                        if (j < COLS-1 && stars[i][j+1] === color) count++;
+                        
+                        if (count > 0) return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
+        // 升级关卡
+        function levelUp() {
+            level++;
+            score = 0;
+            targetScore = Math.floor(BASE_TARGET_SCORE * Math.pow(1.4, level - 1));
+            initGame();
+        }
+        
+        // 结束游戏
+        function endGame(isWin) {
+            gameActive = false;
+            
+            // 更新排行榜
+            updateLeaderboard();
+            
+            if (isWin) {
+                gameOverText.textContent = `恭喜通关！最终得分: ${totalScore}`;
+            } else {
+                gameOverText.textContent = `游戏结束！最终得分: ${totalScore}`;
+            }
+            
+            gameOverModal.style.display = 'flex';
+            
+            // 清除游戏状态
+            localStorage.removeItem('starsGameState');
+        }
+        
+        // 重置棋盘
+        function resetBoard() {
+            if (refreshCount <= 0) {
+                refreshText.textContent = '今日免费次数已用完，已获取作者微信，去链接解锁吧';
+                refreshModal.style.display = 'flex';
+                
+                setTimeout(() => {
+                    refreshModal.style.display = 'none';
+                }, 1500);
+                
+                return;
+            }
+            
+            if (!gameActive) return;
+            
+            // 重置所有星星
+            for (let i = 0; i < ROWS; i++) {
+                for (let j = 0; j < COLS; j++) {
+                    stars[i][j] = Math.floor(Math.random() * COLORS.length);
+                }
+            }
+            
+            // 确保刷新后有可消除的星星
+            if (!hasValidMoves()) {
+                resetBoard(); // 递归调用直到有有效移动
+                return;
+            }
+            
+            refreshCount--;
+            updateUI();
+            drawStars();
+            saveGameState();
+        }
+        
+        // 保存游戏状态
+        function saveGameState() {
+            const gameState = {
+                stars: stars,
+                score: score,
+                totalScore: totalScore,
+                targetScore: targetScore,
+                level: level,
+                refreshCount: refreshCount,
+                gameActive: gameActive
+            };
+            
+            localStorage.setItem('starsGameState', JSON.stringify(gameState));
+        }
+        
+        // 加载游戏状态
+        function loadGameState() {
+            const savedState = localStorage.getItem('starsGameState');
+            
+            if (savedState) {
+                const gameState = JSON.parse(savedState);
+                
+                stars = gameState.stars;
+                score = gameState.score;
+                totalScore = gameState.totalScore || 0;
+                targetScore = gameState.targetScore;
+                level = gameState.level;
+                refreshCount = gameState.refreshCount;
+                gameActive = gameState.gameActive;
+                
+                continueBtn.style.display = 'inline-block';
+            }
+        }
+        
+        // 更新排行榜
+        function updateLeaderboard() {
+            // 添加当前分数到排行榜
+            highestScores.push({
+                score: totalScore,
+                level: level,
+                date: new Date().toLocaleDateString()
+            });
+            
+            // 按分数排序
+            highestScores.sort((a, b) => b.score - a.score);
+            
+            // 只保留前10名
+            if (highestScores.length > 10) {
+                highestScores = highestScores.slice(0, 10);
+            }
+            
+            // 保存到本地存储
+            localStorage.setItem('starsHighestScores', JSON.stringify(highestScores));
+            
+            // 更新排行榜显示
+            renderLeaderboard();
+        }
+        
+        // 渲染排行榜
+        function renderLeaderboard() {
+            leaderboardBody.innerHTML = '';
+            
+            highestScores.forEach((entry, index) => {
+                const row = document.createElement('tr');
+                
+                const rankCell = document.createElement('td');
+                rankCell.textContent = index + 1;
+                row.appendChild(rankCell);
+                
+                const playerCell = document.createElement('td');
+                playerCell.textContent = '玩家' + (index + 1);
+                row.appendChild(playerCell);
+                
+                const scoreCell = document.createElement('td');
+                scoreCell.textContent = entry.score;
+                row.appendChild(scoreCell);
+                
+                const levelCell = document.createElement('td');
+                levelCell.textContent = entry.level;
+                row.appendChild(levelCell);
+                
+                leaderboardBody.appendChild(row);
+            });
+        }
+        
+        // 生成分享二维码
+        function generateShareQR() {
+            let url = qrUrlInput.value.trim() || window.location.href;
+            
+            qrCodeContainer.innerHTML = '';
+            
+            QRCode.toCanvas(qrCodeContainer, url, { width: 150 }, function(error) {
+                if (error) console.error(error);
+            });
+            
+            // 处理头像上传
+            avatarUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = document.createElement('img');
+                        img.src = event.target.result;
+                        
+                        // 清空原有内容
+                        shareAvatar.innerHTML = '';
+                        shareAvatar.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // 更新昵称
+            authorNameInput.addEventListener('input', function() {
+                const nickname = authorNameInput.value.trim() || '消灭星星玩家';
+                shareNickname.textContent = nickname;
+            });
+            
+            // 更新二维码URL
+            qrUrlInput.addEventListener('input', function() {
+                const url = qrUrlInput.value.trim() || window.location.href;
+                qrCodeContainer.innerHTML = '';
+                QRCode.toCanvas(qrCodeContainer, url, { width: 150 });
+            });
+        }
+        
+        // 下载分享图片
+        function downloadShareImage() {
+            html2canvas(sharePreview).then(canvas => {
+                const link = document.createElement('a');
+                link.download = '消灭星星分享图.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+        
+        // 检查是否有保存的游戏
+        function checkSavedGame() {
+            const savedState = localStorage.getItem('starsGameState');
+            if (savedState) {
+                const gameState = JSON.parse(savedState);
+                if (gameState.gameActive) {
+                    continueModal.style.display = 'flex';
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // 切换主题
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            
+            if (currentTheme === 'light') {
+                html.setAttribute('data-theme', 'dark');
+            } else {
+                html.setAttribute('data-theme', 'light');
+            }
+        }
+        
+        // 事件监听
+        newGameBtn.addEventListener('click', initGame);
+        continueBtn.addEventListener('click', continueGame);
+        resetBtn.addEventListener('click', resetBoard);
+        leaderboardBtn.addEventListener('click', () => {
+            leaderboardModal.style.display = 'flex';
+            renderLeaderboard();
+        });
+        closeLeaderboardBtn.addEventListener('click', () => {
+            leaderboardModal.style.display = 'none';
+        });
+        shareBtn.addEventListener('click', () => {
+            shareModal.style.display = 'flex';
+            generateShareQR();
+        });
+        themeToggle.addEventListener('click', toggleTheme);
+        
+        gameOverBtn.addEventListener('click', () => {
+            gameOverModal.style.display = 'none';
+        });
+        gameOverNewBtn.addEventListener('click', () => {
+            gameOverModal.style.display = 'none';
+            initGame();
+        });
+        gameOverShareBtn.addEventListener('click', () => {
+            gameOverModal.style.display = 'none';
+            shareModal.style.display = 'flex';
+            generateShareQR();
+        });
+        
+        refreshModalBtn.addEventListener('click', () => {
+            refreshModal.style.display = 'none';
+        });
+        
+        closeShareBtn.addEventListener('click', () => {
+            shareModal.style.display = 'none';
+        });
+        downloadShareBtn.addEventListener('click', downloadShareImage);
+        copyLinkBtn.addEventListener('click', () => {
+            const url = qrUrlInput.value.trim() || window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('链接已复制到剪贴板');
+            });
+        });
+        copyWechatBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText('857023577').then(() => {
+                alert('微信号已复制到剪贴板');
+                refreshCount++;
+                updateUI();
+                shareModal.style.display = 'none';
+            });
+        });
+        
+        continueYesBtn.addEventListener('click', () => {
+            continueModal.style.display = 'none';
+            continueGame();
+        });
+        continueNoBtn.addEventListener('click', () => {
+            continueModal.style.display = 'none';
+            initGame();
+        });
+        continueHomeBtn.addEventListener('click', () => {
+            continueModal.style.display = 'none';
+        });
+        
+        // 初始化游戏
+        if (!checkSavedGame()) {
+            initGame();
+        }
+    </script>
+</body>
+</html>
