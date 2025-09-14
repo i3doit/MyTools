@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生日提醒系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment-lunar@0.0.3/moment-lunar.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #5e9fff;
+            --primary-hover: #4a8eff;
+            --danger-color: #ff5e5e;
+            --danger-hover: #ff4444;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --text-color: #333;
+            --text-light: #666;
+            --text-lighter: #999;
+            --bg-color: #f9f9f9;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 8px 16px rgba(0, 0, 0, 0.1);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e0f7fa 0%, #f3e5f5 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 20px;
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 左侧功能区 */
+        .control-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
+            height: fit-content;
+        }
+
+        .panel-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--card-bg);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(94, 159, 255, 0.2);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: var(--transition);
+            text-align: center;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-hover);
+        }
+
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+
+        .filter-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-lighter);
+        }
+
+        .search-box input {
+            padding-left: 45px;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        /* 卡片区域 */
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: var(--transition);
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card-header {
+            padding: 15px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #6ab1ff 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .card-action-btn {
+            background: rgba(255, 255, 255, 0.2);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .card-action-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .card-body {
+            padding: 15px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .info-item {
+            margin-bottom: 10px;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-bottom: 3px;
+        }
+
+        .info-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .countdown {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .urgent {
+            background: linear-gradient(135deg, var(--warning-color) 0%, #ffb74d 100%);
+        }
+
+        .critical {
+            background: linear-gradient(135deg, var(--danger-color) 0%, #ff8a80 100%);
+        }
+
+        /* 添加按钮 */
+        .add-btn {
+            position: fixed;
+            right: 40px;
+            bottom: 40px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            box-shadow: 0 6px 16px rgba(94, 159, 255, 0.4);
+            cursor: pointer;
+            transition: var(--transition);
+            z-index: 100;
+        }
+
+        .add-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+            background: var(--primary-hover);
+            box-shadow: 0 8px 20px rgba(94, 159, 255, 0.6);
+        }
+
+        /* 模态框 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-20px);
+            transition: var(--transition);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            color: var(--text-color);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+
+        /* 分享预览 */
+        .preview-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .preview-header {
+            padding: 25px;
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #6ab1ff 100%);
+            color: white;
+        }
+
+        .preview-title {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .preview-subtitle {
+            font-size: 1.2rem;
+            font-style: italic;
+        }
+
+        .preview-body {
+            padding: 25px;
+            text-align: center;
+        }
+
+        .preview-info {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        .preview-qr {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .preview-qr-container {
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .preview-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 30px 0;
+        }
+
+        .page-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .page-btn.active, .page-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* 底部信息 */
+        footer {
+            margin-top: 50px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
+        }
+
+        .ad-section {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .ad-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .ad-content {
+            line-height: 1.6;
+        }
+
+        .ad-highlight {
+            color: var(--primary-color);
+            font-weight: 600;
+            text-decoration: none;
+            display: block;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .footer-section h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            text-decoration: none;
+            color: var(--text-color);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: var(--text-color);
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+        }
+
+        .social-icon:hover {
+            transform: translateY(-3px);
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .copyright {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-light);
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .card-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .add-btn {
+                right: 20px;
+                bottom: 20px;
+                width: 50px;
+                height: 50px;
+                font-size: 1.5rem;
+            }
+        }
+
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease forwards;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--text-color);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-hover);
+            z-index: 1000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        /* 删除确认框 */
+        .confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+        
+        .confirm-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .confirm-content {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: var(--shadow-hover);
+        }
+        
+        .confirm-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: var(--danger-color);
+        }
+        
+        .confirm-message {
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+        
+        .confirm-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .confirm-btn {
+            padding: 10px 25px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .confirm-cancel {
+            background: #f0f0f0;
+            color: var(--text-color);
+        }
+        
+        .confirm-cancel:hover {
+            background: #e0e0e0;
+        }
+        
+        .confirm-delete {
+            background: var(--danger-color);
+            color: white;
+        }
+        
+        .confirm-delete:hover {
+            background: var(--danger-hover);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>生日提醒系统</h1>
+            <p class="subtitle">轻松管理亲友生日，不再错过重要时刻</p>
+        </header>
+
+        <div class="main-content">
+            <!-- 左侧功能区 -->
+            <div class="control-panel">
+                <h2 class="panel-title"><i class="fas fa-filter"></i> 筛选查询</h2>
+                
+                <div class="form-group search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="搜索姓名、备注等信息">
+                </div>
+                
+                <div class="filter-actions">
+                    <button class="btn" id="urgent-filter">即将到期</button>
+                    <button class="btn" id="reset-filter">重置筛选</button>
+                </div>
+                
+                <div class="form-group" style="margin-top: 25px;">
+                    <h2 class="panel-title"><i class="fas fa-database"></i> 数据管理</h2>
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button class="btn" id="export-btn">导出数据</button>
+                        <button class="btn" id="import-btn">导入数据</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧卡片区域 -->
+            <div class="cards-section">
+                <div class="cards-container" id="cards-container">
+                    <!-- 卡片将通过JS动态生成 -->
+                </div>
+                
+                <div class="pagination" id="pagination">
+                    <!-- 分页按钮将通过JS动态生成 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 添加按钮 -->
+        <div class="add-btn" id="floating-add-btn">
+            <i class="fas fa-plus"></i>
+        </div>
+        
+        <!-- 添加模态框 -->
+        <div class="modal" id="add-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">添加生日提醒</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="name">姓名</label>
+                        <input type="text" id="name" placeholder="输入姓名">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="birthdate">生日日期</label>
+                        <input type="date" id="birthdate">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reminder">提醒时间</label>
+                        <select id="reminder">
+                            <option value="0">当天提醒</option>
+                            <option value="1">提前1天</option>
+                            <option value="2">提前2天</option>
+                            <option value="custom">自定义时间</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="custom-reminder" style="display: none;">
+                        <label for="custom-days">提前天数</label>
+                        <input type="number" id="custom-days" min="1" max="30" placeholder="输入提前天数">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="notes">备注</label>
+                        <textarea id="notes" rows="3" placeholder="添加备注信息"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger" id="cancel-add">取消</button>
+                    <button class="btn" id="save-add">保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 编辑模态框 -->
+        <div class="modal" id="edit-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">编辑生日信息</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <!-- 编辑表单内容将通过JS动态生成 -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger" id="cancel-edit">取消</button>
+                    <button class="btn" id="save-edit">保存更改</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 分享模态框 -->
+        <div class="modal" id="share-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">分享生日卡片</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="preview-card" id="preview-card">
+                        <!-- 预览内容将通过JS动态生成 -->
+                    </div>
+                    <div class="preview-actions">
+                        <button class="btn" id="download-btn"><i class="fas fa-download"></i> 下载图片</button>
+                        <button class="btn" id="copy-link-btn"><i class="fas fa-link"></i> 复制链接</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 导入模态框 -->
+        <div class="modal" id="import-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">导入数据</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="import-data">粘贴导出的数据</label>
+                        <textarea id="import-data" rows="6" placeholder="粘贴导出的JSON数据"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger" id="cancel-import">取消</button>
+                    <button class="btn" id="confirm-import">导入数据</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 删除确认框 -->
+        <div class="confirm-modal" id="confirm-modal">
+            <div class="confirm-content">
+                <h3 class="confirm-title">确认删除</h3>
+                <p class="confirm-message">确定要删除这条生日记录吗？此操作不可撤销。</p>
+                <div class="confirm-actions">
+                    <button class="confirm-btn confirm-cancel" id="cancel-delete">取消</button>
+                    <button class="confirm-btn confirm-delete" id="confirm-delete">删除</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 底部信息 -->
+        <footer>
+            <div class="ad-section">
+                <div class="ad-title">加入AI编程社区</div>
+                <div class="ad-content">
+                    我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」
+                    <a href="https://t.zsxq.com/yL7L8" class="ad-highlight" target="_blank">
+                        一起加入讨论吧
+                    </a>
+                </div>
+            </div>
+            
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>技术支持</h3>
+                    <ul class="footer-links">
+                        <li>
+                            <a href="https://t.zsxq.com/11QO9" target="_blank">
+                                <i class="fas fa-user"></i> 艾兜兜儿
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" target="_blank">
+                                <i class="fas fa-book"></i> 我的AI编程日记
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" id="wechat-contact">
+                                <i class="fab fa-weixin"></i> 微信: 857023577
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>分享到</h3>
+                    <div class="social-icons">
+                        <a href="#" class="social-icon"><i class="fab fa-weibo"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-weixin"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-qq"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>导航链接</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-info-circle"></i> 关于我们</a></li>
+                        <li><a href="#"><i class="fas fa-history"></i> 更新日志</a></li>
+                        <li><a href="#"><i class="fas fa-envelope"></i> 联系我们</a></li>
+                        <li><a href="#"><i class="fas fa-shield-alt"></i> 隐私政策</a></li>
+                        <li><a href="#"><i class="fas fa-file-contract"></i> 用户协议</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="copyright">
+                &copy; <span id="current-year"></span> @艾兜兜儿
+            </div>
+        </footer>
+    </div>
+    
+    <!-- 音频提醒 -->
+    <audio id="reminder-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3"></audio>
+    
+    <!-- 提示框 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 示例数据
+        const sampleData = [
+            {
+                id: 1,
+                name: "艾兜兜儿",
+                birthdate: "1990-05-15",
+                reminder: "1",
+                notes: "系统开发者",
+                bgColor: "#5e9fff"
+            }
+        ];
+
+        // 星座数据
+        const zodiacSigns = [
+            { name: "摩羯座", start: "12-22", end: "01-19" },
+            { name: "水瓶座", start: "01-20", end: "02-18" },
+            { name: "双鱼座", start: "02-19", end: "03-20" },
+            { name: "白羊座", start: "03-21", end: "04-19" },
+            { name: "金牛座", start: "04-20", end: "05-20" },
+            { name: "双子座", start: "05-21", end: "06-21" },
+            { name: "巨蟹座", start: "06-22", end: "07-22" },
+            { name: "狮子座", start: "07-23", end: "08-22" },
+            { name: "处女座", start: "08-23", end: "09-22" },
+            { name: "天秤座", start: "09-23", end: "10-23" },
+            { name: "天蝎座", start: "10-24", end: "11-22" },
+            { name: "射手座", start: "11-23", end: "12-21" }
+        ];
+
+        // 生肖数据
+        const zodiacAnimals = ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"];
+
+        // 鼓励文案
+        const encouragingWords = [
+            "每一个生日都是新的起点，愿你的人生充满无限可能！",
+            "岁月悠长，愿你的每一天都如生日般快乐！",
+            "生日快乐！愿你的梦想如星辰般璀璨闪耀！",
+            "新的一岁，愿你收获更多美好与幸福！",
+            "生日是生命的里程碑，愿你的人生之路越走越宽广！",
+            "愿你的生日充满欢笑，新的一年充满惊喜！",
+            "时光不老，我们不散，生日快乐！",
+            "愿你的每一天都如生日般特别，充满爱与温暖！",
+            "生日快乐！愿你的生活如诗如画，精彩纷呈！",
+            "新的一岁，愿你遇见更好的自己！"
+        ];
+
+        // 农历月份名称
+        const lunarMonths = [
+            "正月", "二月", "三月", "四月", "五月", "六月", 
+            "七月", "八月", "九月", "十月", "冬月", "腊月"
+        ];
+        
+        // 农历日期名称
+        const lunarDays = [
+            "初一", "初二", "初三", "初四", "初五", "初六", "初七", "初八", "初九", "初十",
+            "十一", "十二", "十三", "十四", "十五", "十六", "十七", "十八", "十九", "二十",
+            "廿一", "廿二", "廿三", "廿四", "廿五", "廿六", "廿七", "廿八", "廿九", "三十"
+        ];
+
+        // 当前编辑的卡片ID
+        let currentEditId = null;
+        let currentDeleteId = null;
+        let currentPage = 1;
+        const cardsPerPage = 6;
+        let allBirthdays = [];
+
+        // DOM元素
+        const elements = {
+            cardsContainer: document.getElementById('cards-container'),
+            pagination: document.getElementById('pagination'),
+            floatingAddBtn: document.getElementById('floating-add-btn'),
+            addModal: document.getElementById('add-modal'),
+            editModal: document.getElementById('edit-modal'),
+            shareModal: document.getElementById('share-modal'),
+            importModal: document.getElementById('import-modal'),
+            confirmModal: document.getElementById('confirm-modal'),
+            reminderSelect: document.getElementById('reminder'),
+            customReminder: document.getElementById('custom-reminder'),
+            searchInput: document.getElementById('search-input'),
+            urgentFilter: document.getElementById('urgent-filter'),
+            resetFilter: document.getElementById('reset-filter'),
+            exportBtn: document.getElementById('export-btn'),
+            importBtn: document.getElementById('import-btn'),
+            wechatContact: document.getElementById('wechat-contact'),
+            toast: document.getElementById('toast'),
+            currentYear: document.getElementById('current-year'),
+            saveAdd: document.getElementById('save-add'),
+            cancelAdd: document.getElementById('cancel-add'),
+            cancelDelete: document.getElementById('cancel-delete'),
+            confirmDelete: document.getElementById('confirm-delete')
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 设置当前年份
+            elements.currentYear.textContent = new Date().getFullYear();
+            
+            // 加载数据
+            loadData();
+            
+            // 事件监听
+            setupEventListeners();
+            
+            // 设置日期默认值为今天
+            document.getElementById('birthdate').valueAsDate = new Date();
+        });
+
+        // 加载数据
+        function loadData() {
+            const savedData = localStorage.getItem('birthdayReminders');
+            allBirthdays = savedData ? JSON.parse(savedData) : sampleData;
+            
+            // 检查提醒
+            checkReminders();
+            
+            // 渲染卡片
+            renderCards();
+        }
+
+        // 保存数据
+        function saveData() {
+            localStorage.setItem('birthdayReminders', JSON.stringify(allBirthdays));
+        }
+
+        // 检查提醒
+        function checkReminders() {
+            const now = new Date();
+            allBirthdays.forEach(birthday => {
+                const nextBirthday = getNextBirthday(birthday.birthdate);
+                const daysUntil = Math.floor((nextBirthday - now) / (1000 * 60 * 60 * 24));
+                
+                // 设置提醒状态
+                birthday.reminderActive = false;
+                
+                // 计算提醒天数
+                let reminderDays = parseInt(birthday.reminder);
+                if (birthday.reminder === 'custom' && birthday.customDays) {
+                    reminderDays = parseInt(birthday.customDays);
+                }
+                
+                if (daysUntil <= reminderDays && daysUntil >= 0) {
+                    birthday.reminderActive = true;
+                    
+                    // 如果是当天，播放提醒声音
+                    if (daysUntil === 0) {
+                        document.getElementById('reminder-sound').play();
+                    }
+                }
+            });
+        }
+
+        // 设置事件监听
+        function setupEventListeners() {
+            // 添加生日按钮
+            elements.floatingAddBtn.addEventListener('click', () => {
+                elements.addModal.classList.add('active');
+            });
+            
+            elements.saveAdd.addEventListener('click', addBirthday);
+            elements.cancelAdd.addEventListener('click', () => {
+                elements.addModal.classList.remove('active');
+            });
+            
+            // 提醒选择变化
+            elements.reminderSelect.addEventListener('change', function() {
+                elements.customReminder.style.display = this.value === 'custom' ? 'block' : 'none';
+            });
+            
+            // 筛选按钮
+            elements.urgentFilter.addEventListener('click', filterUrgent);
+            elements.resetFilter.addEventListener('click', resetFilter);
+            
+            // 搜索输入
+            elements.searchInput.addEventListener('input', filterSearch);
+            
+            // 数据管理
+            elements.exportBtn.addEventListener('click', exportData);
+            elements.importBtn.addEventListener('click', () => {
+                elements.importModal.classList.add('active');
+            });
+            
+            // 模态框关闭
+            document.querySelectorAll('.modal-close, .btn-danger').forEach(btn => {
+                btn.addEventListener('click', closeModals);
+            });
+            
+            // 导入确认
+            document.getElementById('confirm-import').addEventListener('click', importData);
+            
+            // 微信联系方式
+            elements.wechatContact.addEventListener('click', function(e) {
+                e.preventDefault();
+                navigator.clipboard.writeText('857023577');
+                showToast('已复制微信: 857023577');
+            });
+            
+            // 删除确认
+            elements.cancelDelete.addEventListener('click', () => {
+                elements.confirmModal.classList.remove('active');
+            });
+            
+            elements.confirmDelete.addEventListener('click', () => {
+                if (currentDeleteId) {
+                    deleteBirthday(currentDeleteId);
+                    elements.confirmModal.classList.remove('active');
+                }
+            });
+        }
+
+        // 添加生日
+        function addBirthday() {
+            const name = document.getElementById('name').value.trim();
+            const birthdate = document.getElementById('birthdate').value;
+            const reminder = document.getElementById('reminder').value;
+            const notes = document.getElementById('notes').value.trim();
+            
+            // 简单验证
+            if (!birthdate) {
+                showToast('请选择生日日期');
+                return;
+            }
+            
+            // 获取自定义提醒天数
+            let customDays = null;
+            if (reminder === 'custom') {
+                customDays = document.getElementById('custom-days').value;
+                if (!customDays || isNaN(customDays) || parseInt(customDays) <= 0) {
+                    showToast('请输入有效的提醒天数');
+                    return;
+                }
+            }
+            
+            // 创建新生日对象
+            const newBirthday = {
+                id: Date.now(),
+                name: name || '未知',
+                birthdate,
+                reminder,
+                customDays,
+                notes,
+                bgColor: getRandomColor(),
+                createdAt: new Date().toISOString()
+            };
+            
+            // 添加到数组开头
+            allBirthdays.unshift(newBirthday);
+            
+            // 保存数据
+            saveData();
+            
+            // 重置表单
+            document.getElementById('name').value = '';
+            document.getElementById('birthdate').valueAsDate = new Date();
+            document.getElementById('reminder').value = '0';
+            document.getElementById('custom-reminder').style.display = 'none';
+            document.getElementById('notes').value = '';
+            
+            // 关闭模态框
+            elements.addModal.classList.remove('active');
+            
+            // 渲染卡片
+            renderCards();
+            
+            showToast('生日提醒添加成功！');
+        }
+
+        // 编辑生日
+        function editBirthday(id) {
+            const birthday = allBirthdays.find(b => b.id === id);
+            if (!birthday) return;
+            
+            currentEditId = id;
+            
+            // 填充编辑表单
+            const modalBody = document.querySelector('#edit-modal .modal-body');
+            modalBody.innerHTML = `
+                <div class="form-group">
+                    <label for="edit-name">姓名</label>
+                    <input type="text" id="edit-name" value="${birthday.name}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-birthdate">生日日期</label>
+                    <input type="date" id="edit-birthdate" value="${birthday.birthdate}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-reminder">提醒时间</label>
+                    <select id="edit-reminder">
+                        <option value="0" ${birthday.reminder === '0' ? 'selected' : ''}>当天提醒</option>
+                        <option value="1" ${birthday.reminder === '1' ? 'selected' : ''}>提前1天</option>
+                        <option value="2" ${birthday.reminder === '2' ? 'selected' : ''}>提前2天</option>
+                        <option value="custom" ${birthday.reminder === 'custom' ? 'selected' : ''}>自定义时间</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="edit-custom-reminder" style="${birthday.reminder === 'custom' ? '' : 'display: none;'}">
+                    <label for="edit-custom-days">提前天数</label>
+                    <input type="number" id="edit-custom-days" min="1" max="30" value="${birthday.customDays || ''}" placeholder="输入提前天数">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-notes">备注</label>
+                    <textarea id="edit-notes" rows="3">${birthday.notes || ''}</textarea>
+                </div>
+            `;
+            
+            // 监听提醒选择变化
+            document.getElementById('edit-reminder').addEventListener('change', function() {
+                document.getElementById('edit-custom-reminder').style.display = 
+                    this.value === 'custom' ? 'block' : 'none';
+            });
+            
+            // 打开模态框
+            elements.editModal.classList.add('active');
+            
+            // 保存编辑
+            document.getElementById('save-edit').addEventListener('click', saveEdit);
+        }
+
+        // 保存编辑
+        function saveEdit() {
+            const name = document.getElementById('edit-name').value.trim();
+            const birthdate = document.getElementById('edit-birthdate').value;
+            const reminder = document.getElementById('edit-reminder').value;
+            const notes = document.getElementById('edit-notes').value.trim();
+            
+            // 简单验证
+            if (!birthdate) {
+                showToast('请选择生日日期');
+                return;
+            }
+            
+            // 获取自定义提醒天数
+            let customDays = null;
+            if (reminder === 'custom') {
+                customDays = document.getElementById('edit-custom-days').value;
+                if (!customDays || isNaN(customDays) || parseInt(customDays) <= 0) {
+                    showToast('请输入有效的提醒天数');
+                    return;
+                }
+            }
+            
+            // 更新生日对象
+            const index = allBirthdays.findIndex(b => b.id === currentEditId);
+            if (index !== -1) {
+                allBirthdays[index] = {
+                    ...allBirthdays[index],
+                    name: name || '未知',
+                    birthdate,
+                    reminder,
+                    customDays,
+                    notes
+                };
+                
+                // 保存数据
+                saveData();
+                
+                // 关闭模态框
+                closeModals();
+                
+                // 渲染卡片
+                renderCards();
+                
+                showToast('生日信息更新成功！');
+            }
+        }
+
+        // 删除生日
+        function deleteBirthday(id) {
+            allBirthdays = allBirthdays.filter(b => b.id !== id);
+            saveData();
+            renderCards();
+            showToast('生日记录已删除');
+        }
+
+        // 分享生日
+        function shareBirthday(id) {
+            const birthday = allBirthdays.find(b => b.id === id);
+            if (!birthday) return;
+            
+            // 填充分享预览
+            const previewCard = document.getElementById('preview-card');
+            previewCard.innerHTML = `
+                <div class="preview-header">
+                    <div class="preview-title">${birthday.name}的生日</div>
+                    <div class="preview-subtitle">${getRandomEncouragingWord()}</div>
+                </div>
+                <div class="preview-body">
+                    <div class="preview-info">
+                        <p>${formatBirthdayInfo(birthday)}</p>
+                    </div>
+                    <div class="preview-qr">
+                        <div class="preview-qr-container">
+                            <div id="qr-code"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 生成二维码
+            const qrContainer = document.getElementById('qr-code');
+            QRCode.toCanvas(qrContainer, window.location.href, {
+                width: 150,
+                margin: 0,
+                color: {
+                    dark: '#333',
+                    light: '#ffffff'
+                }
+            }, function (error) {
+                if (error) console.error(error);
+            });
+            
+            // 设置下载功能
+            document.getElementById('download-btn').onclick = () => {
+                html2canvas(previewCard).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `${birthday.name}_生日卡片.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                });
+            };
+            
+            // 设置复制链接功能
+            document.getElementById('copy-link-btn').onclick = () => {
+                navigator.clipboard.writeText(window.location.href);
+                showToast('链接已复制到剪贴板');
+            };
+            
+            // 打开模态框
+            elements.shareModal.classList.add('active');
+        }
+
+        // 更改卡片背景色
+        function changeCardColor(id) {
+            const birthday = allBirthdays.find(b => b.id === id);
+            if (birthday) {
+                birthday.bgColor = getRandomColor();
+                saveData();
+                renderCards();
+            }
+        }
+
+        // 渲染卡片
+        function renderCards() {
+            // 过滤数据
+            let filteredData = [...allBirthdays];
+            const searchTerm = elements.searchInput.value.toLowerCase();
+            
+            if (searchTerm) {
+                filteredData = filteredData.filter(b => 
+                    b.name.toLowerCase().includes(searchTerm) || 
+                    (b.notes && b.notes.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // 分页
+            const startIndex = (currentPage - 1) * cardsPerPage;
+            const endIndex = startIndex + cardsPerPage;
+            const pageData = filteredData.slice(startIndex, endIndex);
+            
+            // 渲染卡片
+            elements.cardsContainer.innerHTML = '';
+            
+            if (pageData.length === 0) {
+                elements.cardsContainer.innerHTML = `
+                    <div class="no-results">
+                        <i class="fas fa-birthday-cake" style="font-size: 3rem; color: #ccc; margin-bottom: 15px;"></i>
+                        <h3>没有找到生日记录</h3>
+                        <p>尝试添加新的生日提醒或修改筛选条件</p>
+                    </div>
+                `;
+                elements.pagination.innerHTML = '';
+                return;
+            }
+            
+            pageData.forEach(birthday => {
+                const card = createBirthdayCard(birthday);
+                elements.cardsContainer.appendChild(card);
+            });
+            
+            // 渲染分页
+            renderPagination(filteredData.length);
+        }
+
+        // 创建生日卡片
+        function createBirthdayCard(birthday) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            if (birthday.reminderActive) {
+                const daysUntil = getDaysUntilBirthday(birthday.birthdate);
+                if (daysUntil <= 1) {
+                    card.classList.add('critical');
+                } else {
+                    card.classList.add('urgent');
+                }
+            }
+            
+            // 卡片信息
+            const info = formatBirthdayInfo(birthday);
+            
+            card.innerHTML = `
+                <div class="card-header" style="background: ${birthday.bgColor}">
+                    <div class="card-title">${birthday.name}</div>
+                    <div class="card-actions">
+                        <div class="card-action-btn" onclick="shareBirthday(${birthday.id})">
+                            <i class="fas fa-share-alt"></i>
+                        </div>
+                        <div class="card-action-btn" onclick="changeCardColor(${birthday.id})">
+                            <i class="fas fa-palette"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-info">
+                        ${info}
+                    </div>
+                </div>
+            `;
+            
+            // 双击编辑
+            card.addEventListener('dblclick', () => editBirthday(birthday.id));
+            
+            // 滑动删除
+            setupSwipeDelete(card, birthday.id);
+            
+            return card;
+        }
+
+        // 格式化生日信息
+        function formatBirthdayInfo(birthday) {
+            const birthdate = new Date(birthday.birthdate);
+            const now = new Date();
+            
+            // 计算年龄
+            const age = calculateAge(birthdate);
+            
+            // 下一个生日
+            const nextBirthday = getNextBirthday(birthday.birthdate);
+            const daysUntil = Math.floor((nextBirthday - now) / (1000 * 60 * 60 * 24));
+            
+            // 农历日期
+            const lunarDate = getLunarDate(birthdate);
+            
+            // 生肖
+            const zodiacAnimal = getZodiacAnimal(birthdate);
+            
+            // 星座
+            const zodiacSign = getZodiacSign(birthdate);
+            
+            // 总天数
+            const totalDays = Math.floor((now - birthdate) / (1000 * 60 * 60 * 24));
+            
+            return `
+                <div class="info-item">
+                    <div class="info-label">年龄</div>
+                    <div class="info-value">${age.years}岁${age.months}个月</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">公历生日</div>
+                    <div class="info-value">${formatSolarDate(birthdate)}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">农历生日</div>
+                    <div class="info-value">${lunarDate}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">生肖</div>
+                    <div class="info-value">${zodiacAnimal}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">星座</div>
+                    <div class="info-value">${zodiacSign}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">下一个生日</div>
+                    <div class="info-value countdown">${daysUntil}天后</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">备注</div>
+                    <div class="info-value">${birthday.notes || '无'}</div>
+                </div>
+            `;
+        }
+
+        // 设置滑动删除
+        function setupSwipeDelete(card, id) {
+            let startX, startY;
+            let isSwiping = false;
+            
+            card.addEventListener('touchstart', e => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                isSwiping = true;
+            });
+            
+            card.addEventListener('touchmove', e => {
+                if (!isSwiping) return;
+                
+                const x = e.touches[0].clientX;
+                const y = e.touches[0].clientY;
+                
+                // 检查是否主要是水平滑动
+                if (Math.abs(x - startX) > Math.abs(y - startY)) {
+                    e.preventDefault();
+                    
+                    const diff = startX - x;
+                    if (diff > 50) {
+                        card.style.transform = `translateX(-${Math.min(diff, 100)}px)`;
+                    }
+                }
+            });
+            
+            card.addEventListener('touchend', () => {
+                if (!isSwiping) return;
+                
+                isSwiping = false;
+                const currentX = parseInt(card.style.transform.replace('translateX(', '').replace('px)', '')) || 0;
+                
+                if (currentX < -50) {
+                    // 显示删除按钮
+                    const deleteBtn = document.createElement('div');
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 删除';
+                    deleteBtn.style.cssText = `
+                        position: absolute;
+                        right: 0;
+                        top: 0;
+                        height: 100%;
+                        width: 80px;
+                        background: var(--danger-color);
+                        color: white;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                    `;
+                    
+                    deleteBtn.addEventListener('click', () => {
+                        currentDeleteId = id;
+                        elements.confirmModal.classList.add('active');
+                    });
+                    
+                    card.appendChild(deleteBtn);
+                    
+                    // 动画效果
+                    card.style.transform = 'translateX(-80px)';
+                    card.style.transition = 'transform 0.3s ease';
+                } else {
+                    // 复位
+                    card.style.transform = '';
+                }
+            });
+            
+            // 鼠标事件
+            card.addEventListener('mousedown', e => {
+                startX = e.clientX;
+                startY = e.clientY;
+                isSwiping = true;
+            });
+            
+            card.addEventListener('mousemove', e => {
+                if (!isSwiping) return;
+                
+                const x = e.clientX;
+                const y = e.clientY;
+                
+                // 检查是否主要是水平滑动
+                if (Math.abs(x - startX) > Math.abs(y - startY)) {
+                    e.preventDefault();
+                    
+                    const diff = startX - x;
+                    if (diff > 50) {
+                        card.style.transform = `translateX(-${Math.min(diff, 100)}px)`;
+                    }
+                }
+            });
+            
+            card.addEventListener('mouseup', () => {
+                if (!isSwiping) return;
+                
+                isSwiping = false;
+                const currentX = parseInt(card.style.transform.replace('translateX(', '').replace('px)', '')) || 0;
+                
+                if (currentX < -50) {
+                    // 显示删除按钮
+                    const deleteBtn = document.createElement('div');
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 删除';
+                    deleteBtn.style.cssText = `
+                        position: absolute;
+                        right: 0;
+                        top: 0;
+                        height: 100%;
+                        width: 80px;
+                        background: var(--danger-color);
+                        color: white;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                    `;
+                    
+                    deleteBtn.addEventListener('click', () => {
+                        currentDeleteId = id;
+                        elements.confirmModal.classList.add('active');
+                    });
+                    
+                    card.appendChild(deleteBtn);
+                    
+                    // 动画效果
+                    card.style.transform = 'translateX(-80px)';
+                    card.style.transition = 'transform 0.3s ease';
+                } else {
+                    // 复位
+                    card.style.transform = '';
+                }
+            });
+            
+            // 鼠标离开时复位
+            card.addEventListener('mouseleave', () => {
+                if (isSwiping) {
+                    isSwiping = false;
+                    card.style.transform = '';
+                }
+            });
+        }
+
+        // 渲染分页
+        function renderPagination(totalItems) {
+            const totalPages = Math.ceil(totalItems / cardsPerPage);
+            elements.pagination.innerHTML = '';
+            
+            if (totalPages <= 1) return;
+            
+            // 上一页
+            const prevBtn = document.createElement('div');
+            prevBtn.className = 'page-btn';
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderCards();
+                }
+            });
+            elements.pagination.appendChild(prevBtn);
+            
+            // 页码
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('div');
+                pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.addEventListener('click', () => {
+                    currentPage = i;
+                    renderCards();
+                });
+                elements.pagination.appendChild(pageBtn);
+            }
+            
+            // 下一页
+            const nextBtn = document.createElement('div');
+            nextBtn.className = 'page-btn';
+            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderCards();
+                }
+            });
+            elements.pagination.appendChild(nextBtn);
+        }
+
+        // 筛选即将到期的生日
+        function filterUrgent() {
+            const now = new Date();
+            allBirthdays.forEach(birthday => {
+                const nextBirthday = getNextBirthday(birthday.birthdate);
+                const daysUntil = Math.floor((nextBirthday - now) / (1000 * 60 * 60 * 24));
+                
+                // 计算提醒天数
+                let reminderDays = parseInt(birthday.reminder);
+                if (birthday.reminder === 'custom' && birthday.customDays) {
+                    reminderDays = parseInt(birthday.customDays);
+                }
+                
+                birthday.urgent = daysUntil <= reminderDays && daysUntil >= 0;
+            });
+            
+            renderCards();
+            showToast('已筛选出即将到期的生日');
+        }
+
+        // 重置筛选
+        function resetFilter() {
+            elements.searchInput.value = '';
+            allBirthdays.forEach(b => delete b.urgent);
+            renderCards();
+        }
+
+        // 搜索筛选
+        function filterSearch() {
+            currentPage = 1;
+            renderCards();
+        }
+
+        // 导出数据
+        function exportData() {
+            const dataStr = JSON.stringify(allBirthdays, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = '生日数据.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showToast('数据已导出');
+        }
+
+        // 导入数据
+        function importData() {
+            const importData = document.getElementById('import-data').value.trim();
+            
+            if (!importData) {
+                showToast('请输入要导入的数据');
+                return;
+            }
+            
+            try {
+                const parsedData = JSON.parse(importData);
+                if (!Array.isArray(parsedData)) {
+                    throw new Error('无效的数据格式');
+                }
+                
+                // 合并数据
+                allBirthdays = [...parsedData, ...allBirthdays];
+                
+                // 保存数据
+                saveData();
+                
+                // 关闭模态框
+                closeModals();
+                
+                // 渲染卡片
+                renderCards();
+                
+                showToast('数据导入成功！');
+            } catch (error) {
+                showToast('导入失败：数据格式不正确');
+                console.error(error);
+            }
+        }
+
+        // 关闭所有模态框
+        function closeModals() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.classList.remove('active');
+            });
+            currentEditId = null;
+        }
+
+        // 显示提示
+        function showToast(message) {
+            elements.toast.textContent = message;
+            elements.toast.classList.add('show');
+            
+            setTimeout(() => {
+                elements.toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 工具函数：计算年龄
+        function calculateAge(birthdate) {
+            const now = new Date();
+            let years = now.getFullYear() - birthdate.getFullYear();
+            let months = now.getMonth() - birthdate.getMonth();
+            
+            if (months < 0 || (months === 0 && now.getDate() < birthdate.getDate())) {
+                years--;
+                months += 12;
+            }
+            
+            return { years, months };
+        }
+
+        // 工具函数：获取下一个生日
+        function getNextBirthday(birthdateStr) {
+            const birthdate = new Date(birthdateStr);
+            const now = new Date();
+            
+            const currentYear = now.getFullYear();
+            let nextBirthday = new Date(currentYear, birthdate.getMonth(), birthdate.getDate());
+            
+            if (nextBirthday < now) {
+                nextBirthday.setFullYear(currentYear + 1);
+            }
+            
+            return nextBirthday;
+        }
+
+        // 工具函数：获取距离生日的天数
+        function getDaysUntilBirthday(birthdateStr) {
+            const nextBirthday = getNextBirthday(birthdateStr);
+            const now = new Date();
+            return Math.floor((nextBirthday - now) / (1000 * 60 * 60 * 24));
+        }
+
+        // 工具函数：格式化公历日期
+        function formatSolarDate(date) {
+            return moment(date).format('YYYY-MM-DD');
+        }
+
+        // 工具函数：获取农历日期
+        function getLunarDate(date) {
+            const lunar = moment(date).lunar();
+            const month = lunar.month();
+            const day = lunar.date();
+            
+            return `${lunarMonths[month - 1]}${lunarDays[day - 1]}`;
+        }
+
+        // 工具函数：获取生肖
+        function getZodiacAnimal(date) {
+            const year = date.getFullYear();
+            const startYear = 1900; // 鼠年
+            const index = (year - startYear) % 12;
+            return zodiacAnimals[index < 0 ? index + 12 : index];
+        }
+
+        // 工具函数：获取星座
+        function getZodiacSign(date) {
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const dateStr = `${month}-${day}`;
+            
+            for (const sign of zodiacSigns) {
+                if (dateStr >= sign.start && dateStr <= sign.end) {
+                    return sign.name;
+                }
+            }
+            
+            return zodiacSigns[0].name; // 默认摩羯座
+        }
+
+        // 工具函数：获取随机颜色
+        function getRandomColor() {
+            const colors = [
+                '#5e9fff', '#ff7c7c', '#7cff7c', '#ffcc7c', 
+                '#7ccdff', '#ff7cff', '#7c7cff', '#ffa07c'
+            ];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // 工具函数：获取随机鼓励文案
+        function getRandomEncouragingWord() {
+            return encouragingWords[Math.floor(Math.random() * encouragingWords.length)];
+        }
+    </script>
+</body>
+</html>
