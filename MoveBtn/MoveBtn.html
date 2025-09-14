@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可拖动的悬浮按钮</title>
+    <style>
+        :root {
+            --primary-color: #1890ff;
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            padding: 30px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+
+        .instructions {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 30px 0;
+            text-align: left;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .instructions h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        .instructions ol {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        /* 添加按钮样式 */
+        .add-btn {
+            position: fixed;
+            left: 40px; /* 初始位置 */
+            bottom: 100px; 
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            box-shadow: 0 6px 16px rgba(94, 159, 255, 0.4);
+            cursor: move; /* 改变光标为可移动 */
+            transition: var(--transition);
+            z-index: 100;
+            user-select: none; /* 防止文本被选中 */
+        }
+
+        .add-btn:hover {
+            background: #40a9ff;
+            transform: scale(1.05);
+        }
+
+        .add-btn.dragging {
+            background: #096dd9;
+            box-shadow: 0 8px 20px rgba(94, 159, 255, 0.6);
+        }
+
+        .demo-area {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            min-height: 200px;
+            position: relative;
+            border: 2px dashed #bbdefb;
+        }
+
+        .demo-area::before {
+            content: "拖拽区域预览";
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #e3f2fd;
+            padding: 0 10px;
+            color: #1976d2;
+            font-size: 0.9rem;
+        }
+
+        .position-display {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            z-index: 101;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>可拖动的悬浮按钮</h1>
+        <p class="subtitle">点击并拖动下方的圆形按钮到任意位置</p>
+        
+        <div class="instructions">
+            <h3>实现原理</h3>
+            <ol>
+                <li>使用<code>position: fixed</code>定位按钮，使其悬浮在页面上</li>
+                <li>通过JavaScript监听鼠标事件（<code>mousedown</code>, <code>mousemove</code>, <code>mouseup</code>）实现拖拽功能</li>
+                <li>在拖拽过程中计算鼠标移动距离，更新按钮位置</li>
+                <li>添加边界检查，防止按钮被拖出可视区域</li>
+                <li>拖拽时添加视觉反馈（改变背景色和阴影）</li>
+            </ol>
+        </div>
+        
+        <div class="demo-area">
+            <p>尝试将按钮拖拽到页面上的任意位置</p>
+            <p>按钮位置会被保存，刷新页面后仍然保持在最后的位置</p>
+        </div>
+    </div>
+    
+    <!-- 可拖动的按钮 -->
+    <div class="add-btn" id="draggableBtn">+</div>
+    
+    <!-- 位置显示器 -->
+    <div class="position-display" id="positionDisplay">位置: (40px, 100px)</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const draggableBtn = document.getElementById('draggableBtn');
+            const positionDisplay = document.getElementById('positionDisplay');
+            
+            // 尝试从localStorage获取保存的位置
+            const savedPosition = localStorage.getItem('btnPosition');
+            if (savedPosition) {
+                const { left, bottom } = JSON.parse(savedPosition);
+                draggableBtn.style.left = left;
+                draggableBtn.style.bottom = bottom;
+                updatePositionDisplay();
+            }
+            
+            let isDragging = false;
+            let offsetX, offsetY;
+            
+            // 鼠标按下事件 - 开始拖拽
+            draggableBtn.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                draggableBtn.classList.add('dragging');
+                
+                // 计算鼠标相对于按钮左上角的偏移量
+                offsetX = e.clientX - draggableBtn.getBoundingClientRect().left;
+                offsetY = e.clientY - draggableBtn.getBoundingClientRect().top;
+                
+                // 防止文本被选中
+                e.preventDefault();
+            });
+            
+            // 鼠标移动事件 - 拖拽中
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging) return;
+                
+                // 计算按钮新位置
+                let newLeft = e.clientX - offsetX;
+                let newBottom = window.innerHeight - e.clientY - (draggableBtn.offsetHeight - offsetY);
+                
+                // 边界检查 - 防止按钮被拖出可视区域
+                newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - draggableBtn.offsetWidth));
+                newBottom = Math.max(0, Math.min(newBottom, window.innerHeight - draggableBtn.offsetHeight));
+                
+                // 更新按钮位置
+                draggableBtn.style.left = newLeft + 'px';
+                draggableBtn.style.bottom = newBottom + 'px';
+                
+                updatePositionDisplay();
+            });
+            
+            // 鼠标释放事件 - 结束拖拽
+            document.addEventListener('mouseup', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    draggableBtn.classList.remove('dragging');
+                    
+                    // 保存位置到localStorage
+                    savePosition();
+                }
+            });
+            
+            // 触摸事件支持（移动设备）
+            draggableBtn.addEventListener('touchstart', function(e) {
+                isDragging = true;
+                draggableBtn.classList.add('dragging');
+                
+                const touch = e.touches[0];
+                offsetX = touch.clientX - draggableBtn.getBoundingClientRect().left;
+                offsetY = touch.clientY - draggableBtn.getBoundingClientRect().top;
+                
+                e.preventDefault();
+            });
+            
+            document.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                
+                const touch = e.touches[0];
+                let newLeft = touch.clientX - offsetX;
+                let newBottom = window.innerHeight - touch.clientY - (draggableBtn.offsetHeight - offsetY);
+                
+                newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - draggableBtn.offsetWidth));
+                newBottom = Math.max(0, Math.min(newBottom, window.innerHeight - draggableBtn.offsetHeight));
+                
+                draggableBtn.style.left = newLeft + 'px';
+                draggableBtn.style.bottom = newBottom + 'px';
+                
+                updatePositionDisplay();
+                e.preventDefault();
+            });
+            
+            document.addEventListener('touchend', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    draggableBtn.classList.remove('dragging');
+                    savePosition();
+                }
+            });
+            
+            // 窗口大小改变时更新位置显示
+            window.addEventListener('resize', updatePositionDisplay);
+            
+            // 更新位置显示
+            function updatePositionDisplay() {
+                const left = parseInt(draggableBtn.style.left) || 40;
+                const bottom = parseInt(draggableBtn.style.bottom) || 100;
+                positionDisplay.textContent = `位置: (${left}px, ${bottom}px)`;
+            }
+            
+            // 保存位置到localStorage
+            function savePosition() {
+                const position = {
+                    left: draggableBtn.style.left,
+                    bottom: draggableBtn.style.bottom
+                };
+                localStorage.setItem('btnPosition', JSON.stringify(position));
+            }
+            
+            // 初始位置显示
+            updatePositionDisplay();
+        });
+    </script>
+</body>
+</html>
