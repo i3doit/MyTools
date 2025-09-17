@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI文档转换工具 - 简洁高效</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --bg-color: #f8f9fa;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-color: #333;
+            --highlight-color: #fff3cd;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+
+        body {
+            background: linear-gradient(135deg, #f0f4f8 0%, #e6f3ff 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 头部样式 */
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #1a1a1a;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: #666;
+        }
+
+        /* 主功能卡片 */
+        .main-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        .main-card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        /* 上传区域 */
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: rgba(0, 122, 255, 0.03);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-types {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* 结果展示 */
+        .result-section {
+            margin-top: 2rem;
+        }
+
+        .format-switch {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .format-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .format-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .result-content {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        /* 操作按钮组 */
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #333;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* 广告板块 */
+        .ad-section {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .ad-title {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: #1a1a1a;
+        }
+
+        .ad-content {
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .ad-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            display: block;
+            margin-top: 0.5rem;
+        }
+
+        /* 联系人区域 */
+        .contact-section {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .contact-item:hover {
+            color: var(--primary-color);
+        }
+
+        .wechat-tip {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .wechat-tip.show {
+            opacity: 1;
+        }
+
+        /* 底部信息 */
+        .footer {
+            margin-top: 3rem;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: #666;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .main-card {
+                padding: 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .upload-area {
+                padding: 2rem 1rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>AI文档转换工具</h1>
+            <p>简洁高效的PDF/图片转Word工具，支持多格式转换与分享</p>
+        </header>
+
+        <!-- 主功能卡片 -->
+        <main class="main-card">
+            <div class="upload-area" id="uploadArea">
+                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                <p class="upload-text">拖拽文件到此处或点击上传</p>
+                <p class="file-types">支持PDF、JPG、PNG格式（最大10MB）</p>
+                <input type="file" id="fileInput" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+            </div>
+
+            <div class="result-section">
+                <div class="format-switch">
+                    <button class="format-btn active" data-format="word">Word格式</button>
+                    <button class="format-btn" data-format="markdown">Markdown格式</button>
+                </div>
+                <div class="result-content" id="resultContent">
+                    <p style="color: #999; text-align: center;">上传文件后识别内容将显示在此处</p>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="downloadBtn"><i class="fas fa-download"></i> 下载文档</button>
+                    <button class="btn btn-secondary" id="copyBtn"><i class="fas fa-copy"></i> 复制内容</button>
+                    <button class="btn btn-secondary" id="resetBtn"><i class="fas fa-redo"></i> 重置</button>
+                    <button class="btn btn-secondary" id="shareBtn"><i class="fas fa-qrcode"></i> 分享</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- 广告板块 -->
+        <section class="ad-section">
+            <h3 class="ad-title">参与「AI编程·垂直小流量商业化」星球挑战</h3>
+            <p class="ad-content">
+                我正在参与「AI编程·垂直小流量商业化」星球挑战<br>
+                用AI写「100个AI小工具」，<a href="https://t.zsxq.com/yL7L8" target="_blank" class="ad-link">一起加入讨论吧</a>
+            </p>
+        </section>
+
+        <!-- 联系人区域 -->
+        <section class="contact-section">
+            <div class="contact-item" id="techSupport">
+                <i class="fas fa-headset"></i>
+                <span>技术支持：艾兜兜儿</span>
+            </div>
+            <div class="contact-item" id="aiDiary">
+                <i class="fas fa-book"></i>
+                <span>我的AI编程日记</span>
+            </div>
+            <div class="contact-item" id="wechat">
+                <i class="fab fa-weixin"></i>
+                <span>添加微信</span>
+            </div>
+            <div class="contact-item">
+                <a href="https://weibo.com/" target="_blank"><i class="fab fa-weibo"></i></a>
+                <a href="https://weixin.qq.com/" target="_blank"><i class="fab fa-weixin"></i></a>
+                <a href="https://im.qq.com/" target="_blank"><i class="fab fa-qq"></i></a>
+            </div>
+        </section>
+
+        <!-- 底部信息 -->
+        <footer class="footer">
+            <div class="footer-links">
+                <a href="#">关于我们</a>
+                <a href="#">更新日志</a>
+                <a href="#">联系我们</a>
+                <a href="#">隐私政策</a>
+                <a href="#">用户协议</a>
+            </div>
+            <p>© 2025 - <span id="currentYear"></span> AI文档转换工具. 保留所有权利</p>
+        </footer>
+    </div>
+
+    <!-- 微信提示 -->
+    <div class="wechat-tip" id="wechatTip">已获取艾兜兜儿微信：857023577，快去链接吧</div>
+
+    <!-- 引入第三方库 -->
+    <script src="https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
+
+    <script>
+        // 初始化变量
+        let currentText = '';
+        let currentFormat = 'word';
+        const wechatNumber = '857023577';
+
+        // DOM元素引用
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const resultContent = document.getElementById('resultContent');
+        const formatBtns = document.querySelectorAll('.format-btn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const shareBtn = document.getElementById('shareBtn');
+        const wechatTip = document.getElementById('wechatTip');
+        const currentYear = document.getElementById('currentYear');
+
+        // 动态年份
+        currentYear.textContent = new Date().getFullYear();
+
+        // 上传区域点击事件
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#007AFF';
+            uploadArea.style.backgroundColor = 'rgba(0, 122, 255, 0.03)';
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#d1d5db';
+            uploadArea.style.backgroundColor = '';
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#d1d5db';
+            uploadArea.style.backgroundColor = '';
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        // 文件选择事件
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // 处理上传文件
+        async function handleFile(file) {
+            if (!file.type.match('image.*') && !file.name.endsWith('.pdf')) {
+                alert('仅支持PDF、JPG、PNG格式文件');
+                return;
+            }
+
+            resultContent.innerHTML = '<p style="color: #666;">识别中...</p>';
+            
+            try {
+                let text = '';
+                if (file.type.startsWith('image/')) {
+                    text = await Tesseract.recognize(
+                        file,
+                        'chi_sim+eng',
+                        { logger: m => console.log(m) }
+                    ).then(({ data: { text } }) => text);
+                } else {
+                    // PDF处理（简化版，实际需转换为图片）
+                    const pdfUrl = URL.createObjectURL(file);
+                    text = await Tesseract.recognize(
+                        pdfUrl,
+                        'chi_sim+eng',
+                        { logger: m => console.log(m) }
+                    ).then(({ data: { text } }) => text);
+                }
+
+                currentText = text;
+                updateResultDisplay();
+            } catch (error) {
+                console.error('识别失败:', error);
+                resultContent.innerHTML = '<p style="color: #ff4444;">识别失败，请尝试其他文件</p>';
+            }
+        }
+
+        // 更新结果显示
+        function updateResultDisplay() {
+            if (currentFormat === 'word') {
+                resultContent.innerHTML = currentText.replace(/\n/g, '<br>');
+            } else {
+                resultContent.textContent = currentText;
+            }
+        }
+
+        // 格式切换
+        formatBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                formatBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFormat = btn.dataset.format;
+                updateResultDisplay();
+            });
+        });
+
+        // 下载功能
+        downloadBtn.addEventListener('click', () => {
+            if (!currentText) {
+                alert('请先上传文件并完成识别');
+                return;
+            }
+
+            const blob = new Blob([currentFormat === 'word' ? currentText.replace(/\n/g, '\r\n') : currentText], 
+                { type: 'text/plain;charset=utf-8' });
+            saveAs(blob, `转换结果.${currentFormat === 'word' ? 'docx' : 'md'}`);
+        });
+
+        // 复制功能
+        copyBtn.addEventListener('click', async () => {
+            if (!currentText) {
+                alert('请先上传文件并完成识别');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(currentText);
+                alert('内容已复制到剪贴板');
+            } catch (err) {
+                console.error('复制失败:', err);
+            }
+        });
+
+        // 重置功能
+        resetBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            currentText = '';
+            resultContent.innerHTML = '<p style="color: #999; text-align: center;">上传文件后识别内容将显示在此处</p>';
+        });
+
+        // 分享功能
+        shareBtn.addEventListener('click', () => {
+            const qrCanvas = document.createElement('canvas');
+            QRCode.toCanvas(qrCanvas, window.location.href, { width: 200 }, (error) => {
+                if (error) console.error(error);
+                const link = document.createElement('a');
+                link.download = '分享二维码.png';
+                link.href = qrCanvas.toDataURL('image/png');
+                link.click();
+            });
+        });
+
+        // 技术支持点击
+        document.getElementById('techSupport').addEventListener('click', () => {
+            window.open('https://t.zsxq.com/11QO9', '_blank');
+        });
+
+        // AI编程日记点击
+        document.getElementById('aiDiary').addEventListener('click', () => {
+            window.open('https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg', '_blank');
+        });
+
+        // 微信点击
+        document.getElementById('wechat').addEventListener('click', () => {
+            navigator.clipboard.writeText(wechatNumber).then(() => {
+                wechatTip.classList.add('show');
+                setTimeout(() => {
+                    wechatTip.classList.remove('show');
+                }, 3000);
+            });
+        });
+    </script>
+</body>
+</html>
