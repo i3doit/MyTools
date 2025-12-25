@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圣诞萌娃写真生成器</title>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        :root {
+            --primary-color: #f5f5f7;
+            --secondary-color: #e8e8ed;
+            --accent-color: #ff3b30;
+            --text-color: #1d1d1f;
+            --light-text: #86868b;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --gradient: linear-gradient(135deg, #f0f8fb 0%, #e8f4f8 100%);
+        }
+
+        body {
+            background: var(--gradient);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding-bottom: 120px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            padding: 20px 0;
+            border-bottom: 1px solid var(--secondary-color);
+            position: sticky;
+            top: 0;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--accent-color);
+        }
+
+        .logo i {
+            font-size: 28px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #e03025;
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: var(--text-color);
+        }
+
+        .btn-secondary:hover {
+            background: #dcdce0;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--secondary-color);
+            border-radius: 12px;
+            padding: 30px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-color);
+            background: rgba(255, 59, 48, 0.05);
+        }
+
+        .upload-area i {
+            font-size: 40px;
+            color: var(--light-text);
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: var(--light-text);
+            font-size: 14px;
+        }
+
+        .preview-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            display: none;
+            margin-bottom: 15px;
+        }
+
+        .template-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .template-item {
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .template-item.selected {
+            border-color: var(--accent-color);
+        }
+
+        .template-item img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+        }
+
+        .template-name {
+            font-size: 12px;
+            padding: 5px;
+            text-align: center;
+            background: var(--secondary-color);
+        }
+
+        .custom-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        input, textarea, select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--secondary-color);
+            background: var(--glass-bg);
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .preview-panel {
+            height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            display: none;
+        }
+
+        .placeholder-preview {
+            text-align: center;
+            color: var(--light-text);
+        }
+
+        .placeholder-preview i {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-button {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .import-export {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        footer {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            margin-top: 60px;
+            border-top: 1px solid var(--secondary-color);
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .footer-links a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-color);
+        }
+
+        .share-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .share-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--secondary-color);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .share-button:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .highlight-text {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .backup-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--secondary-color);
+        }
+
+        .backup-name {
+            font-size: 14px;
+        }
+
+        .backup-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .backup-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--light-text);
+        }
+
+        .backup-actions button:hover {
+            color: var(--accent-color);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container header-content">
+            <div class="logo">
+                <i class="fas fa-snowflake"></i>
+                <span>圣诞萌娃写真生成器</span>
+            </div>
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" id="homeBtn">
+                    <i class="fas fa-home"></i>
+                    <span>主页</span>
+                </button>
+                <button class="btn btn-primary" id="helpBtn">
+                    <i class="fas fa-question-circle"></i>
+                    <span>帮助</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-user-circle"></i>
+                        <span>上传头像</span>
+                    </div>
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <div class="upload-text">点击上传正面照片</div>
+                    </div>
+                    <img src="" alt="预览" class="preview-img" id="previewImg">
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" id="removeBtn" style="display: none;">
+                            <i class="fas fa-trash"></i>
+                            <span>移除</span>
+                        </button>
+                        <button class="btn btn-secondary" id="reselectBtn" style="display: none;">
+                            <i class="fas fa-redo"></i>
+                            <span>重新选择</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-images"></i>
+                        <span>选择模板</span>
+                    </div>
+                    <div class="template-list" id="templateList">
+                        <!-- 模板将通过JS动态生成 -->
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-edit"></i>
+                        <span>自定义模板</span>
+                    </div>
+                    <div class="custom-form" id="customForm">
+                        <div class="form-group">
+                            <label for="templateName">模板名称</label>
+                            <input type="text" id="templateName" placeholder="输入模板名称">
+                        </div>
+                        <div class="form-group">
+                            <label for="templateImage">上传模板参考图</label>
+                            <input type="file" id="templateImage" accept="image/*">
+                        </div>
+                        <div class="form-group">
+                            <label for="promptText">提示词</label>
+                            <textarea id="promptText" placeholder="输入AI提示词，使用{head}标记头部替换区域"></textarea>
+                        </div>
+                        <button class="btn btn-primary" id="saveTemplateBtn">保存模板</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fas fa-save"></i>
+                        <span>数据备份</span>
+                    </div>
+                    <div class="import-export">
+                        <button class="btn btn-secondary" id="exportBtn">导出数据</button>
+                        <button class="btn btn-secondary" id="importBtn">导入数据</button>
+                    </div>
+                    <div id="backupList" class="backup-list">
+                        <!-- 备份列表将通过JS动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-panel">
+                <div class="card preview-panel">
+                    <div class="placeholder-preview" id="placeholderPreview">
+                        <i class="fas fa-image"></i>
+                        <h3>生成的写真将在这里预览</h3>
+                        <p>上传头像并选择模板后点击生成</p>
+                    </div>
+                    <img src="" alt="结果预览" class="result-img" id="resultImg">
+                </div>
+
+                <div class="card">
+                    <div class="control-panel">
+                        <button class="btn btn-primary control-button" id="generateBtn">
+                            <i class="fas fa-magic"></i>
+                            <span>生成写真</span>
+                        </button>
+                        <button class="btn btn-secondary control-button" id="downloadBtn" style="display: none;">
+                            <i class="fas fa-download"></i>
+                            <span>下载图片</span>
+                        </button>
+                        <button class="btn btn-secondary control-button" id="shareBtn">
+                            <i class="fas fa-share-alt"></i>
+                            <span>分享</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container footer-content">
+            <div class="footer-links">
+                <a href="https://t.zsxq.com/11QO9" target="_blank">技术支持：艾兜兜儿</a>
+                <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" target="_blank">挑战100个小工具</a>
+                <a href="https://i3doit.github.io/AI_Tools_2.6.html" target="_blank">返回主页</a>
+            </div>
+            <p>我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」，<span class="highlight-text">一起加入讨论吧</span>，点击 <a href="https://t.zsxq.com/yL7L8" target="_blank" class="highlight-text">一起加入讨论</a></p>
+            <div class="share-buttons">
+                <a href="https://weixin.qq.com/" target="_blank" class="share-button"><i class="fab fa-weixin"></i></a>
+                <a href="https://qq.com/" target="_blank" class="share-button"><i class="fab fa-qq"></i></a>
+                <a href="https://weibo.com/" target="_blank" class="share-button"><i class="fab fa-weibo"></i></a>
+                <a href="https://douban.com/" target="_blank" class="share-button"><i class="fab fa-douban"></i></a>
+            </div>
+        </div>
+    </footer>
+        <script>
+        // 全局变量
+        let selectedTemplate = null;
+        let uploadedImage = null;
+        let customTemplates = [];
+        let backupData = [];
+
+        // 内置模板数据
+        const builtInTemplates = [
+            {
+                id: 'template1',
+                name: '圣诞经典',
+                image: 'https://picsum.photos/seed/Christmas1/200/100',
+                prompt: '一个9岁女孩的圣诞主题写真，画面温暖柔和，奶油色调。底妆清透白皙，粉色腮红，眼妆自然，睫毛纤长，眼下亮片点缀。唇妆为水润浅粉色。头发为慵懒盘发，顶部装饰小型圣诞树，带有金色星星、铃铛、彩色球和蝴蝶结。身着红色毛绒上衣，领口简约圆领。背景为墨绿色纯色墙，有景深感。平视角度，高清，3:4比例。保持面部五官与{head}区域一致。'
+            },
+            {
+                id: 'template2',
+                name: '圣诞精灵',
+                image: 'https://picsum.photos/seed/Christmas2/200/100',
+                prompt: '一个9岁女孩的圣诞精灵写真，画面梦幻可爱，暖色调。底妆清透，脸颊扫淡橘色腮红，眼妆用淡绿色眼影，睫毛纤长卷翘，眼下点涂小亮片。唇妆为橘粉色。头发为双马尾，装饰绿色松枝和小铃铛。身着绿色精灵服，搭配红色蝴蝶结。背景为圣诞树林，有雪花飘落。平视角度，高清，3:4比例。保持面部五官与{head}区域一致。'
+            },
+            {
+                id: 'template3',
+                name: '圣诞公主',
+                image: 'https://picsum.photos/seed/Christmas3/200/100',
+                prompt: '一个9岁女孩的圣诞公主写真，画面华丽温馨，暖金色调。底妆精致白皙，腮红为玫瑰色，眼妆用珠光棕色，睫毛浓密，眼下点涂珍珠亮片。唇妆为玫瑰色。头发为公主头，装饰皇冠和圣诞花环。身着红色丝绒公主裙，搭配白色毛领。背景为圣诞城堡，有暖光装饰。平视角度，高清，3:4比例。保持面部五官与{head}区域一致。'
+            },
+            {
+                id: 'template4',
+                name: '冬日圣诞',
+                image: 'https://picsum.photos/seed/Christmas4/200/100',
+                prompt: '一个9岁女孩的冬日圣诞写真，画面清新自然，冷色调。底妆清透，腮红为淡紫色，眼妆用淡蓝色眼影，睫毛自然，眼下点涂细小亮片。唇妆为淡紫色。头发为半扎发，装饰白色毛绒和小雪花。身着白色羽绒服，搭配红色围巾。背景为雪地森林，有圣诞树。平视角度，高清，3:4比例。保持面部五官与{head}区域一致。'
+            }
+        ];
+
+        // DOM加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化
+            loadData();
+            renderTemplates();
+            renderBackups();
+
+            // 上传区域点击事件
+            document.getElementById('uploadArea').addEventListener('click', function() {
+                document.getElementById('fileInput').click();
+            });
+
+            // 文件选择事件
+            document.getElementById('fileInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        uploadedImage = event.target.result;
+                        const previewImg = document.getElementById('previewImg');
+                        previewImg.src = uploadedImage;
+                        previewImg.style.display = 'block';
+                        document.getElementById('removeBtn').style.display = 'block';
+                        document.getElementById('reselectBtn').style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // 移除图片
+            document.getElementById('removeBtn').addEventListener('click', function() {
+                uploadedImage = null;
+                document.getElementById('previewImg').style.display = 'none';
+                document.getElementById('fileInput').value = '';
+                this.style.display = 'none';
+                document.getElementById('reselectBtn').style.display = 'none';
+            });
+
+            // 重新选择图片
+            document.getElementById('reselectBtn').addEventListener('click', function() {
+                document.getElementById('fileInput').click();
+            });
+
+            // 保存自定义模板
+            document.getElementById('saveTemplateBtn').addEventListener('click', function() {
+                const name = document.getElementById('templateName').value;
+                const prompt = document.getElementById('promptText').value;
+                const imageInput = document.getElementById('templateImage');
+                
+                if (!name || !prompt) {
+                    alert('请输入模板名称和提示词');
+                    return;
+                }
+
+                const templateId = 'custom_' + Date.now();
+                const newTemplate = {
+                    id: templateId,
+                    name: name,
+                    image: imageInput.files[0] ? URL.createObjectURL(imageInput.files[0]) : 'https://picsum.photos/seed/Custom/200/100',
+                    prompt: prompt,
+                    isCustom: true
+                };
+
+                customTemplates.push(newTemplate);
+                saveCustomTemplates();
+                renderTemplates();
+                
+                // 清空表单
+                document.getElementById('templateName').value = '';
+                document.getElementById('promptText').value = '';
+                document.getElementById('templateImage').value = '';
+                
+                alert('模板保存成功');
+            });
+
+            // 生成写真
+            document.getElementById('generateBtn').addEventListener('click', function() {
+                if (!uploadedImage) {
+                    alert('请先上传头像');
+                    return;
+                }
+
+                if (!selectedTemplate) {
+                    alert('请选择模板');
+                    return;
+                }
+
+                // 模拟生成过程（实际项目中需调用AI API）
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>生成中...</span>';
+                this.disabled = true;
+
+                setTimeout(() => {
+                    // 模拟生成结果（实际应为AI返回的图片）
+                    const resultImg = document.getElementById('resultImg');
+                    const placeholder = document.getElementById('placeholderPreview');
+                    
+                    // 这里使用拼接的方式模拟换脸效果，实际需AI处理
+                    resultImg.src = `https://picsum.photos/seed/${Date.now()}/800/1000`;
+                    resultImg.style.display = 'block';
+                    placeholder.style.display = 'none';
+                    
+                    document.getElementById('downloadBtn').style.display = 'block';
+                    this.innerHTML = '<i class="fas fa-magic"></i><span>生成写真</span>';
+                    this.disabled = false;
+                }, 2000);
+            });
+
+            // 下载图片
+            document.getElementById('downloadBtn').addEventListener('click', function() {
+                const resultImg = document.getElementById('resultImg');
+                if (resultImg.src) {
+                    const a = document.createElement('a');
+                    a.href = resultImg.src;
+                    a.download = `圣诞写真_${new Date().getTime()}.jpg`;
+                    a.click();
+                }
+            });
+
+            // 分享按钮
+            document.getElementById('shareBtn').addEventListener('click', function() {
+                alert('分享功能已触发，实际项目中可调用分享API');
+            });
+
+            // 导出数据
+            document.getElementById('exportBtn').addEventListener('click', function() {
+                const data = {
+                    customTemplates: customTemplates,
+                    backupTime: new Date().toLocaleString()
+                };
+
+                const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `圣诞写真工具备份_${new Date().getTime()}.json`;
+                a.click();
+
+                // 记录备份
+                backupData.push({
+                    id: 'backup_' + Date.now(),
+                    time: new Date().toLocaleString()
+                });
+                saveBackupData();
+                renderBackups();
+            });
+
+            // 导入数据
+            document.getElementById('importBtn').addEventListener('click', function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            try {
+                                const data = JSON.parse(event.target.result);
+                                if (data.customTemplates) {
+                                    customTemplates = data.customTemplates;
+                                    saveCustomTemplates();
+                                    renderTemplates();
+                                    alert('数据导入成功');
+                                } else {
+                                    alert('无效的备份文件');
+                                }
+                            } catch (error) {
+                                alert('备份文件解析失败');
+                            }
+                        };
+                        reader.readAsText(file);
+                    }
+                };
+                input.click();
+            });
+
+            // 主页按钮
+            document.getElementById('homeBtn').addEventListener('click', function() {
+                window.open('https://i3doit.github.io/AI_Tools_2.6.html', '_blank');
+            });
+
+            // 帮助按钮
+            document.getElementById('helpBtn').addEventListener('click', function() {
+                alert('使用帮助：\n1. 上传孩子的正面照片\n2. 选择喜欢的模板\n3. 点击生成写真\n4. 下载或分享生成的图片');
+            });
+        });
+
+        // 渲染模板列表
+        function renderTemplates() {
+            const templateList = document.getElementById('templateList');
+            templateList.innerHTML = '';
+
+            // 渲染内置模板
+            builtInTemplates.forEach(template => {
+                const templateItem = createTemplateItem(template);
+                templateList.appendChild(templateItem);
+            });
+
+            // 渲染自定义模板
+            customTemplates.forEach(template => {
+                const templateItem = createTemplateItem(template);
+                templateList.appendChild(templateItem);
+            });
+        }
+
+        // 创建模板项
+        function createTemplateItem(template) {
+            const templateItem = document.createElement('div');
+            templateItem.className = 'template-item' + (selectedTemplate === template.id ? ' selected' : '');
+            templateItem.dataset.id = template.id;
+
+            const img = document.createElement('img');
+            img.src = template.image;
+            img.alt = template.name;
+
+            const name = document.createElement('div');
+            name.className = 'template-name';
+            name.textContent = template.name;
+
+            templateItem.appendChild(img);
+            templateItem.appendChild(name);
+
+            // 选择模板
+            templateItem.addEventListener('click', function() {
+                document.querySelectorAll('.template-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                selectedTemplate = template.id;
+            });
+
+            return templateItem;
+        }
+
+        // 渲染备份列表
+        function renderBackups() {
+            const backupList = document.getElementById('backupList');
+            backupList.innerHTML = '';
+
+            backupData.forEach(backup => {
+                const backupItem = document.createElement('div');
+                backupItem.className = 'backup-item';
+
+                const name = document.createElement('div');
+                name.className = 'backup-name';
+                name.textContent = `备份时间：${backup.time}`;
+
+                const actions = document.createElement('div');
+                actions.className = 'backup-actions';
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.addEventListener('click', function() {
+                    backupData = backupData.filter(item => item.id !== backup.id);
+                    saveBackupData();
+                    renderBackups();
+                });
+
+                actions.appendChild(deleteBtn);
+                backupItem.appendChild(name);
+                backupItem.appendChild(actions);
+
+                backupList.appendChild(backupItem);
+            });
+        }
+
+        // 加载本地数据
+        function loadData() {
+            const savedTemplates = localStorage.getItem('customTemplates');
+            const savedBackups = localStorage.getItem('backupData');
+
+            if (savedTemplates) {
+                customTemplates = JSON.parse(savedTemplates);
+            }
+
+            if (savedBackups) {
+                backupData = JSON.parse(savedBackups);
+            } else {
+                // 初始示例备份
+                backupData = [
+                    {
+                        id: 'backup_example',
+                        time: '2025-12-25 12:00:00'
+                    }
+                ];
+                saveBackupData();
+            }
+        }
+
+        // 保存自定义模板
+        function saveCustomTemplates() {
+            localStorage.setItem('customTemplates', JSON.stringify(customTemplates));
+        }
+
+        // 保存备份数据
+        function saveBackupData() {
+            localStorage.setItem('backupData', JSON.stringify(backupData));
+        }
+    </script>
+</body>
+</html>
