@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圣诞星空魔法贺卡</title>
+    <style>
+        :root {
+            --gold: #ffcf4d;
+            --red: #ff4d4d;
+            --green: #2ecc71;
+            --white: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #020205 100%);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Arial', sans-serif;
+            perspective: 1000px;
+        }
+
+        /* 背景星空 */
+        #stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* 场景容器 */
+        .scene {
+            position: relative;
+            width: 300px;
+            height: 500px;
+            transform-style: preserve-3d;
+            animation: sceneRotate 20s linear infinite;
+        }
+
+        @keyframes sceneRotate {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(360deg); }
+        }
+
+        /* 顶部大星星 */
+        .top-star {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 40px;
+            color: var(--gold);
+            text-shadow: 0 0 20px var(--gold);
+            z-index: 10;
+            animation: twinkle 1.5s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+            50% { opacity: 0.6; transform: translateX(-50%) scale(1.2); }
+        }
+
+        /* 螺旋圣诞树 */
+        .tree-container {
+            position: relative;
+            transform-style: preserve-3d;
+        }
+
+        .dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px white;
+        }
+
+        /* 环绕文字 */
+        .floating-text {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform-style: preserve-3d;
+            pointer-events: none;
+        }
+
+        .char {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--gold);
+            text-shadow: 0 0 10px rgba(255, 207, 77, 0.8);
+            white-space: nowrap;
+        }
+
+        /* 礼物盒区域 */
+        .gifts-zone {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            perspective: 1000px;
+            z-index: 100;
+        }
+
+        .gift {
+            position: relative;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            transform-style: preserve-3d;
+        }
+
+        .gift:hover {
+            transform: scale(1.2) rotateY(20deg);
+        }
+
+        .gift-box {
+            width: 100%;
+            height: 100%;
+            background: var(--red);
+            position: relative;
+            border: 2px solid #a00;
+        }
+
+        .gift-box::before {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 100%;
+            background: var(--gold);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .gift-box::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 10px;
+            background: var(--gold);
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* 弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+            width: 300px;
+            text-align: center;
+        }
+
+        .modal input {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .modal button {
+            background: var(--red);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .share-link {
+            margin-top: 15px;
+            font-size: 12px;
+            word-break: break-all;
+            color: #666;
+            display: none;
+        }
+
+        /* 按钮悬浮在页面上 */
+        .ui-hint {
+            position: fixed;
+            bottom: 20px;
+            color: white;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+
+<div class="scene">
+    <div class="top-star">★</div>
+    <div class="tree-container" id="tree"></div>
+    <div class="floating-text" id="floatingText"></div>
+</div>
+
+<div class="gifts-zone">
+    <!-- 大中小礼物 -->
+    <div class="gift" style="transform: scale(0.8)" onclick="openModal()">
+        <div class="gift-box" style="background: #3498db;"></div>
+    </div>
+    <div class="gift" style="transform: scale(1.2)" onclick="openModal()">
+        <div class="gift-box"></div>
+    </div>
+    <div class="gift" onclick="openModal()">
+        <div class="gift-box" style="background: #e67e22;"></div>
+    </div>
+</div>
+
+<div class="ui-hint">点击下方的礼物盒寄送你的祝福</div>
+
+<!-- 弹窗 -->
+<div class="modal" id="modal">
+    <h3>发送你的圣诞祝福</h3>
+    <input type="text" id="wishInput" placeholder="输入祝福语（如：圣诞快乐！）" maxlength="20">
+    <button onclick="generateShareLink()">生成分享链接</button>
+    <div id="shareResult" class="share-link"></div>
+    <button onclick="closeModal()" style="background: #999; margin-top: 10px;">关闭</button>
+</div>
+
+<script>
+    // 1. 初始化背景星空
+    const canvas = document.getElementById('stars');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+    function initStars() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        ctx.clearRect(0, 0, width, height);
+    }
+    window.onresize = initStars;
+    initStars();
+
+    const starParticles = Array.from({ length: 200 }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        size: Math.random() * 2,
+        opacity: Math.random()
+    }));
+
+    function drawStars() {
+        ctx.clearRect(0, 0, width, height);
+        starParticles.forEach(p => {
+            ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            p.opacity += (Math.random() - 0.5) * 0.05;
+            if (p.opacity < 0) p.opacity = 0;
+            if (p.opacity > 1) p.opacity = 1;
+        });
+        requestAnimationFrame(drawStars);
+    }
+    drawStars();
+
+    // 2. 生成螺旋圣诞树
+    const tree = document.getElementById('tree');
+    const dotsCount = 150;
+    for (let i = 0; i < dotsCount; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        
+        // 数学公式构建螺旋
+        const y = i * 2.5; // 高度逐渐增加
+        const angle = i * 0.3; // 旋转角度
+        const radius = i * 0.8; // 半径逐渐增大
+        
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        
+        dot.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
+        // 渐变颜色：绿到金
+        dot.style.background = `hsl(${120 + i/2}, 80%, 70%)`;
+        tree.appendChild(dot);
+    }
+
+    // 3. 处理分享文案逻辑
+    function getQueryParam(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+
+    const wish = getQueryParam('msg');
+    if (wish) {
+        displayFloatingText(decodeURIComponent(wish));
+    }
+
+    function displayFloatingText(text) {
+        const container = document.getElementById('floatingText');
+        container.innerHTML = '';
+        const chars = text.split('');
+        const radius = 150;
+        
+        chars.forEach((char, i) => {
+            const span = document.createElement('div');
+            span.className = 'char';
+            span.innerText = char;
+            
+            // 将文字分布在圆环上
+            const angle = (i / chars.length) * Math.PI * 2;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            
+            // 抵消场景旋转，让文字保持面向用户（可选，这里选择让它随树旋转）
+            span.style.transform = `translate3d(${x}px, ${i * 10}px, ${z}px) rotateY(${-angle}rad)`;
+            container.appendChild(span);
+        });
+    }
+
+    // 4. 弹窗交互
+    const modal = document.getElementById('modal');
+    function openModal() {
+        modal.style.display = 'block';
+    }
+    function closeModal() {
+        modal.style.display = 'none';
+        document.getElementById('shareResult').style.display = 'none';
+    }
+
+    function generateShareLink() {
+        const input = document.getElementById('wishInput').value;
+        if (!input) return alert('请输入祝福语');
+        
+        const baseUrl = window.location.origin + window.location.pathname;
+        const shareUrl = `${baseUrl}?msg=${encodeURIComponent(input)}`;
+        
+        const resultDiv = document.getElementById('shareResult');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `链接已生成（请复制）：<br><strong>${shareUrl}</strong>`;
+        
+        // 自动尝试复制到剪贴板
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            alert('链接已成功复制到剪贴板，快分享给好友吧！');
+        });
+
+        // 实时预览效果
+        displayFloatingText(input);
+    }
+</script>
+
+</body>
+</html>
