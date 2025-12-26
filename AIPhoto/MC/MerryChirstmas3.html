@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D星空魔法圣诞树 - 节日定制</title>
+    <style>
+        :root {
+            --gold: #ffd700;
+            --dark-gold: #b8860b;
+            --red: #ff4d4d;
+            --green: #2ecc71;
+            --trunk: #5d4037;
+            --white: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(circle at center, #050b1a 0%, #000 100%);
+            color: white;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #snowCanvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* 3D 场景控制 */
+        .scene {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            perspective: 1600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .tree-container {
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rotateScene 20s linear infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @keyframes rotateScene {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(360deg); }
+        }
+
+        /* 顶部大星星 */
+        .star-top {
+            position: absolute;
+            top: -380px;
+            width: 60px;
+            height: 60px;
+            background: var(--gold);
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            box-shadow: 0 0 50px var(--gold);
+            transform-style: preserve-3d;
+            animation: starPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes starPulse {
+            0%, 100% { transform: scale(1); filter: brightness(1.2); }
+            50% { transform: scale(1.25); filter: brightness(1.5); }
+        }
+
+        /* 粒子通用样式 */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            transform-style: preserve-3d;
+        }
+
+        /* Merry Christmas 艺术字 */
+        .merry-text {
+            position: absolute;
+            top: 150px;
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--gold);
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 2px 2px 4px rgba(0,0,0,0.5);
+            white-space: nowrap;
+            font-family: 'Georgia', serif;
+            letter-spacing: 2px;
+            pointer-events: none;
+        }
+
+        /* 礼物盒样式 */
+        .gift-3d {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            transform-style: preserve-3d;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .gift-3d:hover { transform: scale(1.3) !important; }
+
+        .gift-face {
+            position: absolute;
+            width: 100%; height: 100%;
+            border: 0.5px solid rgba(0,0,0,0.1);
+        }
+        /* 蝴蝶结 */
+        .bow {
+            position: absolute;
+            top: -10px; left: 50%;
+            transform: translateX(-50%);
+            width: 20px; height: 20px;
+            transform-style: preserve-3d;
+        }
+        .bow-loop {
+            position: absolute;
+            width: 15px; height: 10px;
+            border: 2px solid var(--white);
+            border-radius: 50%;
+            background: var(--red);
+        }
+
+        /* UI 控件 */
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: 0.3s;
+        }
+        .btn:hover { background: rgba(255,255,255,0.4); }
+        .btn-gold { background: linear-gradient(45deg, #d4af37, #f9f295); color: #333; }
+
+        .music-btn {
+            position: fixed;
+            top: 20px; right: 20px;
+            width: 50px; height: 50px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 100; font-size: 20px;
+        }
+
+        /* 弹窗和输入 */
+        .overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 200; justify-content: center; align-items: center;
+        }
+        .modal {
+            background: white; color: #333; padding: 30px; border-radius: 20px; width: 320px; text-align: center;
+        }
+        .modal input { width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; }
+        
+        .wish-char {
+            position: absolute;
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--white);
+            text-shadow: 0 0 10px var(--gold);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="snowCanvas"></canvas>
+
+<!-- 音乐：We wish you a merry Christmas -->
+<div class="music-btn" id="musicBtn" onclick="toggleMusic()">🎵</div>
+<audio id="bgMusic" loop>
+    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg">
+    <!-- 提示：建议实际使用时更换为您拥有的 We wish you a merry Christmas 的 mp3 链接 -->
+</audio>
+
+<div class="scene">
+    <div class="tree-container" id="treeContainer">
+        <!-- 树尖星 -->
+        <div class="star-top"></div>
+        
+        <!-- 粒子系统容器 -->
+        <div id="particlesGroup" style="transform-style: preserve-3d;"></div>
+        
+        <!-- Merry Christmas 金色文字 -->
+        <div class="merry-text">Merry Christmas</div>
+        
+        <!-- 自定义祝福语轨道 -->
+        <div id="wishOrbit" style="transform-style: preserve-3d;"></div>
+        
+        <!-- 礼物区 -->
+        <div id="giftsGroup" style="transform-style: preserve-3d;"></div>
+    </div>
+</div>
+
+<div class="controls">
+    <button class="btn" onclick="setTheme('classic')">🎄 经典绿</button>
+    <button class="btn btn-gold" onclick="setTheme('luxury')">✨ 奢华金</button>
+    <button class="btn" style="background: var(--red);" onclick="openModal()">🎁 写下祝福</button>
+</div>
+
+<!-- 弹窗 -->
+<div class="overlay" id="overlay">
+    <div class="modal">
+        <h2 style="margin:0">定制你的贺卡</h2>
+        <p>输入祝福语，生成星空链接分享</p>
+        <input type="text" id="wishInput" placeholder="例如：祝你岁岁平安，万事顺遂！" maxlength="25">
+        <button class="btn" style="background:var(--red); width:100%" onclick="generateShare()">生成并预览</button>
+        <button class="btn" style="background:#888; width:100%; margin-top:10px;" onclick="closeModal()">返回</button>
+        <div id="shareLink" style="font-size: 10px; margin-top: 15px; color: #666; word-break: break-all;"></div>
+    </div>
+</div>
+
+<script>
+    const particlesGroup = document.getElementById('particlesGroup');
+    const giftsGroup = document.getElementById('giftsGroup');
+    const wishOrbit = document.getElementById('wishOrbit');
+    let currentTheme = 'classic';
+
+    // 1. 初始化雪花
+    const canvas = document.getElementById('snowCanvas');
+    const ctx = canvas.getContext('2d');
+    let snow = [];
+    function initSnow() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        snow = Array.from({length: 150}, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 3 + 1,
+            s: Math.random() * 2 + 1
+        }));
+    }
+    function drawSnow() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        snow.forEach(p => {
+            ctx.moveTo(p.x, p.y);
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+            p.y += p.s;
+            if (p.y > canvas.height) p.y = -10;
+        });
+        ctx.fill();
+        requestAnimationFrame(drawSnow);
+    }
+
+    // 2. 构造 3D 圣诞树粒子系统
+    function createTree(theme) {
+        particlesGroup.innerHTML = '';
+        const dotsCount = 400;
+        const ribbonCount = 150;
+        const trunkCount = 100;
+
+        // 色系配置
+        const colors = theme === 'luxury' 
+            ? { tree: ['#ffd700', '#fff3b0', '#b8860b'], ribbon: ['#ffffff', '#fcfcfc'] }
+            : { tree: ['#2ecc71', '#27ae60', '#a2f0c1'], ribbon: ['#ff4d4d', '#ff7675'] };
+
+        // A. 树身粒子 (螺旋锥形)
+        for (let i = 0; i < dotsCount; i++) {
+            const angle = i * 0.2;
+            const y = i * 0.8 - 350;
+            const radius = i * 0.45;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            createDot(x, y, z, colors.tree[i % 3], Math.random() * 4 + 2);
+        }
+
+        // B. 飘带粒子 (较宽的螺旋)
+        for (let i = 0; i < ribbonCount; i++) {
+            const angle = i * 0.25;
+            const y = i * 2.2 - 340;
+            const radius = (i * 1.2) + 5; 
+            if (y > 50) continue; // 不超过树底
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            createDot(x, y, z, colors.ribbon[i % 2], 5, '0 0 10px white');
+        }
+
+        // C. 粒子树干 (圆柱形螺旋)
+        for (let i = 0; i < trunkCount; i++) {
+            const angle = i * 0.8;
+            const radius = 15;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const y = (i * 0.8) + 50; // 树底往下
+            createDot(x, y, z, '#5d4037', 4);
+        }
+    }
+
+    function createDot(x, y, z, color, size, glow = '') {
+        const dot = document.createElement('div');
+        dot.className = 'particle';
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+        dot.style.background = color;
+        if (glow) dot.style.boxShadow = glow;
+        dot.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
+        particlesGroup.appendChild(dot);
+    }
+
+    // 3. 构造 3D 蝴蝶结礼物盒
+    function createGifts() {
+        giftsGroup.innerHTML = '';
+        const giftColors = ['#e74c3c', '#3498db', '#9b59b6', '#f1c40f'];
+        for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2;
+            const radius = 130 + Math.random() * 30;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            
+            const gift = document.createElement('div');
+            gift.className = 'gift-3d';
+            gift.onclick = openModal;
+            
+            const color = giftColors[i % 4];
+            const faces = [
+                'rotateY(0deg) translateZ(20px)', 'rotateY(180deg) translateZ(20px)',
+                'rotateY(90deg) translateZ(20px)', 'rotateY(-90deg) translateZ(20px)',
+                'rotateX(90deg) translateZ(20px)', 'rotateX(-90deg) translateZ(20px)'
+            ];
+            
+            faces.forEach(f => {
+                const face = document.createElement('div');
+                face.className = 'gift-face';
+                face.style.background = color;
+                face.style.transform = f;
+                // 丝带效果
+                const rib = document.createElement('div');
+                rib.style.position='absolute'; rib.style.left='17px'; rib.style.width='6px';
+                rib.style.height='100%'; rib.style.background='var(--gold)';
+                face.appendChild(rib);
+                gift.appendChild(face);
+            });
+
+            // 蝴蝶结装饰
+            const bow = document.createElement('div');
+            bow.className = 'bow';
+            const loop1 = document.createElement('div'); loop1.className = 'bow-loop';
+            loop1.style.transform = 'rotateZ(45deg)';
+            const loop2 = document.createElement('div'); loop2.className = 'bow-loop';
+            loop2.style.transform = 'rotateZ(-45deg)';
+            bow.appendChild(loop1); bow.appendChild(loop2);
+            gift.appendChild(bow);
+
+            gift.style.transform = `translate3d(${x}px, 90px, ${z}px)`;
+            giftsGroup.appendChild(gift);
+        }
+    }
+
+    // 4. 自定义祝福语展示
+    function displayWish() {
+        const msg = new URLSearchParams(window.location.search).get('msg');
+        if (!msg) return;
+        const text = decodeURIComponent(msg);
+        wishOrbit.innerHTML = '';
+        text.split('').forEach((char, i) => {
+            const el = document.createElement('div');
+            el.className = 'wish-char';
+            el.innerText = char;
+            const angle = (i / text.length) * Math.PI * 2;
+            const radius = 230;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            el.style.transform = `translate3d(${x}px, ${-120 + (i%3)*15}px, ${z}px) rotateY(${-angle}rad)`;
+            wishOrbit.appendChild(el);
+        });
+    }
+
+    // 交互逻辑
+    function setTheme(t) {
+        currentTheme = t;
+        createTree(t);
+    }
+
+    function openModal() { document.getElementById('overlay').style.display = 'flex'; }
+    function closeModal() { document.getElementById('overlay').style.display = 'none'; }
+
+    function generateShare() {
+        const val = document.getElementById('wishInput').value;
+        if (!val) return alert('请输入祝福语');
+        const url = window.location.origin + window.location.pathname + '?msg=' + encodeURIComponent(val);
+        document.getElementById('shareLink').innerHTML = `链接已生成并复制到剪贴板：<br>${url}`;
+        navigator.clipboard.writeText(url).then(() => {
+            alert('复制成功！分享给好友吧。');
+            window.location.href = url;
+        });
+    }
+
+    function toggleMusic() {
+        const audio = document.getElementById('bgMusic');
+        const btn = document.getElementById('musicBtn');
+        if (audio.paused) {
+            audio.play();
+            btn.style.animation = 'rotateScene 2s linear infinite';
+        } else {
+            audio.pause();
+            btn.style.animation = 'none';
+        }
+    }
+
+    // 初始化
+    window.addEventListener('resize', initSnow);
+    initSnow();
+    drawSnow();
+    createTree('classic');
+    createGifts();
+    displayWish();
+</script>
+
+</body>
+</html>
