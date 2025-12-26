@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>螺旋星空圣诞贺卡</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #0a0f2b, #1a1f3a);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            z-index: 10;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #f9d71c, #ff6b6b, #4d96ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            width: 100%;
+            max-width: 1400px;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            min-width: 500px;
+            max-width: 700px;
+            background: rgba(10, 15, 35, 0.7);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0, 150, 255, 0.3);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        #christmasCanvas {
+            width: 100%;
+            height: 600px;
+            display: block;
+        }
+        
+        .controls {
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+            background: rgba(20, 25, 50, 0.8);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(255, 100, 100, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .section {
+            background: rgba(30, 35, 70, 0.6);
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 5px solid #4d96ff;
+        }
+        
+        .section h2 {
+            margin-bottom: 15px;
+            color: #f9d71c;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section h2 i {
+            font-size: 1.5rem;
+        }
+        
+        .gift-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .gift-box {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            height: 80px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gift-box:nth-child(2) {
+            background: linear-gradient(135deg, #4d96ff, #6eb1ff);
+        }
+        
+        .gift-box:nth-child(3) {
+            background: linear-gradient(135deg, #5cd85a, #7ee87e);
+        }
+        
+        .gift-box:nth-child(4) {
+            background: linear-gradient(135deg, #ffd166, #ffde8a);
+        }
+        
+        .gift-box:nth-child(5) {
+            background: linear-gradient(135deg, #9d4edd, #b57de8);
+        }
+        
+        .gift-box:nth-child(6) {
+            background: linear-gradient(135deg, #06d6a0, #2ce8b5);
+        }
+        
+        .gift-box:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 25px rgba(255, 255, 255, 0.2);
+        }
+        
+        .gift-box i {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+        
+        .gift-label {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 120px;
+            background: rgba(10, 15, 35, 0.8);
+            border: 2px solid #4d96ff;
+            border-radius: 10px;
+            color: white;
+            padding: 15px;
+            font-size: 1rem;
+            resize: none;
+            margin-bottom: 15px;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #f9d71c;
+            box-shadow: 0 0 10px rgba(249, 215, 28, 0.5);
+        }
+        
+        .btn {
+            background: linear-gradient(to right, #ff6b6b, #4d96ff);
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.4);
+        }
+        
+        .btn-share {
+            background: linear-gradient(to right, #06d6a0, #4d96ff);
+        }
+        
+        .share-link {
+            background: rgba(10, 15, 35, 0.8);
+            border: 2px dashed #4d96ff;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            word-break: break-all;
+            font-size: 0.9rem;
+            display: none;
+        }
+        
+        .blessings-container {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .blessing-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #f9d71c;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: linear-gradient(to bottom right, #1a1f3a, #0a0f2b);
+            width: 90%;
+            max-width: 500px;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 0 50px rgba(255, 215, 28, 0.5);
+            border: 2px solid #f9d71c;
+            text-align: center;
+            position: relative;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2rem;
+            color: #ff6b6b;
+            cursor: pointer;
+        }
+        
+        .modal h2 {
+            color: #f9d71c;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        
+        .modal p {
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .snowflakes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .snowflake {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-align: center;
+            max-width: 800px;
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 1100px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .canvas-container, .controls {
+                max-width: 100%;
+                min-width: 100%;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .canvas-container {
+                min-width: 100%;
+            }
+            
+            #christmasCanvas {
+                height: 400px;
+            }
+            
+            .gift-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="snowflakes" id="snowflakes"></div>
+    
+    <div class="header">
+        <h1><i class="fas fa-tree"></i> 螺旋星空圣诞贺卡</h1>
+        <p class="subtitle">点击礼物盒写下祝福语，分享给亲朋好友！</p>
+    </div>
+    
+    <div class="container">
+        <div class="canvas-container">
+            <canvas id="christmasCanvas"></canvas>
+        </div>
+        
+        <div class="controls">
+            <div class="section">
+                <h2><i class="fas fa-gift"></i> 圣诞礼物盒</h2>
+                <p>点击下方礼物盒，写下您的圣诞祝福</p>
+                
+                <div class="gift-container">
+                    <div class="gift-box" id="gift1">
+                        <i class="fas fa-gift"></i>
+                        <span class="gift-label">红色礼物</span>
+                    </div>
+                    <div class="gift-box" id="gift2">
+                        <i class="fas fa-gift"></i>
+                        <span class="gift-label">蓝色礼物</span>
+                    </div>
+                    <div class="gift-box" id="gift3">
+                        <i class="fas fa-gift"></i>
+                        <span class="gift-label">绿色礼物</span>
+                    </div>
+                    <div class="gift-box" id="gift4">
+                        <i class="fas fa-gift"></i>
+                        <span class="gift-label">金色礼物</span>
+                    </div>
+                    <div class="gift-box" id="gift5">
+                        <i class="fas fa-gift"></i>
+                        <span class="gift-label">紫色礼物</span>
+                    </div>
+                    <div class="gift-box" id="gift6">
+                        <i class="fas fa-gift"></i>
+                        <span class="gift-label">青色礼物</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-pen"></i> 祝福语编辑</h2>
+                <p>写下您的圣诞祝福，它将显示在圣诞树周围</p>
+                <textarea id="blessingText" placeholder="在此输入您的圣诞祝福语...">祝您圣诞快乐，新年安康！愿这个节日充满欢乐与温馨，幸福与您同在！</textarea>
+                <button class="btn" id="addBlessingBtn">
+                    <i class="fas fa-plus-circle"></i> 添加祝福语到圣诞树
+                </button>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-share-alt"></i> 分享祝福</h2>
+                <p>生成专属链接，分享您的圣诞祝福</p>
+                <button class="btn btn-share" id="shareBtn">
+                    <i class="fas fa-share"></i> 生成分享链接
+                </button>
+                <div class="share-link" id="shareLink"></div>
+                
+                <div class="blessings-container" id="blessingsList">
+                    <h3>已收到的祝福：</h3>
+                    <!-- 祝福语将动态添加到这里 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="giftModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModal">&times;</span>
+            <h2><i class="fas fa-gift"></i> 打开圣诞礼物！</h2>
+            <p id="modalMessage">您收到了一个圣诞礼物！写下您的祝福语并分享给朋友吧！</p>
+            <textarea id="modalBlessingText" placeholder="写下您的圣诞祝福..."></textarea>
+            <button class="btn" id="modalAddBtn">
+                <i class="fas fa-check"></i> 确认并添加祝福
+            </button>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <p><i class="fas fa-info-circle"></i> 使用说明：点击礼物盒打开祝福编辑框，写下祝福后点击"添加祝福语到圣诞树"，然后点击"生成分享链接"将您的专属圣诞贺卡分享给朋友。</p>
+    </div>
+
+    <script>
+        // 获取Canvas元素和上下文
+        const canvas = document.getElementById('christmasCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 设置Canvas尺寸
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        
+        // 初始调整Canvas尺寸
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // 存储祝福语
+        let blessings = [];
+        // 存储星星位置
+        let stars = [];
+        // 存储礼物盒位置
+        let gifts = [];
+        
+        // 初始化
+        function init() {
+            // 创建背景星星
+            createStars();
+            
+            // 创建礼物盒
+            createGifts();
+            
+            // 检查URL参数是否有祝福语
+            checkUrlParams();
+            
+            // 开始动画
+            animate();
+        }
+        
+        // 创建背景星星
+        function createStars() {
+            stars = [];
+            const starCount = 200;
+            
+            for (let i = 0; i < starCount; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    brightness: Math.random() * 0.5 + 0.5,
+                    twinkleSpeed: Math.random() * 0.05 + 0.02,
+                    twinkleOffset: Math.random() * Math.PI * 2
+                });
+            }
+        }
+        
+        // 创建礼物盒
+        function createGifts() {
+            gifts = [];
+            const giftCount = 6;
+            const giftColors = ['#ff6b6b', '#4d96ff', '#5cd85a', '#ffd166', '#9d4edd', '#06d6a0'];
+            
+            for (let i = 0; i < giftCount; i++) {
+                gifts.push({
+                    x: canvas.width * 0.1 + (i % 3) * (canvas.width * 0.25),
+                    y: canvas.height * 0.75 + Math.floor(i / 3) * 80,
+                    width: 60,
+                    height: 60,
+                    color: giftColors[i],
+                    ribbonColor: i % 2 === 0 ? '#fff' : '#f9d71c',
+                    id: i + 1,
+                    hover: false,
+                    pulse: 0,
+                    pulseSpeed: Math.random() * 0.02 + 0.01
+                });
+            }
+        }
+        
+        // 绘制螺旋圣诞树
+        function drawChristmasTree() {
+            const centerX = canvas.width / 2;
+            const baseY = canvas.height * 0.75;
+            const treeHeight = canvas.height * 0.6;
+            const baseWidth = canvas.width * 0.15;
+            
+            // 绘制树的主体 - 螺旋效果
+            ctx.save();
+            ctx.translate(centerX, baseY);
+            
+            // 绘制螺旋线
+            const spiralTurns = 8;
+            const spiralPoints = [];
+            
+            for (let i = 0; i <= 360 * spiralTurns; i += 5) {
+                const angle = i * Math.PI / 180;
+                const radius = (treeHeight * 0.9) * (1 - i / (360 * spiralTurns));
+                const x = Math.cos(angle) * (baseWidth * (i / (360 * spiralTurns)));
+                const y = -radius;
+                
+                spiralPoints.push({x, y, angle});
+            }
+            
+            // 绘制螺旋线作为树的轮廓
+            ctx.beginPath();
+            ctx.moveTo(spiralPoints[0].x, spiralPoints[0].y);
+            
+            for (let i = 1; i < spiralPoints.length; i++) {
+                ctx.lineTo(spiralPoints[i].x, spiralPoints[i].y);
+            }
+            
+            // 创建径向渐变填充
+            const gradient = ctx.createRadialGradient(0, -treeHeight/2, 0, 0, -treeHeight/2, treeHeight);
+            gradient.addColorStop(0, '#0f5c0f');
+            gradient.addColorStop(0.5, '#1a7a1a');
+            gradient.addColorStop(1, '#0f5c0f');
+            
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // 绘制螺旋线上的装饰灯
+            for (let i = 0; i < spiralPoints.length; i += 15) {
+                const point = spiralPoints[i];
+                const radius = 4 + Math.sin(Date.now() / 500 + i) * 2;
+                
+                // 创建装饰灯渐变
+                const lightGradient = ctx.createRadialGradient(
+                    point.x, point.y, 0,
+                    point.x, point.y, radius
+                );
+                
+                // 根据位置选择颜色
+                const hue = (i * 2) % 360;
+                lightGradient.addColorStop(0, `hsl(${hue}, 100%, 80%)`);
+                lightGradient.addColorStop(0.7, `hsl(${hue}, 100%, 50%)`);
+                lightGradient.addColorStop(1, `hsla(${hue}, 100%, 50%, 0)`);
+                
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+                ctx.fillStyle = lightGradient;
+                ctx.fill();
+                
+                // 添加光晕效果
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, radius * 2, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${hue}, 100%, 60%, 0.2)`;
+                ctx.fill();
+            }
+            
+            ctx.restore();
+            
+            // 绘制树顶星星
+            drawStar(centerX, baseY - treeHeight, 25, 5, 0.5);
+            
+            // 绘制树干
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(centerX - 15, baseY, 30, 40);
+        }
+        
+        // 绘制星星
+        function drawStar(cx, cy, radius, points, innerRadiusRatio) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            
+            // 旋转星星
+            ctx.rotate(Date.now() / 2000);
+            
+            // 创建星星的径向渐变
+            const starGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+            starGradient.addColorStop(0, '#fff');
+            starGradient.addColorStop(0.5, '#f9d71c');
+            starGradient.addColorStop(1, 'rgba(249, 215, 28, 0)');
+            
+            ctx.beginPath();
+            
+            const innerRadius = radius * innerRadiusRatio;
+            
+            for (let i = 0; i < points * 2; i++) {
+                const angle = (i * Math.PI) / points;
+                const currentRadius = i % 2 === 0 ? radius : innerRadius;
+                const x = Math.cos(angle) * currentRadius;
+                const y = Math.sin(angle) * currentRadius;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            ctx.closePath();
+            ctx.fillStyle = starGradient;
+            ctx.fill();
+            
+            // 添加光晕效果
+            ctx.beginPath();
+            ctx.arc(0, 0, radius * 1.5, 0, Math.PI * 2);
+            const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radius * 1.5);
+            glowGradient.addColorStop(0, 'rgba(249, 215, 28, 0.3)');
+            glowGradient.addColorStop(1, 'rgba(249, 215, 28, 0)');
+            ctx.fillStyle = glowGradient;
+            ctx.fill();
+            
+            ctx.restore();
+        }
+        
+        // 绘制背景星星
+        function drawStars() {
+            const currentTime = Date.now();
+            
+            stars.forEach(star => {
+                // 闪烁效果
+                const twinkle = Math.sin(currentTime * star.twinkleSpeed + star.twinkleOffset) * 0.3 + 0.7;
+                
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness * twinkle})`;
+                ctx.fill();
+                
+                // 偶尔绘制星光
+                if (Math.random() < 0.01) {
+                    ctx.beginPath();
+                    ctx.moveTo(star.x, star.y);
+                    const angle = Math.random() * Math.PI * 2;
+                    const length = star.size * 5;
+                    ctx.lineTo(
+                        star.x + Math.cos(angle) * length,
+                        star.y + Math.sin(angle) * length
+                    );
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 * twinkle})`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            });
+        }
+        
+        // 绘制礼物盒
+        function drawGifts() {
+            const currentTime = Date.now();
+            
+            gifts.forEach(gift => {
+                // 更新脉冲效果
+                gift.pulse += gift.pulseSpeed;
+                
+                // 计算悬停偏移
+                const hoverOffset = gift.hover ? 10 : 0;
+                const pulseOffset = Math.sin(gift.pulse) * 3;
+                
+                ctx.save();
+                ctx.translate(0, -hoverOffset - pulseOffset);
+                
+                // 绘制礼物盒主体
+                ctx.fillStyle = gift.color;
+                ctx.fillRect(gift.x, gift.y, gift.width, gift.height);
+                
+                // 绘制礼物盒高光
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.fillRect(gift.x, gift.y, gift.width * 0.8, 5);
+                ctx.fillRect(gift.x, gift.y, 5, gift.height * 0.8);
+                
+                // 绘制丝带
+                ctx.fillStyle = gift.ribbonColor;
+                // 水平丝带
+                ctx.fillRect(gift.x, gift.y + gift.height/2 - 5, gift.width, 10);
+                // 垂直丝带
+                ctx.fillRect(gift.x + gift.width/2 - 5, gift.y, 10, gift.height);
+                
+                // 绘制丝带结
+                ctx.beginPath();
+                ctx.arc(gift.x + gift.width/2, gift.y + gift.height/2, 10, 0, Math.PI * 2);
+                ctx.fillStyle = gift.ribbonColor;
+                ctx.fill();
+                
+                // 绘制丝带结细节
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.beginPath();
+                ctx.arc(gift.x + gift.width/2 - 3, gift.y + gift.height/2 - 3, 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 绘制礼物编号
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(gift.id, gift.x + gift.width/2, gift.y + gift.height/2);
+                
+                // 如果悬停，绘制光晕效果
+                if (gift.hover) {
+                    ctx.beginPath();
+                    ctx.arc(gift.x + gift.width/2, gift.y + gift.height/2, gift.width, 0, Math.PI * 2);
+                    const glowGradient = ctx.createRadialGradient(
+                        gift.x + gift.width/2, gift.y + gift.height/2, 0,
+                        gift.x + gift.width/2, gift.y + gift.height/2, gift.width
+                    );
+                    glowGradient.addColorStop(0, `rgba(${hexToRgb(gift.color)}, 0.5)`);
+                    glowGradient.addColorStop(1, `rgba(${hexToRgb(gift.color)}, 0)`);
+                    ctx.fillStyle = glowGradient;
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            });
+        }
+        
+        // 绘制祝福语
+        function drawBlessings() {
+            if (blessings.length === 0) return;
+            
+            const centerX = canvas.width / 2;
+            const treeTopY = canvas.height * 0.15;
+            const treeBottomY = canvas.height * 0.75;
+            const radius = canvas.width * 0.35;
+            
+            blessings.forEach((blessing, index) => {
+                // 计算祝福语在树周围的位置
+                const angle = (index * (2 * Math.PI / blessings.length)) + Date.now() / 10000;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = treeTopY + (treeBottomY - treeTopY) * (0.3 + 0.7 * (index % 3) / 3);
+                
+                // 绘制文字背景
+                ctx.fillStyle = 'rgba(10, 15, 35, 0.8)';
+                ctx.strokeStyle = '#f9d71c';
+                ctx.lineWidth = 2;
+                
+                // 计算文字宽度
+                ctx.font = '14px Arial';
+                const textWidth = ctx.measureText(blessing.text).width;
+                
+                // 绘制圆角矩形背景
+                const padding = 10;
+                const rectWidth = textWidth + padding * 2;
+                const rectHeight = 30;
+                const rectX = x - rectWidth / 2;
+                const rectY = y - rectHeight / 2;
+                const radius = 5;
+                
+                // 绘制圆角矩形
+                ctx.beginPath();
+                ctx.moveTo(rectX + radius, rectY);
+                ctx.lineTo(rectX + rectWidth - radius, rectY);
+                ctx.quadraticCurveTo(rectX + rectWidth, rectY, rectX + rectWidth, rectY + radius);
+                ctx.lineTo(rectX + rectWidth, rectY + rectHeight - radius);
+                ctx.quadraticCurveTo(rectX + rectWidth, rectY + rectHeight, rectX + rectWidth - radius, rectY + rectHeight);
+                ctx.lineTo(rectX + radius, rectY + rectHeight);
+                ctx.quadraticCurveTo(rectX, rectY + rectHeight, rectX, rectY + rectHeight - radius);
+                ctx.lineTo(rectX, rectY + radius);
+                ctx.quadraticCurveTo(rectX, rectY, rectX + radius, rectY);
+                ctx.closePath();
+                
+                ctx.fill();
+                ctx.stroke();
+                
+                // 绘制文字
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(blessing.text, x, y);
+                
+                // 绘制连接到树的线
+                ctx.beginPath();
+                ctx.moveTo(x, y - rectHeight / 2);
+                const treeX = centerX + Math.cos(angle) * (radius * 0.7);
+                const treeY = treeTopY + (treeBottomY - treeTopY) * 0.7;
+                ctx.lineTo(treeX, treeY);
+                ctx.strokeStyle = 'rgba(249, 215, 28, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // 绘制小装饰
+                ctx.beginPath();
+                ctx.arc(treeX, treeY, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff6b6b';
+                ctx.fill();
+            });
+        }
+        
+        // 将十六进制颜色转换为RGB字符串
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? 
+                `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+                '0, 0, 0';
+        }
+        
+        // 动画循环
+        function animate() {
+            // 清除画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制背景
+            drawStars();
+            
+            // 绘制圣诞树
+            drawChristmasTree();
+            
+            // 绘制礼物盒
+            drawGifts();
+            
+            // 绘制祝福语
+            drawBlessings();
+            
+            // 继续动画循环
+            requestAnimationFrame(animate);
+        }
+        
+        // 检查URL参数
+        function checkUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const blessingParam = urlParams.get('blessing');
+            
+            if (blessingParam) {
+                // 解码祝福语
+                const decodedBlessing = decodeURIComponent(blessingParam);
+                
+                // 添加到祝福语列表
+                blessings.push({
+                    text: decodedBlessing,
+                    color: '#f9d71c',
+                    source: 'url'
+                });
+                
+                // 更新UI中的祝福语列表
+                updateBlessingsList();
+            }
+        }
+        
+        // 更新祝福语列表UI
+        function updateBlessingsList() {
+            const blessingsList = document.getElementById('blessingsList');
+            
+            // 清空现有列表（除了标题）
+            const heading = blessingsList.querySelector('h3');
+            blessingsList.innerHTML = '';
+            blessingsList.appendChild(heading);
+            
+            // 添加祝福语
+            blessings.forEach((blessing, index) => {
+                const blessingItem = document.createElement('div');
+                blessingItem.className = 'blessing-item';
+                blessingItem.innerHTML = `
+                    <strong>祝福${index + 1}:</strong> ${blessing.text}
+                    ${blessing.source === 'url' ? '<span style="color:#4d96ff; font-size:0.8rem;"> (来自分享链接)</span>' : ''}
+                `;
+                blessingsList.appendChild(blessingItem);
+            });
+        }
+        
+        // 生成分享链接
+        function generateShareLink() {
+            const blessingText = document.getElementById('blessingText').value.trim();
+            
+            if (!blessingText) {
+                alert('请先输入祝福语！');
+                return;
+            }
+            
+            // 创建包含祝福语的URL
+            const encodedBlessing = encodeURIComponent(blessingText);
+            const currentUrl = window.location.origin + window.location.pathname;
+            const shareUrl = `${currentUrl}?blessing=${encodedBlessing}`;
+            
+            // 显示分享链接
+            const shareLinkElement = document.getElementById('shareLink');
+            shareLinkElement.innerHTML = `
+                <strong>您的专属圣诞贺卡链接：</strong><br>
+                <a href="${shareUrl}" target="_blank">${shareUrl}</a>
+                <br><br>
+                <button class="btn" id="copyLinkBtn" style="padding: 8px 15px; font-size: 0.9rem;">
+                    <i class="fas fa-copy"></i> 复制链接
+                </button>
+            `;
+            shareLinkElement.style.display = 'block';
+            
+            // 添加复制链接功能
+            document.getElementById('copyLinkBtn').addEventListener('click', function() {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-check"></i> 已复制！';
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                    }, 2000);
+                });
+            });
+        }
+        
+        // 添加祝福语
+        function addBlessing() {
+            const blessingText = document.getElementById('blessingText').value.trim();
+            
+            if (!blessingText) {
+                alert('请先输入祝福语！');
+                return;
+            }
+            
+            // 添加到祝福语数组
+            blessings.push({
+                text: blessingText,
+                color: '#f9d71c',
+                source: 'user'
+            });
+            
+            // 更新UI中的祝福语列表
+            updateBlessingsList();
+            
+            // 清空输入框
+            document.getElementById('blessingText').value = '';
+            
+            // 显示成功消息
+            alert('祝福语已添加到圣诞树！');
+        }
+        
+        // 创建雪花效果
+        function createSnowflakes() {
+            const snowflakesContainer = document.getElementById('snowflakes');
+            const snowflakeCount = 50;
+            
+            for (let i = 0; i < snowflakeCount; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'snowflake';
+                
+                // 随机大小
+                const size = Math.random() * 5 + 2;
+                snowflake.style.width = `${size}px`;
+                snowflake.style.height = `${size}px`;
+                
+                // 随机位置
+                snowflake.style.left = `${Math.random() * 100}%`;
+                
+                // 随机动画延迟和持续时间
+                const animationDuration = Math.random() * 10 + 10;
+                const animationDelay = Math.random() * 5;
+                
+                // 应用动画
+                snowflake.style.animation = `fall ${animationDuration}s linear ${animationDelay}s infinite`;
+                
+                // 添加到容器
+                snowflakesContainer.appendChild(snowflake);
+            }
+            
+            // 添加CSS动画
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fall {
+                    0% {
+                        transform: translateY(-10px) rotate(0deg);
+                        opacity: 0;
+                    }
+                    10% {
+                        opacity: 1;
+                    }
+                    90% {
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateY(100vh) rotate(360deg);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // 检测Canvas上的点击事件（用于礼物盒）
+        canvas.addEventListener('mousemove', function(event) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            
+            // 检查是否悬停在礼物盒上
+            gifts.forEach(gift => {
+                const hoverOffset = gift.hover ? 10 : 0;
+                const pulseOffset = Math.sin(gift.pulse) * 3;
+                
+                gift.hover = (
+                    mouseX >= gift.x && 
+                    mouseX <= gift.x + gift.width &&
+                    mouseY >= gift.y - hoverOffset - pulseOffset && 
+                    mouseY <= gift.y + gift.height - hoverOffset - pulseOffset
+                );
+                
+                // 更改光标样式
+                canvas.style.cursor = gift.hover ? 'pointer' : 'default';
+            });
+        });
+        
+        canvas.addEventListener('click', function(event) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            
+            // 检查是否点击了礼物盒
+            gifts.forEach(gift => {
+                const hoverOffset = gift.hover ? 10 : 0;
+                const pulseOffset = Math.sin(gift.pulse) * 3;
+                
+                const isClicked = (
+                    mouseX >= gift.x && 
+                    mouseX <= gift.x + gift.width &&
+                    mouseY >= gift.y - hoverOffset - pulseOffset && 
+                    mouseY <= gift.y + gift.height - hoverOffset - pulseOffset
+                );
+                
+                if (isClicked) {
+                    // 显示礼物模态框
+                    document.getElementById('giftModal').style.display = 'flex';
+                    document.getElementById('modalMessage').textContent = `您打开了 ${gift.color === '#ff6b6b' ? '红色' : 
+                        gift.color === '#4d96ff' ? '蓝色' : 
+                        gift.color === '#5cd85a' ? '绿色' : 
+                        gift.color === '#ffd166' ? '金色' : 
+                        gift.color === '#9d4edd' ? '紫色' : '青色'} 礼物盒！`;
+                    
+                    // 设置默认祝福语
+                    const defaultBlessings = [
+                        "圣诞快乐，愿您心想事成！",
+                        "祝福您和家人度过一个温馨的圣诞节！",
+                        "愿圣诞的喜悦充满您的每一天！",
+                        "祝您圣诞快乐，新年万事如意！",
+                        "愿平安、喜乐与您同在！",
+                        "圣诞钟声响起，幸福降临您家！"
+                    ];
+                    document.getElementById('modalBlessingText').value = defaultBlessings[gift.id - 1];
+                }
+            });
+        });
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', function() {
+            init();
+            createSnowflakes();
+            
+            // 绑定按钮事件
+            document.getElementById('addBlessingBtn').addEventListener('click', addBlessing);
+            document.getElementById('shareBtn').addEventListener('click', generateShareLink);
+            
+            // 绑定礼物盒点击事件
+            document.querySelectorAll('.gift-box').forEach((giftBox, index) => {
+                giftBox.addEventListener('click', function() {
+                    document.getElementById('giftModal').style.display = 'flex';
+                    const defaultBlessings = [
+                        "圣诞快乐，愿您心想事成！",
+                        "祝福您和家人度过一个温馨的圣诞节！",
+                        "愿圣诞的喜悦充满您的每一天！",
+                        "祝您圣诞快乐，新年万事如意！",
+                        "愿平安、喜乐与您同在！",
+                        "圣诞钟声响起，幸福降临您家！"
+                    ];
+                    document.getElementById('modalBlessingText').value = defaultBlessings[index];
+                });
+            });
+            
+            // 绑定模态框事件
+            document.getElementById('closeModal').addEventListener('click', function() {
+                document.getElementById('giftModal').style.display = 'none';
+            });
+            
+            document.getElementById('modalAddBtn').addEventListener('click', function() {
+                const blessingText = document.getElementById('modalBlessingText').value.trim();
+                
+                if (!blessingText) {
+                    alert('请先输入祝福语！');
+                    return;
+                }
+                
+                // 添加到祝福语数组
+                blessings.push({
+                    text: blessingText,
+                    color: '#f9d71c',
+                    source: 'user'
+                });
+                
+                // 更新UI中的祝福语列表
+                updateBlessingsList();
+                
+                // 关闭模态框
+                document.getElementById('giftModal').style.display = 'none';
+                
+                // 显示成功消息
+                alert('祝福语已添加到圣诞树！');
+            });
+            
+            // 点击模态框外部关闭
+            document.getElementById('giftModal').addEventListener('click', function(event) {
+                if (event.target === this) {
+                    this.style.display = 'none';
+                }
+            });
+            
+            // 添加示例祝福语（如果没有任何祝福语）
+            if (blessings.length === 0) {
+                blessings.push({
+                    text: "欢迎来到螺旋星空圣诞贺卡！",
+                    color: '#f9d71c',
+                    source: 'system'
+                });
+                updateBlessingsList();
+            }
+        });
+    </script>
+</body>
+</html>
