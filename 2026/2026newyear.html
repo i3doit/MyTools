@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026马年大吉 - 粒子贺卡</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: radial-gradient(circle, #8b0000 0%, #000000 100%); font-family: "Microsoft YaHei", sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; }
+        
+        /* 界面 UI */
+        .ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 20px; box-sizing: border-box; }
+        .ui-overlay * { pointer-events: auto; }
+
+        /* 顶部音乐 */
+        .music-ctrl { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(255,215,0,0.2); border: 1px solid #ffd700; border-radius: 50%; color: #ffd700; display: flex; align-items: center; justify-content: center; cursor: pointer; animation: rotate 5s linear infinite; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* 底部广告与红包 */
+        .bottom-section { width: 100%; text-align: center; margin-bottom: 30px; }
+        .btn-red-packet { background: linear-gradient(145deg, #ff4d4d, #b30000); color: #fff; border: 2px solid #ffd700; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: bold; box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); cursor: pointer; margin-bottom: 20px; transition: transform 0.3s; }
+        .btn-red-packet:active { transform: scale(0.9); }
+        
+        .ad-banner { background: rgba(0,0,0,0.5); color: #ffd700; padding: 10px 20px; border-radius: 5px; font-size: 12px; border: 1px dashed #ffd70055; max-width: 80%; margin: 0 auto; }
+
+        /* 弹窗样式 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background: #fff; width: 85%; max-width: 400px; padding: 25px; border-radius: 15px; text-align: center; }
+        textarea { width: 100%; height: 100px; margin: 15px 0; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .modal-btns { display: flex; justify-content: space-between; gap: 10px; }
+        .btn-modal { flex: 1; padding: 10px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-random { background: #f0ad4e; color: white; }
+        .btn-confirm { background: #d9534f; color: white; }
+        .btn-share { background: #5bc0de; color: white; margin-top: 10px; width: 100%; }
+    </style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<div class="ui-overlay">
+    <div class="music-ctrl" onclick="toggleMusic()">🎵</div>
+    
+    <div class="bottom-section">
+        <button class="btn-red-packet" onclick="openModal()">🧧 拆开我的马年祝福</button>
+        <div class="ad-banner">
+            广告引流区：关注“艾兜兜儿”获取更多2026定制贺卡
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="wishModal">
+    <div class="modal-content">
+        <h3>定制马年祝福</h3>
+        <textarea id="wishInput" placeholder="请输入祝福语..."></textarea>
+        <div class="modal-btns">
+            <button class="btn-modal btn-random" onclick="setRandomWish()">随机文案</button>
+            <button class="btn-modal btn-confirm" onclick="applyWish()">生成贺卡</button>
+        </div>
+        <button class="btn-modal btn-share" onclick="shareCard()">点击复制分享链接</button>
+        <button class="btn-modal" onclick="closeModal()" style="background:#eee; margin-top:10px; width:100%">关闭</button>
+    </div>
+</div>
+
+<audio id="bgMusic" loop>
+    <source src="https://actions.google.com/animatronic/Happy_Music.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    // --- 数据配置 ---
+    const wishes = [
+        "马上有福——福气随春至，家门万事兴",
+        "马上有喜——喜鹊报新岁，欢笑满堂盈",
+        "马上有运——好运乘风来，前程似锦明",
+        "马上有钱——财源如潮涌，盆满钵满盈",
+        "马上有单——订单纷纷至，事业节节升",
+        "马上有签——签约顺利成，宏图大展新",
+        "马上有闲——闲情伴美景，心安岁月宁",
+        "马上有甜——甜蜜常相伴，温情暖人心",
+        "马上有光——光照前途路，阴霾尽散清",
+        "马上有“锂”——能源新时代，创新永不停",
+        "马上有“码”——代码无bug，思路永清新",
+        "马上有福又有钱，二零二六笑开颜",
+        "马上有单还有闲，事业生活两周全"
+    ];
+
+    let scene, camera, renderer, particles;
+    const particleCount = 5000;
+    let currentWish = "艾兜兜儿祝您元旦快乐，\n马年有钱有闲有福有运";
+
+    // --- 初始化 ---
+    function init() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 100;
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // 创建粒子
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        for(let i=0; i<particleCount*3; i++) positions[i] = (Math.random() - 0.5) * 200;
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        
+        const material = new THREE.PointsMaterial({ color: 0xffd700, size: 0.8, transparent: true, opacity: 0.8 });
+        particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        // 检测 URL 分享内容
+        const params = new URLSearchParams(window.location.search);
+        if(params.get('m')) {
+            try { currentWish = decodeURIComponent(atob(params.get('m'))); } catch(e) {}
+        }
+
+        morphToText(currentWish);
+        animate();
+    }
+
+    // --- 粒子变换核心 (文字转粒子) ---
+    function morphToText(text) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 400;
+        canvas.height = 200;
+        
+        ctx.fillStyle = "white";
+        ctx.font = "bold 24px Microsoft YaHei";
+        ctx.textAlign = "center";
+        
+        // 处理换行
+        const lines = text.split('\n');
+        lines.forEach((line, i) => {
+            ctx.fillText(line, 200, 60 + i * 35);
+        });
+
+        const imageData = ctx.getImageData(0, 0, 400, 200).data;
+        const targetPoints = [];
+        
+        for (let y = 0; y < 200; y += 3) {
+            for (let x = 0; x < 400; x += 3) {
+                if (imageData[(y * 400 + x) * 4 + 3] > 128) {
+                    targetPoints.push({
+                        x: (x - 200) * 0.5,
+                        y: (100 - y) * 0.5,
+                        z: 0
+                    });
+                }
+            }
+        }
+
+        const posAttr = particles.geometry.attributes.position;
+        for (let i = 0; i < particleCount; i++) {
+            const target = targetPoints[i % targetPoints.length];
+            new TWEEN.Tween(posAttr.array)
+                .to({
+                    [i * 3]: target.x + (Math.random()-0.5)*2,
+                    [i * 3 + 1]: target.y + (Math.random()-0.5)*2,
+                    [i * 3 + 2]: (Math.random()-0.5)*10
+                }, 2000)
+                .easing(TWEEN.Easing.Exponential.InOut)
+                .start();
+        }
+        setTimeout(() => posAttr.needsUpdate = true, 0);
+    }
+
+    // --- 交互功能 ---
+    function openModal() { document.getElementById('wishModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('wishModal').style.display = 'none'; }
+    
+    function setRandomWish() {
+        const random = wishes[Math.floor(Math.random() * wishes.length)];
+        document.getElementById('wishInput').value = random;
+    }
+
+    function applyWish() {
+        const val = document.getElementById('wishInput').value;
+        if(val) {
+            currentWish = "艾兜兜儿祝您：\n" + val;
+            morphToText(currentWish);
+            closeModal();
+        }
+    }
+
+    function shareCard() {
+        const val = document.getElementById('wishInput').value || currentWish;
+        const encoded = btoa(encodeURIComponent(val));
+        const url = window.location.origin + window.location.pathname + "?m=" + encoded;
+        
+        navigator.clipboard.writeText(url).then(() => {
+            alert("分享链接已复制！发给微信好友试试吧。");
+        });
+    }
+
+    function toggleMusic() {
+        const audio = document.getElementById('bgMusic');
+        audio.paused ? audio.play() : audio.pause();
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        TWEEN.update();
+        particles.geometry.attributes.position.needsUpdate = true;
+        particles.rotation.y += 0.002;
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    init();
+</script>
+</body>
+</html>
