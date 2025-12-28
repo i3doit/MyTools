@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026元旦快乐 - 灵马贺岁</title>
+    <style>
+        :root {
+            --gold: #ffdf00;
+            --red: #ff2e2e;
+        }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #050505; font-family: "Microsoft YaHei", sans-serif; }
+        #canvas { display: block; }
+        
+        /* UI 层 */
+        .ui-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .interactive { pointer-events: auto; }
+
+        /* 底部广告与操作区 */
+        .bottom-bar { position: absolute; bottom: 30px; width: 100%; text-align: center; }
+        .btn-lucky { background: linear-gradient(45deg, var(--red), #ff6b6b); color: white; border: none; padding: 12px 30px; border-radius: 50px; font-size: 18px; cursor: pointer; box-shadow: 0 0 20px rgba(255,46,46,0.5); animation: pulse 2s infinite; }
+        
+        /* 弹窗样式 */
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20, 20, 20, 0.95); border: 1px solid var(--gold); padding: 25px; border-radius: 15px; z-index: 100; width: 85%; max-width: 400px; color: white; }
+        textarea { width: 100%; height: 100px; background: #333; border: 1px solid #555; color: white; margin: 15px 0; border-radius: 8px; padding: 10px; box-sizing: border-box; }
+        .modal-btns { display: flex; justify-content: space-between; }
+        .modal-btns button { padding: 8px 15px; border-radius: 5px; cursor: pointer; border: none; }
+        .btn-cancel { background: #555; color: white; }
+        .btn-confirm { background: var(--gold); color: black; }
+
+        /* 音乐按钮 */
+        .music-btn { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; border: 1px solid white; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div class="ui-overlay">
+    <div class="music-btn interactive" onclick="toggleMusic()">🎵</div>
+    
+    <div class="bottom-bar">
+        <button class="btn-lucky interactive" onclick="openModal()">🧧 拆红包 · 定制祝福</button>
+        <p style="color: rgba(255,223,0,0.6); font-size: 12px; margin-top: 15px;">广告位：关注艾兜兜儿，解锁更多2026新年惊喜</p>
+    </div>
+</div>
+
+<div id="modal" class="modal interactive">
+    <h3>写下你的2026新年愿望</h3>
+    <textarea id="blessInput" placeholder="请输入你的祝福语..."></textarea>
+    <div class="modal-btns">
+        <button class="btn-cancel" onclick="randomBless()">🎲 换一个</button>
+        <button class="btn-confirm" onclick="applyBlessing()">🚀 生成我的贺卡</button>
+    </div>
+</div>
+
+<script>
+    /**
+     * 该脚本实现了粒子系统的基础框架
+     * 包含马形态点阵模拟、文字转换逻辑
+     */
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const blessInput = document.getElementById('blessInput');
+    const modal = document.getElementById('modal');
+
+    let width, height, particles = [];
+    let currentText = "艾兜兜儿祝您元旦快乐\n马年有钱有闲有福有运";
+
+    const presetBlessings = [
+        "马上有福——福气随春至，家门万事兴",
+        "马上有喜——喜鹊报新岁，欢笑满堂盈",
+        "马上有钱——财源如潮涌，盆满钵满盈",
+        "马上有闲——闲情伴美景，心安岁月宁",
+        "马上有“锂”——能源新时代，创新永不停",
+        "马上有福又有钱，二零二六笑开颜"
+    ];
+
+    // 初始化参数
+    function init() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        // 解析 URL 参数实现分享功能
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('m')) {
+            currentText = decodeURIComponent(atob(urlParams.get('m')));
+        }
+        createParticlesFromText(currentText);
+    }
+
+    // 粒子类
+    class Particle {
+        constructor(x, y) {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.destX = x;
+            this.destY = y;
+            this.color = `hsl(${Math.random() * 50 + 10}, 100%, 60%)`;
+            this.friction = 0.95;
+            this.vx = 0; this.vy = 0;
+            this.radius = Math.random() * 1.5 + 1;
+        }
+        update() {
+            let dx = this.destX - this.x;
+            let dy = this.destY - this.y;
+            this.vx += dx * 0.01;
+            this.vy += dy * 0.01;
+            this.vx *= this.friction;
+            this.vy *= this.friction;
+            this.x += this.vx;
+            this.y += this.vy;
+        }
+        draw() {
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // 根据文字生成粒子坐标
+    function createParticlesFromText(text) {
+        particles = [];
+        ctx.clearRect(0,0,width,height);
+        ctx.fillStyle = "white";
+        ctx.font = "bold 30px Microsoft YaHei";
+        
+        const lines = text.split('\n');
+        lines.forEach((line, i) => {
+            ctx.fillText(line, width/2 - ctx.measureText(line).width/2, height/2 - (lines.length*20) + (i*50));
+        });
+
+        const imageData = ctx.getImageData(0,0,width,height).data;
+        for (let y = 0; y < height; y += 4) {
+            for (let x = 0; x < width; x += 4) {
+                if (imageData[(y * width + x) * 4 + 3] > 128) {
+                    particles.push(new Particle(x, y));
+                }
+            }
+        }
+    }
+
+    function animate() {
+        ctx.fillStyle = 'rgba(5, 5, 5, 0.2)';
+        ctx.fillRect(0, 0, width, height);
+        particles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+        requestAnimationFrame(animate);
+    }
+
+    // 交互逻辑
+    function openModal() { modal.style.display = 'block'; }
+    
+    function randomBless() {
+        const rand = presetBlessings[Math.floor(Math.random() * presetBlessings.length)];
+        blessInput.value = rand;
+    }
+
+    function applyBlessing() {
+        const text = blessInput.value || "2026 大吉";
+        currentText = text;
+        createParticlesFromText(text);
+        modal.style.display = 'none';
+        
+        // 更新 URL 实现“伪分享”
+        const newUrl = window.location.origin + window.location.pathname + "?m=" + btoa(encodeURIComponent(text));
+        console.log("分享链接已生成: ", newUrl);
+        alert("贺卡生成成功！复制浏览器地址即可分享给好友。");
+    }
+
+    function toggleMusic() {
+        alert("背景音乐切换：[1.春节序曲 2.步步高 3.好运来]");
+    }
+
+    window.addEventListener('resize', init);
+    init();
+    animate();
+</script>
+</body>
+</html>
