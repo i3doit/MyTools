@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2026元旦快乐 - 艾兜兜儿送祝福</title>
+    <style>
+        :root {
+            --gold: #FFD700;
+            --red: #EE0A24;
+        }
+
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: #000; overflow: hidden; 
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            user-select: none;
+        }
+
+        canvas { position: fixed; top: 0; left: 0; z-index: 1; }
+
+        /* 主容器 */
+        .container {
+            position: relative; z-index: 10;
+            height: 100%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            pointer-events: none; /* 让点击穿透到 canvas 触发烟花 */
+        }
+
+        /* 马年元素 */
+        .horse-head {
+            font-size: 50px; margin-bottom: 10px;
+            filter: drop-shadow(0 0 15px var(--gold));
+            animation: float 3s infinite ease-in-out;
+        }
+
+        /* 祝福语卡片 */
+        .card {
+            background: rgba(15, 15, 15, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1.5px solid var(--gold);
+            padding: 30px 25px;
+            border-radius: 24px;
+            width: 80%;
+            max-width: 320px;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.15);
+            text-align: center;
+        }
+
+        .text-content {
+            font-size: 22px; line-height: 1.6;
+            font-weight: bold;
+            background: linear-gradient(135deg, #FFF 30%, var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            white-space: pre-wrap;
+            margin-bottom: 10px;
+        }
+
+        /* 底部交互区 */
+        .footer {
+            position: fixed; bottom: 50px; width: 100%;
+            display: flex; flex-direction: column; align-items: center;
+            z-index: 20;
+        }
+
+        .btn-redpack {
+            background: linear-gradient(145deg, #FF4D4F, #CF1322);
+            color: white; border: 2px solid var(--gold);
+            padding: 12px 35px; border-radius: 50px;
+            font-size: 18px; font-weight: bold;
+            box-shadow: 0 10px 20px rgba(207, 19, 34, 0.5);
+            cursor: pointer; pointer-events: auto;
+            animation: pulse 2s infinite;
+        }
+
+        /* 弹窗样式 */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center;
+        }
+        .modal {
+            background: #FFF; width: 85%; max-width: 340px; border-radius: 20px;
+            padding: 25px; color: #333; position: relative; pointer-events: auto;
+        }
+        textarea {
+            width: 100%; height: 100px; border: 1px solid #EEE; background: #F9F9F9;
+            border-radius: 12px; padding: 12px; box-sizing: border-box;
+            font-size: 16px; margin: 15px 0; outline: none; resize: none;
+        }
+        .modal-btns { display: flex; gap: 10px; }
+        .modal-btns button { 
+            flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; 
+        }
+        .btn-random { background: #F0F0F0; color: #666; }
+        .btn-go { background: var(--red); color: #FFF; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div class="container">
+    <div class="horse-head">🐎</div>
+    <div class="card">
+        <div id="displayText" class="text-content">正在载入2026祝福...</div>
+        <div style="font-size: 12px; color: var(--gold); opacity: 0.8;">✦ 2026 · 马年大吉 ✦</div>
+    </div>
+</div>
+
+<div class="footer">
+    <button class="btn-redpack" onclick="openEdit()">🧧 定制我的马年贺卡</button>
+    <div style="color: rgba(255,255,255,0.4); font-size: 11px; margin-top: 15px;">广告：关注艾兜兜儿 · 体验更多 AI 创意</div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <h3 style="margin:0; text-align:center; color: var(--red);">定制 2026 祝福语</h3>
+        <textarea id="editInput"></textarea>
+        <div class="modal-btns">
+            <button class="btn-random" onclick="setRandom()">🎲 随机一个</button>
+            <button class="btn-go" onclick="applyText()">立即生成</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const displayText = document.getElementById('displayText');
+    const editInput = document.getElementById('editInput');
+    const modalOverlay = document.getElementById('modalOverlay');
+
+    const presets = [
+        "马上有福——福气随春至，家门万事兴",
+        "马上有钱——财源如潮涌，盆满钵满盈",
+        "马上有闲——闲情伴美景，心安岁月宁",
+        "马上有“码”——代码无bug，思路永清新",
+        "马上有喜——喜鹊报新岁，欢笑满堂盈",
+        "马上有福又有钱，二零二六笑开颜"
+    ];
+
+    let fireworks = [];
+    let particles = [];
+
+    // 初始化
+    function init() {
+        resize();
+        window.addEventListener('resize', resize);
+        
+        // 分享读取逻辑
+        const urlParams = new URLSearchParams(window.location.search);
+        const m = urlParams.get('m');
+        if (m) {
+            try { displayText.innerText = decodeURIComponent(atob(m)); } 
+            catch(e) { displayText.innerText = "艾兜兜儿祝您元旦快乐\n马年有钱有闲有福有运"; }
+        } else {
+            displayText.innerText = "艾兜兜儿祝您元旦快乐\n马年有钱有闲有福有运";
+        }
+    }
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    // 烟花逻辑
+    class Firework {
+        constructor(sx, sy, tx, ty) {
+            this.x = sx; this.y = sy;
+            this.tx = tx; this.ty = ty;
+            this.distanceToTarget = Math.sqrt(Math.pow(tx-sx, 2) + Math.pow(ty-sy, 2));
+            this.distanceTraveled = 0;
+            this.coordinates = [];
+            this.coordinateCount = 3;
+            while(this.coordinateCount--) this.coordinates.push([this.x, this.y]);
+            this.angle = Math.atan2(ty - sy, tx - sx);
+            this.speed = 2;
+            this.acceleration = 1.05;
+            this.brightness = Math.random() * 50 + 50;
+        }
+        update(index) {
+            this.coordinates.pop();
+            this.coordinates.unshift([this.x, this.y]);
+            this.speed *= this.acceleration;
+            let vx = Math.cos(this.angle) * this.speed;
+            let vy = Math.sin(this.angle) * this.speed;
+            this.distanceTraveled = Math.sqrt(Math.pow(this.x + vx - this.x, 2) + Math.pow(this.y + vy - this.y, 2));
+            if(this.distanceTraveled >= this.distanceToTarget) {
+                createParticles(this.tx, this.ty);
+                fireworks.splice(index, 1);
+            } else {
+                this.x += vx; this.y += vy;
+            }
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.moveTo(this.coordinates[this.coordinates.length - 1][0], this.coordinates[this.coordinates.length - 1][1]);
+            ctx.lineTo(this.x, this.y);
+            ctx.strokeStyle = `hsl(${Math.random() * 360}, 100%, ${this.brightness}%)`;
+            ctx.stroke();
+        }
+    }
+
+    class Particle {
+        constructor(x, y) {
+            this.x = x; this.y = y;
+            this.coordinates = [];
+            this.coordinateCount = 5;
+            while(this.coordinateCount--) this.coordinates.push([this.x, this.y]);
+            this.angle = Math.random() * Math.PI * 2;
+            this.speed = Math.random() * 10 + 1;
+            this.friction = 0.95;
+            this.gravity = 1;
+            this.hue = Math.random() * 360;
+            this.alpha = 1;
+            this.decay = Math.random() * 0.03 + 0.01;
+        }
+        update(index) {
+            this.coordinates.pop();
+            this.coordinates.unshift([this.x, this.y]);
+            this.speed *= this.friction;
+            this.x += Math.cos(this.angle) * this.speed;
+            this.y += Math.sin(this.angle) * this.speed + this.gravity;
+            this.alpha -= this.decay;
+            if(this.alpha <= this.decay) particles.splice(index, 1);
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.moveTo(this.coordinates[this.coordinates.length - 1][0], this.coordinates[this.coordinates.length - 1][1]);
+            ctx.lineTo(this.x, this.y);
+            ctx.strokeStyle = `hsla(${this.hue}, 100%, 50%, ${this.alpha})`;
+            ctx.stroke();
+        }
+    }
+
+    function createParticles(x, y) {
+        let count = 50;
+        while(count--) particles.push(new Particle(x, y));
+    }
+
+    function loop() {
+        requestAnimationFrame(loop);
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.globalCompositeOperation = 'lighter';
+        
+        let i = fireworks.length;
+        while(i--) { fireworks[i].draw(); fireworks[i].update(i); }
+        let j = particles.length;
+        while(j--) { particles[j].draw(); particles[j].update(j); }
+
+        if(Math.random() < 0.05) {
+            fireworks.push(new Firework(canvas.width/2, canvas.height, Math.random()*canvas.width, Math.random()*canvas.height/2));
+        }
+    }
+
+    // 定制功能
+    function openEdit() {
+        modalOverlay.style.display = 'flex';
+        editInput.value = displayText.innerText;
+    }
+
+    function setRandom() {
+        editInput.value = "艾兜兜儿祝您：" + presets[Math.floor(Math.random() * presets.length)];
+    }
+
+    function applyText() {
+        const val = editInput.value.trim();
+        if(!val) return;
+        displayText.innerText = val;
+        modalOverlay.style.display = 'none';
+        
+        // 生成 URL
+        const b64 = btoa(encodeURIComponent(val));
+        const shareUrl = window.location.origin + window.location.pathname + '?m=' + b64;
+        console.log("分享链接:", shareUrl);
+        alert("定制成功！\n请点击烟花背景庆祝，复制当前浏览器链接即可发送给好友。");
+    }
+
+    // 点击事件触发烟花
+    window.addEventListener('mousedown', (e) => {
+        fireworks.push(new Firework(canvas.width/2, canvas.height, e.clientX, e.clientY));
+    });
+
+    modalOverlay.onclick = (e) => { if(e.target === modalOverlay) modalOverlay.style.display='none'; }
+
+    init();
+    loop();
+</script>
+</body>
+</html>
