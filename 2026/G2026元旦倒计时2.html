@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2026 龙马精神 · 元旦倒计时</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --apple-bg: #000000;
+            --apple-card: rgba(28, 28, 30, 0.7);
+            --accent-gold: #d4af37;
+            --accent-red: #ff3b30;
+            --text-main: #f5f5f7;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            background: var(--apple-bg);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* --- 星空与流星雨 --- */
+        #starfield {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+        }
+        .meteor {
+            position: absolute; width: 2px; height: 2px; background: #fff;
+            border-radius: 50%; opacity: 0; animation: meteor-ani 3s linear infinite;
+        }
+        @keyframes meteor-ani {
+            0% { transform: rotate(35deg) translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: rotate(35deg) translateX(-1000px); opacity: 0; }
+        }
+
+        /* --- 容器布局 --- */
+        .container {
+            max-width: 500px; margin: 0 auto; padding: 40px 20px;
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+        }
+
+        .page { display: none; width: 100%; animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
+        .page.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- 苹果风格卡片 --- */
+        .glass-card {
+            background: var(--apple-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* --- 倒计时 --- */
+        .timer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 40px 0; }
+        .timer-item { text-align: center; }
+        .timer-val { font-size: 2.2rem; font-weight: 600; color: #fff; display: block; }
+        .timer-label { font-size: 0.7rem; color: #86868b; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* --- 表单元素 --- */
+        .input-group { margin-bottom: 16px; position: relative; }
+        label { display: block; font-size: 13px; color: #86868b; margin-bottom: 8px; margin-left: 4px; }
+        input[type="text"], textarea {
+            width: 100%; background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; color: #fff; padding: 12px 16px;
+            font-size: 16px; outline: none; transition: 0.3s;
+        }
+        input:focus, textarea:focus { border-color: var(--accent-gold); background: rgba(255,255,255,0.1); }
+        
+        .avatar-uploader { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        #avatar-preview { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-gold); cursor: pointer; }
+
+        /* --- 预览区 --- */
+        #preview-canvas-area {
+            background: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
+            border-radius: 20px; padding: 25px; border: 1px solid #333;
+        }
+        .user-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .preview-nick { font-weight: 600; font-size: 18px; margin: 0; }
+        .preview-invite { font-size: 12px; color: var(--accent-gold); }
+        .preview-content { font-size: 16px; line-height: 1.6; color: #e4e4e7; min-height: 60px; white-space: pre-wrap; }
+        .preview-date { font-size: 11px; color: #666; margin-top: 15px; text-align: right; }
+
+        /* --- 按钮 --- */
+        .btn {
+            width: 100%; padding: 16px; border-radius: 14px; border: none;
+            font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;
+        }
+        .btn-gold { background: var(--accent-gold); color: #000; }
+        .btn-outline { background: transparent; border: 1px solid var(--accent-gold); color: var(--accent-gold); }
+        .btn:active { transform: scale(0.98); opacity: 0.8; }
+
+        #qrcode { background: #fff; padding: 8px; border-radius: 10px; margin: 15px auto; width: 116px; height: 116px; }
+
+        /* --- 元旦氛围动效 (红火) --- */
+        .happy-mode .glass-card { border-color: rgba(255, 59, 48, 0.3); }
+        .happy-mode .timer-val { color: var(--accent-red); }
+    </style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<div class="container">
+    <div id="page-timer" class="page">
+        <h2 style="font-weight: 300; letter-spacing: 2px; margin-bottom: 0;">2026</h2>
+        <h1 style="margin-top: 0; font-size: 2.5rem;">丙午马年 倒计时</h1>
+        
+        <div class="timer-grid">
+            <div class="timer-item"><span class="timer-val" id="d">00</span><span class="timer-label">Days</span></div>
+            <div class="timer-item"><span class="timer-val" id="h">00</span><span class="timer-label">Hrs</span></div>
+            <div class="timer-item"><span class="timer-val" id="m">00</span><span class="timer-label">Min</span></div>
+            <div class="timer-item"><span class="timer-val" id="s">00</span><span class="timer-label">Sec</span></div>
+        </div>
+
+        <div class="glass-card">
+            <p style="color: #86868b; font-size: 14px; line-height: 1.6;">“马到成功万事顺，春回大地百年新。” 2026 丙午马年即将到来，为亲友定制一份专属星空祝福吧。</p>
+            <button class="btn btn-gold" onclick="switchPage('page-edit')">✨ 定制我的元旦祝福</button>
+            <a href="https://t.zsxq.com/Dzgm0" class="btn btn-outline" style="text-decoration:none">新年福利领取</a>
+        </div>
+    </div>
+
+    <div id="page-edit" class="page">
+        <div class="glass-card">
+            <div class="avatar-uploader">
+                <input type="file" id="avatar-input" hidden accept="image/*" onchange="handleAvatar(this)">
+                <img id="avatar-preview" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Lucky" onclick="document.getElementById('avatar-input').click()" title="点击上传头像">
+                <div>
+                    <label>我的昵称</label>
+                    <input type="text" id="nick-input" value="艾兜兜儿" onclick="this.value=''" oninput="syncPreview()">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div style="display:flex; justify-content:space-between; align-items:center">
+                    <label>马年祝福语</label>
+                    <span style="font-size:11px; color:var(--accent-gold); cursor:pointer" onclick="randomMsg()">🔄 随机马年祝福</span>
+                </div>
+                <textarea id="msg-input" rows="4" maxlength="300" oninput="syncPreview()"></textarea>
+            </div>
+        </div>
+
+        <div id="preview-canvas-area" class="glass-card">
+            <div class="user-header">
+                <img id="pre-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Lucky" style="width:45px; height:45px; border-radius:50%; border:1.5px solid var(--accent-gold)">
+                <div>
+                    <p class="preview-nick" id="pre-nick">艾兜兜儿</p>
+                    <p class="preview-invite">邀请你分享卡片，一起庆祝🎉</p>
+                </div>
+            </div>
+            <div class="preview-content" id="pre-msg">愿你在 2026 马年：龙马精神，快马加鞭，事业生活一马当先！🐎</div>
+            <div id="qrcode"></div>
+            <p class="preview-date" id="pre-date"></p>
+        </div>
+
+        <button class="btn btn-gold" onclick="copyShare()">🔗 复制链接并分享</button>
+        <button class="btn btn-outline" onclick="downloadCard()">📸 保存祝福图片</button>
+        <button class="btn btn-outline" style="border:none; color:#666" onclick="location.reload()">返回首页</button>
+    </div>
+
+    <div style="margin-top:auto; padding:20px 0; font-size:12px; color:#444">
+        © 2026 Powered by <a href="https://mp.weixin.qq.com/s/iLF370sg-N87Ubsma_iaxw" style="color:#666">艾兜兜儿</a>
+    </div>
+</div>
+
+<script>
+    const TARGET_DATE = new Date("2026-01-01T00:00:00").getTime();
+    const WISHES = [
+        "🐎 2026马年到，愿你龙马精神，一马当先，奔赴锦绣前程！",
+        "马蹄声声碎，烟花灿灿开。愿你在 2026 万事如意，马到成功！",
+        "辞旧迎新赴马年，祝你快马加鞭，事业腾飞，平安喜乐！",
+        "愿 2026 年的你：有骏马般的体魄，有草原般的胸怀，前途无限！",
+        "马年大吉！愿你心想事成，福星高照，生活如骏马奔腾般精彩。",
+        "送你一匹千里马，助你在 2026 年跨越重重困难，抵达幸福终点。",
+        "马年将至，愿你的快乐一马平川，好运万马奔腾！🐎✨",
+        "2026，愿你策马扬鞭，不负韶华，逐梦前行，马到成功！",
+        "马年祝你：龙马精神康泰，事业一马当先，阖家万事大吉！",
+        "愿 2026 所有的努力都不被辜负，愿你策马奔腾，前程万里！"
+    ]; // 篇幅原因内置10条，逻辑支持30+
+
+    let currentAvatarData = document.getElementById('pre-avatar').src;
+
+    // --- 初始化逻辑 ---
+    function init() {
+        createStars();
+        const params = new URLSearchParams(window.location.search);
+        const nick = params.get('n');
+        const msg = params.get('m');
+        const isFromShare = params.get('from') === 'card';
+        const now = new Date().getTime();
+
+        if (now >= TARGET_DATE || isFromShare) {
+            // 进入元旦/祝福展示模式
+            switchPage('page-edit'); // 展示卡片页
+            document.body.classList.add('happy-mode');
+            if(nick) document.getElementById('nick-input').value = decodeURIComponent(nick);
+            if(msg) document.getElementById('msg-input').value = decodeURIComponent(msg);
+            syncPreview();
+            if(now >= TARGET_DATE) {
+                // 如果是元旦后，额外增加撒花特效等逻辑
+                console.log("Happy New Year 2026!");
+            }
+        } else {
+            switchPage('page-timer');
+            startTimer();
+        }
+    }
+
+    // --- 星空特效 ---
+    function createStars() {
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        for (let i = 0; i < 15; i++) {
+            let m = document.createElement('div');
+            m.className = 'meteor';
+            m.style.left = Math.random() * 100 + '%';
+            m.style.top = Math.random() * 50 + '%';
+            m.style.animationDelay = Math.random() * 5 + 's';
+            document.body.appendChild(m);
+        }
+    }
+
+    // --- 核心功能 ---
+    function switchPage(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(id === 'page-edit') syncPreview();
+    }
+
+    function startTimer() {
+        const update = () => {
+            const now = new Date().getTime();
+            const diff = TARGET_DATE - now;
+            if (diff <= 0) { location.reload(); return; }
+            document.getElementById('d').innerText = Math.floor(diff / 86400000).toString().padStart(2, '0');
+            document.getElementById('h').innerText = Math.floor((diff % 86400000) / 3600000).toString().padStart(2, '0');
+            document.getElementById('m').innerText = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+            document.getElementById('s').innerText = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+        };
+        update();
+        setInterval(update, 1000);
+    }
+
+    function handleAvatar(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentAvatarData = e.target.result;
+                document.getElementById('avatar-preview').src = e.target.result;
+                document.getElementById('pre-avatar').src = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function randomMsg() {
+        const msg = WISHES[Math.floor(Math.random() * WISHES.length)];
+        document.getElementById('msg-input').value = msg;
+        syncPreview();
+    }
+
+    function syncPreview() {
+        const nick = document.getElementById('nick-input').value || "艾兜兜儿";
+        const msg = document.getElementById('msg-input').value || "马到成功，万事如意！";
+        document.getElementById('pre-nick').innerText = nick;
+        document.getElementById('pre-msg').innerText = msg;
+        document.getElementById('pre-date').innerText = new Date().toLocaleDateString() + " 制作";
+
+        // 更新二维码 (只包含文本和参数，不包含大图头像以保持链接长度)
+        const baseUrl = window.location.origin + window.location.pathname;
+        const shareUrl = `${baseUrl}?n=${encodeURIComponent(nick)}&m=${encodeURIComponent(msg)}&from=card`;
+        
+        const qrBox = document.getElementById('qrcode');
+        qrBox.innerHTML = '';
+        new QRCode(qrBox, {
+            text: shareUrl,
+            width: 100, height: 100,
+            colorDark: "#000000", colorLight: "#ffffff"
+        });
+    }
+
+    async function copyShare() {
+        const nick = document.getElementById('pre-nick').innerText;
+        const msg = document.getElementById('pre-msg').innerText;
+        const shareUrl = `${window.location.origin + window.location.pathname}?n=${encodeURIComponent(nick)}&m=${encodeURIComponent(msg)}&from=card`;
+        
+        const text = `🐎【2026马年祝福】\n来自 ${nick} 的心意：\n"${msg}"\n点击查看完整星空祝福卡片：\n${shareUrl}`;
+        
+        try {
+            await navigator.clipboard.writeText(text);
+            alert("已成功复制祝福语和链接！");
+        } catch {
+            const t = document.createElement("textarea");
+            t.value = text; document.body.appendChild(t); t.select();
+            document.execCommand('copy'); document.body.removeChild(t);
+            alert("已复制到剪贴板");
+        }
+    }
+
+    function downloadCard() {
+        const area = document.getElementById('preview-canvas-area');
+        html2canvas(area, { backgroundColor: '#000', scale: 2 }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `2026元旦祝福-${document.getElementById('pre-nick').innerText}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
