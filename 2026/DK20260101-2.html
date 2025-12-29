@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026马年科技感动态贺卡</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;500&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: #0a0a1a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(28, 58, 173, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(200, 30, 100, 0.1) 0%, transparent 20%);
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 900px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+        
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            background: linear-gradient(90deg, #00f7ff, #ff00d6, #ffeb00);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+            text-shadow: 0 0 15px rgba(0, 247, 255, 0.5);
+            letter-spacing: 2px;
+        }
+        
+        .header h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            color: #ffeb00;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(255, 235, 0, 0.7);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            color: #a0a0ff;
+            opacity: 0.9;
+        }
+        
+        .card-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 500px;
+            margin-bottom: 30px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0, 200, 255, 0.3);
+            border: 1px solid rgba(0, 247, 255, 0.2);
+            background: rgba(5, 10, 40, 0.7);
+            backdrop-filter: blur(5px);
+        }
+        
+        #fireworks-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .card-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .horse-icon {
+            font-size: 6rem;
+            color: #ff9900;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 15px rgba(255, 153, 0, 0.8));
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        .greeting-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #ff0055, #ff9900, #00ffaa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px rgba(255, 0, 85, 0.5);
+        }
+        
+        .blessing-text {
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+            color: #ffffff;
+            min-height: 80px;
+            padding: 15px 25px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            border-left: 4px solid #00f7ff;
+            max-width: 90%;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #0066ff, #00ccff);
+            color: white;
+            box-shadow: 0 5px 15px rgba(0, 102, 255, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(90deg, #ff3366, #ff9966);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 51, 102, 0.4);
+        }
+        
+        .btn-tertiary {
+            background: linear-gradient(90deg, #9933ff, #cc66ff);
+            color: white;
+            box-shadow: 0 5px 15px rgba(153, 51, 255, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 200, 255, 0.6);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .custom-message {
+            width: 100%;
+            max-width: 700px;
+            margin-bottom: 30px;
+        }
+        
+        .custom-message h3 {
+            font-family: 'Orbitron', sans-serif;
+            color: #00f7ff;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+        
+        .message-input {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.2rem;
+            border: 2px solid #00f7ff;
+            border-radius: 15px;
+            background: rgba(0, 10, 30, 0.8);
+            color: white;
+            font-family: 'Exo 2', sans-serif;
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .message-input:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(0, 247, 255, 0.7);
+        }
+        
+        .share-section {
+            width: 100%;
+            max-width: 700px;
+            padding: 25px;
+            background: rgba(10, 20, 50, 0.5);
+            border-radius: 20px;
+            border: 1px solid rgba(0, 247, 255, 0.2);
+            text-align: center;
+        }
+        
+        .share-section h3 {
+            font-family: 'Orbitron', sans-serif;
+            color: #ff9900;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        .share-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .share-btn {
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .share-btn i {
+            font-size: 1.3rem;
+        }
+        
+        .share-wechat {
+            background: #09bb07;
+            color: white;
+        }
+        
+        .share-qq {
+            background: #12b7f5;
+            color: white;
+        }
+        
+        .share-weibo {
+            background: #e6162d;
+            color: white;
+        }
+        
+        .share-link {
+            background: linear-gradient(90deg, #9933ff, #cc66ff);
+            color: white;
+        }
+        
+        .share-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #a0a0ff;
+            font-size: 0.9rem;
+            padding: 20px;
+            border-top: 1px solid rgba(0, 247, 255, 0.2);
+            width: 100%;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .modal-content {
+            background: rgba(10, 20, 50, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid #00f7ff;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 247, 255, 0.5);
+        }
+        
+        .modal h3 {
+            font-family: 'Orbitron', sans-serif;
+            color: #00f7ff;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        .modal p {
+            margin-bottom: 25px;
+            font-size: 1.2rem;
+            line-height: 1.6;
+        }
+        
+        .close-modal {
+            background: linear-gradient(90deg, #ff3366, #ff9966);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            border: none;
+            font-size: 1.1rem;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .header h2 {
+                font-size: 1.8rem;
+            }
+            
+            .card-container {
+                height: 450px;
+            }
+            
+            .greeting-text {
+                font-size: 2.2rem;
+            }
+            
+            .blessing-text {
+                font-size: 1.4rem;
+            }
+            
+            .horse-icon {
+                font-size: 4.5rem;
+            }
+            
+            .btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .card-container {
+                height: 400px;
+            }
+            
+            .greeting-text {
+                font-size: 1.8rem;
+            }
+            
+            .blessing-text {
+                font-size: 1.2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 90%;
+                justify-content: center;
+            }
+            
+            .share-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .share-btn {
+                width: 90%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>2026 马年贺卡</h1>
+            <h2>元旦快乐 · 一马当先</h2>
+            <p>科技感动态贺卡 · 送上最真挚的祝福</p>
+        </div>
+        
+        <div class="card-container">
+            <canvas id="fireworks-canvas"></canvas>
+            <div class="card-content">
+                <div class="horse-icon">
+                    <i class="fas fa-horse-head"></i>
+                </div>
+                <div class="greeting-text">元旦快乐</div>
+                <div class="blessing-text" id="blessing-text">艾兜兜儿，祝大家2026年马年有钱有闲，元旦快乐！</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-primary" id="random-blessing">
+                <i class="fas fa-random"></i> 随机祝福语
+            </button>
+            <button class="btn btn-secondary" id="customize-blessing">
+                <i class="fas fa-edit"></i> 自定义祝福
+            </button>
+            <button class="btn btn-tertiary" id="share-card">
+                <i class="fas fa-share-alt"></i> 分享贺卡
+            </button>
+        </div>
+        
+        <div class="custom-message hidden" id="custom-message-section">
+            <h3>自定义祝福语</h3>
+            <textarea class="message-input" id="custom-message-input" placeholder="在这里输入您的个性化祝福语..."></textarea>
+            <div style="margin-top: 15px;">
+                <button class="btn btn-primary" id="save-custom-message">
+                    <i class="fas fa-save"></i> 保存并应用
+                </button>
+            </div>
+        </div>
+        
+        <div class="share-section">
+            <h3>分享贺卡给朋友</h3>
+            <div class="share-buttons">
+                <div class="share-btn share-wechat">
+                    <i class="fab fa-weixin"></i> 微信
+                </div>
+                <div class="share-btn share-qq">
+                    <i class="fab fa-qq"></i> QQ
+                </div>
+                <div class="share-btn share-weibo">
+                    <i class="fab fa-weibo"></i> 微博
+                </div>
+                <div class="share-btn share-link" id="copy-link">
+                    <i class="fas fa-link"></i> 复制链接
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>2026 马年元旦贺卡 | 设计灵感来自市场优秀贺卡案例 | 愿您马上有一切，新年快乐！</p>
+        </div>
+    </div>
+    
+    <!-- 分享成功模态框 -->
+    <div class="modal hidden" id="share-modal">
+        <div class="modal-content">
+            <h3>贺卡分享成功！</h3>
+            <p>您的朋友将通过链接看到您分享的个性化祝福语。</p>
+            <p>分享链接已复制到剪贴板，可以粘贴发送给好友。</p>
+            <button class="close-modal" id="close-modal">确定</button>
+        </div>
+    </div>
+
+    <script>
+        // 马年相关祝福语库
+        const horseYearBlessings = [
+            "艾兜兜儿，祝大家2026年马年有钱有闲，元旦快乐！",
+            "一马当先，万事如意！愿您在新的一年里龙马精神，马到成功！",
+            "马到功成，事业顺利！2026年愿您如骏马奔腾，一往无前！",
+            "马上有钱，马上有福！马年行大运，元旦快乐！",
+            "金马送福，吉祥如意！愿您新的一年扬鞭催马，勇往直前！",
+            "马年大吉，元旦快乐！愿您的生活如万马奔腾，充满活力！",
+            "策马扬鞭，前程似锦！2026年祝您事业马不停蹄，步步高升！",
+            "马年行好运，家和万事兴！元旦快乐，阖家幸福！",
+            "一马平川，一帆风顺！愿您新的一年万事顺意，马到成功！",
+            "骏马奔腾，财源滚滚！祝您2026年财运亨通，富贵吉祥！",
+            "马年吉祥，幸福安康！元旦之际，送上我最真挚的祝福！",
+            "龙马精神，身体健康！愿您在新的一年里活力四射，青春永驻！",
+            "马不停蹄，梦想成真！2026年祝您实现所有目标，收获满满！",
+            "马上有喜，好事连连！元旦快乐，马年大吉！",
+            "万马奔腾，气势如虹！愿您的事业在新的一年里腾飞发展！",
+            "马年如意，心想事成！祝您元旦快乐，新年新气象！"
+        ];
+        
+        // DOM元素
+        const blessingText = document.getElementById('blessing-text');
+        const randomBlessingBtn = document.getElementById('random-blessing');
+        const customizeBlessingBtn = document.getElementById('customize-blessing');
+        const customMessageSection = document.getElementById('custom-message-section');
+        const customMessageInput = document.getElementById('custom-message-input');
+        const saveCustomMessageBtn = document.getElementById('save-custom-message');
+        const shareCardBtn = document.getElementById('share-card');
+        const copyLinkBtn = document.getElementById('copy-link');
+        const shareModal = document.getElementById('share-modal');
+        const closeModalBtn = document.getElementById('close-modal');
+        
+        // 当前祝福语
+        let currentBlessing = horseYearBlessings[0];
+        // 用户自定义祝福语
+        let customBlessing = "";
+        // 分享者名字（默认为用户自定义）
+        let sharerName = "您的好友";
+        
+        // 随机祝福语功能
+        randomBlessingBtn.addEventListener('click', () => {
+            let randomIndex;
+            do {
+                randomIndex = Math.floor(Math.random() * horseYearBlessings.length);
+            } while (horseYearBlessings[randomIndex] === currentBlessing && horseYearBlessings.length > 1);
+            
+            currentBlessing = horseYearBlessings[randomIndex];
+            blessingText.textContent = currentBlessing;
+            
+            // 添加动画效果
+            blessingText.style.opacity = 0;
+            setTimeout(() => {
+                blessingText.style.transition = "opacity 0.5s ease";
+                blessingText.style.opacity = 1;
+            }, 10);
+            
+            // 触发烟花庆祝
+            createCelebrationFireworks();
+        });
+        
+        // 显示自定义祝福语输入区域
+        customizeBlessingBtn.addEventListener('click', () => {
+            customMessageSection.classList.toggle('hidden');
+            if (!customMessageSection.classList.contains('hidden')) {
+                customMessageInput.value = customBlessing || currentBlessing;
+                customMessageInput.focus();
+            }
+        });
+        
+        // 保存自定义祝福语
+        saveCustomMessageBtn.addEventListener('click', () => {
+            customBlessing = customMessageInput.value.trim();
+            if (customBlessing) {
+                currentBlessing = customBlessing;
+                blessingText.textContent = currentBlessing;
+                customMessageSection.classList.add('hidden');
+                
+                // 显示成功提示
+                const originalText = saveCustomMessageBtn.innerHTML;
+                saveCustomMessageBtn.innerHTML = '<i class="fas fa-check"></i> 已保存';
+                setTimeout(() => {
+                    saveCustomMessageBtn.innerHTML = originalText;
+                }, 2000);
+                
+                // 触发烟花庆祝
+                createCelebrationFireworks();
+            } else {
+                alert("请输入祝福语！");
+            }
+        });
+        
+        // 烟花效果
+        const canvas = document.getElementById('fireworks-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 设置Canvas尺寸
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // 烟花粒子类
+        class Particle {
+            constructor(x, y, color, velocity, size = 2) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.velocity = velocity;
+                this.size = size;
+                this.alpha = 1;
+                this.gravity = 0.01;
+                this.decay = 0.015;
+            }
+            
+            update() {
+                this.velocity.y += this.gravity;
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.alpha -= this.decay;
+                this.size *= 0.99;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        
+        // 烟花类
+        class Firework {
+            constructor(x, y, targetX, targetY) {
+                this.x = x;
+                this.y = y;
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.color = `hsl(${Math.random() * 360}, 100%, 60%)`;
+                this.velocity = {
+                    x: (targetX - x) / 100,
+                    y: (targetY - y) / 100
+                };
+                this.gravity = 0.02;
+                this.size = 3;
+                this.exploded = false;
+                this.particles = [];
+            }
+            
+            update() {
+                if (!this.exploded) {
+                    this.velocity.y += this.gravity;
+                    this.x += this.velocity.x;
+                    this.y += this.velocity.y;
+                    
+                    // 检查是否到达目标位置
+                    if (this.y <= this.targetY) {
+                        this.explode();
+                    }
+                }
+                
+                // 更新粒子
+                this.particles.forEach((particle, index) => {
+                    particle.update();
+                    if (particle.alpha <= 0) {
+                        this.particles.splice(index, 1);
+                    }
+                });
+            }
+            
+            explode() {
+                this.exploded = true;
+                const particleCount = 100;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const velocity = {
+                        x: (Math.random() - 0.5) * 5,
+                        y: (Math.random() - 0.5) * 5
+                    };
+                    
+                    this.particles.push(new Particle(
+                        this.x, 
+                        this.y, 
+                        this.color, 
+                        velocity,
+                        Math.random() * 3 + 1
+                    ));
+                }
+            }
+            
+            draw() {
+                if (!this.exploded) {
+                    ctx.save();
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+                
+                // 绘制粒子
+                this.particles.forEach(particle => {
+                    particle.draw();
+                });
+            }
+        }
+        
+        // 烟花数组
+        let fireworks = [];
+        
+        // 创建随机烟花
+        function createRandomFirework() {
+            const startX = Math.random() * canvas.width;
+            const targetX = Math.random() * canvas.width;
+            const targetY = Math.random() * canvas.height * 0.7;
+            
+            fireworks.push(new Firework(
+                startX, 
+                canvas.height, 
+                targetX, 
+                targetY
+            ));
+        }
+        
+        // 创建特定位置的烟花
+        function createFirework(x, y) {
+            fireworks.push(new Firework(
+                x, 
+                canvas.height, 
+                x, 
+                y
+            ));
+        }
+        
+        // 创建庆祝烟花（多个烟花同时绽放）
+        function createCelebrationFireworks() {
+            const positions = [
+                {x: canvas.width * 0.2, y: canvas.height * 0.3},
+                {x: canvas.width * 0.5, y: canvas.height * 0.4},
+                {x: canvas.width * 0.8, y: canvas.height * 0.3},
+                {x: canvas.width * 0.3, y: canvas.height * 0.5},
+                {x: canvas.width * 0.7, y: canvas.height * 0.5}
+            ];
+            
+            positions.forEach((pos, index) => {
+                setTimeout(() => {
+                    createFirework(pos.x, pos.y);
+                }, index * 200);
+            });
+        }
+        
+        // 动画循环
+        function animate() {
+            // 清除画布，使用半透明黑色实现拖尾效果
+            ctx.fillStyle = 'rgba(10, 10, 30, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 随机创建新烟花
+            if (Math.random() < 0.05) {
+                createRandomFirework();
+            }
+            
+            // 更新和绘制所有烟花
+            fireworks.forEach((firework, index) => {
+                firework.update();
+                firework.draw();
+                
+                // 移除已消失的烟花
+                if (firework.exploded && firework.particles.length === 0) {
+                    fireworks.splice(index, 1);
+                }
+            });
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // 开始动画
+        animate();
+        
+        // 点击贺卡区域创建烟花
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            createFirework(x, y);
+        });
+        
+        // 模拟分享功能
+        shareCardBtn.addEventListener('click', () => {
+            // 在实际应用中，这里会生成一个包含祝福语的唯一URL
+            // 模拟生成分享链接
+            const baseUrl = window.location.href.split('?')[0];
+            const blessingParam = encodeURIComponent(currentBlessing);
+            const sharerParam = encodeURIComponent(sharerName);
+            const shareUrl = `${baseUrl}?sharer=${sharerParam}&blessing=${blessingParam}`;
+            
+            // 显示分享模态框
+            shareModal.classList.remove('hidden');
+            
+            // 模拟复制链接到剪贴板
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                console.log('分享链接已复制:', shareUrl);
+            }).catch(err => {
+                // 如果clipboard API不可用，使用备选方案
+                console.log('分享链接:', shareUrl);
+                alert('链接已生成: ' + shareUrl);
+            });
+        });
+        
+        // 复制链接功能
+        copyLinkBtn.addEventListener('click', () => {
+            const baseUrl = window.location.href.split('?')[0];
+            const blessingParam = encodeURIComponent(currentBlessing);
+            const sharerParam = encodeURIComponent(sharerName);
+            const shareUrl = `${baseUrl}?sharer=${sharerParam}&blessing=${blessingParam}`;
+            
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                // 显示成功提示
+                const originalText = copyLinkBtn.innerHTML;
+                copyLinkBtn.innerHTML = '<i class="fas fa-check"></i> 链接已复制';
+                setTimeout(() => {
+                    copyLinkBtn.innerHTML = originalText;
+                }, 2000);
+            }).catch(err => {
+                // 如果clipboard API不可用，使用备选方案
+                const textArea = document.createElement('textarea');
+                textArea.value = shareUrl;
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    const originalText = copyLinkBtn.innerHTML;
+                    copyLinkBtn.innerHTML = '<i class="fas fa-check"></i> 链接已复制';
+                    setTimeout(() => {
+                        copyLinkBtn.innerHTML = originalText;
+                    }, 2000);
+                } catch (err) {
+                    alert('请手动复制链接: ' + shareUrl);
+                }
+                document.body.removeChild(textArea);
+            });
+        });
+        
+        // 关闭模态框
+        closeModalBtn.addEventListener('click', () => {
+            shareModal.classList.add('hidden');
+        });
+        
+        // 点击模态框外部关闭
+        shareModal.addEventListener('click', (e) => {
+            if (e.target === shareModal) {
+                shareModal.classList.add('hidden');
+            }
+        });
+        
+        // 检查URL参数，模拟从分享链接打开
+        function checkUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharer = urlParams.get('sharer');
+            const blessing = urlParams.get('blessing');
+            
+            if (sharer && blessing) {
+                sharerName = decodeURIComponent(sharer);
+                currentBlessing = decodeURIComponent(blessing);
+                blessingText.textContent = `${sharerName}的祝福：${currentBlessing}`;
+                
+                // 添加一个特殊烟花效果
+                setTimeout(() => {
+                    createCelebrationFireworks();
+                }, 500);
+            }
+        }
+        
+        // 页面加载时检查URL参数
+        window.addEventListener('load', checkUrlParams);
+        
+        // 添加键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            // 空格键随机祝福
+            if (e.code === 'Space') {
+                e.preventDefault();
+                randomBlessingBtn.click();
+            }
+            
+            // Escape键关闭自定义输入区域
+            if (e.code === 'Escape' && !customMessageSection.classList.contains('hidden')) {
+                customMessageSection.classList.add('hidden');
+            }
+            
+            // Escape键关闭分享模态框
+            if (e.code === 'Escape' && !shareModal.classList.contains('hidden')) {
+                shareModal.classList.add('hidden');
+            }
+        });
+        
+        // 页面加载时创建欢迎烟花
+        window.addEventListener('load', () => {
+            // 延迟执行，确保Canvas已完全加载
+            setTimeout(() => {
+                createCelebrationFireworks();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
