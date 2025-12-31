@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2025 香港跨年烟花秀 - 传承传统</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root { --accent: #ff3e3e; --gold: #ffd700; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #00050a; font-family: -apple-system, system-ui; }
+        
+        /* 维港背景剪影 */
+        #skyline { position: fixed; bottom: 0; width: 100%; height: 20vh; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 200" preserveAspectRatio="none"><path d="M0,200 L0,150 L50,150 L50,100 L80,100 L80,130 L120,130 L120,80 L160,80 L160,150 L200,150 L200,50 L250,50 L250,150 L300,150 L300,90 L350,90 L350,160 L400,160 L400,20 L450,20 L450,150 L500,150 L500,70 L550,70 L550,140 L600,140 L600,40 L650,40 L650,160 L700,160 L700,100 L750,100 L750,150 L800,150 L800,30 L850,30 L850,150 L900,150 L900,80 L950,80 L950,200 Z" fill="%23050a15"/></svg>'); background-size: cover; z-index: 1; pointer-events: none; }
+
+        canvas { display: block; z-index: 0; }
+
+        /* UI 组件 */
+        #top-info { position: fixed; top: 20px; left: 20px; z-index: 10; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .chain { display: flex; margin-top: 10px; }
+        .chain img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; margin-right: -10px; transition: transform 0.3s; }
+        
+        .controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 15px; width: 90%; }
+        .input-group { display: flex; gap: 8px; width: 100%; max-width: 400px; }
+        input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white; backdrop-filter: blur(10px); outline: none; }
+        select { padding: 0 10px; border-radius: 25px; background: rgba(0,0,0,0.5); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-main { padding: 12px 25px; border-radius: 25px; border: none; background: linear-gradient(45deg, var(--accent), #ff7e5f); color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(255,62,62,0.4); }
+
+        /* 分享卡片模板 (Off-screen) */
+        #card-tpl { position: absolute; left: -9999px; width: 400px; height: 700px; background: radial-gradient(circle at top, #1a1a2e, #020205); padding: 40px; box-sizing: border-box; text-align: center; color: white; }
+        .tpl-avatar { width: 100px; height: 100px; border-radius: 50%; border: 4px solid var(--gold); margin-bottom: 20px; }
+        .qr-wrap { background: white; padding: 15px; display: inline-block; border-radius: 12px; margin: 30px 0; }
+
+        /* 弹窗预览 */
+        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; justify-content: center; align-items: center; flex-direction: column; }
+        #modal img { max-width: 80%; border-radius: 15px; border: 1px solid #333; }
+        #modal p { color: white; margin-top: 20px; font-size: 14px; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+<div id="skyline"></div>
+<div id="top-info">
+    <div style="font-weight: bold; letter-spacing: 1px;">2025 香港跨年烟花秀</div>
+    <div id="avatar-chain" class="chain"></div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<div class="controls">
+    <div class="input-group">
+        <input type="text" id="user-name" placeholder="输入昵称 / 跨年文字" maxlength="10">
+        <select id="shape-type">
+            <option value="circle">经典圆形</option>
+            <option value="heart">浪漫心形</option>
+            <option value="star">璀璨星形</option>
+        </select>
+    </div>
+    <button class="btn-main" onclick="takeSnapshot()">生成跨年分享卡片</button>
+</div>
+
+<div id="card-tpl">
+    <img id="tpl-img" class="tpl-avatar">
+    <h1 id="tpl-name" style="color:var(--gold); margin:10px 0;"></h1>
+    <p style="font-size: 18px; opacity: 0.9;">我在维港为你点亮了 2025 第一场烟花</p>
+    <div class="qr-wrap"><div id="qrcode"></div></div>
+    <p style="font-size: 14px; color: #888;">扫码进入烟花秀 · 传承传统情怀</p>
+    <div id="tpl-chain-ui" class="chain" style="justify-content: center; margin-top: 40px;"></div>
+</div>
+
+<div id="modal" onclick="this.style.display='none'">
+    <img id="preview-img">
+    <p>—— 长按保存图片分享至朋友圈 ——</p>
+</div>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const params = new URLSearchParams(window.location.search);
+    
+    // 初始化分享链
+    let chainArr = params.get('c') ? params.get('c').split(',') : [];
+    const mySeed = Math.random().toString(36).substring(7);
+    const myAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${mySeed}`;
+    
+    // 渲染头像链
+    const chainContainer = document.getElementById('avatar-chain');
+    const tplChainUi = document.getElementById('tpl-chain-ui');
+    chainArr.slice(-8).forEach(url => {
+        const img = new Image(); img.src = url;
+        chainContainer.appendChild(img.cloneNode());
+        tplChainUi.appendChild(img.cloneNode());
+    });
+
+    // 烟花引擎
+    let fireworks = [];
+    let particles = [];
+
+    class Particle {
+        constructor(x, y, color, vel) {
+            this.x = x; this.y = y; this.color = color;
+            this.vel = vel; this.alpha = 1;
+            this.friction = 0.95; this.gravity = 0.12;
+        }
+        update() {
+            this.vel.x *= this.friction;
+            this.vel.y *= this.friction;
+            this.vel.y += this.gravity;
+            this.x += this.vel.x;
+            this.y += this.vel.y;
+            this.alpha -= 0.01;
+        }
+        draw() {
+            ctx.globalAlpha = this.alpha;
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function fire(x, y, shape) {
+        const color = `hsl(${Math.random() * 360}, 100%, 65%)`;
+        const count = 100;
+        for (let i = 0; i < count; i++) {
+            const angle = (Math.PI * 2 / count) * i;
+            let v = { x: 0, y: 0 };
+            const speed = Math.random() * 5 + 3;
+
+            if (shape === 'heart') {
+                v.x = 16 * Math.pow(Math.sin(angle), 3) / 2;
+                v.y = -(13 * Math.cos(angle) - 5 * Math.cos(2*angle) - 2 * Math.cos(3*angle) - Math.cos(4*angle)) / 2;
+                v.x *= (speed/5); v.y *= (speed/5);
+            } else if (shape === 'star') {
+                const r = i % 2 === 0 ? speed : speed * 0.5;
+                v.x = Math.cos(angle) * r * 1.5;
+                v.y = Math.sin(angle) * r * 1.5;
+            } else {
+                v.x = Math.cos(angle) * speed;
+                v.y = Math.sin(angle) * speed;
+            }
+            particles.push(new Particle(x, y, color, v));
+        }
+    }
+
+    function render() {
+        ctx.fillStyle = 'rgba(0, 5, 10, 0.15)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach((p, i) => {
+            p.update();
+            if (p.alpha <= 0) particles.splice(i, 1);
+            else p.draw();
+        });
+
+        if (Math.random() < 0.04) {
+            fire(Math.random() * canvas.width, Math.random() * canvas.height * 0.6, document.getElementById('shape-type').value);
+        }
+        requestAnimationFrame(render);
+    }
+
+    // 交互交互
+    canvas.addEventListener('mousedown', (e) => {
+        fire(e.clientX, e.clientY, document.getElementById('shape-type').value);
+    });
+
+    window.onresize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    };
+
+    // 生成卡片逻辑
+    function takeSnapshot() {
+        const name = document.getElementById('user-name').value || "维港守望者";
+        document.getElementById('tpl-name').innerText = name;
+        document.getElementById('tpl-img').src = myAvatar;
+
+        // 更新分享链接（保留最后8个头像防止URL超限）
+        const newChain = [...chainArr.slice(-7), myAvatar].join(',');
+        const shareUrl = `${window.location.origin}${window.location.pathname}?c=${encodeURIComponent(newChain)}`;
+
+        const qrcodeContainer = document.getElementById('qrcode');
+        qrcodeContainer.innerHTML = "";
+        new QRCode(qrcodeContainer, { text: shareUrl, width: 130, height: 130 });
+
+        setTimeout(() => {
+            html2canvas(document.getElementById('card-tpl'), {
+                useCORS: true,
+                backgroundColor: null,
+                scale: 2
+            }).then(cvs => {
+                document.getElementById('preview-img').src = cvs.toDataURL("image/png");
+                document.getElementById('modal').style.display = 'flex';
+            });
+        }, 500);
+    }
+
+    window.onresize();
+    render();
+</script>
+</body>
+</html>
