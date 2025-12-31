@@ -1,1 +1,196 @@
-https://t.zsxq.com/XwY3N
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2025香港跨年烟花 - 线上电子版</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        :root { --gold: #ffd700; --red: #ff4d4d; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #020205; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        canvas { display: block; touch-action: none; }
+
+        /* 顶部信息与分享链 */
+        #header { position: fixed; top: 15px; left: 15px; z-index: 10; color: white; pointer-events: none; }
+        .avatar-chain { display: flex; margin-top: 10px; }
+        .avatar-chain img { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid white; margin-right: -8px; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+
+        /* 底部控制区 */
+        .controls { position: fixed; bottom: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 20; }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        button, select { padding: 10px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.6); color: white; cursor: pointer; backdrop-filter: blur(5px); transition: 0.3s; }
+        button.active { background: var(--red); border-color: var(--red); }
+        input { padding: 10px; border-radius: 20px; border: none; width: 120px; text-align: center; }
+
+        /* 隐藏的卡片模板 */
+        #card-tpl { position: absolute; left: -2000px; width: 360px; height: 600px; background: #050510; color: white; text-align: center; padding: 40px 20px; }
+        .qr-holder { background: white; padding: 10px; display: inline-block; margin-top: 20px; border-radius: 8px; }
+        
+        /* 预览弹窗 */
+        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
+        #modal img { max-width: 85%; border-radius: 12px; box-shadow: 0 0 30px rgba(255,255,255,0.2); }
+    </style>
+</head>
+<body>
+
+<div id="header">
+    <div style="font-size: 14px; opacity: 0.8;">传承 2025 香港烟花传统</div>
+    <div id="chain" class="avatar-chain"></div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<div class="controls">
+    <div class="btn-group">
+        <input type="text" id="text-input" placeholder="输入烟花文字" maxlength="2">
+        <select id="shape-select">
+            <option value="circle">圆形烟花</option>
+            <option value="heart">心形烟花</option>
+            <option value="star">五角星形</option>
+        </select>
+        <button onclick="generateCard()" style="background: var(--gold); color: black; font-weight: bold;">生成卡片</button>
+    </div>
+    <div style="color: rgba(255,255,255,0.5); font-size: 12px;">点击屏幕任意位置手动燃放</div>
+</div>
+
+<div id="card-tpl">
+    <img id="my-avatar" style="width:70px; border-radius:50%; border:2px solid gold;">
+    <h2 id="card-name" style="color:gold; margin:15px 0 5px;">2025 跨年快乐</h2>
+    <p style="font-size: 14px; opacity: 0.8;">我正在维港观看电子烟花，邀你共赏</p>
+    <div id="qrcode-box" class="qr-holder"></div>
+    <p style="margin-top: 50px; font-size: 12px; color: #666;">扫描二维码 · 延续文化传承</p>
+</div>
+
+<div id="modal" onclick="this.style.display='none'">
+    <img id="preview">
+    <p style="color: white; margin-top: 20px;">长按保存图片并分享</p>
+</div>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let currentShape = 'circle';
+
+    // 1. 初始化 URL 参数与分享链
+    const params = new URLSearchParams(window.location.search);
+    const chainStr = params.get('chain') || "";
+    const avatars = chainStr ? chainStr.split(',') : [];
+    const seed = Math.random().toString(36).substring(7);
+    const myAvatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`;
+
+    // 显示头像链
+    const chainDiv = document.getElementById('chain');
+    avatars.slice(-6).forEach(src => {
+        const img = document.createElement('img');
+        img.src = src;
+        chainDiv.appendChild(img);
+    });
+
+    // 2. 烟花物理逻辑
+    class Particle {
+        constructor(x, y, color, vel) {
+            this.x = x; this.y = y; this.color = color;
+            this.vel = vel; this.alpha = 1; this.friction = 0.96; this.gravity = 0.15;
+        }
+        draw() {
+            ctx.save();
+            ctx.globalAlpha = this.alpha;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 1.5, 0, Math.PI*2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            ctx.restore();
+        }
+        update() {
+            this.vel.x *= this.friction;
+            this.vel.y *= this.friction;
+            this.vel.y += this.gravity;
+            this.x += this.vel.x;
+            this.y += this.vel.y;
+            this.alpha -= 0.012;
+        }
+    }
+
+    function createFirework(x, y, shape, text = "") {
+        const color = `hsl(${Math.random() * 360}, 100%, 60%)`;
+        
+        if (text) {
+            ctx.font = "30px Arial";
+            const metrics = ctx.measureText(text);
+            // 简单实现：在点击处产生一圈粒子，中间带文字颜色的火花
+            for(let i=0; i<50; i++) {
+                particles.push(new Particle(x, y, color, {
+                    x: (Math.random()-0.5)*10, y: (Math.random()-0.5)*10
+                }));
+            }
+            return;
+        }
+
+        const count = 80;
+        for (let i = 0; i < count; i++) {
+            let vel = { x: 0, y: 0 };
+            const angle = (Math.PI * 2 / count) * i;
+            if (shape === 'heart') {
+                const r = 6;
+                vel.x = r * (16 * Math.pow(Math.sin(angle), 3)) / 10;
+                vel.y = -r * (13 * Math.cos(angle) - 5 * Math.cos(2 * angle) - 2 * Math.cos(3 * angle) - Math.cos(4 * angle)) / 10;
+            } else if (shape === 'star') {
+                const r = (i % 2 === 0) ? 8 : 4;
+                vel.x = Math.cos(angle) * r;
+                vel.y = Math.sin(angle) * r;
+            } else {
+                const r = Math.random() * 8 + 2;
+                vel.x = Math.cos(angle) * r;
+                vel.y = Math.sin(angle) * r;
+            }
+            particles.push(new Particle(x, y, color, vel));
+        }
+    }
+
+    // 3. 交互与渲染
+    function loop() {
+        requestAnimationFrame(loop);
+        ctx.fillStyle = 'rgba(2, 2, 5, 0.2)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        particles.forEach((p, i) => {
+            if (p.alpha <= 0) particles.splice(i, 1);
+            else { p.update(); p.draw(); }
+        });
+        if(Math.random() < 0.03) createFirework(Math.random()*canvas.width, Math.random()*canvas.height/1.5, document.getElementById('shape-select').value);
+    }
+
+    canvas.addEventListener('click', (e) => {
+        const txt = document.getElementById('text-input').value;
+        createFirework(e.clientX, e.clientY, document.getElementById('shape-select').value, txt);
+    });
+
+    window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    window.onresize();
+    loop();
+
+    // 4. 生成卡片与分享
+    function generateCard() {
+        const nameInput = document.getElementById('text-input').value || "维港游客";
+        document.getElementById('card-name').innerText = nameInput + " 的祝福";
+        document.getElementById('my-avatar').src = myAvatarUrl;
+
+        // 构建包含新头像的链
+        const newChain = [...avatars, myAvatarUrl].join(',');
+        const shareUrl = `${window.location.origin}${window.location.pathname}?chain=${encodeURIComponent(newChain)}`;
+
+        const qrBox = document.getElementById('qrcode-box');
+        qrBox.innerHTML = "";
+        new QRCode(qrBox, { text: shareUrl, width: 120, height: 120 });
+
+        setTimeout(() => {
+            html2canvas(document.getElementById('card-tpl'), { useCORS: true, allowTaint: true }).then(cvs => {
+                document.getElementById('preview').src = cvs.toDataURL();
+                document.getElementById('modal').style.display = 'flex';
+            });
+        }, 600);
+    }
+</script>
+</body>
+</html>
