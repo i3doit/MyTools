@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <title>AiDouDou Code Runner - 手机端实时代码运行工具</title>
+    <meta name="description" content="AiDouDou Code Runner是一款支持中英双语、实时预览、名片生成的HTML/CSS/JS在线编辑器。专为移动端优化，支持一键分享与下载。">
+    <meta name="keywords" content="代码运行器, HTML预览, 艾兜兜儿, Code Runner, 移动端编辑器, 实时代码预览">
+    <meta name="author" content="艾兜兜儿 (AiDouDou)">
+    <link rel="canonical" href="https://i3doit.github.io/MyTools/RunCode.html" />
+    
+    <meta property="og:title" content="AiDouDou Code Runner - 随时随地运行代码">
+    <meta property="og:description" content="功能强大的实时代码编辑器，支持名片式分享与多语言。">
+    <meta property="og:url" content="https://i3doit.github.io/MyTools/RunCode.html">
+    <meta property="og:type" content="website">
+
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --accent: #007acc;
+            --warning: #ff9800;
+            --bg: #1a1a1a;
+            --panel: #252526;
+            --text: #ccc;
+            --border: #333;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; width: 100%; overflow: hidden; background: #000; font-family: -apple-system, sans-serif; }
+
+        /* 主容器：固定底部布局 */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: var(--bg);
+        }
+
+        /* 顶部导航 */
+        header {
+            height: 50px; background: var(--panel); border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 12px; flex-shrink: 0;
+        }
+        .logo { color: white; font-size: 14px; font-weight: bold; }
+        .logo span { color: var(--primary); font-size: 10px; margin-left: 4px; border: 1px solid; padding: 0 2px; }
+
+        .nav-icons { display: flex; gap: 15px; }
+        .icon-btn {
+            background: none; border: none; cursor: pointer; color: var(--text);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .icon-btn i { font-style: normal; font-size: 18px; line-height: 1; }
+        .icon-btn label { font-size: 9px; margin-top: 3px; cursor: pointer; }
+
+        /* 中间内容：比例 3:7 */
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .editor-section { height: 30%; display: flex; border-bottom: 1px solid var(--border); position: relative; }
+        .preview-section { height: 70%; background: #ffffff; }
+        
+        .line-num { width: 30px; padding: 10px 0; color: #555; font-size: 10px; text-align: center; background: rgba(0,0,0,0.1); }
+        textarea { flex: 1; background: transparent; color: var(--text); border: none; padding: 10px; resize: none; outline: none; font-size: 13px; font-family: monospace; line-height: 1.4; }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        /* 底部信息：强力固定，防遮挡 */
+        footer {
+            background: var(--panel); border-top: 1px solid var(--border);
+            padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
+            flex-shrink: 0; text-align: center;
+        }
+        .ad-banner {
+            background: linear-gradient(90deg, transparent, rgba(255,152,0,0.15), transparent);
+            padding: 6px; border-radius: 4px; margin-bottom: 6px;
+        }
+        .ad-banner a { color: var(--warning); text-decoration: none; font-size: 12px; font-weight: bold; }
+        .author-row { display: flex; justify-content: center; gap: 20px; font-size: 11px; color: var(--text); opacity: 0.8; }
+        .wx-btn { color: var(--accent); font-weight: bold; cursor: pointer; text-decoration: underline; }
+
+        /* 分享弹窗 */
+        #shareModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; padding: 20px;
+        }
+        .card-wrapper { display: flex; flex-direction: column; align-items: center; max-width: 320px; width: 100%; }
+        .card-box { 
+            background: #fff; padding: 25px; border-radius: 15px; width: 100%; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .card-box h3 { color: #333; font-size: 22px; margin-bottom: 8px; }
+        .card-box p { color: #666; font-size: 14px; margin-bottom: 5px; }
+        .qr-img { width: 180px; height: 180px; margin: 15px auto; border: 1px solid #f0f0f0; padding: 5px; display: block; }
+
+        .modal-btns { margin-top: 20px; width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        .dl-btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .close-btn { color: #ccc; font-size: 13px; background: none; border: none; cursor: pointer; }
+
+        #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: white; padding: 10px 20px; border-radius: 25px; font-size: 13px; z-index: 2000; display: none; }
+
+        /* 横屏适配 */
+        @media (min-width: 768px) {
+            main { flex-direction: row; }
+            .editor-section { height: 100%; width: 40%; border-bottom: none; border-right: 1px solid var(--border); }
+            .preview-section { height: 100%; width: 60%; }
+        }
+    </style>
+</head>
+<body class="theme-dark">
+
+<div class="app-container">
+    <header>
+        <div class="logo">AIDOUDOU <span>PRO</span></div>
+        <div class="nav-icons">
+            <button class="icon-btn" onclick="doPaste()"><i>📋</i><label id="btn-paste">粘贴</label></button>
+            <button class="icon-btn" onclick="openShare()"><i>📤</i><label id="btn-share">分享</label></button>
+            <button class="icon-btn" onclick="toggleLang()"><i>🌐</i><label id="btn-lang">中文</label></button>
+            <button class="icon-btn" onclick="clearAll()"><i>🗑️</i><label id="btn-clear">清空</label></button>
+            <button class="icon-btn" style="color:var(--primary)" onclick="runCode()"><i>▶</i><label id="btn-run">运行</label></button>
+        </div>
+    </header>
+
+    <main>
+        <section class="editor-section">
+            <div class="line-num" id="ln-box">1</div>
+            <textarea id="editor" spellcheck="false" placeholder="输入 HTML/CSS/JS 代码..."></textarea>
+        </section>
+        <section class="preview-section">
+            <iframe id="preview"></iframe>
+        </section>
+    </main>
+
+    <footer>
+        <div class="ad-banner">
+            <a href="#" id="ad-text">🎁 艾兜兜儿专属：高性能云服务器特惠入口，助力开发者 &gt;</a>
+        </div>
+        <div class="author-row">
+            <span><b id="lbl-author">作者</b>: 艾兜兜儿</span>
+            <span>WeChat: <b class="wx-btn" onclick="copyWx()">857023577</b></span>
+        </div>
+    </footer>
+</div>
+
+<div id="shareModal">
+    <div class="card-wrapper">
+        <div id="cardArea" class="card-box">
+            <h3 id="s-title">智能代码运行器</h3>
+            <p id="s-author">作者: 艾兜兜儿 | 微信: 857023577</p>
+            <img id="qrImg" class="qr-img" src="" alt="二维码">
+            <p style="font-size: 11px; color: #999;" id="s-hint">长按或点击下载图片，分享给你的朋友</p>
+        </div>
+        <div class="modal-btns">
+            <button class="dl-btn" onclick="downloadCard()" id="btn-dl">保存完整名片到相册</button>
+            <button class="close-btn" onclick="closeModal()" id="btn-back">返回编辑</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+    const editor = document.getElementById('editor');
+    const preview = document.getElementById('preview');
+    const lnBox = document.getElementById('ln-box');
+    const toast = document.getElementById('toast');
+
+    // 多语言配置与“活的”示例文档
+    const i18n = {
+        'zh': {
+            paste:'粘贴', share:'分享', clear:'清空', run:'运行', author:'作者', lang:'中文', back:'返回',
+            dl:'保存名片到相册', ad:'🎁 艾兜兜儿专属：高性能云服务器特惠入口，助力开发者 >',
+            s_title: '智能代码运行器', s_hint: '扫描二维码，实时预览代码',
+            code: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+        .guide { background: #f9f9f9; padding: 15px; border-radius: 10px; border-left: 5px solid #4CAF50; }
+        h2 { color: #4CAF50; margin-top: 0; }
+        .btn { display: inline-block; padding: 8px 15px; background: #4CAF50; color: white; border-radius: 5px; text-decoration: none; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="guide">
+        <h2>🚀 使用说明书</h2>
+        <p>1. <b>编写：</b>在上方编辑器修改 HTML 代码。</p>
+        <p>2. <b>运行：</b>点击右上角 ▶ 查看效果。</p>
+        <p>3. <b>分享：</b>点击 📤 生成你的专属名片。</p>
+        <p><b>作者：</b>艾兜兜儿</p>
+        <a href="javascript:void(0)" class="btn" onclick="alert('运行成功！')">点击测试交互</a>
+    </div>
+</body>
+</html>`
+        },
+        'en': {
+            paste:'Paste', share:'Share', clear:'Clear', run:'Run', author:'Author', lang:'English', back:'Back',
+            dl:'Save Image to Album', ad:'🎁 Exclusive: Best Cloud Server Deals for Devs >',
+            s_title: 'Smart Code Runner', s_hint: 'Scan QR code for instant preview',
+            code: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+        .guide { background: #f9f9f9; padding: 15px; border-radius: 10px; border-left: 5px solid #007acc; }
+        h2 { color: #007acc; margin-top: 0; }
+        .btn { display: inline-block; padding: 8px 15px; background: #007acc; color: white; border-radius: 5px; text-decoration: none; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="guide">
+        <h2>🚀 User Manual</h2>
+        <p>1. <b>Edit:</b> Modify HTML in the editor above.</p>
+        <p>2. <b>Run:</b> Click ▶ to see instant results.</p>
+        <p>3. <b>Share:</b> Click 📤 to generate your card.</p>
+        <p><b>Author:</b> AiDouDou</p>
+        <a href="javascript:void(0)" class="btn" onclick="alert('Interaction Success!')">Test Interaction</a>
+    </div>
+</body>
+</html>`
+        }
+    };
+
+    let curLang = 'zh';
+
+    function init() {
+        const savedCode = localStorage.getItem('dd_run_v6');
+        curLang = localStorage.getItem('dd_lang_v6') || 'zh';
+        editor.value = savedCode || i18n[curLang].code;
+        updateUI();
+        runCode();
+        updateLines();
+    }
+
+    function toggleLang() {
+        curLang = curLang === 'zh' ? 'en' : 'zh';
+        localStorage.setItem('dd_lang_v6', curLang);
+        editor.value = i18n[curLang].code; 
+        updateUI();
+        runCode();
+        updateLines();
+        showToast(curLang === 'zh' ? "已切换至中文" : "Switched to English");
+    }
+
+    function updateUI() {
+        const d = i18n[curLang];
+        document.getElementById('btn-paste').innerText = d.paste;
+        document.getElementById('btn-share').innerText = d.share;
+        document.getElementById('btn-clear').innerText = d.clear;
+        document.getElementById('btn-run').innerText = d.run;
+        document.getElementById('btn-lang').innerText = d.lang;
+        document.getElementById('btn-dl').innerText = d.dl;
+        document.getElementById('btn-back').innerText = d.back;
+        document.getElementById('lbl-author').innerText = d.author;
+        document.getElementById('ad-text').innerText = d.ad;
+        document.getElementById('s-title').innerText = d.s_title;
+        document.getElementById('s-hint').innerText = d.s_hint;
+    }
+
+    function runCode() {
+        const doc = preview.contentDocument || preview.contentWindow.document;
+        doc.open();
+        doc.write('<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">');
+        doc.write(editor.value);
+        doc.close();
+    }
+
+    function openShare() {
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(window.location.href)}`;
+        document.getElementById('qrImg').src = qrUrl;
+        document.getElementById('shareModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('shareModal').style.display = 'none';
+    }
+
+    // 真正的图片下载功能
+    function downloadCard() {
+        showToast("正在生成高清图片...");
+        const card = document.getElementById('cardArea');
+        html2canvas(card, { useCORS: true, scale: 2 }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'CodeRunner-Card-AiDouDou.png';
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            showToast("图片已开始下载");
+        });
+    }
+
+    async function doPaste() {
+        try {
+            const text = await navigator.clipboard.readText();
+            if(text) { editor.value = text; updateLines(); runCode(); showToast("粘贴成功"); }
+        } catch(e) { showToast("请手动粘贴"); }
+    }
+
+    function clearAll() {
+        editor.value = ''; updateLines(); runCode(); showToast("已清空");
+    }
+
+    function copyWx() {
+        navigator.clipboard.writeText('857023577').then(() => showToast("微信号已复制"));
+    }
+
+    function showToast(m) {
+        toast.innerText = m; toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 1500);
+    }
+
+    function updateLines() {
+        const count = editor.value.split('\n').length;
+        let h = ''; for(let i=1; i<=count; i++) h += i + '<br>';
+        lnBox.innerHTML = h;
+    }
+
+    editor.addEventListener('input', () => {
+        updateLines();
+        localStorage.setItem('dd_run_v6', editor.value);
+    });
+
+    editor.addEventListener('scroll', () => { lnBox.scrollTop = editor.scrollTop; });
+
+    init();
+</script>
+</body>
+</html>
