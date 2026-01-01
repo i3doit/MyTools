@@ -3,272 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>智能代码运行器 Pro - 艾兜兜儿</title>
+    <title>智能代码运行器 - 艾兜兜儿</title>
     <style>
         :root {
             --primary: #4CAF50;
             --accent: #007acc;
             --warning: #ff9800;
-            --trans: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --bg: #1a1a1a;
+            --panel: #252526;
+            --text: #ccc;
+            --border: #333;
         }
 
-        /* 主题配置 */
-        .theme-dark { --bg: #1a1a1a; --panel: #252526; --text: #ccc; --border: #333; --pre-bg: #ffffff; }
-        .theme-gray { --bg: #2d2d2d; --panel: #3c3c3c; --text: #eee; --border: #444; --pre-bg: #f5f5f5; }
-        .theme-light { --bg: #ffffff; --panel: #f0f0f0; --text: #333; --border: #ddd; --pre-bg: #ffffff; }
+        .theme-light { --bg: #fff; --panel: #f0f0f0; --text: #333; --border: #ddd; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { height: 100%; width: 100%; overflow: hidden; background: #000; font-family: -apple-system, system-ui, sans-serif; }
+        html, body { height: 100%; width: 100%; overflow: hidden; background: #000; font-family: -apple-system, sans-serif; }
 
-        .app-wrapper { display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
+        /* 使用 Grid 布局确保底部不被遮挡 */
+        .app-grid {
+            display: grid;
+            grid-template-rows: 50px 1fr auto; /* 头部, 主体, 底部 */
+            height: 100vh;
+            background: var(--bg);
+        }
 
         /* 顶部导航 */
         header {
-            height: 50px; background: var(--panel); display: flex; justify-content: space-between; 
-            align-items: center; padding: 0 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+            background: var(--panel);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+            border-bottom: 1px solid var(--border);
         }
-        .logo { color: var(--text); font-size: 14px; font-weight: bold; }
-        .logo span { color: var(--primary); font-size: 9px; border: 1px solid; padding: 0 2px; margin-left: 3px; }
-
-        .nav-icons { display: flex; gap: 12px; }
+        .nav-icons { display: flex; gap: 8px; }
         .icon-btn {
-            background: none; border: none; cursor: pointer; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; color: var(--text); transition: var(--trans);
+            background: none; border: none; cursor: pointer; color: var(--text);
+            display: flex; flex-direction: column; align-items: center; font-size: 16px;
         }
-        .icon-btn i { font-style: normal; font-size: 18px; margin-bottom: 2px; }
-        .icon-btn label { font-size: 9px; opacity: 0.8; cursor: pointer; }
-        .icon-btn:active { transform: scale(0.8); }
-        .btn-run { color: var(--primary); font-weight: bold; }
+        .icon-btn label { font-size: 9px; margin-top: 2px; }
 
-        /* 主体布局 - 默认代码区较窄 */
-        main { flex: 1; display: flex; flex-direction: row; overflow: hidden; }
+        /* 主体区域 */
+        main { display: flex; flex-direction: column; overflow: hidden; }
         
-        /* PC端比例：代码40% 预览60% */
-        .editor-box { flex: 4; display: flex; border-right: 1px solid var(--border); position: relative; background: var(--bg); }
-        .preview-box { flex: 6; background: var(--pre-bg); position: relative; }
+        /* 竖屏比例：代码 25% | 预览 75% */
+        #editor-container { height: 25%; display: flex; border-bottom: 1px solid var(--border); background: var(--bg); position: relative; }
+        #preview-container { height: 75%; background: #fff; }
         
-        .line-num { width: 30px; padding-top: 10px; color: #555; font-size: 10px; text-align: center; font-family: monospace; background: rgba(0,0,0,0.05); }
-        textarea { flex: 1; background: transparent; color: var(--text); border: none; padding: 10px; resize: none; outline: none; font-size: 13px; font-family: 'Consolas', monospace; line-height: 1.5; }
-        iframe { width: 100%; height: 100%; border: none; background: #fff; }
+        .line-num { width: 30px; padding-top: 5px; color: #555; font-size: 10px; text-align: center; font-family: monospace; background: rgba(0,0,0,0.05); }
+        textarea { flex: 1; background: transparent; color: var(--text); border: none; padding: 10px; resize: none; outline: none; font-size: 13px; font-family: monospace; }
+        iframe { width: 100%; height: 100%; border: none; }
 
-        /* 底部信息 */
+        /* 底部区域 - 确保可见 */
         footer {
-            background: var(--panel); border-top: 1px solid var(--border);
-            padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); flex-shrink: 0;
+            background: var(--panel);
+            border-top: 1px solid var(--border);
+            padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+            text-align: center;
         }
-        .ad-row { 
-            width: 100%; 
-            background: linear-gradient(90deg, transparent 0%, rgba(255,152,0,0.15) 50%, transparent 100%);
-            padding: 8px 0; margin-bottom: 5px;
+        .ad-banner {
+            background: linear-gradient(90deg, transparent, rgba(255,152,0,0.2), transparent);
+            padding: 6px; border-radius: 4px; margin-bottom: 5px;
         }
-        .ad-row a { color: var(--warning); text-decoration: none; font-size: 13px; font-weight: bold; display: block; text-align: center; width: 100%; }
-        
-        .info-bar { display: flex; justify-content: center; gap: 20px; font-size: 11px; color: var(--text); opacity: 0.7; }
-        .wx-link { color: var(--accent); font-weight: bold; cursor: pointer; text-decoration: underline; }
+        .ad-banner a { color: var(--warning); text-decoration: none; font-size: 12px; font-weight: bold; }
+        .author-info { font-size: 11px; color: var(--text); opacity: 0.8; }
+        .wx-btn { color: var(--accent); font-weight: bold; text-decoration: underline; }
 
-        /* 分享弹窗 */
-        #shareModal {
+        /* 弹窗样式 */
+        #modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 999; align-items: center; justify-content: center;
         }
-        .share-card {
-            background: white; padding: 25px; border-radius: 15px; width: 280px; text-align: center; position: relative;
+        .modal-card {
+            background: white; padding: 20px; border-radius: 12px; width: 280px; text-align: center;
         }
-        .share-card h3 { color: #333; margin-bottom: 5px; font-size: 18px; }
-        .share-card p { color: #666; font-size: 12px; }
-        #qrImg { width: 180px; height: 180px; margin: 15px 0; border: 1px solid #eee; }
-        .close-btn { position: absolute; top: 10px; right: 10px; font-size: 20px; color: #999; cursor: pointer; }
+        #qr-canvas { display: none; } /* 隐藏原生画布 */
+        #qr-img { width: 180px; height: 180px; margin: 10px 0; border: 1px solid #eee; }
+        .download-btn {
+            background: var(--primary); color: white; border: none; padding: 10px 20px;
+            border-radius: 6px; font-weight: bold; margin-top: 10px; width: 100%; cursor: pointer;
+        }
 
         /* 提示框 */
-        #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 1000; display: none; }
+        #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; display: none; }
 
-        /* 移动端手机竖屏专项优化 */
-        @media (max-width: 768px) {
-            main { flex-direction: column; }
-            /* 强制代码区只占30%，预览占70% */
-            .editor-box { flex: none; height: 30%; border-right: none; border-bottom: 1px solid var(--border); }
-            .preview-box { flex: none; height: 70%; }
-            .ad-row { background: rgba(255,152,0,0.1); } /* 手机端背景减淡 */
+        /* 横屏适配 */
+        @media (min-width: 768px) {
+            main { flex-direction: row; }
+            #editor-container { height: 100%; width: 40%; border-bottom: none; border-right: 1px solid var(--border); }
+            #preview-container { height: 100%; width: 60%; }
         }
     </style>
 </head>
 <body class="theme-dark">
 
-    <div class="app-wrapper">
-        <header>
-            <div class="logo">RUNNER <span>PRO</span></div>
-            <div class="nav-icons">
-                <button class="icon-btn" onclick="doPaste()"><i>📋</i><label id="l-paste">粘贴</label></button>
-                <button class="icon-btn" onclick="openShare()"><i>📤</i><label id="l-share">分享</label></button>
-                <button class="icon-btn" onclick="switchTheme()"><i>🎨</i><label id="l-theme">风格</label></button>
-                <button class="icon-btn" onclick="clearEditor()"><i>🗑️</i><label id="l-clear">清空</label></button>
-                <button class="icon-btn btn-run" onclick="runCode()"><i>▶</i><label id="l-run">运行</label></button>
-            </div>
-        </header>
-
-        <main id="main-view">
-            <div class="editor-box">
-                <div class="line-num" id="ln-container">1</div>
-                <textarea id="editor" spellcheck="false" placeholder="输入代码..."></textarea>
-            </div>
-            <div class="preview-box">
-                <iframe id="preview-frame"></iframe>
-            </div>
-        </main>
-
-        <footer>
-            <div class="ad-row">
-                <a href="#" id="ad-text">🎁 艾兜兜儿专属福利：高性能云服务器优惠入口 &gt;</a>
-            </div>
-            <div class="info-bar">
-                <span><b id="l-author">作者</b>: 艾兜兜儿</span>
-                <span>WeChat: <b class="wx-link" onclick="copyWx()">857023577</b></span>
-            </div>
-        </footer>
-    </div>
-
-    <div id="shareModal" onclick="this.style.display='none'">
-        <div class="share-card" onclick="event.stopPropagation()">
-            <span class="close-btn" onclick="document.getElementById('shareModal').style.display='none'">&times;</span>
-            <h3 id="s-title">智能代码运行器</h3>
-            <p>作者: 艾兜兜儿 | 微信: 857023577</p>
-            <img id="qrImg" src="" alt="二维码">
-            <p style="font-size: 10px; color: #999;">长按保存图片分享给好友</p>
+<div class="app-grid">
+    <header>
+        <div style="color:white; font-size:14px; font-weight:bold;">Runner <span>Pro</span></div>
+        <div class="nav-icons">
+            <button class="icon-btn" onclick="doPaste()"><span>📋</span><label id="lang-paste">粘贴</label></button>
+            <button class="icon-btn" onclick="openShare()"><span>📤</span><label id="lang-share">分享</label></button>
+            <button class="icon-btn" onclick="toggleLang()"><span>🌐</span><label id="lang-curr">中文</label></button>
+            <button class="icon-btn" onclick="clearCode()"><span>🗑️</span><label id="lang-clear">清空</label></button>
+            <button class="icon-btn" style="color:var(--primary)" onclick="runCode()"><span>▶</span><label id="lang-run">运行</label></button>
         </div>
+    </header>
+
+    <main>
+        <div id="editor-container">
+            <div class="line-num" id="line-box">1</div>
+            <textarea id="editor" spellcheck="false" placeholder="Code here..."></textarea>
+        </div>
+        <div id="preview-container">
+            <iframe id="preview"></iframe>
+        </div>
+    </main>
+
+    <footer>
+        <div class="ad-banner">
+            <a href="#" id="ad-text">🔥 艾兜兜儿专属福利：云服务器特惠入口 &gt;</a>
+        </div>
+        <div class="author-info">
+            <span id="lang-author">作者</span>: 艾兜兜儿 | WeChat: <span class="wx-btn" onclick="copyWx()">857023577</span>
+        </div>
+    </footer>
+</div>
+
+<div id="modal-overlay" onclick="this.style.display='none'">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <h3 id="modal-title" style="color:#333">分享工具</h3>
+        <img id="qr-img" src="" alt="二维码">
+        <p style="font-size: 12px; color: #666;">扫描或下载下方二维码图片</p>
+        <button class="download-btn" onclick="downloadQr()" id="lang-download">保存到相册</button>
     </div>
+</div>
 
-    <div id="toast">提示</div>
+<div id="toast"></div>
 
-    <script>
-        const editor = document.getElementById('editor');
-        const lnContainer = document.getElementById('ln-container');
-        const previewFrame = document.getElementById('preview-frame');
-        const toast = document.getElementById('toast');
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 
-        // 默认初始化示例
-        const initialCode = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; background: #fdfdfd; }
-        .box { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #eee; }
-        h2 { color: #4CAF50; }
-        p { color: #666; line-height: 1.6; }
-        .btn { display: inline-block; padding: 10px 20px; background: #4CAF50; color: white; border-radius: 6px; text-decoration: none; margin-top: 15px; }
-    </style>
-</head>
-<body>
-    <div class="box">
-        <h2>🚀 智能运行器已就绪</h2>
-        <p>1. 在上方修改 HTML/CSS 代码<br>2. 点击 <b>运行</b> 查看实时效果<br>3. 点击 <b>分享</b> 生成名片海报</p>
-        <p><b>作者：</b>艾兜兜儿</p>
-        <a href="javascript:void(0)" class="btn" onclick="alert('交互成功！')">点我测试</a>
-    </div>
-</body>
-</html>`;
+<script>
+    const editor = document.getElementById('editor');
+    const preview = document.getElementById('preview');
+    const lineBox = document.getElementById('line-box');
+    const toast = document.getElementById('toast');
 
-        const i18n = {
-            'zh-CN': { paste:'粘贴', share:'分享', theme:'风格', clear:'清空', run:'运行', author:'作者' },
-            'zh-TW': { paste:'貼上', share:'分享', theme:'風格', clear:'清空', run:'運行', author:'作者' },
-            'en': { paste:'Paste', share:'Share', theme:'Style', clear:'Clear', run:'Run', author:'Author' }
-        };
+    const i18n = {
+        'zh': { paste:'粘贴', share:'分享', clear:'清空', run:'运行', author:'作者', dl:'保存到相册', ad:'🔥 艾兜兜儿专属：云服务器特惠入口 >' },
+        'en': { paste:'Paste', share:'Share', clear:'Clear', run:'Run', author:'Author', dl:'Save Image', ad:'🔥 Ad: Exclusive Cloud Server Deal >' }
+    };
 
-        let curLang = 'zh-CN';
-        let themes = ['theme-dark', 'theme-gray', 'theme-light'];
-        let tIdx = 0;
+    let curLang = 'zh';
 
-        function init() {
-            // 语言识别
-            const l = navigator.language;
-            if(l.includes('TW')) curLang = 'zh-TW';
-            else if(!l.includes('zh')) curLang = 'en';
+    const defaultDoc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;text-align:center;padding:20px;color:#333}h2{color:#4CAF50}.info{background:#f9f9f9;padding:15px;border-radius:8px;border:1px solid #eee}</style></head><body><h2>🚀 智能运行器 V5.0</h2><div class="info"><p><b>作者：</b>艾兜兜儿</p><p><b>微信：</b>857023577</p><p>点击上方<b>分享</b>可保存名片</p></div></body></html>`;
 
-            const d = i18n[curLang];
-            document.getElementById('l-paste').innerText = d.paste;
-            document.getElementById('l-share').innerText = d.share;
-            document.getElementById('l-theme').innerText = d.theme;
-            document.getElementById('l-clear').innerText = d.clear;
-            document.getElementById('l-run').innerText = d.run;
-            document.getElementById('l-author').innerText = d.author;
+    function init() {
+        editor.value = localStorage.getItem('code_v5') || defaultDoc;
+        updateLines();
+        runCode();
+        updateUI();
+    }
 
-            const saved = localStorage.getItem('dd_v42_code');
-            editor.value = saved || initialCode;
-            
-            const savedTheme = localStorage.getItem('dd_v42_theme');
-            if(savedTheme) { tIdx = savedTheme; document.body.className = themes[tIdx]; }
+    function toggleLang() {
+        curLang = curLang === 'zh' ? 'en' : 'zh';
+        updateUI();
+    }
 
-            updateLines();
-            runCode();
-        }
+    function updateUI() {
+        const d = i18n[curLang];
+        document.getElementById('lang-paste').innerText = d.paste;
+        document.getElementById('lang-share').innerText = d.share;
+        document.getElementById('lang-clear').innerText = d.clear;
+        document.getElementById('lang-run').innerText = d.run;
+        document.getElementById('lang-author').innerText = d.author;
+        document.getElementById('lang-download').innerText = d.dl;
+        document.getElementById('ad-text').innerText = d.ad;
+        document.getElementById('lang-curr').innerText = curLang === 'zh' ? '中文' : 'English';
+    }
 
-        function runCode() {
-            const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
-            doc.open();
-            doc.write('<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">');
-            doc.write(editor.value);
-            doc.close();
-            showToast("运行成功");
-        }
+    function runCode() {
+        const doc = preview.contentDocument || preview.contentWindow.document;
+        doc.open();
+        doc.write('<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">');
+        doc.write(editor.value);
+        doc.close();
+    }
 
-        async function doPaste() {
-            try {
-                const text = await navigator.clipboard.readText();
-                if(text) {
-                    editor.value = text;
-                    updateLines();
-                    runCode();
-                }
-            } catch(e) {
-                showToast("请手动长按粘贴");
-            }
-        }
+    async function doPaste() {
+        try {
+            const text = await navigator.clipboard.readText();
+            if(text) { editor.value = text; updateLines(); runCode(); showToast("OK"); }
+        } catch(e) { showToast("Error: Manually Paste"); }
+    }
 
-        function openShare() {
-            const qr = document.getElementById('qrImg');
-            // 使用公共API生成二维码
-            qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.href)}`;
-            document.getElementById('shareModal').style.display = 'flex';
-        }
+    function clearCode() {
+        editor.value = ''; updateLines(); runCode(); showToast("Cleared");
+    }
 
-        function switchTheme() {
-            tIdx = (tIdx + 1) % themes.length;
-            document.body.className = themes[themeIdx = tIdx];
-            localStorage.setItem('dd_v42_theme', tIdx);
-        }
-
-        function clearEditor() {
-            editor.value = '';
-            updateLines();
-            runCode();
-            showToast("已清空");
-        }
-
-        function copyWx() {
-            navigator.clipboard.writeText('857023577').then(() => showToast("微信已复制"));
-        }
-
-        function showToast(m) {
-            toast.innerText = m;
-            toast.style.display = 'block';
-            setTimeout(() => toast.style.display = 'none', 1500);
-        }
-
-        function updateLines() {
-            const count = editor.value.split('\n').length;
-            let h = '';
-            for(let i=1; i<=count; i++) h += i + '<br>';
-            lnContainer.innerHTML = h;
-        }
-
-        editor.addEventListener('input', () => {
-            updateLines();
-            localStorage.setItem('dd_v42_code', editor.value);
+    // 分享与下载功能
+    function openShare() {
+        const url = window.location.href;
+        QRCode.toDataURL(url, { width: 400, margin: 2 }, function (err, url) {
+            if (err) return;
+            document.getElementById('qr-img').src = url;
+            document.getElementById('modal-overlay').style.display = 'flex';
         });
+    }
 
-        editor.addEventListener('scroll', () => { lnContainer.scrollTop = editor.scrollTop; });
+    function downloadQr() {
+        const link = document.createElement('a');
+        link.download = 'aidoudou-share.png';
+        link.href = document.getElementById('qr-img').src;
+        link.click();
+        showToast("Starting Download...");
+    }
 
-        window.onload = init;
-    </script>
+    function copyWx() {
+        navigator.clipboard.writeText('857023577').then(() => showToast("Copied"));
+    }
+
+    function showToast(m) {
+        toast.innerText = m; toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 1500);
+    }
+
+    function updateLines() {
+        const lines = editor.value.split('\n').length;
+        let h = ''; for(let i=1; i<=lines; i++) h += i + '<br>';
+        lineBox.innerHTML = h;
+    }
+
+    editor.addEventListener('input', () => {
+        updateLines();
+        localStorage.setItem('code_v5', editor.value);
+    });
+
+    editor.addEventListener('scroll', () => { lineBox.scrollTop = editor.scrollTop; });
+
+    init();
+</script>
 </body>
 </html>
