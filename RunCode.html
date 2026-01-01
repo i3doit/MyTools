@@ -2,244 +2,255 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能代码运行器 - 艾兜兜儿</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>智能代码运行器 Pro - 艾兜兜儿</title>
     <style>
         :root {
             --primary-color: #4CAF50;
             --bg-dark: #1e1e1e;
+            --header-bg: #252526;
             --border-color: #333;
-            --text-gray: #a9a9a9;
+            --text-main: #d4d4d4;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            -webkit-tap-highlight-color: transparent; /* 移除移动端点击高亮 */
         }
 
-        body {
-            background-color: #121212;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+        body, html {
+            height: 100%;
+            background-color: #000;
+            font-family: 'Consolas', 'Monaco', 'PingFang SC', monospace;
+            overflow: hidden; /* 防止整体滚动 */
         }
 
-        /* 头部样式 */
-        .header {
-            background: #252526;
-            padding: 10px 20px;
+        /* 顶部导航 */
+        header {
+            height: 50px;
+            background: var(--header-bg);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0 15px;
             border-bottom: 1px solid var(--border-color);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
         }
 
-        .header h1 {
-            color: #eee;
-            font-size: 1.2em;
-            font-weight: normal;
-        }
-
-        /* 主体布局 */
-        .main-container {
-            flex: 1;
+        .logo {
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
             display: flex;
-            overflow: hidden;
+            align-items: center;
+            gap: 8px;
         }
 
-        /* 编辑区 */
-        .editor-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            border-right: 2px solid var(--border-color);
-            position: relative;
-        }
-
-        .toolbar {
-            background: #2d2d2d;
-            padding: 5px 15px;
+        .controls {
             display: flex;
             gap: 10px;
         }
 
         .btn {
-            padding: 6px 15px;
+            padding: 6px 16px;
             border: none;
             border-radius: 4px;
-            cursor: pointer;
             font-size: 13px;
-            transition: 0.2s;
-            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
         }
 
-        .btn-run { background: var(--primary-color); }
-        .btn-clear { background: #555; }
-        .btn:hover { opacity: 0.8; transform: translateY(-1px); }
+        .btn-run { background: var(--primary-color); color: white; }
+        .btn-clear { background: #444; color: #ccc; }
+        .btn:active { transform: scale(0.95); opacity: 0.8; }
 
-        .editor-wrapper {
+        /* 主容器 */
+        main {
+            height: calc(100% - 75px); /* 减去 header 和 footer */
+            display: flex;
+            flex-direction: row; /* 默认横屏 */
+        }
+
+        /* 编辑区域 */
+        .editor-container {
             flex: 1;
             display: flex;
+            background: var(--bg-dark);
             position: relative;
-            overflow: hidden;
+            border-right: 1px solid var(--border-color);
         }
 
         .line-numbers {
-            width: 40px;
-            background: #1e1e1e;
-            color: #858585;
-            text-align: center;
+            width: 35px;
             padding-top: 10px;
-            font-size: 14px;
-            line-height: 1.5;
-            border-right: 1px solid #333;
+            background: #1e1e1e;
+            color: #666;
+            text-align: center;
+            font-size: 12px;
+            line-height: 20px;
             user-select: none;
+            border-right: 1px solid #2d2d2d;
         }
 
         textarea {
             flex: 1;
-            background: var(--bg-dark);
-            color: #d4d4d4;
+            background: transparent;
+            color: var(--text-main);
             border: none;
             padding: 10px;
             resize: none;
             outline: none;
             font-size: 14px;
-            line-height: 1.5;
+            line-height: 20px;
+            width: 100%;
             tab-size: 4;
-            white-space: pre;
+            caret-color: var(--primary-color);
         }
 
-        /* 预览区 */
-        .preview-section {
+        /* 预览区域 */
+        .preview-container {
             flex: 1;
             background: #fff;
-            display: flex;
-            flex-direction: column;
+            position: relative;
         }
 
-        #preview-frame {
+        iframe {
             width: 100%;
             height: 100%;
             border: none;
             background: white;
         }
 
-        /* 页脚 */
-        .footer {
-            background: #252526;
-            padding: 5px 20px;
-            font-size: 12px;
-            color: var(--text-gray);
-            border-top: 1px solid var(--border-color);
+        /* 页脚状态栏 */
+        footer {
+            height: 25px;
+            background: #007acc;
+            color: white;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 11px;
         }
 
-        .footer a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
+        footer a { color: #fff; text-decoration: none; font-weight: bold; }
 
-        /* 移动端适配 */
+        /* --- 响应式适配 --- */
         @media (max-width: 768px) {
-            .main-container { flex-direction: column; }
-            .editor-section { border-right: none; border-bottom: 2px solid var(--border-color); }
+            main {
+                flex-direction: column; /* 手机端上下分栏 */
+            }
+            .editor-container {
+                flex: 1.2; /* 给编辑区多点空间 */
+                border-right: none;
+                border-bottom: 2px solid var(--border-color);
+            }
+            .preview-container {
+                flex: 0.8;
+            }
+            .btn { padding: 8px 12px; } /* 移动端按钮大一点 */
+        }
+
+        @media (max-width: 480px) {
+            .logo span { display: none; } /* 极窄屏幕隐藏副标题 */
         }
     </style>
 </head>
 <body>
 
-    <header class="header">
-        <h1>智能代码运行器 <span style="font-size: 0.6em; color: #888;">v2.0</span></h1>
-        <div class="toolbar">
-            <button class="btn btn-run" onclick="runCode()">▶ 运行代码</button>
+    <header>
+        <div class="logo">
+            ⚡ 智能运行器 <span>by 艾兜兜儿</span>
+        </div>
+        <div class="controls">
             <button class="btn btn-clear" onclick="clearEditor()">清空</button>
+            <button class="btn btn-run" onclick="runCode()">运行</button>
         </div>
     </header>
 
-    <main class="main-container">
-        <section class="editor-section">
-            <div class="editor-wrapper">
-                <div class="line-numbers" id="lineNumbers">1</div>
-                <textarea id="codeEditor" spellcheck="false" placeholder="在此输入 HTML/CSS/JS 代码..."></textarea>
-            </div>
+    <main>
+        <section class="editor-container">
+            <div class="line-numbers" id="lineNumbers">1</div>
+            <textarea id="codeEditor" spellcheck="false" placeholder="在此输入代码..."></textarea>
         </section>
 
-        <section class="preview-section">
-            <iframe id="preview-frame" sandbox="allow-scripts allow-modals allow-popups allow-forms"></iframe>
+        <section class="preview-container">
+            <iframe id="previewFrame" sandbox="allow-scripts allow-modals allow-popups allow-forms"></iframe>
         </section>
     </main>
 
-    <footer class="footer">
-        <div>状态: <span id="status">就绪</span></div>
+    <footer>
+        <div id="status">就绪</div>
         <div>版权所有 &copy; <a href="你的作者链接" target="_blank">艾兜兜儿</a></div>
     </footer>
 
     <script>
         const codeEditor = document.getElementById('codeEditor');
         const lineNumbers = document.getElementById('lineNumbers');
-        const previewFrame = document.getElementById('preview-frame');
+        const previewFrame = document.getElementById('previewFrame');
         const statusText = document.getElementById('status');
 
-        // 初始化代码
+        // 默认模版
         const defaultCode = `<!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { text-align: center; padding-top: 50px; font-family: sans-serif; transition: 0.5s; }
-        .card { border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); padding: 20px; display: inline-block; }
-        button { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; margin: 0; color: #333; }
+        .box { padding: 20px; border-radius: 12px; background: #f0f0f0; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
+        h2 { color: #4CAF50; }
+        p { font-size: 14px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Hello World</h1>
-        <p>这是一个实时运行的代码编辑器</p>
-        <button onclick="changeBg()">点击交互</button>
+    <div class="box">
+        <h2>运行成功!</h2>
+        <p>这是一个适配手机和PC的代码运行器</p>
+        <small id="time"></small>
     </div>
     <script>
-        function changeBg() {
-            document.body.style.background = 'honeydew';
-            alert('JS运行成功！');
-        }
+        document.getElementById('time').innerText = "当前时间：" + new Date().toLocaleString();
     <\/script>
 </body>
 </html>`;
 
-        codeEditor.value = defaultCode;
+        // 1. 初始化加载：尝试从本地存储读取
+        window.onload = () => {
+            const savedCode = localStorage.getItem('dd_saved_code');
+            if (savedCode) {
+                codeEditor.value = savedCode;
+                updateStatus("已加载上次保存的代码");
+            } else {
+                codeEditor.value = defaultCode;
+            }
+            updateLineNumbers();
+            runCode();
+        };
 
-        // 核心运行逻辑
+        // 2. 运行代码逻辑
         function runCode() {
             try {
                 const code = codeEditor.value;
                 const blob = new Blob([code], { type: 'text/html' });
                 const url = URL.createObjectURL(blob);
-                
-                // 将代码写入 iframe
                 previewFrame.src = url;
-                
-                statusText.innerText = "运行中...";
-                statusText.style.color = "#4CAF50";
+                updateStatus("运行中...");
             } catch (err) {
-                statusText.innerText = "运行错误";
-                statusText.style.color = "#ff5555";
+                updateStatus("运行出错", "#ff8888");
             }
         }
 
-        // 清空
-        function clearEditor() {
-            if(confirm('确定要清空所有代码吗？')) {
-                codeEditor.value = '';
-                updateLineNumbers();
-            }
-        }
+        // 3. 自动保存逻辑
+        codeEditor.addEventListener('input', () => {
+            updateLineNumbers();
+            localStorage.setItem('dd_saved_code', codeEditor.value);
+            updateStatus("自动保存中...");
+        });
 
-        // 更新行号
+        // 4. 更新行号
         function updateLineNumbers() {
             const lines = codeEditor.value.split('\n').length;
             let lineHTML = '';
@@ -249,7 +260,7 @@
             lineNumbers.innerHTML = lineHTML;
         }
 
-        // 支持 Tab 键缩进
+        // 5. 编辑器按键优化 (支持 Tab)
         codeEditor.addEventListener('keydown', function(e) {
             if (e.key === 'Tab') {
                 e.preventDefault();
@@ -260,17 +271,27 @@
             }
         });
 
-        // 监听滚动同步行号
+        // 6. 清空编辑器
+        function clearEditor() {
+            if(confirm('确定要清空吗？本地备份也会消失。')) {
+                codeEditor.value = '';
+                localStorage.removeItem('dd_saved_code');
+                updateLineNumbers();
+                runCode();
+                updateStatus("已清空");
+            }
+        }
+
+        // 工具函数：更新底部状态
+        function updateStatus(msg, color = "#fff") {
+            statusText.innerText = msg;
+            statusText.style.color = color;
+        }
+
+        // 滚动同步
         codeEditor.addEventListener('scroll', () => {
             lineNumbers.scrollTop = codeEditor.scrollTop;
         });
-
-        // 监听输入更新行号
-        codeEditor.addEventListener('input', updateLineNumbers);
-
-        // 初始化
-        updateLineNumbers();
-        runCode(); // 页面加载自动运行一次
     </script>
 </body>
 </html>
