@@ -1,1 +1,276 @@
-好
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能代码运行器 - 艾兜兜儿</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --bg-dark: #1e1e1e;
+            --border-color: #333;
+            --text-gray: #a9a9a9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        body {
+            background-color: #121212;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 头部样式 */
+        .header {
+            background: #252526;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            color: #eee;
+            font-size: 1.2em;
+            font-weight: normal;
+        }
+
+        /* 主体布局 */
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* 编辑区 */
+        .editor-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 2px solid var(--border-color);
+            position: relative;
+        }
+
+        .toolbar {
+            background: #2d2d2d;
+            padding: 5px 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 6px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
+            color: white;
+        }
+
+        .btn-run { background: var(--primary-color); }
+        .btn-clear { background: #555; }
+        .btn:hover { opacity: 0.8; transform: translateY(-1px); }
+
+        .editor-wrapper {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .line-numbers {
+            width: 40px;
+            background: #1e1e1e;
+            color: #858585;
+            text-align: center;
+            padding-top: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+            border-right: 1px solid #333;
+            user-select: none;
+        }
+
+        textarea {
+            flex: 1;
+            background: var(--bg-dark);
+            color: #d4d4d4;
+            border: none;
+            padding: 10px;
+            resize: none;
+            outline: none;
+            font-size: 14px;
+            line-height: 1.5;
+            tab-size: 4;
+            white-space: pre;
+        }
+
+        /* 预览区 */
+        .preview-section {
+            flex: 1;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #preview-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        /* 页脚 */
+        .footer {
+            background: #252526;
+            padding: 5px 20px;
+            font-size: 12px;
+            color: var(--text-gray);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .main-container { flex-direction: column; }
+            .editor-section { border-right: none; border-bottom: 2px solid var(--border-color); }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>智能代码运行器 <span style="font-size: 0.6em; color: #888;">v2.0</span></h1>
+        <div class="toolbar">
+            <button class="btn btn-run" onclick="runCode()">▶ 运行代码</button>
+            <button class="btn btn-clear" onclick="clearEditor()">清空</button>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <section class="editor-section">
+            <div class="editor-wrapper">
+                <div class="line-numbers" id="lineNumbers">1</div>
+                <textarea id="codeEditor" spellcheck="false" placeholder="在此输入 HTML/CSS/JS 代码..."></textarea>
+            </div>
+        </section>
+
+        <section class="preview-section">
+            <iframe id="preview-frame" sandbox="allow-scripts allow-modals allow-popups allow-forms"></iframe>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div>状态: <span id="status">就绪</span></div>
+        <div>版权所有 &copy; <a href="你的作者链接" target="_blank">艾兜兜儿</a></div>
+    </footer>
+
+    <script>
+        const codeEditor = document.getElementById('codeEditor');
+        const lineNumbers = document.getElementById('lineNumbers');
+        const previewFrame = document.getElementById('preview-frame');
+        const statusText = document.getElementById('status');
+
+        // 初始化代码
+        const defaultCode = `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { text-align: center; padding-top: 50px; font-family: sans-serif; transition: 0.5s; }
+        .card { border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); padding: 20px; display: inline-block; }
+        button { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Hello World</h1>
+        <p>这是一个实时运行的代码编辑器</p>
+        <button onclick="changeBg()">点击交互</button>
+    </div>
+    <script>
+        function changeBg() {
+            document.body.style.background = 'honeydew';
+            alert('JS运行成功！');
+        }
+    <\/script>
+</body>
+</html>`;
+
+        codeEditor.value = defaultCode;
+
+        // 核心运行逻辑
+        function runCode() {
+            try {
+                const code = codeEditor.value;
+                const blob = new Blob([code], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                
+                // 将代码写入 iframe
+                previewFrame.src = url;
+                
+                statusText.innerText = "运行中...";
+                statusText.style.color = "#4CAF50";
+            } catch (err) {
+                statusText.innerText = "运行错误";
+                statusText.style.color = "#ff5555";
+            }
+        }
+
+        // 清空
+        function clearEditor() {
+            if(confirm('确定要清空所有代码吗？')) {
+                codeEditor.value = '';
+                updateLineNumbers();
+            }
+        }
+
+        // 更新行号
+        function updateLineNumbers() {
+            const lines = codeEditor.value.split('\n').length;
+            let lineHTML = '';
+            for (let i = 1; i <= lines; i++) {
+                lineHTML += i + '<br>';
+            }
+            lineNumbers.innerHTML = lineHTML;
+        }
+
+        // 支持 Tab 键缩进
+        codeEditor.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 4;
+            }
+        });
+
+        // 监听滚动同步行号
+        codeEditor.addEventListener('scroll', () => {
+            lineNumbers.scrollTop = codeEditor.scrollTop;
+        });
+
+        // 监听输入更新行号
+        codeEditor.addEventListener('input', updateLineNumbers);
+
+        // 初始化
+        updateLineNumbers();
+        runCode(); // 页面加载自动运行一次
+    </script>
+</body>
+</html>
