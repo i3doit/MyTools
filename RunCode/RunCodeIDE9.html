@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>智能代码运行器 Pro - 艾兜兜儿</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --accent: #007acc;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 主题配色 */
+        .theme-dark { --bg: #1e1e1e; --panel: #252526; --text: #d4d4d4; --border: #333; --pre-bg: #fff; }
+        .theme-gray { --bg: #2d2d2d; --panel: #3c3c3c; --text: #e0e0e0; --border: #444; --pre-bg: #f9f9f9; }
+        .theme-light { --bg: #ffffff; --panel: #f3f3f3; --text: #333; --border: #ddd; --pre-bg: #fff; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; width: 100%; overflow: hidden; background: #000; font-family: -apple-system, sans-serif; }
+
+        .app-wrapper { display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
+
+        /* 头部导航 */
+        header {
+            height: 50px; background: var(--panel); display: flex; justify-content: space-between; 
+            align-items: center; padding: 0 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+        }
+        .logo { color: var(--text); font-size: 15px; font-weight: bold; }
+        .logo span { color: var(--primary); font-size: 10px; border: 1px solid var(--primary); padding: 1px 3px; margin-left: 5px; border-radius: 3px; }
+
+        .btn-group { display: flex; gap: 5px; }
+        .btn { padding: 6px 10px; border-radius: 5px; border: none; font-size: 12px; cursor: pointer; font-weight: 600; color: white; transition: var(--transition); }
+        .btn-run { background: var(--primary); }
+        .btn-paste { background: #ff9800; }
+        .btn-theme { background: #666; }
+        .btn-clear { background: #444; }
+        .btn:active { transform: scale(0.9); }
+
+        /* 主体分栏布局 */
+        main { flex: 1; display: flex; overflow: hidden; background: var(--bg); }
+        
+        .editor-box { flex: 1; display: flex; border-right: 1px solid var(--border); transition: var(--transition); position: relative; }
+        .line-num { width: 35px; padding-top: 10px; color: #666; font-size: 11px; text-align: center; font-family: monospace; background: rgba(0,0,0,0.05); }
+        textarea { flex: 1; background: transparent; color: var(--text); border: none; padding: 10px; resize: none; outline: none; font-size: 14px; font-family: 'Consolas', monospace; line-height: 1.5; }
+
+        .preview-box { flex: 1; display: flex; background: var(--pre-bg); transition: var(--transition); position: relative; }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        /* 底部信息 */
+        footer {
+            background: var(--panel); border-top: 1px solid var(--border);
+            padding: 10px 15px calc(10px + env(safe-area-inset-bottom)); flex-shrink: 0;
+        }
+        .footer-wrap { max-width: 800px; margin: 0 auto; text-align: center; display: flex; flex-direction: column; gap: 8px; }
+        .ad-box { padding: 6px; border: 1px dashed var(--primary); border-radius: 4px; font-size: 13px; }
+        .ad-link { color: var(--primary); text-decoration: none; font-weight: bold; }
+        .info-row { font-size: 12px; color: var(--text); opacity: 0.8; }
+        .wechat { color: var(--accent); font-weight: bold; cursor: pointer; text-decoration: underline; }
+
+        /* 自动消失提示 */
+        #toast { position: fixed; top: 40%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; z-index: 999; display: none; }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            main { flex-direction: column; }
+            .editor-box, .preview-box { flex: 1; border-right: none; }
+            .preview-box { border-top: 1px solid var(--border); }
+        }
+
+        /* 运行时的放大效果 */
+        .focus-preview .preview-box { flex: 2.5; }
+        .focus-preview .editor-box { flex: 0.5; opacity: 0.5; }
+    </style>
+</head>
+<body class="theme-dark">
+
+    <div class="app-wrapper" id="app">
+        <header>
+            <div class="logo">Runner <span id="lang-tag">PRO</span></div>
+            <div class="btn-group">
+                <button class="btn btn-paste" onclick="doPaste()" id="btn-paste">粘贴</button>
+                <button class="btn btn-theme" onclick="switchTheme()">风格</button>
+                <button class="btn btn-clear" onclick="clearEditor()">清空</button>
+                <button class="btn btn-run" onclick="runCode()" id="btn-run">▶ 运行</button>
+            </div>
+        </header>
+
+        <main id="mainArea">
+            <div class="editor-box">
+                <div class="line-num" id="lineNums">1</div>
+                <textarea id="codeEditor" spellcheck="false" placeholder="Enter code..."></textarea>
+            </div>
+            <div class="preview-box">
+                <iframe id="previewFrame"></iframe>
+            </div>
+        </main>
+
+        <footer>
+            <div class="footer-wrap">
+                <div class="ad-box">
+                    <a href="你的链接" class="ad-link" id="ad-text">🔥 推荐：高性能服务器，艾兜兜儿专属福利 ></a>
+                </div>
+                <div class="info-row">
+                    <span id="txt-author">作者</span>: 艾兜兜儿 | WeChat: <span class="wechat" onclick="copyWx()">857023577</span>
+                </div>
+                <div class="info-row" style="font-size: 10px;">© 2024 AI DOU DOU | All Languages Supported</div>
+            </div>
+        </footer>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        const editor = document.getElementById('codeEditor');
+        const mainArea = document.getElementById('mainArea');
+        const preview = document.getElementById('previewFrame');
+        const toast = document.getElementById('toast');
+        const themes = ['theme-dark', 'theme-gray', 'theme-light'];
+        let themeIdx = 0;
+
+        // 多语言字典
+        const langMap = {
+            'zh-CN': { paste:'粘贴', theme:'风格', clear:'清空', run:'运行', author:'作者', ad:'🔥 推荐：开发者服务器福利 >', toast_c:'已复制', toast_clr:'已清空' },
+            'zh-TW': { paste:'貼上', theme:'風格', clear:'清空', run:'運行', author:'作者', ad:'🔥 推薦：開發者服務器福利 >', toast_c:'已複製', toast_clr:'已清空' },
+            'en': { paste:'Paste', theme:'Style', clear:'Clear', run:'Run', author:'Author', ad:'🔥 Ad: Best Cloud Server for Dev >', toast_c:'Copied', toast_clr:'Cleared' }
+        };
+
+        // 1. 初始化语言
+        function initI18n() {
+            let l = navigator.language.includes('TW') ? 'zh-TW' : (navigator.language.includes('zh') ? 'zh-CN' : 'en');
+            const d = langMap[l];
+            document.getElementById('btn-paste').innerText = d.paste;
+            document.getElementById('btn-run').innerText = '▶ ' + d.run;
+            document.getElementById('txt-author').innerText = d.author;
+            document.getElementById('ad-text').innerText = d.ad;
+            return d;
+        }
+        const curD = initI18n();
+
+        // 2. 粘贴功能 (兼容多次点击)
+        async function doPaste() {
+            try {
+                const text = await navigator.clipboard.readText();
+                if(text) {
+                    editor.value += text;
+                    updateLineNums();
+                    showToast(curD.paste + " OK");
+                    runCode(); // 粘贴后自动预览
+                }
+            } catch (err) {
+                showToast("请在输入框长按粘贴");
+            }
+        }
+
+        // 3. 运行并放大预览区
+        function runCode() {
+            const doc = preview.contentDocument || preview.contentWindow.document;
+            doc.open();
+            doc.write('<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">');
+            doc.write(editor.value);
+            doc.close();
+            
+            // 运行效果：预览区放大
+            mainArea.classList.add('focus-preview');
+            setTimeout(() => {
+                showToast("Running...");
+            }, 100);
+        }
+
+        // 4. 点击编辑器恢复比例
+        editor.addEventListener('focus', () => {
+            mainArea.classList.remove('focus-preview');
+        });
+
+        // 5. 皮肤切换
+        function switchTheme() {
+            themeIdx = (themeIdx + 1) % themes.length;
+            document.body.className = themes[themeIdx];
+            localStorage.setItem('dd_theme_v5', themeIdx);
+        }
+
+        function clearEditor() {
+            editor.value = '';
+            updateLineNums();
+            runCode();
+            showToast(curD.toast_clr);
+        }
+
+        function copyWx() {
+            navigator.clipboard.writeText('857023577');
+            showToast(curD.toast_c);
+        }
+
+        function showToast(m) {
+            toast.innerText = m;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 1500);
+        }
+
+        function updateLineNums() {
+            const n = editor.value.split('\n').length;
+            let h = '';
+            for(let i=1; i<=n; i++) h += i + '<br>';
+            document.getElementById('lineNums').innerHTML = h;
+        }
+
+        editor.addEventListener('input', () => {
+            updateLineNums();
+            localStorage.setItem('dd_code_v5', editor.value);
+        });
+
+        window.onload = () => {
+            const savedCode = localStorage.getItem('dd_code_v5');
+            if(savedCode) editor.value = savedCode;
+            const savedTheme = localStorage.getItem('dd_theme_v5');
+            if(savedTheme) { themeIdx = savedTheme; document.body.className = themes[themeIdx]; }
+            updateLineNums();
+            runCode();
+        };
+
+        editor.addEventListener('scroll', () => {
+            document.getElementById('lineNums').scrollTop = editor.scrollTop;
+        });
+    </script>
+</body>
+</html>
