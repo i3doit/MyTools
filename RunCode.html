@@ -6,147 +6,92 @@
     <title>智能代码运行器 - 艾兜兜儿</title>
     <style>
         :root {
-            --primary-color: #4CAF50;
-            --dark-bg: #1e1e1e;
-            --panel-bg: #252526;
+            --primary: #4CAF50;
+            --dark: #1e1e1e;
+            --panel: #252526;
             --border: #333;
+            --accent: #007acc;
         }
 
-        /* 基础复位，解决手机端滚动问题 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        html, body { 
-            height: 100%; 
-            width: 100%; 
-            overflow: hidden; 
-            background: #000;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
+        html, body { height: 100%; width: 100%; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; }
 
-        /* 整体布局：Flex 垂直排列 */
-        .app-wrapper {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
+        .app-wrapper { display: flex; flex-direction: column; height: 100%; }
 
         /* 顶部导航 */
         header {
-            height: 55px;
-            background: var(--panel-bg);
+            height: 50px;
+            background: var(--panel);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 15px;
+            padding: 0 12px;
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
         }
+        .logo { color: #fff; font-size: 15px; font-weight: bold; }
+        .logo span { color: var(--primary); font-size: 11px; margin-left: 4px; }
 
-        .logo { color: #fff; font-size: 16px; font-weight: 600; }
-        .logo span { color: var(--primary-color); font-size: 12px; margin-left: 5px; }
-
-        .btn-group { display: flex; gap: 8px; }
+        .btn-group { display: flex; gap: 6px; }
         .btn {
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 6px 12px;
+            border-radius: 4px;
             border: none;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 500;
             transition: 0.2s;
         }
-        .btn-run { background: var(--primary-color); color: white; }
+        .btn-run { background: var(--primary); color: white; }
         .btn-clear { background: #444; color: #eee; }
+        .btn-share { background: var(--accent); color: white; }
         .btn:active { opacity: 0.7; transform: scale(0.95); }
 
-        /* 中间主体区域 */
-        main {
-            flex: 1;
-            display: flex;
-            flex-direction: row; /* PC默认左右 */
-            overflow: hidden;
-            background: #fff;
-        }
+        /* 主体布局 */
+        main { flex: 1; display: flex; flex-direction: row; overflow: hidden; background: #fff; }
 
-        /* 编辑区容器 */
-        .editor-box {
-            flex: 1;
-            display: flex;
-            background: var(--dark-bg);
-            position: relative;
-            border-right: 1px solid var(--border);
-        }
-
-        .line-num {
-            width: 35px;
-            padding-top: 10px;
-            color: #666;
-            font-size: 12px;
-            line-height: 20px;
-            text-align: center;
-            user-select: none;
-            background: #1e1e1e;
-            font-family: monospace;
-        }
-
+        .editor-box { flex: 1; display: flex; background: var(--dark); position: relative; border-right: 1px solid var(--border); }
+        .line-num { width: 30px; padding-top: 10px; color: #555; font-size: 12px; line-height: 20px; text-align: center; user-select: none; font-family: monospace; }
+        
         #codeEditor {
-            flex: 1;
-            background: transparent;
-            color: #d4d4d4;
-            border: none;
-            padding: 10px;
-            resize: none;
-            outline: none;
-            font-size: 15px; /* 移动端15px防止自动放大 */
-            line-height: 20px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            white-space: pre;
-            overflow: auto;
+            flex: 1; background: transparent; color: #d4d4d4; border: none; padding: 10px 5px;
+            resize: none; outline: none; font-size: 14px; line-height: 20px;
+            font-family: 'Consolas', 'Monaco', monospace; white-space: pre; overflow: auto;
         }
 
-        /* 预览区容器 */
-        .preview-box {
-            flex: 1;
+        .preview-box { flex: 1.2; display: flex; flex-direction: column; background: #fff; }
+        #previewFrame { width: 100%; flex: 1; border: none; background: white; }
+
+        /* 底部信息栏 */
+        footer {
+            background: var(--panel);
+            border-top: 1px solid var(--border);
+            padding: 5px 12px;
             display: flex;
             flex-direction: column;
-            background: #fff;
-        }
-
-        #previewFrame {
-            width: 100%;
-            flex: 1;
-            border: none;
-        }
-
-        /* 底部状态栏 */
-        footer {
-            height: 30px;
-            background: #007acc;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 15px;
-            font-size: 12px;
+            gap: 4px;
             flex-shrink: 0;
         }
-        footer a { color: #fff; text-decoration: none; }
 
-        /* --- 关键：手机端适配方案 --- */
+        .footer-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #aaa; }
+        .footer-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #333; pt: 4px; font-size: 11px; }
+
+        .ad-link { color: #ff9800; text-decoration: none; font-weight: bold; }
+        .author-info { color: #007acc; cursor: pointer; }
+        .copy-btn { color: #fff; background: #444; padding: 2px 6px; border-radius: 3px; cursor: pointer; margin-left: 5px; }
+
+        /* 二维码弹窗 */
+        #qrModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; flex-direction: column;
+        }
+        #qrModal img { background: white; padding: 10px; border-radius: 8px; width: 200px; height: 200px; }
+        #qrModal p { color: white; margin-top: 15px; font-size: 14px; }
+
         @media (max-width: 768px) {
-            main {
-                flex-direction: column; /* 手机端上下排列 */
-            }
-            .editor-box {
-                flex: 1; /* 各占一半 */
-                border-right: none;
-                border-bottom: 2px solid var(--border);
-            }
-            .preview-box {
-                flex: 1;
-            }
-            .line-num { width: 30px; }
-            #codeEditor { font-size: 14px; }
+            main { flex-direction: column; }
+            .preview-box { flex: 1.5; } /* 手机端预览区适当加大 */
+            .editor-box { flex: 1; }
         }
     </style>
 </head>
@@ -154,9 +99,10 @@
 
     <div class="app-wrapper">
         <header>
-            <div class="logo">智能代码运行器 <span>v2.1</span></div>
+            <div class="logo">智能代码运行器 <span>Pro Max</span></div>
             <div class="btn-group">
                 <button class="btn btn-clear" onclick="clearEditor()">清空</button>
+                <button class="btn btn-share" onclick="showShare()">分享</button>
                 <button class="btn btn-run" onclick="runCode()">▶ 运行</button>
             </div>
         </header>
@@ -172,9 +118,23 @@
         </main>
 
         <footer>
-            <div id="status">状态: 就绪</div>
-            <div>作者: <a href="你的作者链接" target="_blank">艾兜兜儿</a></div>
+            <div class="footer-top">
+                <div>🔥 <a href="你的广告链接" class="ad-link" target="_blank">【福利】点击领取开发者云服务器优惠券</a></div>
+                <div id="status" style="color:#4CAF50">已就绪</div>
+            </div>
+            <div class="footer-bottom">
+                <div>作者微信: <span class="author-info" onclick="copyText('857023577')">857023577 (点击复制)</span></div>
+                <div>版权所有 &copy; <a href="你的作者链接" target="_blank" style="color:#eee;text-decoration:none;">艾兜兜儿</a> 
+                    <span class="copy-btn" onclick="copyPageUrl()">复制地址</span>
+                </div>
+            </div>
         </footer>
+    </div>
+
+    <div id="qrModal" onclick="this.style.display='none'">
+        <img id="qrImg" src="" alt="二维码加载中...">
+        <p>长按保存二维码分享给好友</p>
+        <p style="font-size: 12px; color: #888;">(点击空白处关闭)</p>
     </div>
 
     <script>
@@ -183,64 +143,38 @@
         const preview = document.getElementById('previewFrame');
         const statusText = document.getElementById('status');
 
-        // 1. 初始化加载
-        const welcomeCode = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>测试页面</title>
-    <style>
-        body { text-align: center; padding: 20px; font-family: sans-serif; background: #f9f9f9; }
-        .card { background: white; border-radius: 15px; padding: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
-        h1 { color: #4CAF50; }
-        .tip { color: #666; margin-top: 10px; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h1>运行成功!</h1>
-        <p>中文显示测试：正常</p>
-        <p class="tip">已适配手机、iPad和电脑端</p>
-        <button onclick="alert('交互正常！')">点击测试交互</button>
-    </div>
-</body>
-</html>`;
+        const defaultCode = `<!DOCTYPE html>\n<html>\n<head>\n    <meta charset="UTF-8">\n    <style>\n        body { display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; font-family: sans-serif; }\n        .card { padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }\n    </style>\n</head>\n<body>\n    <div class="card">\n        <h2>你好，艾兜兜儿！</h2>\n        <p>代码运行成功，请开始你的创作。</p>\n    </div>\n</body>\n</html>`;
 
         window.onload = () => {
-            const saved = localStorage.getItem('dd_pro_code');
-            editor.value = saved ? saved : welcomeCode;
+            const saved = localStorage.getItem('dd_pro_v3');
+            editor.value = saved ? saved : defaultCode;
             updateLineNumbers();
             runCode();
         };
 
-        // 2. 核心运行函数 (修复乱码和移动端不响应)
         function runCode() {
-            try {
-                const code = editor.value;
-                // 解决乱码的关键：获取 iframe 的 document 并写入，同时注入 charset
-                const doc = preview.contentDocument || preview.contentWindow.document;
-                doc.open();
-                // 即使代码里没写 charset，我们也强制注入一个
-                if (!code.includes('charset')) {
-                    doc.write('<meta charset="UTF-8">');
-                }
-                doc.write(code);
-                doc.close();
-                
-                statusText.innerText = "状态: 运行成功";
-                statusText.style.color = "#fff";
-            } catch (e) {
-                statusText.innerText = "状态: 运行出错";
-                statusText.style.color = "#ff8888";
-            }
+            const code = editor.value;
+            const doc = preview.contentDocument || preview.contentWindow.document;
+            doc.open();
+            if (!code.includes('charset')) doc.write('<meta charset="UTF-8">');
+            doc.write(code);
+            doc.close();
+            statusText.innerText = "已更新";
         }
 
-        // 3. 自动保存与行号同步
+        // 极速清空，不再弹窗
+        function clearEditor() {
+            editor.value = '';
+            localStorage.removeItem('dd_pro_v3');
+            updateLineNumbers();
+            runCode();
+            statusText.innerText = "已清空";
+        }
+
         editor.addEventListener('input', () => {
             updateLineNumbers();
-            localStorage.setItem('dd_pro_code', editor.value);
-            statusText.innerText = "状态: 已自动保存";
+            localStorage.setItem('dd_pro_v3', editor.value);
+            statusText.innerText = "自动保存中...";
         });
 
         function updateLineNumbers() {
@@ -250,31 +184,41 @@
             lineNumbers.innerHTML = html;
         }
 
-        // 4. 编辑器增强：支持 Tab 键
+        // 分享功能
+        function showShare() {
+            const currentUrl = window.location.href;
+            const qrImg = document.getElementById('qrImg');
+            // 使用公共API生成二维码
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(currentUrl)}`;
+            document.getElementById('qrModal').style.display = 'flex';
+        }
+
+        // 复制功能
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('作者微信已复制: ' + text);
+            });
+        }
+
+        function copyPageUrl() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert('页面地址已复制，快去分享吧！');
+            });
+        }
+
+        // 基础编辑器增强
         editor.addEventListener('keydown', function(e) {
             if (e.key === 'Tab') {
                 e.preventDefault();
                 const start = this.selectionStart;
-                const end = this.selectionEnd;
-                this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+                this.value = this.value.substring(0, start) + "    " + this.value.substring(this.selectionEnd);
                 this.selectionStart = this.selectionEnd = start + 4;
             }
         });
 
-        // 5. 滚动同步
         editor.addEventListener('scroll', () => {
             lineNumbers.scrollTop = editor.scrollTop;
         });
-
-        // 6. 清空
-        function clearEditor() {
-            if(confirm('确定清空吗？')) {
-                editor.value = '';
-                updateLineNumbers();
-                localStorage.removeItem('dd_pro_code');
-                runCode();
-            }
-        }
     </script>
 </body>
 </html>
