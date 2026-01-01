@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>智能代码运行器 Pro - 艾兜兜儿</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --accent: #007acc;
+            --danger: #ff5252;
+            --warning: #ff9800;
+            --transition: all 0.25s ease;
+        }
+
+        /* 主题配色库 */
+        .theme-dark { --bg: #1e1e1e; --panel: #252526; --text: #d4d4d4; --border: #333; --pre-bg: #ffffff; }
+        .theme-gray { --bg: #2d2d2d; --panel: #3c3c3c; --text: #e0e0e0; --border: #444; --pre-bg: #f5f5f5; }
+        .theme-light { --bg: #ffffff; --panel: #eeeeee; --text: #333; --border: #ccc; --pre-bg: #ffffff; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; width: 100%; overflow: hidden; background: #000; font-family: -apple-system, system-ui, sans-serif; }
+
+        .app-wrapper { display: flex; flex-direction: column; height: 100vh; height: -webkit-fill-available; background: var(--bg); }
+
+        /* 顶部导航：图标化设计 */
+        header {
+            height: 50px; background: var(--panel); display: flex; justify-content: space-between; 
+            align-items: center; padding: 0 10px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+        }
+        .logo-box { color: var(--text); font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        .logo-box i { font-style: normal; background: var(--primary); color: #fff; padding: 2px 5px; border-radius: 4px; font-size: 10px; }
+
+        .icon-group { display: flex; gap: 12px; }
+        .icon-btn {
+            background: none; border: none; cursor: pointer; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 2px; transition: var(--transition);
+        }
+        .icon-btn span { font-size: 18px; }
+        .icon-btn label { font-size: 9px; color: var(--text); cursor: pointer; opacity: 0.8; }
+        .icon-btn:active { transform: scale(0.85); }
+        .btn-run span { color: var(--primary); font-size: 22px; }
+
+        /* 主体布局 */
+        main { flex: 1; display: flex; overflow: hidden; }
+        
+        .editor-container { flex: 1; display: flex; border-right: 1px solid var(--border); transition: var(--transition); position: relative; }
+        .line-num { width: 30px; padding-top: 10px; color: #666; font-size: 10px; text-align: center; font-family: monospace; background: rgba(0,0,0,0.1); overflow: hidden; }
+        textarea { flex: 1; background: transparent; color: var(--text); border: none; padding: 10px; resize: none; outline: none; font-size: 14px; font-family: 'Consolas', monospace; line-height: 1.4; }
+
+        .preview-container { flex: 1; background: var(--pre-bg); transition: var(--transition); border-left: 1px solid var(--border); }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        /* 底部信息：防遮挡设计 */
+        footer {
+            background: var(--panel); border-top: 1px solid var(--border);
+            padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); flex-shrink: 0; z-index: 100;
+        }
+        .footer-content { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 5px; text-align: center; }
+        .ad-banner { background: rgba(255,152,0,0.15); padding: 5px; border-radius: 5px; border: 1px dashed var(--warning); }
+        .ad-banner a { color: var(--warning); text-decoration: none; font-size: 12px; font-weight: bold; }
+        .author-row { font-size: 12px; color: var(--text); display: flex; justify-content: center; gap: 10px; align-items: center; }
+        .wx-copy { color: var(--accent); font-weight: bold; cursor: pointer; border-bottom: 1px solid; }
+
+        /* 吐司提示 */
+        #toast { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 25px; font-size: 13px; z-index: 1000; display: none; }
+
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            main { flex-direction: column; }
+            .editor-container { border-right: none; }
+            .preview-container { border-left: none; border-top: 1px solid var(--border); flex: 1.2; } /* 竖屏给预览区更多空间 */
+        }
+
+        /* 运行动画反馈 */
+        .running-pulse { animation: pulse 0.4s ease; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body class="theme-dark">
+
+    <div class="app-wrapper">
+        <header>
+            <div class="logo-box">CODE <i>PRO</i></div>
+            <div class="icon-group">
+                <button class="icon-btn" onclick="doPaste()">
+                    <span id="icon-paste">📋</span><label id="lbl-paste">粘贴</label>
+                </button>
+                <button class="icon-btn" onclick="switchTheme()">
+                    <span>🎨</span><label id="lbl-theme">风格</label>
+                </button>
+                <button class="icon-btn" onclick="clearEditor()">
+                    <span>🗑️</span><label id="lbl-clear">清空</label>
+                </button>
+                <button class="icon-btn btn-run" onclick="runCode()">
+                    <span>▶</span><label id="lbl-run" style="color:var(--primary); font-weight:bold;">运行</label>
+                </button>
+            </div>
+        </header>
+
+        <main id="view-main">
+            <div class="editor-container">
+                <div class="line-num" id="line-nums">1</div>
+                <textarea id="editor" spellcheck="false" placeholder="Write code..."></textarea>
+            </div>
+            <div class="preview-container" id="view-preview">
+                <iframe id="preview-frame"></iframe>
+            </div>
+        </main>
+
+        <footer>
+            <div class="footer-content">
+                <div class="ad-banner">
+                    <a href="#" id="ad-link">🎁 推荐：艾兜兜儿专属开发者云服务器福利 &gt;</a>
+                </div>
+                <div class="author-row">
+                    <span><b id="lbl-author">作者</b>: 艾兜兜儿</span>
+                    <span onclick="copyWx()">WeChat: <span class="wx-copy">857023577</span></span>
+                </div>
+                <div style="font-size: 9px; opacity: 0.5; color: var(--text);">© 2024 AI DOU DOU | Pro Runner V4.0</div>
+            </div>
+        </footer>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const lineNums = document.getElementById('line-nums');
+        const previewFrame = document.getElementById('preview-frame');
+        const toast = document.getElementById('toast');
+        
+        // 1. 默认示例文档 (说明书)
+        const defaultExample = `<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; color: #333; background: #f4f7f6; }
+        .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #4CAF50; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .author { color: #007acc; font-weight: bold; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        .btn { display: inline-block; padding: 8px 15px; background: #4CAF50; color: white; border-radius: 5px; text-decoration: none; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 欢迎使用智能代码运行器</h1>
+        <p>这是一个专为开发者设计的跨平台预览工具。</p>
+        <ul>
+            <li><b>🎨 多风格：</b> 支持深色/浅色/极客灰。</li>
+            <li><b>🌐 多语言：</b> 自动识别简/繁/英。</li>
+            <li><b>📋 智粘贴：</b> 一键快速导入代码。</li>
+            <li><b>📱 全适配：</b> 手机/电脑/iPad 完美运行。</li>
+        </ul>
+        <p><b>作者：</b> <span class="author">艾兜兜儿</span></p>
+        <p><b>联系微信号：</b> 857023577</p>
+        <a href="#" class="btn" onclick="alert('感谢支持！')">点击测试交互</a>
+    </div>
+</body>
+</html>`;
+
+        // 2. 多语言配置
+        const i18n = {
+            'zh-CN': { paste: '粘贴', theme: '风格', clear: '清空', run: '运行', author: '作者', msg_clr: '已清空', msg_copy: '微信已复制' },
+            'zh-TW': { paste: '貼上', theme: '風格', clear: '清空', run: '運行', author: '作者', msg_clr: '已清空', msg_copy: '微信已複製' },
+            'en': { paste: 'Paste', theme: 'Style', clear: 'Clear', run: 'Run', author: 'Author', msg_clr: 'Cleared', msg_copy: 'Copied' }
+        };
+
+        let currentLang = 'zh-CN';
+        let themes = ['theme-dark', 'theme-gray', 'theme-light'];
+        let themeIdx = 0;
+
+        // 3. 核心功能
+        function initApp() {
+            // 自动检测语言
+            const l = navigator.language;
+            if(l.includes('TW') || l.includes('HK')) currentLang = 'zh-TW';
+            else if(!l.includes('zh')) currentLang = 'en';
+            
+            const d = i18n[currentLang];
+            document.getElementById('lbl-paste').innerText = d.paste;
+            document.getElementById('lbl-theme').innerText = d.theme;
+            document.getElementById('lbl-clear').innerText = d.clear;
+            document.getElementById('lbl-run').innerText = d.run;
+            document.getElementById('lbl-author').innerText = d.author;
+
+            // 加载内容
+            const saved = localStorage.getItem('dd_v4_code');
+            editor.value = saved || defaultExample;
+            
+            // 加载主题
+            const savedTheme = localStorage.getItem('dd_v4_theme');
+            if(savedTheme) { themeIdx = savedTheme; document.body.className = themes[themeIdx]; }
+
+            updateLines();
+            runCode();
+        }
+
+        function runCode() {
+            const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+            doc.open();
+            doc.write('<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">');
+            doc.write(editor.value);
+            doc.close();
+            
+            // 运行反馈动画
+            document.getElementById('view-preview').classList.add('running-pulse');
+            setTimeout(() => document.getElementById('view-preview').classList.remove('running-pulse'), 400);
+        }
+
+        async function doPaste() {
+            try {
+                const text = await navigator.clipboard.readText();
+                if(text) {
+                    editor.value = text;
+                    updateLines();
+                    runCode();
+                    showToast(i18n[currentLang].paste + " OK");
+                }
+            } catch(e) {
+                showToast("请手动粘贴 / Please paste manually");
+            }
+        }
+
+        function clearEditor() {
+            editor.value = '';
+            updateLines();
+            runCode();
+            showToast(i18n[currentLang].msg_clr);
+        }
+
+        function switchTheme() {
+            themeIdx = (themeIdx + 1) % themes.length;
+            document.body.className = themes[themeIdx];
+            localStorage.setItem('dd_v4_theme', themeIdx);
+        }
+
+        function copyWx() {
+            navigator.clipboard.writeText('857023577');
+            showToast(i18n[currentLang].msg_copy);
+        }
+
+        function showToast(m) {
+            toast.innerText = m;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 1500);
+        }
+
+        function updateLines() {
+            const count = editor.value.split('\n').length;
+            let html = '';
+            for(let i=1; i<=count; i++) html += i + '<br>';
+            lineNums.innerHTML = html;
+        }
+
+        // 监听
+        editor.addEventListener('input', () => {
+            updateLines();
+            localStorage.setItem('dd_v4_code', editor.value);
+        });
+
+        editor.addEventListener('scroll', () => {
+            lineNums.scrollTop = editor.scrollTop;
+        });
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
