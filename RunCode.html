@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>智能代码运行器 - 艾兜兜儿</title>
+    <title>智能代码运行器 Pro - 艾兜兜儿</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         :root {
             --primary: #4CAF50;
@@ -15,171 +16,188 @@
             --border: #333;
         }
 
-        .theme-light { --bg: #fff; --panel: #f0f0f0; --text: #333; --border: #ddd; }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; width: 100%; overflow: hidden; background: #000; font-family: -apple-system, sans-serif; }
 
-        /* 使用 Grid 布局确保底部不被遮挡 */
-        .app-grid {
-            display: grid;
-            grid-template-rows: 50px 1fr auto; /* 头部, 主体, 底部 */
+        /* 整体布局：确保底部固定 */
+        .app-container {
+            display: flex;
+            flex-direction: column;
             height: 100vh;
             background: var(--bg);
         }
 
         /* 顶部导航 */
         header {
-            background: var(--panel);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 10px;
-            border-bottom: 1px solid var(--border);
+            height: 50px; background: var(--panel); border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 12px; flex-shrink: 0;
         }
-        .nav-icons { display: flex; gap: 8px; }
+        .logo { color: white; font-size: 14px; font-weight: bold; }
+        .logo span { color: var(--primary); font-size: 10px; margin-left: 4px; border: 1px solid; padding: 0 2px; }
+
+        .nav-icons { display: flex; gap: 12px; }
         .icon-btn {
             background: none; border: none; cursor: pointer; color: var(--text);
-            display: flex; flex-direction: column; align-items: center; font-size: 16px;
+            display: flex; flex-direction: column; align-items: center;
         }
-        .icon-btn label { font-size: 9px; margin-top: 2px; }
+        .icon-btn i { font-style: normal; font-size: 18px; }
+        .icon-btn label { font-size: 9px; margin-top: 2px; cursor: pointer; }
 
-        /* 主体区域 */
-        main { display: flex; flex-direction: column; overflow: hidden; }
+        /* 中间主体 */
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* 竖屏比例：代码 25% | 预览 75% */
-        #editor-container { height: 25%; display: flex; border-bottom: 1px solid var(--border); background: var(--bg); position: relative; }
-        #preview-container { height: 75%; background: #fff; }
+        /* 竖屏比例调整：代码 30% | 预览 70% */
+        .editor-box { height: 30%; display: flex; border-bottom: 1px solid var(--border); position: relative; }
+        .preview-box { height: 70%; background: #fff; }
         
-        .line-num { width: 30px; padding-top: 5px; color: #555; font-size: 10px; text-align: center; font-family: monospace; background: rgba(0,0,0,0.05); }
-        textarea { flex: 1; background: transparent; color: var(--text); border: none; padding: 10px; resize: none; outline: none; font-size: 13px; font-family: monospace; }
+        .line-num { width: 30px; padding: 5px 0; color: #555; font-size: 10px; text-align: center; background: rgba(0,0,0,0.1); }
+        textarea { flex: 1; background: transparent; color: var(--text); border: none; padding: 8px; resize: none; outline: none; font-size: 13px; font-family: monospace; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* 底部区域 - 确保可见 */
+        /* 底部信息：锁定在最下方，永不消失 */
         footer {
-            background: var(--panel);
-            border-top: 1px solid var(--border);
-            padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
-            text-align: center;
+            background: var(--panel); border-top: 1px solid var(--border);
+            padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+            flex-shrink: 0; z-index: 10;
         }
-        .ad-banner {
-            background: linear-gradient(90deg, transparent, rgba(255,152,0,0.2), transparent);
-            padding: 6px; border-radius: 4px; margin-bottom: 5px;
+        .ad-wrap { 
+            background: linear-gradient(90deg, transparent, rgba(255,152,0,0.15), transparent);
+            padding: 6px; border-radius: 4px; text-align: center; margin-bottom: 4px;
         }
-        .ad-banner a { color: var(--warning); text-decoration: none; font-size: 12px; font-weight: bold; }
-        .author-info { font-size: 11px; color: var(--text); opacity: 0.8; }
-        .wx-btn { color: var(--accent); font-weight: bold; text-decoration: underline; }
+        .ad-wrap a { color: var(--warning); text-decoration: none; font-size: 12px; font-weight: bold; }
+        .footer-info { display: flex; justify-content: center; gap: 15px; font-size: 11px; color: var(--text); opacity: 0.8; }
+        .wx-link { color: var(--accent); font-weight: bold; text-decoration: underline; cursor: pointer; }
 
-        /* 弹窗样式 */
-        #modal-overlay {
+        /* 分享弹窗（名片式） */
+        #shareModal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 999; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center;
         }
-        .modal-card {
-            background: white; padding: 20px; border-radius: 12px; width: 280px; text-align: center;
+        .card-capture-area {
+            background: white; padding: 25px; border-radius: 15px; width: 300px; text-align: center;
         }
-        #qr-canvas { display: none; } /* 隐藏原生画布 */
-        #qr-img { width: 180px; height: 180px; margin: 10px 0; border: 1px solid #eee; }
-        .download-btn {
-            background: var(--primary); color: white; border: none; padding: 10px 20px;
-            border-radius: 6px; font-weight: bold; margin-top: 10px; width: 100%; cursor: pointer;
-        }
+        .card-capture-area h3 { color: #333; font-size: 20px; margin-bottom: 5px; }
+        .card-capture-area p { color: #666; font-size: 13px; }
+        .qr-placeholder { width: 200px; height: 200px; margin: 15px auto; border: 1px solid #eee; display: block; }
+        
+        .modal-btns { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        .save-btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .close-btn { color: #999; font-size: 12px; background: none; border: none; cursor: pointer; }
 
-        /* 提示框 */
-        #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; display: none; }
+        #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-size: 12px; z-index: 2000; display: none; }
 
         /* 横屏适配 */
         @media (min-width: 768px) {
             main { flex-direction: row; }
-            #editor-container { height: 100%; width: 40%; border-bottom: none; border-right: 1px solid var(--border); }
-            #preview-container { height: 100%; width: 60%; }
+            .editor-box { height: 100%; width: 40%; border-bottom: none; border-right: 1px solid var(--border); }
+            .preview-box { height: 100%; width: 60%; }
         }
     </style>
 </head>
 <body class="theme-dark">
 
-<div class="app-grid">
+<div class="app-container">
     <header>
-        <div style="color:white; font-size:14px; font-weight:bold;">Runner <span>Pro</span></div>
+        <div class="logo">RUNNER <span>PRO</span></div>
         <div class="nav-icons">
-            <button class="icon-btn" onclick="doPaste()"><span>📋</span><label id="lang-paste">粘贴</label></button>
-            <button class="icon-btn" onclick="openShare()"><span>📤</span><label id="lang-share">分享</label></button>
-            <button class="icon-btn" onclick="toggleLang()"><span>🌐</span><label id="lang-curr">中文</label></button>
-            <button class="icon-btn" onclick="clearCode()"><span>🗑️</span><label id="lang-clear">清空</label></button>
-            <button class="icon-btn" style="color:var(--primary)" onclick="runCode()"><span>▶</span><label id="lang-run">运行</label></button>
+            <button class="icon-btn" onclick="doPaste()"><i>📋</i><label id="l-paste">粘贴</label></button>
+            <button class="icon-btn" onclick="openShare()"><i>📤</i><label id="l-share">分享</label></button>
+            <button class="icon-btn" onclick="toggleLang()"><i>🌐</i><label id="l-curr">中文</label></button>
+            <button class="icon-btn" onclick="clearCode()"><i>🗑️</i><label id="l-clear">清空</label></button>
+            <button class="icon-btn" style="color:var(--primary)" onclick="runCode()"><i>▶</i><label id="l-run">运行</label></button>
         </div>
     </header>
 
     <main>
-        <div id="editor-container">
-            <div class="line-num" id="line-box">1</div>
-            <textarea id="editor" spellcheck="false" placeholder="Code here..."></textarea>
+        <div class="editor-box">
+            <div class="line-num" id="ln-box">1</div>
+            <textarea id="editor" spellcheck="false"></textarea>
         </div>
-        <div id="preview-container">
+        <div class="preview-box">
             <iframe id="preview"></iframe>
         </div>
     </main>
 
     <footer>
-        <div class="ad-banner">
-            <a href="#" id="ad-text">🔥 艾兜兜儿专属福利：云服务器特惠入口 &gt;</a>
+        <div class="ad-wrap">
+            <a href="#" id="ad-text">🎁 艾兜兜儿专属：高性能服务器特惠入口 ></a>
         </div>
-        <div class="author-info">
-            <span id="lang-author">作者</span>: 艾兜兜儿 | WeChat: <span class="wx-btn" onclick="copyWx()">857023577</span>
+        <div class="footer-info">
+            <span><b id="l-author">作者</b>: 艾兜兜儿</span>
+            <span>WeChat: <b class="wx-link" onclick="copyWx()">857023577</b></span>
         </div>
     </footer>
 </div>
 
-<div id="modal-overlay" onclick="this.style.display='none'">
-    <div class="modal-card" onclick="event.stopPropagation()">
-        <h3 id="modal-title" style="color:#333">分享工具</h3>
-        <img id="qr-img" src="" alt="二维码">
-        <p style="font-size: 12px; color: #666;">扫描或下载下方二维码图片</p>
-        <button class="download-btn" onclick="downloadQr()" id="lang-download">保存到相册</button>
+<div id="shareModal">
+    <div style="display: flex; flex-direction: column; align-items: center;">
+        <div id="cardArea" class="card-capture-area">
+            <h3 id="s-title">智能代码运行器</h3>
+            <p id="s-author">作者: 艾兜兜儿 | 微信: 857023577</p>
+            <img id="qrImg" class="qr-placeholder" src="" alt="二维码">
+            <p style="font-size: 11px; color: #aaa;">扫描二维码，开启智能预览</p>
+        </div>
+        
+        <div class="modal-btns">
+            <button class="save-btn" onclick="saveToAlbum()" id="l-dl">保存完整名片到相册</button>
+            <button class="close-btn" onclick="closeModal()">返回编辑</button>
+        </div>
     </div>
 </div>
 
 <div id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-
 <script>
     const editor = document.getElementById('editor');
     const preview = document.getElementById('preview');
-    const lineBox = document.getElementById('line-box');
     const toast = document.getElementById('toast');
-
+    
+    // 多语言内容字典（包含代码示例的翻译）
     const i18n = {
-        'zh': { paste:'粘贴', share:'分享', clear:'清空', run:'运行', author:'作者', dl:'保存到相册', ad:'🔥 艾兜兜儿专属：云服务器特惠入口 >' },
-        'en': { paste:'Paste', share:'Share', clear:'Clear', run:'Run', author:'Author', dl:'Save Image', ad:'🔥 Ad: Exclusive Cloud Server Deal >' }
+        'zh': {
+            paste:'粘贴', share:'分享', clear:'清空', run:'运行', author:'作者', dl:'保存名片图片', curr:'中文',
+            ad:'🎁 艾兜兜儿专属：高性能服务器特惠入口 >', title:'智能代码运行器',
+            code: `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;text-align:center;padding:20px;}h2{color:#4CAF50;}.card{border:1px solid #eee;padding:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.05);}</style></head><body><div class="card"><h2>🚀 运行器已就绪</h2><p>作者：艾兜兜儿</p><p>点击“分享”可保存专属名片</p></div></body></html>`
+        },
+        'en': {
+            paste:'Paste', share:'Share', clear:'Clear', run:'Run', author:'Author', dl:'Save Card Image', curr:'English',
+            ad:'🎁 Exclusive: Best Cloud Server Deals >', title:'Smart Code Runner',
+            code: `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;text-align:center;padding:20px;}h2{color:#4CAF50;}.card{border:1px solid #eee;padding:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.05);}</style></head><body><div class="card"><h2>🚀 Runner Ready</h2><p>Author: AiDouDou</p><p>Click "Share" to save your card</p></div></body></html>`
+        }
     };
 
     let curLang = 'zh';
 
-    const defaultDoc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;text-align:center;padding:20px;color:#333}h2{color:#4CAF50}.info{background:#f9f9f9;padding:15px;border-radius:8px;border:1px solid #eee}</style></head><body><h2>🚀 智能运行器 V5.0</h2><div class="info"><p><b>作者：</b>艾兜兜儿</p><p><b>微信：</b>857023577</p><p>点击上方<b>分享</b>可保存名片</p></div></body></html>`;
-
     function init() {
-        editor.value = localStorage.getItem('code_v5') || defaultDoc;
-        updateLines();
-        runCode();
+        const savedCode = localStorage.getItem('dd_v5_code');
+        curLang = localStorage.getItem('dd_v5_lang') || 'zh';
+        editor.value = savedCode || i18n[curLang].code;
         updateUI();
+        runCode();
+        updateLines();
     }
 
     function toggleLang() {
         curLang = curLang === 'zh' ? 'en' : 'zh';
+        localStorage.setItem('dd_v5_lang', curLang);
+        editor.value = i18n[curLang].code; // 切换语言时，示例内容同步翻译
         updateUI();
+        runCode();
+        updateLines();
+        showToast(curLang === 'zh' ? "已切换至中文" : "Switched to English");
     }
 
     function updateUI() {
         const d = i18n[curLang];
-        document.getElementById('lang-paste').innerText = d.paste;
-        document.getElementById('lang-share').innerText = d.share;
-        document.getElementById('lang-clear').innerText = d.clear;
-        document.getElementById('lang-run').innerText = d.run;
-        document.getElementById('lang-author').innerText = d.author;
-        document.getElementById('lang-download').innerText = d.dl;
+        document.getElementById('l-paste').innerText = d.paste;
+        document.getElementById('l-share').innerText = d.share;
+        document.getElementById('l-clear').innerText = d.clear;
+        document.getElementById('l-run').innerText = d.run;
+        document.getElementById('l-author').innerText = d.author;
+        document.getElementById('l-curr').innerText = d.curr;
+        document.getElementById('l-dl').innerText = d.dl;
         document.getElementById('ad-text').innerText = d.ad;
-        document.getElementById('lang-curr').innerText = curLang === 'zh' ? '中文' : 'English';
+        document.getElementById('s-title').innerText = d.title;
     }
 
     function runCode() {
@@ -190,37 +208,43 @@
         doc.close();
     }
 
-    async function doPaste() {
-        try {
-            const text = await navigator.clipboard.readText();
-            if(text) { editor.value = text; updateLines(); runCode(); showToast("OK"); }
-        } catch(e) { showToast("Error: Manually Paste"); }
-    }
-
-    function clearCode() {
-        editor.value = ''; updateLines(); runCode(); showToast("Cleared");
-    }
-
-    // 分享与下载功能
+    // 名片分享与保存
     function openShare() {
-        const url = window.location.href;
-        QRCode.toDataURL(url, { width: 400, margin: 2 }, function (err, url) {
-            if (err) return;
-            document.getElementById('qr-img').src = url;
-            document.getElementById('modal-overlay').style.display = 'flex';
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(window.location.href)}`;
+        document.getElementById('qrImg').src = qrUrl;
+        document.getElementById('shareModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('shareModal').style.display = 'none';
+    }
+
+    // 真正的图片下载功能：将 HTML 转化为 Canvas 并下载
+    function saveToAlbum() {
+        showToast("正在生成高清名片...");
+        const card = document.getElementById('cardArea');
+        html2canvas(card, { useCORS: true, scale: 2 }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'AiDouDou-Runner-Card.png';
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            showToast("图片已尝试下载");
         });
     }
 
-    function downloadQr() {
-        const link = document.createElement('a');
-        link.download = 'aidoudou-share.png';
-        link.href = document.getElementById('qr-img').src;
-        link.click();
-        showToast("Starting Download...");
+    async function doPaste() {
+        try {
+            const text = await navigator.clipboard.readText();
+            if(text) { editor.value = text; updateLines(); runCode(); showToast("已粘贴内容"); }
+        } catch(e) { showToast("请手动粘贴"); }
+    }
+
+    function clearCode() {
+        editor.value = ''; updateLines(); runCode(); showToast("已清空");
     }
 
     function copyWx() {
-        navigator.clipboard.writeText('857023577').then(() => showToast("Copied"));
+        navigator.clipboard.writeText('857023577').then(() => showToast("微信号已复制"));
     }
 
     function showToast(m) {
@@ -229,17 +253,17 @@
     }
 
     function updateLines() {
-        const lines = editor.value.split('\n').length;
-        let h = ''; for(let i=1; i<=lines; i++) h += i + '<br>';
-        lineBox.innerHTML = h;
+        const count = editor.value.split('\n').length;
+        let h = ''; for(let i=1; i<=count; i++) h += i + '<br>';
+        document.getElementById('ln-box').innerHTML = h;
     }
 
     editor.addEventListener('input', () => {
         updateLines();
-        localStorage.setItem('code_v5', editor.value);
+        localStorage.setItem('dd_v5_code', editor.value);
     });
 
-    editor.addEventListener('scroll', () => { lineBox.scrollTop = editor.scrollTop; });
+    editor.addEventListener('scroll', () => { document.getElementById('ln-box').scrollTop = editor.scrollTop; });
 
     init();
 </script>
