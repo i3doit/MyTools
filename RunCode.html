@@ -5,128 +5,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>智能代码运行器 Pro - 艾兜兜儿</title>
     <style>
-        /* 动态主题变量 */
         :root {
             --primary: #4CAF50;
             --accent: #007acc;
-            --toast-bg: rgba(0,0,0,0.8);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* 深邃黑主题 (默认) */
-        .theme-dark {
-            --bg-main: #1e1e1e;
-            --bg-panel: #252526;
-            --text-main: #d4d4d4;
-            --border: #333;
-            --line-num: #555;
-        }
+        /* 主题配色 */
+        .theme-dark { --bg: #1e1e1e; --panel: #252526; --text: #d4d4d4; --border: #333; --pre-bg: #fff; }
+        .theme-gray { --bg: #2d2d2d; --panel: #3c3c3c; --text: #e0e0e0; --border: #444; --pre-bg: #f9f9f9; }
+        .theme-light { --bg: #ffffff; --panel: #f3f3f3; --text: #333; --border: #ddd; --pre-bg: #fff; }
 
-        /* 极客灰主题 */
-        .theme-gray {
-            --bg-main: #2d2d2d;
-            --bg-panel: #3c3c3c;
-            --text-main: #e0e0e0;
-            --border: #444;
-            --line-num: #777;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; width: 100%; overflow: hidden; background: #000; font-family: -apple-system, sans-serif; }
 
-        /* 清新白主题 */
-        .theme-light {
-            --bg-main: #ffffff;
-            --bg-panel: #f3f3f3;
-            --text-main: #333333;
-            --border: #ddd;
-            --line-num: #999;
-        }
+        .app-wrapper { display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; transition: background 0.2s, color 0.2s; }
-        html, body { height: 100%; width: 100%; overflow: hidden; background: #000; font-family: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif; }
-
-        .app-wrapper { display: flex; flex-direction: column; height: 100vh; height: -webkit-fill-available; }
-
-        /* 导航栏 */
+        /* 头部导航 */
         header {
-            height: 55px; background: var(--bg-panel);
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+            height: 50px; background: var(--panel); display: flex; justify-content: space-between; 
+            align-items: center; padding: 0 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
         }
-        .logo { color: var(--text-main); font-size: 15px; font-weight: bold; }
-        .logo span { color: var(--primary); font-size: 10px; margin-left: 4px; border: 1px solid var(--primary); padding: 1px 3px; border-radius: 3px; }
+        .logo { color: var(--text); font-size: 15px; font-weight: bold; }
+        .logo span { color: var(--primary); font-size: 10px; border: 1px solid var(--primary); padding: 1px 3px; margin-left: 5px; border-radius: 3px; }
 
-        .btn-group { display: flex; gap: 5px; align-items: center; }
-        .btn { padding: 8px 12px; border-radius: 6px; border: none; font-size: 12px; cursor: pointer; font-weight: 600; }
-        .btn-run { background: var(--primary); color: white; }
-        .btn-share { background: var(--accent); color: white; }
-        .btn-theme { background: #666; color: white; }
-        .btn:active { transform: scale(0.92); opacity: 0.8; }
+        .btn-group { display: flex; gap: 5px; }
+        .btn { padding: 6px 10px; border-radius: 5px; border: none; font-size: 12px; cursor: pointer; font-weight: 600; color: white; transition: var(--transition); }
+        .btn-run { background: var(--primary); }
+        .btn-paste { background: #ff9800; }
+        .btn-theme { background: #666; }
+        .btn-clear { background: #444; }
+        .btn:active { transform: scale(0.9); }
 
-        /* 编辑区域 */
-        main { flex: 1; display: flex; flex-direction: row; overflow: hidden; background: var(--bg-main); }
-        .editor-box { flex: 1; display: flex; position: relative; border-right: 1px solid var(--border); }
-        .line-num { width: 32px; padding-top: 12px; color: var(--line-num); font-size: 11px; line-height: 20px; text-align: center; user-select: none; font-family: monospace; }
+        /* 主体分栏布局 */
+        main { flex: 1; display: flex; overflow: hidden; background: var(--bg); }
         
-        #codeEditor {
-            flex: 1; background: transparent; color: var(--text-main); border: none; padding: 10px 5px;
-            resize: none; outline: none; font-size: 14px; line-height: 20px;
-            font-family: 'Consolas', 'Monaco', monospace; white-space: pre; overflow: auto;
-        }
+        .editor-box { flex: 1; display: flex; border-right: 1px solid var(--border); transition: var(--transition); position: relative; }
+        .line-num { width: 35px; padding-top: 10px; color: #666; font-size: 11px; text-align: center; font-family: monospace; background: rgba(0,0,0,0.05); }
+        textarea { flex: 1; background: transparent; color: var(--text); border: none; padding: 10px; resize: none; outline: none; font-size: 14px; font-family: 'Consolas', monospace; line-height: 1.5; }
 
-        /* 智能粘贴气泡 */
-        #pasteTip {
-            position: absolute; display: none; background: var(--primary); color: white;
-            padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 100; cursor: pointer;
-            animation: bounce 0.3s ease;
-        }
-        @keyframes bounce { 0% {transform: scale(0.5);} 100% {transform: scale(1);} }
-
-        .preview-box { flex: 1.2; background: #fff; }
-        #previewFrame { width: 100%; height: 100%; border: none; }
+        .preview-box { flex: 1; display: flex; background: var(--pre-bg); transition: var(--transition); position: relative; }
+        iframe { width: 100%; height: 100%; border: none; }
 
         /* 底部信息 */
         footer {
-            background: var(--bg-panel); border-top: 1px solid var(--border);
-            padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); flex-shrink: 0;
+            background: var(--panel); border-top: 1px solid var(--border);
+            padding: 10px 15px calc(10px + env(safe-area-inset-bottom)); flex-shrink: 0;
         }
-        .footer-content { display: flex; flex-direction: column; gap: 6px; }
-        .ad-row { background: rgba(255,152,0,0.1); padding: 5px 10px; border-radius: 4px; border: 1px solid rgba(255,152,0,0.3); }
-        .ad-link { color: #ff9800; text-decoration: none; font-size: 12px; font-weight: bold; }
-        .info-row { display: flex; justify-content: space-between; align-items: center; color: var(--text-main); font-size: 12px; opacity: 0.8; }
-        .wechat-box { color: var(--primary); font-weight: bold; text-decoration: underline; cursor: pointer; }
+        .footer-wrap { max-width: 800px; margin: 0 auto; text-align: center; display: flex; flex-direction: column; gap: 8px; }
+        .ad-box { padding: 6px; border: 1px dashed var(--primary); border-radius: 4px; font-size: 13px; }
+        .ad-link { color: var(--primary); text-decoration: none; font-weight: bold; }
+        .info-row { font-size: 12px; color: var(--text); opacity: 0.8; }
+        .wechat { color: var(--accent); font-weight: bold; cursor: pointer; text-decoration: underline; }
 
-        /* 提示框 */
-        #toast { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); background: var(--toast-bg); color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 1000; display: none; }
+        /* 自动消失提示 */
+        #toast { position: fixed; top: 40%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; z-index: 999; display: none; }
 
-        /* 分享弹窗 */
-        #qrModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
-        .qr-card { background: white; padding: 20px; border-radius: 12px; width: 260px; text-align: center; }
-        #qrImg { width: 180px; height: 180px; margin: 10px 0; }
-
+        /* 移动端适配 */
         @media (max-width: 768px) {
             main { flex-direction: column; }
-            .preview-box { flex: 1.5; border-top: 1px solid var(--border); }
-            .info-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .editor-box, .preview-box { flex: 1; border-right: none; }
+            .preview-box { border-top: 1px solid var(--border); }
         }
+
+        /* 运行时的放大效果 */
+        .focus-preview .preview-box { flex: 2.5; }
+        .focus-preview .editor-box { flex: 0.5; opacity: 0.5; }
     </style>
 </head>
 <body class="theme-dark">
 
-    <div class="app-wrapper">
+    <div class="app-wrapper" id="app">
         <header>
-            <div class="logo">RUNNER <span id="lang-version">V3.0</span></div>
+            <div class="logo">Runner <span id="lang-tag">PRO</span></div>
             <div class="btn-group">
-                <button class="btn btn-theme" onclick="switchTheme()" id="btn-theme">🎨风格</button>
-                <button class="btn btn-clear" onclick="clearEditor()" id="btn-clear">清空</button>
-                <button class="btn btn-share" onclick="showShare()" id="btn-share">分享</button>
+                <button class="btn btn-paste" onclick="doPaste()" id="btn-paste">粘贴</button>
+                <button class="btn btn-theme" onclick="switchTheme()">风格</button>
+                <button class="btn btn-clear" onclick="clearEditor()">清空</button>
                 <button class="btn btn-run" onclick="runCode()" id="btn-run">▶ 运行</button>
             </div>
         </header>
 
-        <main>
+        <main id="mainArea">
             <div class="editor-box">
-                <div id="pasteTip" onclick="doPaste()">一键粘贴</div>
-                <div class="line-num" id="lineNumbers">1</div>
-                <textarea id="codeEditor" spellcheck="false" autocomplete="off" placeholder="Code here..."></textarea>
+                <div class="line-num" id="lineNums">1</div>
+                <textarea id="codeEditor" spellcheck="false" placeholder="Enter code..."></textarea>
             </div>
             <div class="preview-box">
                 <iframe id="previewFrame"></iframe>
@@ -134,168 +97,131 @@
         </main>
 
         <footer>
-            <div class="footer-content">
-                <div class="ad-row">
-                    <a href="你的链接" class="ad-link" id="ad-text">🔥 推荐：高性能云服务器，开发者首选 ></a>
+            <div class="footer-wrap">
+                <div class="ad-box">
+                    <a href="你的链接" class="ad-link" id="ad-text">🔥 推荐：高性能服务器，艾兜兜儿专属福利 ></a>
                 </div>
                 <div class="info-row">
-                    <div>
-                        <span id="author-label">作者</span>: 艾兜兜儿 | WeChat: <span class="wechat-box" onclick="copyWeChat()">857023577</span>
-                    </div>
-                    <div id="copyright">© 2024 AI DOU DOU</div>
+                    <span id="txt-author">作者</span>: 艾兜兜儿 | WeChat: <span class="wechat" onclick="copyWx()">857023577</span>
                 </div>
+                <div class="info-row" style="font-size: 10px;">© 2024 AI DOU DOU | All Languages Supported</div>
             </div>
         </footer>
     </div>
 
-    <div id="toast">Message</div>
-
-    <div id="qrModal" onclick="this.style.display='none'">
-        <div class="qr-card" onclick="event.stopPropagation()">
-            <h4 id="qr-title">智能代码运行器</h4>
-            <p style="font-size: 11px; color: #666; margin-top:5px;">Author: 艾兜兜儿 | 857023577</p>
-            <img id="qrImg" src="" alt="QR Code">
-            <p style="font-size: 11px; color: #999;" id="qr-tip">长按保存图片</p>
-        </div>
-    </div>
+    <div id="toast"></div>
 
     <script>
         const editor = document.getElementById('codeEditor');
-        const lineNumbers = document.getElementById('lineNumbers');
+        const mainArea = document.getElementById('mainArea');
         const preview = document.getElementById('previewFrame');
-        const pasteTip = document.getElementById('pasteTip');
         const toast = document.getElementById('toast');
+        const themes = ['theme-dark', 'theme-gray', 'theme-light'];
+        let themeIdx = 0;
 
-        // 多语言配置
-        const i18n = {
-            'zh-CN': {
-                version: '简中版', theme: '风格', clear: '清空', share: '分享', run: '运行',
-                paste: '点击粘贴', author: '作者', copied: '微信已复制', cleared: '已清空',
-                ad: '🔥 推荐：高性能云服务器，开发者首选 >', qrTitle: '智能代码运行器', qrTip: '长按保存二维码分享'
-            },
-            'zh-TW': {
-                version: '繁中版', theme: '風格', clear: '清空', share: '分享', run: '運行',
-                paste: '點擊粘貼', author: '作者', copied: '微信已複製', cleared: '已清空',
-                ad: '🔥 推薦：高性能雲服務器，開發者首選 >', qrTitle: '智能代碼運行器', qrTip: '長按保存二維碼分享'
-            },
-            'en': {
-                version: 'EN Pro', theme: 'Style', clear: 'Clear', share: 'Share', run: 'Run',
-                paste: 'Paste', author: 'Author', copied: 'WeChat Copied', cleared: 'Cleared',
-                ad: '🔥 Cloud Server Recommendation For Dev >', qrTitle: 'Code Runner', qrTip: 'Long press to save'
-            }
+        // 多语言字典
+        const langMap = {
+            'zh-CN': { paste:'粘贴', theme:'风格', clear:'清空', run:'运行', author:'作者', ad:'🔥 推荐：开发者服务器福利 >', toast_c:'已复制', toast_clr:'已清空' },
+            'zh-TW': { paste:'貼上', theme:'風格', clear:'清空', run:'運行', author:'作者', ad:'🔥 推薦：開發者服務器福利 >', toast_c:'已複製', toast_clr:'已清空' },
+            'en': { paste:'Paste', theme:'Style', clear:'Clear', run:'Run', author:'Author', ad:'🔥 Ad: Best Cloud Server for Dev >', toast_c:'Copied', toast_clr:'Cleared' }
         };
 
-        let currentLang = 'zh-CN';
-        let themes = ['theme-dark', 'theme-gray', 'theme-light'];
-        let themeIndex = 0;
-
-        // 初始化语言
-        function initLang() {
-            const lang = navigator.language;
-            if (lang.includes('TW') || lang.includes('HK')) currentLang = 'zh-TW';
-            else if (!lang.includes('zh')) currentLang = 'en';
-
-            const t = i18n[currentLang];
-            document.getElementById('lang-version').innerText = t.version;
-            document.getElementById('btn-theme').innerText = '🎨' + t.theme;
-            document.getElementById('btn-clear').innerText = t.clear;
-            document.getElementById('btn-share').innerText = t.share;
-            document.getElementById('btn-run').innerText = '▶ ' + t.run;
-            document.getElementById('pasteTip').innerText = t.paste;
-            document.getElementById('author-label').innerText = t.author;
-            document.getElementById('ad-text').innerText = t.ad;
-            document.getElementById('qr-title').innerText = t.qrTitle;
-            document.getElementById('qr-tip').innerText = t.qrTip;
+        // 1. 初始化语言
+        function initI18n() {
+            let l = navigator.language.includes('TW') ? 'zh-TW' : (navigator.language.includes('zh') ? 'zh-CN' : 'en');
+            const d = langMap[l];
+            document.getElementById('btn-paste').innerText = d.paste;
+            document.getElementById('btn-run').innerText = '▶ ' + d.run;
+            document.getElementById('txt-author').innerText = d.author;
+            document.getElementById('ad-text').innerText = d.ad;
+            return d;
         }
+        const curD = initI18n();
 
-        // 风格切换
-        function switchTheme() {
-            themeIndex = (themeIndex + 1) % themes.length;
-            document.body.className = themes[themeIndex];
-            localStorage.setItem('dd_theme', themeIndex);
-        }
-
-        // 智能粘贴逻辑
-        editor.addEventListener('focus', (e) => {
-            if(editor.value === "") {
-                pasteTip.style.display = 'block';
-                pasteTip.style.left = '50px';
-                pasteTip.style.top = '20px';
-            }
-        });
-
-        // 点击粘贴气泡
+        // 2. 粘贴功能 (兼容多次点击)
         async function doPaste() {
             try {
                 const text = await navigator.clipboard.readText();
-                editor.value = text;
-                pasteTip.style.display = 'none';
-                updateLineNumbers();
-                runCode();
+                if(text) {
+                    editor.value += text;
+                    updateLineNums();
+                    showToast(curD.paste + " OK");
+                    runCode(); // 粘贴后自动预览
+                }
             } catch (err) {
-                showToast("请手动长按粘贴 (Please paste manually)");
-                pasteTip.style.display = 'none';
+                showToast("请在输入框长按粘贴");
             }
         }
 
-        editor.addEventListener('input', () => {
-            pasteTip.style.display = 'none';
-            updateLineNumbers();
-            localStorage.setItem('dd_code_v4', editor.value);
-        });
-
-        function showToast(msg) {
-            toast.innerText = msg;
-            toast.style.display = 'block';
-            setTimeout(() => toast.style.display = 'none', 1500);
-        }
-
+        // 3. 运行并放大预览区
         function runCode() {
             const doc = preview.contentDocument || preview.contentWindow.document;
             doc.open();
             doc.write('<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">');
             doc.write(editor.value);
             doc.close();
+            
+            // 运行效果：预览区放大
+            mainArea.classList.add('focus-preview');
+            setTimeout(() => {
+                showToast("Running...");
+            }, 100);
+        }
+
+        // 4. 点击编辑器恢复比例
+        editor.addEventListener('focus', () => {
+            mainArea.classList.remove('focus-preview');
+        });
+
+        // 5. 皮肤切换
+        function switchTheme() {
+            themeIdx = (themeIdx + 1) % themes.length;
+            document.body.className = themes[themeIdx];
+            localStorage.setItem('dd_theme_v5', themeIdx);
         }
 
         function clearEditor() {
             editor.value = '';
-            localStorage.removeItem('dd_code_v4');
-            updateLineNumbers();
+            updateLineNums();
             runCode();
-            showToast(i18n[currentLang].cleared);
+            showToast(curD.toast_clr);
         }
 
-        function copyWeChat() {
-            navigator.clipboard.writeText('857023577').then(() => {
-                showToast(i18n[currentLang].copied);
-            });
+        function copyWx() {
+            navigator.clipboard.writeText('857023577');
+            showToast(curD.toast_c);
         }
 
-        function showShare() {
-            const qrImg = document.getElementById('qrImg');
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(window.location.href)}`;
-            document.getElementById('qrModal').style.display = 'flex';
+        function showToast(m) {
+            toast.innerText = m;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 1500);
         }
 
-        function updateLineNumbers() {
-            const lines = editor.value.split('\n').length;
-            let html = '';
-            for (let i = 1; i <= lines; i++) html += i + '<br>';
-            lineNumbers.innerHTML = html;
+        function updateLineNums() {
+            const n = editor.value.split('\n').length;
+            let h = '';
+            for(let i=1; i<=n; i++) h += i + '<br>';
+            document.getElementById('lineNums').innerHTML = h;
         }
+
+        editor.addEventListener('input', () => {
+            updateLineNums();
+            localStorage.setItem('dd_code_v5', editor.value);
+        });
 
         window.onload = () => {
-            initLang();
-            const savedCode = localStorage.getItem('dd_code_v4');
-            const savedTheme = localStorage.getItem('dd_theme');
+            const savedCode = localStorage.getItem('dd_code_v5');
             if(savedCode) editor.value = savedCode;
-            if(savedTheme) { themeIndex = savedTheme; document.body.className = themes[themeIndex]; }
-            updateLineNumbers();
+            const savedTheme = localStorage.getItem('dd_theme_v5');
+            if(savedTheme) { themeIdx = savedTheme; document.body.className = themes[themeIdx]; }
+            updateLineNums();
             runCode();
         };
 
-        editor.addEventListener('scroll', () => { lineNumbers.scrollTop = editor.scrollTop; });
+        editor.addEventListener('scroll', () => {
+            document.getElementById('lineNums').scrollTop = editor.scrollTop;
+        });
     </script>
 </body>
 </html>
