@@ -5,132 +5,119 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
     <title>Runner Pro - 专业级移动端代码实时预览器</title>
-    <meta name="description" content="Runner Pro 是一款高性能的移动端 HTML/CSS/JS 编辑预览工具。支持粘贴覆盖、实时运行、名片导出，适配 iOS/Android 所有主流浏览器。">
-    <meta name="keywords" content="Runner Pro, 代码预览, 手机编译器, HTML编辑器, 艾兜兜儿, 开发者工具">
+    <meta name="description" content="Runner Pro 是一款支持多主题切换、覆盖粘贴、实时预览及名片导出的专业级代码运行工具。适配 iOS/Android。">
     <meta name="author" content="艾兜兜儿">
     <link rel="canonical" href="https://i3doit.github.io/MyTools/RunCode.html" />
     
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <style>
+        /* 动态变量：支持主题切换 */
         :root {
             --primary: #4CAF50;
             --accent: #007acc;
             --warning: #ff9800;
+            --wx-green: #07C160;
+            /* 默认暗黑主题 */
             --bg: #1e1e1e;
             --panel: #252526;
             --text: #d4d4d4;
             --border: #333333;
-            --wx-green: #07C160;
         }
 
-        /* 基础重置 */
+        /* 不同主题配色方案 */
+        [data-theme="slate"] { --bg: #21252b; --panel: #282c34; --border: #3e4451; }
+        [data-theme="midnight"] { --bg: #0d1117; --panel: #161b22; --border: #30363d; }
+        [data-theme="purple"] { --bg: #1a1b26; --panel: #24283b; --border: #414868; }
+
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html, body { 
-            height: 100%; width: 100%; overflow: hidden; 
-            background-color: #000; 
-            font-family: -apple-system, system-ui, sans-serif; 
-        }
+        html, body { height: 100%; width: 100%; overflow: hidden; background-color: #000; font-family: -apple-system, system-ui, sans-serif; }
 
-        /* 兼容性容器：适配 iOS 动态工具栏 */
         .app-container {
             display: flex; flex-direction: column;
             height: 100vh; height: 100dvh; 
             background: var(--bg); position: relative;
+            transition: background 0.3s ease;
         }
 
-        /* 顶部导航：精简版 */
+        /* 顶部导航 */
         header {
             height: 54px; background: var(--panel); border-bottom: 1px solid var(--border);
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 0 12px; flex-shrink: 0; z-index: 100;
+            padding: 0 10px; flex-shrink: 0; z-index: 100; transition: background 0.3s ease;
         }
-        .logo { color: #fff; font-size: 15px; font-weight: bold; letter-spacing: 0.5px; }
-        .logo i { color: var(--primary); font-style: normal; font-size: 10px; border: 1px solid; padding: 0 3px; border-radius: 3px; margin-left: 5px; vertical-align: middle; }
+        .logo { color: #fff; font-size: 14px; font-weight: bold; }
+        .logo i { color: var(--primary); font-style: normal; font-size: 9px; border: 1px solid; padding: 0 2px; border-radius: 3px; margin-left: 4px; }
 
-        .nav-icons { display: flex; gap: 18px; }
+        .nav-icons { display: flex; gap: 12px; }
         .icon-btn {
             background: none; border: none; cursor: pointer; color: var(--text);
             display: flex; flex-direction: column; align-items: center;
         }
-        .icon-btn span { font-size: 18px; line-height: 1.2; }
-        .icon-btn label { font-size: 10px; margin-top: 2px; color: #999; cursor: pointer; }
+        .icon-btn span { font-size: 17px; }
+        .icon-btn label { font-size: 9px; margin-top: 2px; color: #999; cursor: pointer; }
 
-        /* 内容主体 */
-        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
-        .editor-box { 
-            height: 32%; display: flex; border-bottom: 2px solid var(--border); 
-            overflow: hidden; position: relative; background: var(--bg);
-        }
+        /* 内容区 */
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .editor-box { height: 32%; display: flex; border-bottom: 2px solid var(--border); overflow: hidden; position: relative; }
         .preview-box { height: 68%; background: #fff; position: relative; }
         
-        .line-num { width: 34px; padding-top: 10px; color: #555; font-size: 11px; text-align: center; background: rgba(0,0,0,0.3); font-family: monospace; border-right: 1px solid var(--border); }
-        textarea { flex: 1; background: transparent; color: #9cdcfe; border: none; padding: 10px; resize: none; outline: none; font-size: 14px; font-family: 'Menlo', monospace; line-height: 1.5; }
+        .line-num { width: 32px; padding-top: 10px; color: #555; font-size: 10px; text-align: center; background: rgba(0,0,0,0.2); font-family: monospace; }
+        textarea { flex: 1; background: transparent; color: #9cdcfe; border: none; padding: 10px; resize: none; outline: none; font-size: 13px; font-family: 'Menlo', monospace; line-height: 1.5; }
         iframe { width: 100%; height: 100%; border: none; display: block; }
 
-        /* 移动端悬浮礼包 */
+        /* 悬浮礼包 */
         .float-gift {
-            display: none; position: absolute; right: 20px; bottom: 85px; 
-            width: 52px; height: 52px; background: var(--warning); 
+            display: none; position: absolute; right: 15px; bottom: 85px; 
+            width: 48px; height: 48px; background: var(--warning); 
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 15px rgba(255,152,0,0.4); z-index: 500;
-            text-decoration: none; font-size: 26px; animation: breathe 2s infinite;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 500;
+            text-decoration: none; font-size: 22px; animation: breathe 2s infinite;
         }
-        @keyframes breathe { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        @keyframes breathe { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
 
-        /* 底部信息：深度兼容优化 */
+        /* 底部 */
         footer {
             background: var(--panel); border-top: 1px solid var(--border);
-            padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-            flex-shrink: 0; z-index: 100;
+            padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+            flex-shrink: 0; z-index: 100; transition: background 0.3s ease;
         }
-        .pc-ad { display: block; }
-        .ad-btn {
-            display: block; background: rgba(255,152,0,0.1); border: 1px dashed rgba(255,152,0,0.3);
-            border-radius: 8px; padding: 8px; text-align: center; color: var(--warning);
-            text-decoration: none; font-size: 12px; font-weight: bold; margin-bottom: 8px;
-        }
-        .footer-row { display: flex; justify-content: center; align-items: center; gap: 20px; font-size: 12px; color: #888; }
-        .footer-row a { color: inherit; text-decoration: none; }
+        .footer-row { display: flex; justify-content: center; align-items: center; gap: 15px; font-size: 11px; color: #888; }
         .wx-pill { 
-            display: inline-flex; align-items: center; gap: 5px;
-            background: var(--wx-green); color: white; padding: 3px 10px; 
-            border-radius: 20px; font-size: 11px; cursor: pointer; font-weight: bold;
+            display: inline-flex; align-items: center; gap: 4px;
+            background: var(--wx-green); color: white; padding: 2px 8px; 
+            border-radius: 15px; font-size: 10px; cursor: pointer; font-weight: bold;
         }
 
-        /* 弹窗样式 */
-        #shareModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 2000; align-items: center; justify-content: center; }
-        .card-container { width: 88%; max-width: 320px; }
-        #cardArea { background: #fff; padding: 30px 20px; border-radius: 20px; text-align: center; }
-        #cardArea h3 { color: #333; font-size: 22px; margin-bottom: 8px; }
-        .qr-wrap { width: 180px; height: 180px; margin: 20px auto; border: 1px solid #f0f0f0; padding: 8px; background: #fff; }
-        .modal-btns { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .btn-save { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: bold; font-size: 16px; }
-        .btn-close { color: #999; background: none; border: none; font-size: 13px; cursor: pointer; }
+        /* 弹窗及名片 */
+        #shareModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; }
+        .card-wrap { width: 85%; max-width: 300px; }
+        #cardArea { background: #fff; padding: 25px 15px; border-radius: 15px; text-align: center; }
+        .modal-btns { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .btn-p { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; }
+        .btn-s { color: #999; background: none; border: none; font-size: 12px; cursor: pointer; }
 
-        #toast { position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 12px 25px; border-radius: 30px; font-size: 14px; z-index: 3000; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        #toast { position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 3000; display: none; }
 
-        /* 响应式适配 */
         @media (max-width: 768px) {
-            .pc-ad { display: none; }
             .float-gift { display: flex; }
-            .editor-box { height: 28%; }
-            .preview-box { height: 72%; }
+            .editor-box { height: 28%; } .preview-box { height: 72%; }
         }
         @media (min-width: 769px) {
             main { flex-direction: row; }
-            .editor-box { height: 100%; width: 40%; border-bottom: none; border-right: 2px solid var(--border); }
+            .editor-box { height: 100%; width: 40%; border-bottom: none; border-right: 1px solid var(--border); }
             .preview-box { height: 100%; width: 60%; }
         }
     </style>
 </head>
 <body>
 
-<div class="app-container">
+<div class="app-container" id="app">
     <header>
         <div class="logo">RUNNER <i>PRO</i></div>
         <div class="nav-icons">
             <button class="icon-btn" onclick="smartPaste()"><span>📋</span><label id="l-paste">覆盖粘贴</label></button>
+            <button class="icon-btn" onclick="changeTheme()"><span>🎨</span><label id="l-theme">主题</label></button>
             <button class="icon-btn" onclick="openShare()"><span>📤</span><label id="l-share">生成名片</label></button>
             <button class="icon-btn" onclick="toggleLang()"><span>🌐</span><label id="l-lang">中文</label></button>
             <button class="icon-btn" style="color:var(--primary)" onclick="runCode()"><span>▶</span><label id="l-run">运行</label></button>
@@ -139,7 +126,6 @@
 
     <main>
         <a href="https://github.com/i3doit" class="float-gift">🎁</a>
-        
         <div class="editor-box">
             <div class="line-num" id="line-nums">1</div>
             <textarea id="editor" spellcheck="false" placeholder="在此输入代码..."></textarea>
@@ -150,13 +136,10 @@
     </main>
 
     <footer>
-        <div class="pc-ad">
-            <a href="https://github.com/i3doit" class="ad-btn" id="ad-text">🎁 推荐：高性能云服务器优惠入口，点击查看 &gt;</a>
-        </div>
         <div class="footer-row">
-            <a href="https://github.com/i3doit"><b id="l-author">作者</b>: 艾兜兜儿</a>
+            <a href="https://github.com/i3doit">作者: 艾兜兜儿</a>
             <div class="wx-pill" onclick="copyWx()">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="vertical-align:middle;margin-right:2px;"><path d="M8.5 13.5c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zm7 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zm7.5-3.5c0-4.4-4-8-9-8s-9 3.6-9 8c0 3.9 3.1 7.1 7.3 7.8l-.3 2.7 3-1.5h1c4.4 0 8-3.1 8-7h2zm-12.5 11l-2.5 1.2.3-2.2c-3.5-.8-6-3.4-6-6.5 0-3.9 3.6-7 8-7s8 3.1 8 7-3.6 7-8 7h-.2v.5z"/></svg>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M8.5 13.5c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zm7 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zm7.5-3.5c0-4.4-4-8-9-8s-9 3.6-9 8c0 3.9 3.1 7.1 7.3 7.8l-.3 2.7 3-1.5h1c4.4 0 8-3.1 8-7h2zm-12.5 11l-2.5 1.2.3-2.2c-3.5-.8-6-3.4-6-6.5 0-3.9 3.6-7 8-7s8 3.1 8 7-3.6 7-8 7h-.2v.5z"/></svg>
                 <span>857023577</span>
             </div>
         </div>
@@ -164,18 +147,18 @@
 </div>
 
 <div id="shareModal">
-    <div class="card-container">
+    <div class="card-wrap">
         <div id="cardArea">
-            <h3 id="s-title">Runner Pro</h3>
-            <p id="s-sub" style="font-size: 14px; color: #666;">实时预览 · 名片导出 · 极简开发</p>
-            <div class="qr-wrap">
-                <img id="qrImg" style="width:100%; height:100%;" src="" alt="QR">
+            <h3 style="color:#333;font-size:20px;margin-bottom:5px;">Runner Pro</h3>
+            <p style="font-size: 12px; color: #666;">实时预览 · 专业导出 · 艾兜兜儿</p>
+            <div style="width:160px;height:160px;margin:15px auto;border:1px solid #eee;padding:5px;">
+                <img id="qrImg" style="width:100%;height:100%;" src="" alt="QR">
             </div>
-            <p style="font-size: 11px; color: #aaa;" id="s-hint">扫码预览代码作品</p>
+            <p style="font-size: 10px; color: #aaa;">扫码预览我的代码作品</p>
         </div>
         <div class="modal-btns">
-            <button class="btn-save" onclick="saveToGallery()" id="l-save">保存名片到相册</button>
-            <button class="btn-close" onclick="closeShare()" id="l-close">返回编辑</button>
+            <button class="btn-p" onclick="saveToGallery()">保存名片图片</button>
+            <button class="btn-s" onclick="closeShare()">返回编辑</button>
         </div>
     </div>
 </div>
@@ -187,58 +170,54 @@
     const previewFrame = document.getElementById('preview-frame');
     const lineNums = document.getElementById('line-nums');
     const toast = document.getElementById('toast');
+    const app = document.getElementById('app');
+
+    const themes = ["default", "slate", "midnight", "purple"];
+    let currentThemeIndex = 0;
 
     const i18n = {
         'zh': {
-            paste:'覆盖粘贴', share:'生成名片', run:'运行', lang:'中文', save:'保存名片到相册', close:'返回',
-            author:'作者', ad:'🎁 推荐：高性能云服务器优惠入口，点击查看 >', stitle:'Runner Pro', hint:'扫码预览代码，开启智能开发',
+            paste:'覆盖粘贴', share:'生成名片', run:'运行', lang:'中文', theme:'切换主题',
             code: `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <style>
-        body { font-family: system-ui; padding: 25px; line-height: 1.6; color: #333; background: #f9f9f9; }
-        .card { background: #fff; padding: 25px; border-radius: 16px; border: 1px solid #eee; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        h2 { color: #4CAF50; margin: 0 0 15px 0; font-size: 22px; }
-        .step { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
-        .num { background: #4CAF50; color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
-        .btn-test { display: inline-block; padding: 12px 24px; background: #4CAF50; color: white; border-radius: 10px; text-decoration: none; margin-top: 20px; font-weight: bold; transition: 0.3s; }
+        body { font-family: system-ui; padding: 25px; line-height: 1.6; color: #333; background: #fff; }
+        .card { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #eee; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        h2 { color: #4CAF50; margin-top: 0; }
+        .btn-test { display: inline-block; padding: 10px 20px; background: #4CAF50; color: white; border-radius: 8px; text-decoration: none; margin-top: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>🚀 Runner Pro 使用指南</h2>
-        <div class="step"><div class="num">1</div><span>在上方编辑区输入 HTML 代码</span></div>
-        <div class="step"><div class="num">2</div><span>点击右上角 <b>▶ 运行</b> 查看效果</span></div>
-        <div class="step"><div class="num">3</div><span>点击 <b>📤 生成名片</b> 下载分享图</span></div>
-        <div class="step"><div class="num">4</div><span>点击 <b>📋 覆盖粘贴</b> 快速替换内容</span></div>
-        <a href="javascript:void(0)" class="btn-test" onclick="alert('运行环境检测正常！')">运行环境测试</a>
+        <h2>🚀 Runner Pro 已就绪</h2>
+        <p>1. <b>粘贴：</b>点击顶部图标一键替换代码。</p>
+        <p>2. <b>变色：</b>点击🎨图标切换你喜欢的主题颜色。</p>
+        <p>3. <b>导出：</b>满意后生成专属二维码名片。</p>
+        <a href="javascript:void(0)" class="btn-test" onclick="alert('测试成功！')">点我交互测试</a>
     </div>
 </body>
 </html>`
         },
         'en': {
-            paste:'Paste Over', share:'Share Card', run:'Run', lang:'English', save:'Save to Album', close:'Back',
-            author:'Author', ad:'🎁 Exclusive: Best Cloud Server Deals for Devs >', stitle:'Runner Pro', hint:'Scan to preview my code snippets',
+            paste:'Paste Over', share:'Share Card', run:'Run', lang:'English', theme:'Theme',
             code: `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <style>
-        body { font-family: system-ui; padding: 25px; line-height: 1.6; color: #333; background: #f9f9f9; }
-        .card { background: #fff; padding: 25px; border-radius: 16px; border: 1px solid #eee; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        h2 { color: #007acc; margin: 0 0 15px 0; font-size: 22px; }
-        .btn-test { display: inline-block; padding: 12px 24px; background: #007acc; color: white; border-radius: 10px; text-decoration: none; margin-top: 20px; font-weight: bold; }
+        body { font-family: system-ui; padding: 25px; line-height: 1.6; color: #333; background: #fff; }
+        .card { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #eee; }
+        h2 { color: #007acc; margin-top: 0; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>🚀 Runner Pro Quick Start</h2>
-        <p>1. <b>Edit:</b> Write HTML in the editor above.</p>
-        <p>2. <b>Run:</b> Click <b>▶ Run</b> for instant preview.</p>
-        <p>3. <b>Share:</b> Click <b>📤 Share</b> to export image.</p>
-        <p>4. <b>Paste:</b> Use <b>📋 Paste Over</b> to replace all.</p>
-        <a href="javascript:void(0)" class="btn-test" onclick="alert('Environment OK!')">Interaction Test</a>
+        <h2>🚀 Runner Pro Ready</h2>
+        <p>1. Paste code to replace old content.</p>
+        <p>2. Click 🎨 icon to change editor themes.</p>
+        <p>3. Export card with QR code for sharing.</p>
     </div>
 </body>
 </html>`
@@ -248,32 +227,39 @@
     let curLang = 'zh';
 
     function init() {
-        const saved = localStorage.getItem('runner_pro_v10_code');
-        curLang = localStorage.getItem('runner_pro_v10_lang') || 'zh';
-        editor.value = saved || i18n[curLang].code;
+        const savedCode = localStorage.getItem('rp_v11_code');
+        curLang = localStorage.getItem('rp_v11_lang') || 'zh';
+        const savedTheme = localStorage.getItem('rp_v11_theme') || 'default';
+        
+        editor.value = savedCode || i18n[curLang].code;
+        app.setAttribute('data-theme', savedTheme);
+        currentThemeIndex = themes.indexOf(savedTheme);
+
         updateUI(); runCode(); updateLines();
+    }
+
+    function changeTheme() {
+        currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+        const newTheme = themes[currentThemeIndex];
+        app.setAttribute('data-theme', newTheme);
+        localStorage.setItem('rp_v11_theme', newTheme);
+        showToast("主题已切换");
     }
 
     function toggleLang() {
         curLang = (curLang === 'zh') ? 'en' : 'zh';
-        localStorage.setItem('runner_pro_v10_lang', curLang);
+        localStorage.setItem('rp_v11_lang', curLang);
         editor.value = i18n[curLang].code;
         updateUI(); runCode(); updateLines();
-        showToast(curLang === 'zh' ? "已切换至中文" : "English Mode");
     }
 
     function updateUI() {
         const d = i18n[curLang];
         document.getElementById('l-paste').innerText = d.paste;
+        document.getElementById('l-theme').innerText = d.theme;
         document.getElementById('l-share').innerText = d.share;
-        document.getElementById('l-run').innerText = d.run;
         document.getElementById('l-lang').innerText = d.lang;
-        document.getElementById('l-save').innerText = d.save;
-        document.getElementById('l-close').innerText = d.close;
-        document.getElementById('l-author').innerText = d.author;
-        document.getElementById('ad-text').innerText = d.ad;
-        document.getElementById('s-title').innerText = d.stitle;
-        document.getElementById('s-hint').innerText = d.hint;
+        document.getElementById('l-run').innerText = d.run;
     }
 
     function runCode() {
@@ -293,13 +279,13 @@
     function closeShare() { document.getElementById('shareModal').style.display = 'none'; }
 
     function saveToGallery() {
-        showToast("正在导出高清名片...");
+        showToast("生成中...");
         html2canvas(document.getElementById('cardArea'), { useCORS: true, scale: 2 }).then(canvas => {
             const a = document.createElement('a');
-            a.download = 'RunnerPro_Card.png';
+            a.download = 'RunnerPro_Work.png';
             a.href = canvas.toDataURL();
             a.click();
-            showToast("图片已尝试下载");
+            showToast("图片已导出");
         });
     }
 
@@ -307,13 +293,11 @@
         try {
             const text = await navigator.clipboard.readText();
             if(text) { 
-                editor.value = text; // 覆盖粘贴，无需单独清空
+                editor.value = text;
                 updateLines(); runCode(); 
-                showToast("已成功覆盖旧内容"); 
+                showToast("已覆盖并运行"); 
             }
-        } catch(e) { 
-            showToast("无法自动读取剪贴板，请长按手动粘贴"); 
-        }
+        } catch(e) { showToast("请手动长按粘贴"); }
     }
 
     function copyWx() {
@@ -328,7 +312,7 @@
 
     function showToast(m) {
         toast.innerText = m; toast.style.display = 'block';
-        setTimeout(() => toast.style.display = 'none', 1800);
+        setTimeout(() => toast.style.display = 'none', 1500);
     }
 
     function updateLines() {
@@ -339,7 +323,7 @@
 
     editor.addEventListener('input', () => {
         updateLines();
-        localStorage.setItem('runner_pro_v10_code', editor.value);
+        localStorage.setItem('rp_v11_code', editor.value);
     });
 
     editor.addEventListener('scroll', () => { lineNums.scrollTop = editor.scrollTop; });
