@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <title>AiDouDou Code Runner - 手机端实时代码编辑器</title>
-    <meta name="description" content="艾兜兜儿出品：支持 HTML/CSS/JS 实时预览、中英双语切换、一键生成高清名片并下载相册。专为 iOS 和安卓浏览器优化。">
-    <meta name="keywords" content="代码编辑器, 移动端编程, 艾兜兜儿, Code Runner, 在线预览, 程序员工具">
-    <meta name="author" content="艾兜兜儿 (AiDouDou)">
+    <title>Runner Pro - 专业级移动端代码实时预览器</title>
+    <meta name="description" content="Runner Pro 是一款高性能的移动端 HTML/CSS/JS 编辑预览工具。支持粘贴覆盖、实时运行、名片导出，适配 iOS/Android 所有主流浏览器。">
+    <meta name="keywords" content="Runner Pro, 代码预览, 手机编译器, HTML编辑器, 艾兜兜儿, 开发者工具">
+    <meta name="author" content="艾兜兜儿">
     <link rel="canonical" href="https://i3doit.github.io/MyTools/RunCode.html" />
     
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -17,146 +17,110 @@
             --primary: #4CAF50;
             --accent: #007acc;
             --warning: #ff9800;
-            --bg: #1e1e1e; /* 恢复深色背景 */
+            --bg: #1e1e1e;
             --panel: #252526;
             --text: #d4d4d4;
             --border: #333333;
+            --wx-green: #07C160;
         }
 
+        /* 基础重置 */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        /* 修复移动端浏览器视口高度问题的关键 */
         html, body { 
-            height: 100%; 
-            width: 100%; 
-            overflow: hidden; 
-            background-color: #000;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100%; width: 100%; overflow: hidden; 
+            background-color: #000; 
+            font-family: -apple-system, system-ui, sans-serif; 
         }
 
+        /* 兼容性容器：适配 iOS 动态工具栏 */
         .app-container {
-            display: flex;
-            flex-direction: column;
-            /* 适配苹果/谷歌浏览器工具栏遮挡 */
-            height: 100vh; 
-            height: 100svh; 
-            background: var(--bg);
+            display: flex; flex-direction: column;
+            height: 100vh; height: 100dvh; 
+            background: var(--bg); position: relative;
         }
 
-        /* 顶部导航 */
+        /* 顶部导航：精简版 */
         header {
-            height: 54px; 
-            background: var(--panel); 
-            border-bottom: 1px solid var(--border);
+            height: 54px; background: var(--panel); border-bottom: 1px solid var(--border);
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 0 12px; flex-shrink: 0;
-            z-index: 100;
+            padding: 0 12px; flex-shrink: 0; z-index: 100;
         }
         .logo { color: #fff; font-size: 15px; font-weight: bold; letter-spacing: 0.5px; }
         .logo i { color: var(--primary); font-style: normal; font-size: 10px; border: 1px solid; padding: 0 3px; border-radius: 3px; margin-left: 5px; vertical-align: middle; }
 
-        .nav-icons { display: flex; gap: 14px; }
+        .nav-icons { display: flex; gap: 18px; }
         .icon-btn {
             background: none; border: none; cursor: pointer; color: var(--text);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            display: flex; flex-direction: column; align-items: center;
         }
-        .icon-btn span { font-size: 19px; margin-bottom: 2px; }
-        .icon-btn label { font-size: 10px; cursor: pointer; color: #aaa; }
-        .icon-btn:active { opacity: 0.6; transform: scale(0.9); }
+        .icon-btn span { font-size: 18px; line-height: 1.2; }
+        .icon-btn label { font-size: 10px; margin-top: 2px; color: #999; cursor: pointer; }
 
-        /* 主体内容：解决预览区乱码/重叠问题 */
-        main { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-            background: var(--bg);
+        /* 内容主体 */
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+        .editor-box { 
+            height: 32%; display: flex; border-bottom: 2px solid var(--border); 
+            overflow: hidden; position: relative; background: var(--bg);
         }
-
-        /* 竖屏高度分配：代码 32% | 预览 68% */
-        .editor-section { 
-            height: 32%; 
-            display: flex; 
-            border-bottom: 2px solid var(--border); 
-            overflow: hidden; /* 防止内容溢出到预览区 */
-            background: var(--bg);
-            position: relative;
-        }
-        .preview-section { 
-            height: 68%; 
-            background: #fff; 
-            overflow: hidden;
-        }
+        .preview-box { height: 68%; background: #fff; position: relative; }
         
-        /* 编辑器内部样式 */
-        .line-num-bar { 
-            width: 32px; 
-            padding-top: 10px; 
-            color: #666; 
-            font-size: 11px; 
-            text-align: center; 
-            background: rgba(0,0,0,0.2); 
-            font-family: 'Menlo', 'Monaco', monospace;
-            border-right: 1px solid var(--border);
-            pointer-events: none;
-        }
-        textarea { 
-            flex: 1; 
-            background: transparent; 
-            color: #9cdcfe; 
-            border: none; 
-            padding: 10px; 
-            resize: none; 
-            outline: none; 
-            font-size: 14px; 
-            font-family: 'Menlo', 'Monaco', 'Consolas', monospace; 
-            line-height: 1.5; 
-        }
+        .line-num { width: 34px; padding-top: 10px; color: #555; font-size: 11px; text-align: center; background: rgba(0,0,0,0.3); font-family: monospace; border-right: 1px solid var(--border); }
+        textarea { flex: 1; background: transparent; color: #9cdcfe; border: none; padding: 10px; resize: none; outline: none; font-size: 14px; font-family: 'Menlo', monospace; line-height: 1.5; }
         iframe { width: 100%; height: 100%; border: none; display: block; }
 
-        /* 底部：确保始终在屏幕内 */
+        /* 移动端悬浮礼包 */
+        .float-gift {
+            display: none; position: absolute; right: 20px; bottom: 85px; 
+            width: 52px; height: 52px; background: var(--warning); 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(255,152,0,0.4); z-index: 500;
+            text-decoration: none; font-size: 26px; animation: breathe 2s infinite;
+        }
+        @keyframes breathe { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* 底部信息：深度兼容优化 */
         footer {
-            background: var(--panel); 
-            border-top: 1px solid var(--border);
+            background: var(--panel); border-top: 1px solid var(--border);
             padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-            flex-shrink: 0;
-            z-index: 100;
+            flex-shrink: 0; z-index: 100;
         }
-        .ad-row {
-            background: rgba(255,152,0,0.1);
-            border: 1px dashed rgba(255,152,0,0.3);
-            border-radius: 6px; padding: 6px; margin-bottom: 8px;
-            text-align: center;
+        .pc-ad { display: block; }
+        .ad-btn {
+            display: block; background: rgba(255,152,0,0.1); border: 1px dashed rgba(255,152,0,0.3);
+            border-radius: 8px; padding: 8px; text-align: center; color: var(--warning);
+            text-decoration: none; font-size: 12px; font-weight: bold; margin-bottom: 8px;
         }
-        .ad-row a { color: var(--warning); text-decoration: none; font-size: 12px; font-weight: bold; }
-        .info-row { display: flex; justify-content: center; gap: 18px; font-size: 12px; color: #888; }
-        .wx-copy { color: var(--accent); text-decoration: underline; font-weight: bold; cursor: pointer; }
+        .footer-row { display: flex; justify-content: center; align-items: center; gap: 20px; font-size: 12px; color: #888; }
+        .footer-row a { color: inherit; text-decoration: none; }
+        .wx-pill { 
+            display: inline-flex; align-items: center; gap: 5px;
+            background: var(--wx-green); color: white; padding: 3px 10px; 
+            border-radius: 20px; font-size: 11px; cursor: pointer; font-weight: bold;
+        }
 
-        /* 分享弹窗 */
-        #shareModal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.92); z-index: 2000; align-items: center; justify-content: center;
-        }
-        .modal-content { width: 90%; max-width: 320px; }
-        #cardArea { 
-            background: #fff; padding: 25px; border-radius: 16px; text-align: center; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        }
-        #cardArea h3 { color: #333; font-size: 20px; margin-bottom: 6px; }
-        #cardArea p { color: #666; font-size: 13px; margin-bottom: 4px; }
-        .qr-box { width: 180px; height: 180px; margin: 15px auto; border: 1px solid #eee; padding: 5px; }
-        
+        /* 弹窗样式 */
+        #shareModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 2000; align-items: center; justify-content: center; }
+        .card-container { width: 88%; max-width: 320px; }
+        #cardArea { background: #fff; padding: 30px 20px; border-radius: 20px; text-align: center; }
+        #cardArea h3 { color: #333; font-size: 22px; margin-bottom: 8px; }
+        .qr-wrap { width: 180px; height: 180px; margin: 20px auto; border: 1px solid #f0f0f0; padding: 8px; background: #fff; }
         .modal-btns { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .btn-main { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; font-weight: bold; font-size: 15px; }
-        .btn-sub { color: #999; background: none; border: none; font-size: 13px; }
+        .btn-save { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: bold; font-size: 16px; }
+        .btn-close { color: #999; background: none; border: none; font-size: 13px; cursor: pointer; }
 
-        #toast { position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 12px 24px; border-radius: 30px; font-size: 14px; z-index: 3000; display: none; }
+        #toast { position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 12px 25px; border-radius: 30px; font-size: 14px; z-index: 3000; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 
-        /* 横屏适配 */
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .pc-ad { display: none; }
+            .float-gift { display: flex; }
+            .editor-box { height: 28%; }
+            .preview-box { height: 72%; }
+        }
         @media (min-width: 769px) {
             main { flex-direction: row; }
-            .editor-section { height: 100%; width: 40%; border-bottom: none; border-right: 2px solid var(--border); }
-            .preview-section { height: 100%; width: 60%; }
+            .editor-box { height: 100%; width: 40%; border-bottom: none; border-right: 2px solid var(--border); }
+            .preview-box { height: 100%; width: 60%; }
         }
     </style>
 </head>
@@ -164,48 +128,54 @@
 
 <div class="app-container">
     <header>
-        <div class="logo">AIDOUDOU <i>PRO</i></div>
+        <div class="logo">RUNNER <i>PRO</i></div>
         <div class="nav-icons">
-            <button class="icon-btn" onclick="doPaste()"><span>📋</span><label id="l-paste">粘贴</label></button>
-            <button class="icon-btn" onclick="openShare()"><span>📤</span><label id="l-share">分享</label></button>
+            <button class="icon-btn" onclick="smartPaste()"><span>📋</span><label id="l-paste">覆盖粘贴</label></button>
+            <button class="icon-btn" onclick="openShare()"><span>📤</span><label id="l-share">生成名片</label></button>
             <button class="icon-btn" onclick="toggleLang()"><span>🌐</span><label id="l-lang">中文</label></button>
-            <button class="icon-btn" onclick="clearCode()"><span>🗑️</span><label id="l-clear">清空</label></button>
             <button class="icon-btn" style="color:var(--primary)" onclick="runCode()"><span>▶</span><label id="l-run">运行</label></button>
         </div>
     </header>
 
     <main>
-        <div class="editor-section">
-            <div class="line-num-bar" id="line-nums">1</div>
-            <textarea id="editor" spellcheck="false" placeholder="Write code here..."></textarea>
+        <a href="https://github.com/i3doit" class="float-gift">🎁</a>
+        
+        <div class="editor-box">
+            <div class="line-num" id="line-nums">1</div>
+            <textarea id="editor" spellcheck="false" placeholder="在此输入代码..."></textarea>
         </div>
-        <div class="preview-section">
+        <div class="preview-box">
             <iframe id="preview-frame"></iframe>
         </div>
     </main>
 
     <footer>
-        <div class="ad-row">
-            <a href="#" id="ad-text">🎁 艾兜兜儿专属：高性能云服务器优惠入口 &gt;</a>
+        <div class="pc-ad">
+            <a href="https://github.com/i3doit" class="ad-btn" id="ad-text">🎁 推荐：高性能云服务器优惠入口，点击查看 &gt;</a>
         </div>
-        <div class="info-row">
-            <span><b id="l-author">作者</b>: 艾兜兜儿</span>
-            <span onclick="copyWx()">WeChat: <b class="wx-copy">857023577</b></span>
+        <div class="footer-row">
+            <a href="https://github.com/i3doit"><b id="l-author">作者</b>: 艾兜兜儿</a>
+            <div class="wx-pill" onclick="copyWx()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="white" style="vertical-align:middle;margin-right:2px;"><path d="M8.5 13.5c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zm7 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zm7.5-3.5c0-4.4-4-8-9-8s-9 3.6-9 8c0 3.9 3.1 7.1 7.3 7.8l-.3 2.7 3-1.5h1c4.4 0 8-3.1 8-7h2zm-12.5 11l-2.5 1.2.3-2.2c-3.5-.8-6-3.4-6-6.5 0-3.9 3.6-7 8-7s8 3.1 8 7-3.6 7-8 7h-.2v.5z"/></svg>
+                <span>857023577</span>
+            </div>
         </div>
     </footer>
 </div>
 
 <div id="shareModal">
-    <div class="modal-content">
+    <div class="card-container">
         <div id="cardArea">
-            <h3 id="s-title">智能代码运行器</h3>
-            <p id="s-sub">作者: 艾兜兜儿 | 微信: 857023577</p>
-            <img id="qrImg" class="qr-box" src="" alt="QR">
-            <p style="font-size: 11px; color: #aaa;" id="s-hint">扫码预览代码，开启智能开发</p>
+            <h3 id="s-title">Runner Pro</h3>
+            <p id="s-sub" style="font-size: 14px; color: #666;">实时预览 · 名片导出 · 极简开发</p>
+            <div class="qr-wrap">
+                <img id="qrImg" style="width:100%; height:100%;" src="" alt="QR">
+            </div>
+            <p style="font-size: 11px; color: #aaa;" id="s-hint">扫码预览代码作品</p>
         </div>
         <div class="modal-btns">
-            <button class="btn-main" onclick="saveCard()" id="l-save">保存名片到相册</button>
-            <button class="btn-sub" onclick="closeShare()" id="l-close">关闭</button>
+            <button class="btn-save" onclick="saveToGallery()" id="l-save">保存名片到相册</button>
+            <button class="btn-close" onclick="closeShare()" id="l-close">返回编辑</button>
         </div>
     </div>
 </div>
@@ -220,83 +190,82 @@
 
     const i18n = {
         'zh': {
-            paste:'粘贴', share:'分享', clear:'清空', run:'运行', lang:'中文', save:'保存名片到相册', close:'关闭',
-            author:'作者', ad:'🎁 艾兜兜儿专属：高性能云服务器优惠入口 >', stitle:'智能代码运行器', hint:'扫码预览代码，开启智能开发',
+            paste:'覆盖粘贴', share:'生成名片', run:'运行', lang:'中文', save:'保存名片到相册', close:'返回',
+            author:'作者', ad:'🎁 推荐：高性能云服务器优惠入口，点击查看 >', stitle:'Runner Pro', hint:'扫码预览代码，开启智能开发',
             code: `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <style>
-        body { font-family: system-ui; padding: 20px; color: #333; line-height: 1.6; }
-        .card { background: #fdfdfd; padding: 20px; border-radius: 12px; border: 1px solid #eee; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        h2 { color: #4CAF50; margin-top: 0; }
-        .tag { display: inline-block; background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-right: 5px; }
+        body { font-family: system-ui; padding: 25px; line-height: 1.6; color: #333; background: #f9f9f9; }
+        .card { background: #fff; padding: 25px; border-radius: 16px; border: 1px solid #eee; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        h2 { color: #4CAF50; margin: 0 0 15px 0; font-size: 22px; }
+        .step { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        .num { background: #4CAF50; color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .btn-test { display: inline-block; padding: 12px 24px; background: #4CAF50; color: white; border-radius: 10px; text-decoration: none; margin-top: 20px; font-weight: bold; transition: 0.3s; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>🚀 使用指南 (Instruction)</h2>
-        <div><span class="tag">粘贴代码</span><span class="tag">实时预览</span><span class="tag">生成名片</span></div>
-        <p>1. 在上方黑色区域输入或<b>粘贴</b>您的 HTML 代码。<br>2. 点击右上角 <b>运行</b> 按钮查看效果。<br>3. 满意后点击 <b>分享</b> 导出带有作品二维码的名片。</p>
-        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
-        <p><b>作者：</b>艾兜兜儿 (AiDouDou)</p>
+        <h2>🚀 Runner Pro 使用指南</h2>
+        <div class="step"><div class="num">1</div><span>在上方编辑区输入 HTML 代码</span></div>
+        <div class="step"><div class="num">2</div><span>点击右上角 <b>▶ 运行</b> 查看效果</span></div>
+        <div class="step"><div class="num">3</div><span>点击 <b>📤 生成名片</b> 下载分享图</span></div>
+        <div class="step"><div class="num">4</div><span>点击 <b>📋 覆盖粘贴</b> 快速替换内容</span></div>
+        <a href="javascript:void(0)" class="btn-test" onclick="alert('运行环境检测正常！')">运行环境测试</a>
     </div>
 </body>
 </html>`
         },
         'en': {
-            paste:'Paste', share:'Share', clear:'Clear', run:'Run', lang:'English', save:'Save to Album', close:'Close',
-            author:'Author', ad:'🎁 Exclusive: Best Cloud Server Deals for Devs >', stitle:'Code Runner Pro', hint:'Scan QR code to preview my code',
+            paste:'Paste Over', share:'Share Card', run:'Run', lang:'English', save:'Save to Album', close:'Back',
+            author:'Author', ad:'🎁 Exclusive: Best Cloud Server Deals for Devs >', stitle:'Runner Pro', hint:'Scan to preview my code snippets',
             code: `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <style>
-        body { font-family: system-ui; padding: 20px; color: #333; line-height: 1.6; }
-        .card { background: #fdfdfd; padding: 20px; border-radius: 12px; border: 1px solid #eee; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        h2 { color: #007acc; margin-top: 0; }
-        .tag { display: inline-block; background: #e1f5fe; color: #0288d1; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-right: 5px; }
+        body { font-family: system-ui; padding: 25px; line-height: 1.6; color: #333; background: #f9f9f9; }
+        .card { background: #fff; padding: 25px; border-radius: 16px; border: 1px solid #eee; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        h2 { color: #007acc; margin: 0 0 15px 0; font-size: 22px; }
+        .btn-test { display: inline-block; padding: 12px 24px; background: #007acc; color: white; border-radius: 10px; text-decoration: none; margin-top: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>🚀 Getting Started</h2>
-        <div><span class="tag">Paste</span><span class="tag">Live Preview</span><span class="tag">Share Card</span></div>
-        <p>1. <b>Paste</b> your HTML/CSS code in the editor above.<br>2. Click the <b>Run</b> button to see results.<br>3. Click <b>Share</b> to generate a card with a QR code.</p>
-        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
-        <p><b>Author:</b> AiDouDou</p>
+        <h2>🚀 Runner Pro Quick Start</h2>
+        <p>1. <b>Edit:</b> Write HTML in the editor above.</p>
+        <p>2. <b>Run:</b> Click <b>▶ Run</b> for instant preview.</p>
+        <p>3. <b>Share:</b> Click <b>📤 Share</b> to export image.</p>
+        <p>4. <b>Paste:</b> Use <b>📋 Paste Over</b> to replace all.</p>
+        <a href="javascript:void(0)" class="btn-test" onclick="alert('Environment OK!')">Interaction Test</a>
     </div>
 </body>
 </html>`
         }
     };
 
-    let currentLang = 'zh';
+    let curLang = 'zh';
 
     function init() {
-        const savedCode = localStorage.getItem('dd_runner_v7');
-        currentLang = localStorage.getItem('dd_lang_v7') || 'zh';
-        editor.value = savedCode || i18n[currentLang].code;
-        updateUI();
-        runCode();
-        updateLines();
+        const saved = localStorage.getItem('runner_pro_v10_code');
+        curLang = localStorage.getItem('runner_pro_v10_lang') || 'zh';
+        editor.value = saved || i18n[curLang].code;
+        updateUI(); runCode(); updateLines();
     }
 
     function toggleLang() {
-        currentLang = currentLang === 'zh' ? 'en' : 'zh';
-        localStorage.setItem('dd_lang_v7', currentLang);
-        editor.value = i18n[currentLang].code;
-        updateUI();
-        runCode();
-        updateLines();
-        showToast(currentLang === 'zh' ? "已切换至中文" : "Switched to English");
+        curLang = (curLang === 'zh') ? 'en' : 'zh';
+        localStorage.setItem('runner_pro_v10_lang', curLang);
+        editor.value = i18n[curLang].code;
+        updateUI(); runCode(); updateLines();
+        showToast(curLang === 'zh' ? "已切换至中文" : "English Mode");
     }
 
     function updateUI() {
-        const d = i18n[currentLang];
+        const d = i18n[curLang];
         document.getElementById('l-paste').innerText = d.paste;
         document.getElementById('l-share').innerText = d.share;
-        document.getElementById('l-clear').innerText = d.clear;
         document.getElementById('l-run').innerText = d.run;
         document.getElementById('l-lang').innerText = d.lang;
         document.getElementById('l-save').innerText = d.save;
@@ -323,33 +292,43 @@
 
     function closeShare() { document.getElementById('shareModal').style.display = 'none'; }
 
-    function saveCard() {
-        showToast("正在生成高清图片...");
+    function saveToGallery() {
+        showToast("正在导出高清名片...");
         html2canvas(document.getElementById('cardArea'), { useCORS: true, scale: 2 }).then(canvas => {
             const a = document.createElement('a');
-            a.download = 'MyCode-AiDouDou.png';
+            a.download = 'RunnerPro_Card.png';
             a.href = canvas.toDataURL();
             a.click();
             showToast("图片已尝试下载");
         });
     }
 
-    async function doPaste() {
+    async function smartPaste() {
         try {
             const text = await navigator.clipboard.readText();
-            if(text) { editor.value = text; updateLines(); runCode(); showToast("粘贴成功"); }
-        } catch(e) { showToast("请手动长按粘贴"); }
+            if(text) { 
+                editor.value = text; // 覆盖粘贴，无需单独清空
+                updateLines(); runCode(); 
+                showToast("已成功覆盖旧内容"); 
+            }
+        } catch(e) { 
+            showToast("无法自动读取剪贴板，请长按手动粘贴"); 
+        }
     }
 
-    function clearCode() { editor.value = ''; updateLines(); runCode(); showToast("已清空"); }
-
     function copyWx() {
-        navigator.clipboard.writeText('857023577').then(() => showToast("微信号已复制"));
+        const temp = document.createElement('textarea');
+        temp.value = '857023577';
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        showToast("微信号已复制");
     }
 
     function showToast(m) {
         toast.innerText = m; toast.style.display = 'block';
-        setTimeout(() => toast.style.display = 'none', 1600);
+        setTimeout(() => toast.style.display = 'none', 1800);
     }
 
     function updateLines() {
@@ -360,7 +339,7 @@
 
     editor.addEventListener('input', () => {
         updateLines();
-        localStorage.setItem('dd_runner_v7', editor.value);
+        localStorage.setItem('runner_pro_v10_code', editor.value);
     });
 
     editor.addEventListener('scroll', () => { lineNums.scrollTop = editor.scrollTop; });
