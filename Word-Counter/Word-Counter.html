@@ -1,59 +1,500 @@
-// 重新定義統計邏輯
-function updateStats() {
-    const text = textInput.value;
-    
-    // 1. 字符數（包含所有字符）
-    const chars = text.length;
-    charCount.textContent = chars.toLocaleString();
-    
-    // 2. 字符數（不含空格/換行）
-    const charsNoSpaces = text.replace(/\s/g, '').length;
-    charNoSpace.textContent = charsNoSpaces.toLocaleString();
-    
-    // 3. 準確的單詞數/字數統計 (核心優化)
-    // 中文字符匹配
-    const chineseMatch = text.match(/[\u4e00-\u9fa5]/g) || [];
-    // 英文單詞匹配 (考慮到撇號，如 don't)
-    const englishMatch = text.match(/[a-zA-Z0-9'-]+/g) || [];
-    // 總字數 = 中文字數 + 英文單詞數
-    const totalWords = chineseMatch.length + englishMatch.length;
-    wordCount.textContent = totalWords.toLocaleString();
-    
-    // 4. 行數 (包含空行，但排除最後一個空行)
-    const lines = text === "" ? 0 : text.split('\n').length;
-    lineCount.textContent = lines.toLocaleString();
-    
-    // 5. 段落數 (以換行為界，過濾掉純空格行)
-    const paragraphs = text.split('\n').filter(p => p.trim().length > 0).length;
-    paragraphCount.textContent = paragraphs.toLocaleString();
-    
-    // 6. 句子數 (改進正則，支持更多標點)
-    const sentences = text.split(/[.!?。！？…]+/).filter(s => s.trim().length > 0).length;
-    sentenceCount.textContent = sentences.toLocaleString();
-    
-    // 7. 進度條
-    const progressPercent = Math.min((chars / 5000) * 100, 100);
-    progressFill.style.width = progressPercent + '%';
-
-    // 8. 存儲到本地 (建議也放在這裡)
-    localStorage.setItem('textContent', text);
-}
-
-// 統一使用防抖，避免頻繁 DOM 操作和存儲操作
-const debouncedUpdateStats = debounce(updateStats, 200);
-
-// 事件監聽簡化
-textInput.addEventListener('input', debouncedUpdateStats);
-
-// 清空文本的優化
-function clearText() {
-    if (textInput.value.length > 0) {
-        // 只有內容較多時才彈窗確認
-        if (textInput.value.length < 100 || confirm('確定要清空所有內容嗎？')) {
-            textInput.value = '';
-            updateStats(); // 清空建議立即執行，不用防抖
-            localStorage.removeItem('textContent');
-            textInput.focus();
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>字数统计工具</title>
+    <style>
+        /* 保持原有样式不变，增加引流区域样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-    }
-}
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 17px;
+            color: #86868b;
+            font-weight: 400;
+        }
+
+        .input-section {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .text-input {
+            width: 100%;
+            min-height: 200px;
+            padding: 20px;
+            border: 2px solid #f2f2f7;
+            border-radius: 16px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #1d1d1f;
+            background: #ffffff;
+            resize: vertical;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #007aff;
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+        }
+
+        .text-input::placeholder {
+            color: #c7c7cc;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 22px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 80px;
+            justify-content: center;
+        }
+
+        .btn-clear {
+            background: #ff3b30;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #d70015;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+        }
+
+        .btn-copy {
+            background: #007aff;
+            color: white;
+        }
+
+        .btn-copy:hover {
+            background: #0056cc;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid #f2f2f7;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #007aff;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #86868b;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #f2f2f7;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007aff, #5856d6);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #34c759;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            transform: translateX(400px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 24px;
+                margin: 10px;
+            }
+            
+            .title {
+                font-size: 24px;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        /* 新增引流区域样式 */
+        .promo-area {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            text-align: center;
+            color: #86868b;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .promo-area a {
+            color: #007aff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .promo-area a:hover {
+            color: #0056cc;
+        }
+
+        .promo-buttons {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .promo-btn {
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid transparent;
+        }
+
+        .promo-btn.wechat {
+            background: #28a745;
+            color: white;
+        }
+
+        .promo-btn.wechat:hover {
+            background: #218838;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .promo-btn.mp {
+            background: #007aff;
+            color: white;
+        }
+
+        .promo-btn.mp:hover {
+            background: #0056cc;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">字数统计</h1>
+            <p class="subtitle">简洁高效的文本分析工具</p>
+        </div>
+
+        <div class="input-section">
+            <textarea 
+                class="text-input" 
+                id="textInput" 
+                placeholder="在此输入或粘贴您要统计的文字..."
+            ></textarea>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-clear" onclick="clearText()">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+                清空
+            </button>
+            <button class="btn btn-copy" onclick="copyText()">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                </svg>
+                复制
+            </button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number" id="charCount">0</span>
+                <span class="stat-label">字符数</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="charNoSpace">0</span>
+                <span class="stat-label">字符数(无空格)</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="wordCount">0</span>
+                <span class="stat-label">字/词数</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="lineCount">0</span>
+                <span class="stat-label">行数</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="paragraphCount">0</span>
+                <span class="stat-label">段落数</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="sentenceCount">0</span>
+                <span class="stat-label">句子数</span>
+            </div>
+            <div class="stat-card" id="readTimeCard" style="display:none;">
+                <span class="stat-number" id="readTime">0</span>
+                <span class="stat-label">阅读时间(分)</span>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="promo-area">
+            <p>本工具由 <a href="https://mp.weixin.qq.com/s/3L4H-NkFsNiDzk9F-qlmCQ" target="_blank" rel="noopener noreferrer">艾兜兜儿</a> 开发</p>
+            <div class="promo-buttons">
+                <a href="https://mp.weixin.qq.com/s/3L4H-NkFsNiDzk9F-qlmCQ" target="_blank" class="promo-btn mp">
+                    <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17 12c0 2.76-2.24 5-5 5s-5-2.24-5-5 2.24-5 5-5 5 2.24 5 5zm-5-3c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm0-7a8 8 0 0 0-8 8c0 3.74 2.27 6.9 5.5 8.35v-2.3a6.002 6.002 0 0 1-3.5-6.05c0-3.31 2.69-6 6-6s6 2.69 6 6a6.002 6.002 0 0 1-3.5 6.05v2.3C19.73 18.9 22 15.74 22 12A8 8 0 0 0 12 4zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/></svg>
+                    关注公众号
+                </a>
+                <button class="promo-btn wechat" id="copyWeChat">
+                    <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-3-3 1.41-1.41L10 14.17l5.59-5.59L17 10l-7 7z"/></svg>
+                    咨询作者 (复制微信)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">已复制到剪贴板</div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const charCount = document.getElementById('charCount');
+        const charNoSpace = document.getElementById('charNoSpace');
+        const wordCount = document.getElementById('wordCount');
+        const lineCount = document.getElementById('lineCount');
+        const paragraphCount = document.getElementById('paragraphCount');
+        const sentenceCount = document.getElementById('sentenceCount');
+        const progressFill = document.getElementById('progressFill');
+        const toast = document.getElementById('toast');
+        const copyWeChatButton = document.getElementById('copyWeChat'); // 新增微信複製按鈕
+
+        // 新增阅读时间DOM
+        const readTimeCard = document.getElementById('readTimeCard');
+        const readTimeSpan = document.getElementById('readTime');
+
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 统计函数
+        function updateStats() {
+            const text = textInput.value;
+            
+            // 1. 字符数（包含所有字符）
+            const chars = text.length;
+            charCount.textContent = chars.toLocaleString();
+            
+            // 2. 字符数（不含空格/换行）
+            const charsNoSpaces = text.replace(/\s/g, '').length;
+            charNoSpace.textContent = charsNoSpaces.toLocaleString();
+            
+            // 3. 准确的单词数/字数统计 (核心优化)
+            // 中文字符匹配
+            const chineseMatch = text.match(/[\u4e00-\u9fa5]/g) || [];
+            // 英文单词匹配 (考虑撇号，如 don't)
+            const englishMatch = text.match(/[a-zA-Z0-9'-]+/g) || [];
+            // 总字数 = 中文字数 + 英文单词数
+            const totalWords = chineseMatch.length + englishMatch.length;
+            wordCount.textContent = totalWords.toLocaleString();
+            
+            // 4. 行数 (包含空行，但排除最后或首个空行, 除非文本为空)
+            const lines = text === "" ? 0 : text.split('\n').length;
+            lineCount.textContent = lines.toLocaleString();
+            
+            // 5. 段落数 (以连续换行为界，过滤掉纯空格行)
+            // 改进：使用更严格的段落分隔，例如两个或多个换行符
+            const paragraphs = text.trim().split(/\n\s*\n+/).filter(p => p.trim().length > 0).length;
+            paragraphCount.textContent = Math.max(paragraphs, text.trim().length > 0 ? 1 : 0).toLocaleString();
+
+            // 6. 句子数 (改进正则，支持更多标点符号和省略号)
+            const sentences = text.split(/[.!?。！？…\n]+/).filter(s => s.trim().length > 0).length;
+            sentenceCount.textContent = sentences.toLocaleString();
+            
+            // 7. 进度条（基于字符数，最大显示5000字符的进度）
+            const progressPercent = Math.min((chars / 5000) * 100, 100);
+            progressFill.style.width = progressPercent + '%';
+
+            // 8. 阅读时间预估 (每分钟300字，根据 totalWords 计算)
+            if (totalWords > 0) {
+                const estimatedReadTime = Math.ceil(totalWords / 300); // 假设每分钟300字
+                readTimeSpan.textContent = estimatedReadTime.toLocaleString();
+                readTimeCard.style.display = 'block'; // 显示阅读时间卡片
+            } else {
+                readTimeCard.style.display = 'none'; // 隐藏阅读时间卡片
+            }
+
+            // 9. 自动保存到本地存储
+            localStorage.setItem('textContent', text);
+        }
+
+        // 防抖的统计更新
+        const debouncedUpdateStats = debounce(updateStats, 200);
+
+        // 事件监听
+        textInput.addEventListener('input', debouncedUpdateStats);
+        textInput.addEventListener('paste', () => {
+            setTimeout(debouncedUpdateStats, 10); // 粘贴后延迟更新
+        });
+
+        // 清空文本
+        function clearText() {
+            if (textInput.value.trim()) {
+                // 小于一定字数不弹窗，直接清空；否则弹窗确认
+                if (textInput.value.length < 50 || confirm('确定要清空所有内容吗？')) {
+                    textInput.value = '';
+                    updateStats(); // 清空后立即更新统计
+                    localStorage.removeItem('textContent'); // 清空时也清除本地存储
+                    textInput.focus();
+                }
+            }
+        }
+
+        // 复制文本
+        async function copyText() {
+            const text = textInput.value.trim();
+            if (!text) {
+                showToast('没有内容可复制', '#ff3b30'); // 红色提示
+                return;
+            }
+            
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast('已复制到剪贴板');
+            } catch (err) {
+                // 降级方案：使用旧的document.execCommand
+                const textareaTemp = document.createElement('textarea');
+                textareaTemp.value = text;
+                document.body.appendChild(textareaTemp);
+                textareaTemp.select();
+                
