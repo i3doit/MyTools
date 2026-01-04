@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>消灭星星 - 旗舰重构版</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: rgba(30, 41, 59, 0.7);
+            --accent: #38bdf8;
+            --text: #f1f5f9;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'PingFang SC', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 游戏容器 */
+        .main-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 15px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 数据看板 */
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            background: var(--panel);
+            padding: 15px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 15px;
+        }
+
+        .stat-item { text-align: center; }
+        .stat-label { font-size: 12px; opacity: 0.6; margin-bottom: 4px; }
+        .stat-value { font-size: 20px; font-weight: 800; color: var(--accent); }
+
+        canvas {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            width: 100%;
+            touch-action: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* 底部版权引流区 */
+        .footer {
+            width: 100%;
+            padding: 20px 0;
+            background: rgba(0,0,0,0.3);
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .copyright { font-size: 12px; color: #64748b; margin-bottom: 8px; }
+        .footer-links { display: flex; justify-content: center; gap: 15px; }
+        .footer-links a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 4px 12px;
+            border: 1px solid var(--accent);
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+        .footer-links a:hover { background: var(--accent); color: #000; }
+
+        /* 动态弹窗 */
+        .toast {
+            position: fixed;
+            top: 50%;
+            background: var(--accent);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            pointer-events: none;
+            animation: pop 1s ease-out forwards;
+        }
+
+        @keyframes pop {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(-100px) scale(1.2); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="status-bar">
+        <div class="stat-item"><div class="stat-label">当前得分</div><div id="ui-score" class="stat-value">0</div></div>
+        <div class="stat-item"><div class="stat-label">目标分数</div><div id="ui-target" class="stat-value">1000</div></div>
+        <div class="stat-item"><div class="stat-label">当前关卡</div><div id="ui-level" class="stat-value">1</div></div>
+        <div class="stat-item"><div class="stat-label">刷新次数</div><div id="ui-refresh" class="stat-value">5</div></div>
+    </div>
+
+    <canvas id="gameCanvas" width="800" height="800"></canvas>
+
+    <div style="margin-top: 15px; display: flex; gap: 10px;">
+        <button onclick="game.refreshBoard()" style="flex:1; padding:12px; border-radius:10px; border:none; background:#1e293b; color:white; cursor:pointer;">重排棋盘</button>
+        <button onclick="game.newGame()" style="flex:1; padding:12px; border-radius:10px; border:none; background:var(--accent); color:black; font-weight:bold; cursor:pointer;">新游戏</button>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="copyright">© 2026 星星消除大作战 | Version 2.0.4</div>
+    <div class="footer-links">
+        <a href="javascript:alert('作者微信号：YourID_Here')">联系作者</a>
+        <a href="javascript:void(0)" onclick="game.showLeaderboard()">全球排行</a>
+        <a href="javascript:alert('关注公众号解锁更多关卡')">获取更多</a>
+    </div>
+</footer>
+
+<script>
+/**
+ * 游戏配置与逻辑重构
+ */
+const CONFIG = {
+    rows: 10, cols: 10,
+    colors: ['#ff4757', '#eccc68', '#2ed573', '#1e90ff', '#a29bfe'],
+    baseTarget: 1000,
+    cellSize: 80, // Canvas 内部坐标
+};
+
+class StarGame {
+    constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.state = this.loadState();
+        this.stars = [];
+        this.isAnimating = false;
+        this.init();
+        this.bindEvents();
+    }
+
+    // 从本地存储或初始化数据
+    loadState() {
+        const saved = localStorage.getItem('star_game_data');
+        return saved ? JSON.parse(saved) : {
+            level: 1,
+            score: 0,
+            refresh: 5,
+            historyHigh: 0
+        };
+    }
+
+    init() {
+        this.target = Math.floor(CONFIG.baseTarget * Math.pow(1.5, this.state.level - 1));
+        this.generateMap();
+        this.updateUI();
+        this.render();
+    }
+
+    generateMap() {
+        this.stars = Array.from({length: CONFIG.rows}, () => 
+            Array.from({length: CONFIG.cols}, () => Math.floor(Math.random() * CONFIG.colors.length))
+        );
+    }
+
+    updateUI() {
+        document.getElementById('ui-score').innerText = this.state.score;
+        document.getElementById('ui-target').innerText = this.target;
+        document.getElementById('ui-level').innerText = this.state.level;
+        document.getElementById('ui-refresh').innerText = this.state.refresh;
+        localStorage.setItem('star_game_data', JSON.stringify(this.state));
+    }
+
+    // 核心绘制逻辑（带发光和视觉反馈）
+    render() {
+        const { ctx, canvas } = this;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for(let r=0; r<CONFIG.rows; r++) {
+            for(let c=0; c<CONFIG.cols; c++) {
+                const colorIdx = this.stars[r][c];
+                if(colorIdx === null) continue;
+
+                const x = c * CONFIG.cellSize + 5;
+                const y = r * CONFIG.cellSize + 5;
+                const size = CONFIG.cellSize - 10;
+
+                // 绘制方块反馈
+                ctx.fillStyle = CONFIG.colors[colorIdx];
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = CONFIG.colors[colorIdx];
+                
+                // 绘制圆角矩形
+                this.drawRoundedRect(ctx, x, y, size, size, 15);
+                ctx.fill();
+                
+                // 增加高光
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                ctx.fillRect(x + 10, y + 10, size/3, size/3);
+            }
+        }
+    }
+
+    drawRoundedRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x+r, y);
+        ctx.arcTo(x+w, y, x+w, y+h, r);
+        ctx.arcTo(x+w, y+h, x, y+h, r);
+        ctx.arcTo(x, y+h, x, y, r);
+        ctx.arcTo(x, y, x+w, y, r);
+        ctx.closePath();
+    }
+
+    // 处理消除逻辑
+    handleTap(e) {
+        if(this.isAnimating) return;
+
+        const rect = this.canvas.getBoundingClientRect();
+        const scale = this.canvas.width / rect.width;
+        const x = (e.clientX - rect.left) * scale;
+        const y = (e.clientY - rect.top) * scale;
+
+        const c = Math.floor(x / CONFIG.cellSize);
+        const r = Math.floor(y / CONFIG.cellSize);
+
+        if(this.stars[r] && this.stars[r][c] !== null) {
+            const color = this.stars[r][c];
+            const connected = this.findConnected(r, c, color);
+
+            if(connected.length >= 2) {
+                this.eliminate(connected);
+            } else {
+                this.shakeEffect(); // 点击单个的反馈
+            }
+        }
+    }
+
+    findConnected(r, c, color, visited = new Set()) {
+        const key = `${r},${c}`;
+        if(r<0 || r>=CONFIG.rows || c<0 || c>=CONFIG.cols || 
+           visited.has(key) || this.stars[r][c] !== color) return [];
+
+        visited.add(key);
+        let result = [{r, c}];
+
+        result = result.concat(this.findConnected(r+1, c, color, visited));
+        result = result.concat(this.findConnected(r-1, c, color, visited));
+        result = result.concat(this.findConnected(r, c+1, color, visited));
+        result = result.concat(this.findConnected(r, c-1, color, visited));
+
+        return result;
+    }
+
+    eliminate(coords) {
+        const scoreGain = coords.length * coords.length * 5;
+        this.state.score += scoreGain;
+        
+        // 视觉反馈弹窗
+        this.showToast(`+${scoreGain}`);
+
+        coords.forEach(p => this.stars[p.r][p.c] = null);
+        
+        this.applyGravity();
+        this.updateUI();
+        this.render();
+        this.checkGameState();
+    }
+
+    applyGravity() {
+        // 1. 垂直下落
+        for (let c = 0; c < CONFIG.cols; c++) {
+            let emptyPos = CONFIG.rows - 1;
+            for (let r = CONFIG.rows - 1; r >= 0; r--) {
+                if (this.stars[r][c] !== null) {
+                    const temp = this.stars[r][c];
+                    this.stars[r][c] = null;
+                    this.stars[emptyPos][c] = temp;
+                    emptyPos--;
+                }
+            }
+        }
+        // 2. 水平向左合并空列
+        for (let c = 0; c < CONFIG.cols - 1; c++) {
+            let isColEmpty = true;
+            for (let r = 0; r < CONFIG.rows; r++) {
+                if (this.stars[r][c] !== null) { isColEmpty = false; break; }
+            }
+            if (isColEmpty) {
+                for (let nextC = c + 1; nextC < CONFIG.cols; nextC++) {
+                    for (let r = 0; r < CONFIG.rows; r++) {
+                        this.stars[r][nextC-1] = this.stars[r][nextC];
+                        this.stars[r][nextC] = null;
+                    }
+                }
+            }
+        }
+    }
+
+    checkGameState() {
+        // 检查是否有可消除的
+        let hasMoves = false;
+        for(let r=0; r<CONFIG.rows; r++) {
+            for(let c=0; c<CONFIG.cols; c++) {
+                if(this.stars[r][c] !== null && this.findConnected(r, c, this.stars[r][c]).length >= 2) {
+                    hasMoves = true; break;
+                }
+            }
+        }
+
+        if(!hasMoves) {
+            const remains = this.stars.flat().filter(s => s !== null).length;
+            // 复杂的清空奖励算法
+            let bonus = remains < 10 ? (10 - remains) * 100 : 0;
+            if(remains === 0) bonus = 2000;
+            
+            this.state.score += bonus;
+            
+            if(this.state.score >= this.target) {
+                alert(`恭喜过关！剩余星块奖励：${bonus}`);
+                this.state.level++;
+                this.state.score = 0; // 或者累加，视你需求而定
+                this.init();
+            } else {
+                alert(`分值不足，游戏结束！最终关卡：${this.state.level}`);
+                this.newGame();
+            }
+        }
+    }
+
+    // 工具功能
+    showToast(text) {
+        const t = document.createElement('div');
+        t.className = 'toast';
+        t.innerText = text;
+        t.style.left = '45%';
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 1000);
+    }
+
+    refreshBoard() {
+        if(this.state.refresh > 0) {
+            this.state.refresh--;
+            this.generateMap();
+            this.render();
+            this.updateUI();
+        } else {
+            alert("刷新次数已用完，请关注公众号回复'刷新'获取！");
+        }
+    }
+
+    newGame() {
+        this.state = { level: 1, score: 0, refresh: 5 };
+        this.init();
+    }
+
+    bindEvents() {
+        this.canvas.addEventListener('mousedown', (e) => this.handleTap(e));
+        // 后期对接后端 API 示例
+        // this.apiSync(this.state.score); 
+    }
+
+    // 对接接口预留
+    async apiSync(score) {
+        console.log("准备同步分数到服务器...", score);
+        // fetch('/api/save', {method:'POST', body: JSON.stringify({score})})
+    }
+}
+
+const game = new StarGame();
+</script>
+</body>
+</html>
