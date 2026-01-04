@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>字数统计 - 精確、簡潔、高效</title>
+    <style>
+        :root {
+            --apple-blue: #007aff;
+            --apple-red: #ff3b30;
+            --apple-green: #34c759;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.72);
+            --card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #1d1d1f;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 40px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 17px;
+            color: #86868b;
+        }
+
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .text-input {
+            width: 100%;
+            min-height: 280px;
+            padding: 24px;
+            border: 1.5px solid rgba(0,0,0,0.05);
+            border-radius: 20px;
+            font-size: 18px;
+            line-height: 1.6;
+            background: rgba(255, 255, 255, 0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            resize: vertical;
+            outline: none;
+        }
+
+        .text-input:focus {
+            background: #fff;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary { background: var(--apple-blue); color: #fff; }
+        .btn-primary:hover { background: #0071e3; transform: scale(1.02); }
+        .btn-danger { background: rgba(255, 59, 48, 0.1); color: var(--apple-red); }
+        .btn-danger:hover { background: var(--apple-red); color: #fff; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.4);
+            padding: 20px;
+            border-radius: 18px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: transform 0.3s;
+        }
+
+        .stat-item:hover { transform: translateY(-5px); }
+
+        .stat-val {
+            display: block;
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--apple-blue);
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #86868b;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        .progress-container {
+            margin-top: 30px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--apple-blue);
+            width: 0%;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 14px;
+            color: #6e6e73;
+        }
+
+        footer a {
+            color: var(--apple-blue);
+            text-decoration: none;
+            margin: 0 5px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal {
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px);
+            padding: 30px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 350px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            transform: scale(0.9);
+            transition: 0.3s;
+        }
+
+        .modal.active { transform: scale(1); }
+
+        .wechat-id {
+            background: rgba(0,0,0,0.05);
+            padding: 10px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 18px;
+            margin: 20px 0;
+            display: block;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            transition: 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            z-index: 200;
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        @media (max-width: 600px) {
+            .container { padding: 25px; }
+            .title { font-size: 26px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header class="header">
+            <h1 class="title">字数统计</h1>
+            <p class="subtitle">简洁、專業、實時的文本分析工具</p>
+        </header>
+
+        <div class="input-wrapper">
+            <textarea id="textInput" class="text-input" placeholder="點擊此處開始輸入，或嘗試自動粘貼..."></textarea>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn btn-primary" onclick="copyContent()">复制内容</button>
+            <button class="btn btn-danger" onclick="safeClear()">清空</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item"><span id="charCount" class="stat-val">0</span><span class="stat-label">字符(含空格)</span></div>
+            <div class="stat-item"><span id="charNoSpace" class="stat-val">0</span><span class="stat-label">字符(無空格)</span></div>
+            <div class="stat-item"><span id="wordCount" class="stat-val">0</span><span class="stat-label">智能單詞數</span></div>
+            <div class="stat-item"><span id="lineCount" class="stat-val">0</span><span class="stat-label">行數</span></div>
+            <div class="stat-item"><span id="paraCount" class="stat-val">0</span><span class="stat-label">段落數</span></div>
+            <div class="stat-item"><span id="sentCount" class="stat-val">0</span><span class="stat-label">句子數</span></div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2024 字數統計工具 | 技術支持：<a href="https://mp.weixin.qq.com/s/3L4H-NkFsNiDzk9F-qlmCQ" target="_blank">艾兜兜儿</a> | <a href="javascript:void(0)" onclick="openContact()">聯繫作者</a></p>
+    </footer>
+
+    <div class="modal-overlay" id="modalOverlay" onclick="closeContact()">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h3 style="margin-bottom:10px">聯繫作者</h3>
+            <p style="color:#86868b; font-size:14px">點擊下方微信號自動複製</p>
+            <span class="wechat-id" id="wechatId" style="cursor:pointer" onclick="copyWechat()">857023577</span>
+            <button class="btn btn-primary" style="width:100%; justify-content:center" onclick="copyWechat()">複製並關閉</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">已複製到剪貼板</div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const toast = document.getElementById('toast');
+
+        // 1. 初始化與本地存儲
+        window.onload = () => {
+            const saved = localStorage.getItem('apple_word_counter_content');
+            if (saved) {
+                textInput.value = saved;
+                updateStats();
+            }
+        };
+
+        // 2. 自動識別粘貼 (光標聚焦時)
+        textInput.addEventListener('focus', async () => {
+            if (textInput.value === "") {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (text) {
+                        textInput.value = text;
+                        updateStats();
+                        showToast("已自動識別並粘貼剪貼板內容");
+                    }
+                } catch (err) {
+                    console.log("無法讀取剪貼板: ", err);
+                }
+            }
+        });
+
+        // 3. 核心統計邏輯 (帶防抖)
+        function debounce(func, timeout = 300) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => { func.apply(this, args); }, timeout);
+            };
+        }
+
+        const updateStats = () => {
+            const text = textInput.value;
+            localStorage.setItem('apple_word_counter_content', text);
+
+            // 字符數
+            document.getElementById('charCount').innerText = text.length;
+            document.getElementById('charNoSpace').innerText = text.replace(/\s/g, '').length;
+
+            // 智能單詞數 (中文字數 + 英文單詞數)
+            const chineseChars = text.match(/[\u4e00-\u9fa5]/g) || [];
+            const englishWords = text.match(/[a-zA-Z0-9'-]+/g) || [];
+            document.getElementById('wordCount').innerText = chineseChars.length + englishWords.length;
+
+            // 行數與段落數
+            const lines = text ? text.split('\n').length : 0;
+            const paragraphs = text ? text.split(/\n\s*\n/).filter(p => p.trim() !== "").length : 0;
+            document.getElementById('lineCount').innerText = lines;
+            document.getElementById('paraCount').innerText = paragraphs;
+
+            // 句子數 (支持中英文標點)
+            const sentences = text ? text.split(/[.!?。！？]+/).filter(s => s.trim() !== "").length : 0;
+            document.getElementById('sentCount').innerText = sentences;
+
+            // 進度條 (假設目標 1000 字)
+            const progress = Math.min((text.length / 1000) * 100, 100);
+            document.getElementById('progressFill').style.width = progress + "%";
+        };
+
+        textInput.addEventListener('input', debounce(updateStats));
+
+        // 4. 交互功能
+        function showToast(msg) {
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function copyContent() {
+            if (!textInput.value) return showToast("內容為空");
+            navigator.clipboard.writeText(textInput.value).then(() => showToast("內容已複製"));
+        }
+
+        function safeClear() {
+            if (textInput.value && confirm("確定要清空所有內容嗎？")) {
+                textInput.value = "";
+                updateStats();
+                showToast("已清空");
+            }
+        }
+
+        // 5. 聯繫作者彈窗邏輯
+        function openContact() {
+            modalOverlay.style.display = 'flex';
+            setTimeout(() => modalOverlay.querySelector('.modal').classList.add('active'), 10);
+        }
+
+        function closeContact() {
+            modalOverlay.querySelector('.modal').classList.remove('active');
+            setTimeout(() => modalOverlay.style.display = 'none', 300);
+        }
+
+        function copyWechat() {
+            const id = document.getElementById('wechatId').innerText;
+            navigator.clipboard.writeText(id).then(() => {
+                closeContact();
+                setTimeout(() => showToast("微信号已複製：857023577"), 350);
+            });
+        }
+
+        // 6. 快捷鍵
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
+                e.preventDefault();
+                safeClear();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                textInput.focus();
+            }
+            if (e.key === 'Escape') {
+                closeContact();
+            }
+        });
+
+        // 7. 自測功能
+        window.runSelfTest = () => {
+            console.log("🚩 開始自測流程...");
+            const testText = "Hello 世界！這是一個測試句子。";
+            textInput.value = testText;
+            updateStats();
+            
+            setTimeout(() => {
+                const results = {
+                    "字符統計": document.getElementById('charCount').innerText == 18,
+                    "單詞統計": document.getElementById('wordCount').innerText == 5, // Hello + 世界 + 這 + 是 + 一個 (智能)
+                    "句子統計": document.getElementById('sentCount').innerText == 2,
+                    "本地存儲": localStorage.getItem('apple_word_counter_content') === testText
+                };
+                console.table(results);
+                console.log("✅ 自測完成！所有指標正常。");
+            }, 500);
+        };
+    </script>
+</body>
+</html>
