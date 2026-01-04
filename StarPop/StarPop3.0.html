@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>消灭星星 - 精简版</title>
+    <style>
+        /* 这里保留你原有的 :root 和 .glass-panel 等所有样式 */
+        :root { --bg: #1a1a2e; --text: #e0e0e0; --p: #4CAF50; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        .glass-panel { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 20px; border-radius: 15px; width: 95%; max-width: 400px; margin-top: 20px;}
+        .game-info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px; text-align: center; font-size: 12px;}
+        canvas { background: #000; border-radius: 8px; width: 100%; height: auto; touch-action: none; }
+        .controls { display: flex; justify-content: space-around; margin-top: 15px; }
+        .btn { padding: 10px; border: none; border-radius: 5px; cursor: pointer; background: var(--p); color: #fff; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 100; }
+        .modal-content { background: #222; padding: 20px; border-radius: 10px; text-align: center; }
+        /* 版权信息样式 */
+        footer { margin-top: auto; padding: 20px; font-size: 12px; opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+    <div class="glass-panel">
+        <div class="game-info">
+            <div>分:<br><span id="score">0</span></div>
+            <div>目标:<br><span id="target">1000</span></div>
+            <div>关卡:<br><span id="level">1</span></div>
+            <div>刷新:<br><span id="refresh">5</span></div>
+        </div>
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div class="controls">
+            <button class="btn" onclick="game.resetBoard()">刷新</button>
+            <button class="btn" onclick="game.init()">新游戏</button>
+            <button class="btn" onclick="showModal('leaderboard-modal')">排行</button>
+            <button class="btn" onclick="showModal('share-modal')">分享</button>
+        </div>
+    </div>
+
+    <footer>© 2024 Star Pop. All Rights Reserved.</footer>
+
+    <div id="msg-modal" class="modal" onclick="this.style.display='none'">
+        <div class="modal-content"><h3 id="msg-title">提示</h3><p id="msg-body"></p></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+
+    <script>
+    // 配置参数
+    const CONFIG = {
+        rows: 10, cols: 10, size: 36, gap: 4,
+        colors: ['#FF5252', '#FFD740', '#4CAF50', '#2196F3', '#9C27B0'],
+        baseTarget: 1000,
+        reward: (n) => n > 10 ? 0 : [2000, 1980, 1930, 1820, 1680, 1500, 1210, 1020, 720, 360, 0][n]
+    };
+
+    class StarGame {
+        constructor() {
+            this.cvs = document.getElementById('gameCanvas');
+            this.ctx = this.cvs.getContext('2d');
+            this.data = [];
+            this.conf = CONFIG;
+            this.state = JSON.parse(localStorage.getItem('star_state')) || { level: 1, score: 0, total: 0, refresh: 5 };
+            this.init();
+            this.bindEvents();
+        }
+
+        init(isNew = false) {
+            if(isNew) this.state = { level: 1, score: 0, total: 0, refresh: 5 };
+            this.target = Math.floor(this.conf.baseTarget * Math.pow(1.5, this.state.level - 1));
+            this.data = Array.from({length: this.conf.rows}, () => 
+                Array.from({length: this.conf.cols}, () => Math.floor(Math.random() * this.conf.colors.length))
+            );
+            this.render();
+            this.save();
+        }
+
+        save() {
+            localStorage.setItem('star_state', JSON.stringify(this.state));
+            document.getElementById('score').innerText = this.state.score;
+            document.getElementById('target').innerText = this.target;
+            document.getElementById('level').innerText = this.state.level;
+            document.getElementById('refresh').innerText = this.state.refresh;
+        }
+
+        drawRect(x, y, color) {
+            const r = 8; // 圆角
+            this.ctx.fillStyle = color || 'rgba(255,255,255,0.05)';
+            // 兼容性圆角绘制
+            this.ctx.beginPath();
+            this.ctx.roundRect(x, y, this.conf.size, this.conf.size, r);
+            this.ctx.fill();
+        }
+
+        render() {
+            this.ctx.clearRect(0, 0, 400, 400);
+            for(let r=0; r<this.conf.rows; r++) {
+                for(let c=0; c<this.conf.cols; c++) {
+                    const x = c * (this.conf.size + this.conf.gap) + this.conf.gap;
+                    const y = r * (this.conf.size + this.conf.gap) + this.conf.gap;
+                    const colorIdx = this.data[r][c];
+                    this.drawRect(x, y, colorIdx !== null ? this.conf.colors[colorIdx] : null);
+                }
+            }
+        }
+
+        getConnected(r, c, color, set = new Set()) {
+            if (r<0 || r>=this.conf.rows || c<0 || c>=this.conf.cols || this.data[r][c] !== color || set.has(`${r},${c}`)) return set;
+            set.add(`${r},${c}`);
+            [[0,1],[0,-1],[1,0],[-1,0]].forEach(([dr, dc]) => this.getConnected(r+dr, c+dc, color, set));
+            return set;
+        }
+
+        handleAction(e) {
+            const rect = this.cvs.getBoundingClientRect();
+            const scale = 400 / rect.width;
+            const x = (e.clientX - rect.left) * scale;
+            const y = (e.clientY - rect.top) * scale;
+            const c = Math.floor(x / (this.conf.size + this.conf.gap));
+            const r = Math.floor(y / (this.conf.size + this.conf.gap));
+
+            if (this.data[r]?.[c] === null) return;
+            
+            const connected = this.getConnected(r, c, this.data[r][c]);
+            if (connected.size < 2) return;
+
+            // 计分
+            const gain = connected.size * connected.size * 5;
+            this.state.score += gain;
+            connected.forEach(pos => {
+                const [pr, pc] = pos.split(',').map(Number);
+                this.data[pr][pc] = null;
+            });
+
+            this.applyGravity();
+            this.render();
+            this.checkStatus();
+            this.save();
+        }
+
+        applyGravity() {
+            // 垂直下落
+            for (let c = 0; c < this.conf.cols; c++) {
+                let emptyRow = this.conf.rows - 1;
+                for (let r = this.conf.rows - 1; r >= 0; r--) {
+                    if (this.data[r][c] !== null) {
+                        [this.data[emptyRow][c], this.data[r][c]] = [this.data[r][c], this.data[emptyRow][c]];
+                        emptyRow--;
+                    }
+                }
+            }
+            // 横向合并
+            let emptyCol = 0;
+            for (let c = 0; c < this.conf.cols; c++) {
+                if (this.data.some(row => row[c] !== null)) {
+                    if (emptyCol !== c) {
+                        this.data.forEach(row => { row[emptyCol] = row[c]; row[c] = null; });
+                    }
+                    emptyCol++;
+                }
+            }
+        }
+
+        checkStatus() {
+            const hasMove = () => {
+                for(let r=0; r<this.conf.rows; r++) 
+                    for(let c=0; c<this.conf.cols; c++)
+                        if(this.data[r][c] !== null && this.getConnected(r,c,this.data[r][c]).size > 1) return true;
+                return false;
+            };
+
+            if (!hasMove()) {
+                const remains = this.data.flat().filter(v => v !== null).length;
+                const bonus = this.conf.reward(remains);
+                this.state.score += bonus;
+                
+                if (this.state.score >= this.target) {
+                    alert(`过关！奖励分：${bonus}`);
+                    this.state.level++;
+                    this.state.score = 0;
+                    this.init();
+                } else {
+                    alert(`游戏结束，未达标。最终得分：${this.state.score}`);
+                    this.init(true);
+                }
+            }
+        }
+
+        resetBoard() {
+            if (this.state.refresh > 0) {
+                this.state.refresh--;
+                this.init();
+            } else {
+                alert("次数用完啦！");
+            }
+        }
+
+        bindEvents() {
+            this.cvs.addEventListener('click', e => this.handleAction(e));
+        }
+    }
+
+    const game = new StarGame();
+
+    function showModal(id) {
+        document.getElementById('msg-modal').style.display = 'flex';
+        document.getElementById('msg-body').innerText = "功能集成中，准备对接后台...";
+    }
+    </script>
+</body>
+</html>
