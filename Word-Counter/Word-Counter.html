@@ -1,1 +1,59 @@
-他
+// 重新定義統計邏輯
+function updateStats() {
+    const text = textInput.value;
+    
+    // 1. 字符數（包含所有字符）
+    const chars = text.length;
+    charCount.textContent = chars.toLocaleString();
+    
+    // 2. 字符數（不含空格/換行）
+    const charsNoSpaces = text.replace(/\s/g, '').length;
+    charNoSpace.textContent = charsNoSpaces.toLocaleString();
+    
+    // 3. 準確的單詞數/字數統計 (核心優化)
+    // 中文字符匹配
+    const chineseMatch = text.match(/[\u4e00-\u9fa5]/g) || [];
+    // 英文單詞匹配 (考慮到撇號，如 don't)
+    const englishMatch = text.match(/[a-zA-Z0-9'-]+/g) || [];
+    // 總字數 = 中文字數 + 英文單詞數
+    const totalWords = chineseMatch.length + englishMatch.length;
+    wordCount.textContent = totalWords.toLocaleString();
+    
+    // 4. 行數 (包含空行，但排除最後一個空行)
+    const lines = text === "" ? 0 : text.split('\n').length;
+    lineCount.textContent = lines.toLocaleString();
+    
+    // 5. 段落數 (以換行為界，過濾掉純空格行)
+    const paragraphs = text.split('\n').filter(p => p.trim().length > 0).length;
+    paragraphCount.textContent = paragraphs.toLocaleString();
+    
+    // 6. 句子數 (改進正則，支持更多標點)
+    const sentences = text.split(/[.!?。！？…]+/).filter(s => s.trim().length > 0).length;
+    sentenceCount.textContent = sentences.toLocaleString();
+    
+    // 7. 進度條
+    const progressPercent = Math.min((chars / 5000) * 100, 100);
+    progressFill.style.width = progressPercent + '%';
+
+    // 8. 存儲到本地 (建議也放在這裡)
+    localStorage.setItem('textContent', text);
+}
+
+// 統一使用防抖，避免頻繁 DOM 操作和存儲操作
+const debouncedUpdateStats = debounce(updateStats, 200);
+
+// 事件監聽簡化
+textInput.addEventListener('input', debouncedUpdateStats);
+
+// 清空文本的優化
+function clearText() {
+    if (textInput.value.length > 0) {
+        // 只有內容較多時才彈窗確認
+        if (textInput.value.length < 100 || confirm('確定要清空所有內容嗎？')) {
+            textInput.value = '';
+            updateStats(); // 清空建議立即執行，不用防抖
+            localStorage.removeItem('textContent');
+            textInput.focus();
+        }
+    }
+}
