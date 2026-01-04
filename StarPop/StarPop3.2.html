@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>消灭星星 - 官方正版反馈升级版</title>
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --panel: rgba(25, 35, 55, 0.85);
+            --accent: #00f2ff;
+            --gold: #ffcc00;
+            --text: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, "Helvetica Neue", sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 顶部看板 */
+        .header {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px 15px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            box-sizing: border-box;
+        }
+
+        .stat-card {
+            background: var(--panel);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .label { font-size: 11px; text-transform: uppercase; color: #8899aa; letter-spacing: 1px; }
+        .value { font-size: 20px; font-weight: bold; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+        /* 画布容器 */
+        .game-wrapper {
+            position: relative;
+            width: 95%;
+            max-width: 400px;
+            aspect-ratio: 1;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+        }
+
+        /* 震动反馈 class */
+        .shake { animation: shake 0.2s ease-in-out; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* 底部版权引流区 */
+        .footer {
+            margin-top: auto;
+            width: 100%;
+            background: rgba(0,0,0,0.5);
+            padding: 15px 0 25px 0;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .copyright { font-size: 12px; color: #556677; margin-bottom: 12px; }
+        .links { display: flex; justify-content: center; gap: 15px; }
+        .btn-link {
+            padding: 8px 18px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text);
+            text-decoration: none;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .btn-link:active { background: var(--accent); color: #000; transform: scale(0.95); }
+
+        /* 特效弹窗 */
+        #combo-msg {
+            position: absolute;
+            top: 40%;
+            width: 100%;
+            text-align: center;
+            font-size: 40px;
+            font-weight: 900;
+            color: var(--gold);
+            text-shadow: 0 0 10px rgba(255,204,0,0.5);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="stat-card"><div class="label">SCORE 分数</div><div id="ui-score" class="value">0</div></div>
+    <div class="stat-card"><div class="label">TARGET 目标</div><div id="ui-target" class="value">1000</div></div>
+    <div class="stat-card"><div class="label">LEVEL 关卡</div><div id="ui-level" class="value">1</div></div>
+    <div class="stat-card"><div class="label">TOOL 刷新</div><div id="ui-refresh" class="value">5</div></div>
+</div>
+
+<div class="game-wrapper" id="canvas-container">
+    <canvas id="gameCanvas" width="800" height="800"></canvas>
+    <div id="combo-msg">COOL!</div>
+</div>
+
+<div style="display: flex; gap: 15px; margin-bottom: 30px; width: 90%; max-width: 400px;">
+    <button onclick="game.refreshBoard()" style="flex:1; padding:15px; border:none; border-radius:12px; background:#1e293b; color:white; font-weight:bold;">✨ 随机重排</button>
+    <button onclick="game.newGame()" style="flex:1; padding:15px; border:none; border-radius:12px; background:linear-gradient(45deg, #00d2ff, #3a7bd5); color:white; font-weight:bold;">🔥 重新开始</button>
+</div>
+
+<footer class="footer">
+    <div class="copyright">© 2026 GEMINI-STAR 消灭星星版权所有</div>
+    <div class="links">
+        <a href="javascript:game.showContact()" class="btn-link">联系作者</a>
+        <a href="javascript:location.reload()" class="btn-link">更多工具</a>
+        <a href="javascript:alert('加入玩家群：12345678')" class="btn-link">官方社群</a>
+    </div>
+</footer>
+
+<script>
+/**
+ * 音效引擎 - 使用 Web Audio API 合成声音
+ */
+const Sound = {
+    ctx: new (window.AudioContext || window.webkitAudioContext)(),
+    play(freq, type = 'triangle', duration = 0.1) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    },
+    click() { this.play(400, 'sine', 0.05); },
+    pop(count) { 
+        // 连击越高，音调越高
+        const base = 300;
+        this.play(base + (count * 50), 'triangle', 0.2); 
+    },
+    win() {
+        [440, 554, 659, 880].forEach((f, i) => {
+            setTimeout(() => this.play(f, 'sine', 0.4), i * 100);
+        });
+    },
+    fail() { this.play(150, 'sawtooth', 0.5); }
+};
+
+const CONFIG = {
+    rows: 10, cols: 10, cellSize: 80,
+    colors: ['#ff5e57', '#ffdd59', '#1dd1a1', '#54a0ff', '#5f27cd']
+};
+
+class StarGame {
+    constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.state = JSON.parse(localStorage.getItem('star_pro_state')) || {
+            level: 1, score: 0, refresh: 5
+        };
+        this.stars = [];
+        this.init();
+        this.bindEvents();
+    }
+
+    init() {
+        this.target = Math.floor(1000 * Math.pow(1.6, this.state.level - 1));
+        this.generateMap();
+        this.updateUI();
+        this.render();
+    }
+
+    generateMap() {
+        this.stars = Array.from({length: CONFIG.rows}, () => 
+            Array.from({length: CONFIG.cols}, () => Math.floor(Math.random() * CONFIG.colors.length))
+        );
+    }
+
+    updateUI() {
+        document.getElementById('ui-score').innerText = this.state.score;
+        document.getElementById('ui-target').innerText = this.target;
+        document.getElementById('ui-level').innerText = this.state.level;
+        document.getElementById('ui-refresh').innerText = this.state.refresh;
+        localStorage.setItem('star_pro_state', JSON.stringify(this.state));
+    }
+
+    render() {
+        const { ctx } = this;
+        ctx.clearRect(0, 0, 800, 800);
+        for(let r=0; r<CONFIG.rows; r++) {
+            for(let c=0; c<CONFIG.cols; c++) {
+                if(this.stars[r][c] === null) continue;
+                ctx.fillStyle = CONFIG.colors[this.stars[r][c]];
+                // 绘制带发光的圆角方块
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                this.drawStar(ctx, c * 80 + 40, r * 80 + 40, 30, 15, 5);
+                ctx.fill();
+            }
+        }
+    }
+
+    drawStar(ctx, x, y, r, p, n) {
+        ctx.beginPath(); ctx.save(); ctx.translate(x, y); ctx.moveTo(0, -r);
+        for (let i = 0; i < n; i++) {
+            ctx.rotate(Math.PI / n); ctx.lineTo(0, -r * p / r);
+            ctx.rotate(Math.PI / n); ctx.lineTo(0, -r);
+        }
+        ctx.restore(); ctx.closePath();
+    }
+
+    handleAction(e) {
+        if (Sound.ctx.state === 'suspended') Sound.ctx.resume();
+        
+        const rect = this.canvas.getBoundingClientRect();
+        const scale = 800 / rect.width;
+        const x = (e.clientX - rect.left) * scale;
+        const y = (e.clientY - rect.top) * scale;
+        const c = Math.floor(x / 80);
+        const r = Math.floor(y / 80);
+
+        if(this.stars[r]?.[c] === null) return;
+
+        const connected = this.getConnected(r, c, this.stars[r][c]);
+        if(connected.length >= 2) {
+            this.eliminate(connected);
+        } else {
+            Sound.click();
+            document.getElementById('canvas-container').classList.add('shake');
+            setTimeout(() => document.getElementById('canvas-container').classList.remove('shake'), 200);
+        }
+    }
+
+    getConnected(r, c, color, visited = new Set()) {
+        const key = `${r},${c}`;
+        if(r<0 || r>=10 || c<0 || c>=10 || visited.has(key) || this.stars[r][c] !== color) return [];
+        visited.add(key);
+        return [{r, c}, ...this.getConnected(r+1,c,color,visited), ...this.getConnected(r-1,c,color,visited), 
+                          ...this.getConnected(r,c+1,color,visited), ...this.getConnected(r,c-1,color,visited)];
+    }
+
+    eliminate(coords) {
+        const score = coords.length * coords.length * 5;
+        this.state.score += score;
+        
+        // 反馈：音效+文字
+        Sound.pop(coords.length);
+        this.showCombo(coords.length);
+
+        coords.forEach(p => this.stars[p.r][p.c] = null);
+        this.applyGravity();
+        this.render();
+        this.updateUI();
+        this.checkEnd();
+    }
+
+    applyGravity() {
+        for (let c = 0; c < 10; c++) {
+            let p = 9;
+            for (let r = 9; r >= 0; r--) {
+                if (this.stars[r][c] !== null) {
+                    [this.stars[p][c], this.stars[r][c]] = [this.stars[r][c], this.stars[p][c]];
+                    p--;
+                }
+            }
+        }
+        // 列合并
+        for (let c = 0; c < 9; c++) {
+            if (this.stars.every(r => r[c] === null)) {
+                for (let r = 0; r < 10; r++) {
+                    this.stars[r].splice(c, 1);
+                    this.stars[r].push(null);
+                }
+            }
+        }
+    }
+
+    showCombo(n) {
+        const msg = document.getElementById('combo-msg');
+        let txt = "GOOD!";
+        if(n > 5) txt = "COOL!!";
+        if(n > 8) txt = "AWESOME!!!";
+        if(n > 12) txt = "UNBELIEVABLE!!!!";
+        msg.innerText = txt;
+        msg.style.opacity = 1;
+        setTimeout(() => msg.style.opacity = 0, 800);
+    }
+
+    checkEnd() {
+        let hasMove = false;
+        for(let r=0; r<10; r++) 
+            for(let c=0; c<10; c++)
+                if(this.stars[r][c] !== null && this.getConnected(r,c,this.stars[r][c]).length >= 2) hasMove = true;
+        
+        if(!hasMove) {
+            if(this.state.score >= this.target) {
+                Sound.win();
+                alert("恭喜通关！");
+                this.state.level++;
+                this.state.score = 0;
+                this.init();
+            } else {
+                Sound.fail();
+                alert("挑战失败，重新开始吧！");
+                this.newGame();
+            }
+        }
+    }
+
+    refreshBoard() {
+        if(this.state.refresh > 0) {
+            this.state.refresh--;
+            this.generateMap();
+            this.render();
+            this.updateUI();
+        } else alert("次数用完啦！");
+    }
+
+    newGame() {
+        this.state = { level: 1, score: 0, refresh: 5 };
+        this.init();
+    }
+
+    showContact() {
+        alert("感谢支持！\n作者微信：YourWxID\n期待您的反馈！");
+    }
+
+    bindEvents() {
+        this.canvas.addEventListener('mousedown', e => this.handleAction(e));
+        this.canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            this.handleAction(e.touches[0]);
+        });
+    }
+}
+
+const game = new StarGame();
+</script>
+</body>
+</html>
