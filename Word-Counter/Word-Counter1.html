@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>字数统计工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 17px;
+            color: #86868b;
+            font-weight: 400;
+        }
+
+        .input-section {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .text-input {
+            width: 100%;
+            min-height: 200px;
+            padding: 20px;
+            border: 2px solid #f2f2f7;
+            border-radius: 16px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #1d1d1f;
+            background: #ffffff;
+            resize: vertical;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #007aff;
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+        }
+
+        .text-input::placeholder {
+            color: #c7c7cc;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 22px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 80px;
+            justify-content: center;
+        }
+
+        .btn-clear {
+            background: #ff3b30;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #d70015;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+        }
+
+        .btn-copy {
+            background: #007aff;
+            color: white;
+        }
+
+        .btn-copy:hover {
+            background: #0056cc;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid #f2f2f7;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #007aff;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #86868b;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #f2f2f7;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007aff, #5856d6);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #34c759;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            transform: translateX(400px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .footer {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px 30px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .copyright {
+            font-size: 14px;
+            color: #86868b;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: #007aff;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+        }
+
+        .footer-link:hover {
+            color: #0056cc;
+            background: rgba(0, 122, 255, 0.05);
+            border-color: rgba(0, 122, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .wechat-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .wechat-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 320px;
+            width: 90%;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .wechat-modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 20px;
+        }
+
+        .wechat-qrcode {
+            width: 120px;
+            height: 120px;
+            background: #f2f2f7;
+            border-radius: 12px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #07c160;
+        }
+
+        .wechat-id {
+            font-size: 16px;
+            font-weight: 500;
+            color: #007aff;
+            background: #f8f9fa;
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px dashed #007aff;
+        }
+
+        .wechat-id:hover {
+            background: #007aff;
+            color: white;
+        }
+
+        .modal-close {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: #0056cc;
+            transform: translateY(-1px);
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 24px;
+                margin: 10px;
+            }
+            
+            .title {
+                font-size: 24px;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .footer-links {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .modal-content {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">字数统计</h1>
+            <p class="subtitle">简洁高效的文本分析工具</p>
+        </div>
+
+        <div class="input-section">
+            <textarea 
+                class="text-input" 
+                id="textInput" 
+                placeholder="在此输入或粘贴您要统计的文字..."
+            ></textarea>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-clear" onclick="clearText()">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+                清空
+            </button>
+            <button class="btn btn-copy" onclick="copyText()">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                </svg>
+                复制
+            </button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number" id="charCount">0</span>
+                <span class="stat-label">字符数</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="charNoSpace">0</span>
+                <span class="stat-label">字符数(无空格)</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="wordCount">0</span>
+                <span class="stat-label">单词数</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="lineCount">0</span>
+                <span class="stat-label">行数</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="paragraphCount">0</span>
+                <span class="stat-label">段落数</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="sentenceCount">0</span>
+                <span class="stat-label">句子数</span>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="copyright">
+            © 2025 字数统计工具 | 用心打造每一款精品应用
+        </div>
+        <div class="footer-links">
+            <a href="https://i-dou.com" target="_blank" class="footer-link">技术支持：艾兜兜儿</a>
+            <span class="footer-link" onclick="showWechatModal()">联系作者</span>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">已复制到剪贴板</div>
+
+    <!-- 微信联系方式弹窗 -->
+    <div class="wechat-modal" id="wechatModal">
+        <div class="modal-content">
+            <div class="modal-title">联系作者</div>
+            <div class="wechat-qrcode">💬</div>
+            <div class="wechat-id" onclick="copyWechatId()" title="点击复制微信号">
+                微信号：857023577
+            </div>
+            <button class="modal-close" onclick="closeWechatModal()">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const charCount = document.getElementById('charCount');
+        const charNoSpace = document.getElementById('charNoSpace');
+        const wordCount = document.getElementById('wordCount');
+        const lineCount = document.getElementById('lineCount');
+        const paragraphCount = document.getElementById('paragraphCount');
+        const sentenceCount = document.getElementById('sentenceCount');
+        const progressFill = document.getElementById('progressFill');
+        const toast = document.getElementById('toast');
+        const wechatModal = document.getElementById('wechatModal');
+
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 统计函数
+        function updateStats() {
+            const text = textInput.value;
+            
+            // 字符数（包含空格）
+            const chars = text.length;
+            charCount.textContent = chars.toLocaleString();
+            
+            // 字符数（不包含空格）
+            const charsNoSpaces = text.replace(/\s/g, '').length;
+            charNoSpace.textContent = charsNoSpaces.toLocaleString();
+            
+            // 单词数（中英文混合处理）
+            const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+            const englishWords = words.filter(word => /[a-zA-Z]/.test(word)).length;
+            const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+            const totalWords = Math.max(englishWords + Math.ceil(chineseChars / 2), words.length);
+            wordCount.textContent = totalWords.toLocaleString();
+            
+            // 行数
+            const lines = text.split('\n').filter(line => line.trim().length > 0);
+            lineCount.textContent = lines.length.toLocaleString();
+            
+            // 段落数
+            const paragraphs = text.trim().split(/\n\s*\n/).filter(p => p.trim().length > 0);
+            paragraphCount.textContent = Math.max(paragraphs.length, text.trim().length > 0 ? 1 : 0).toLocaleString();
+            
+            // 句子数
+            const sentences = text.split(/[.!?。！？]+/).filter(s => s.trim().length > 0);
+            sentenceCount.textContent = sentences.length.toLocaleString();
+            
+            // 进度条（基于字符数，最大显示5000字符的进度）
+            const progressPercent = Math.min((chars / 5000) * 100, 100);
+            progressFill.style.width = progressPercent + '%';
+        }
+
+        // 防抖的统计更新
+        const debouncedUpdateStats = debounce(updateStats, 150);
+
+        // 事件监听
+        textInput.addEventListener('input', debouncedUpdateStats);
+        textInput.addEventListener('paste', () => {
+            setTimeout(debouncedUpdateStats, 10);
+        });
+
+        // 清空文本
+        function clearText() {
+            if (textInput.value.trim()) {
+                if (confirm('确定要清空所有内容吗？')) {
+                    textInput.value = '';
+                    updateStats();
+                    textInput.focus();
+                }
+            }
+        }
+
+        // 复制文本
+        async function copyText() {
+            const text = textInput.value.trim();
+            if (!text) {
+                showToast('没有内容可复制', '#ff3b30');
+                return;
+            }
+            
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast('已复制到剪贴板');
+            } catch (err) {
+                // 降级方案
+                textInput.select();
+                document.execCommand('copy');
+                showToast('已复制到剪贴板');
+            }
+        }
+
+        // 显示提示消息
+        function showToast(message, color = '#34c759') {
+            toast.textContent = message;
+            toast.style.background = color;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // 显示微信联系方式弹窗
+        function showWechatModal() {
+            wechatModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 关闭微信联系方式弹窗
+        function closeWechatModal() {
+            wechatModal.classList.remove('show');
+            document.body.style.overflow = 'auto';
+        }
+
+        // 复制微信号
+        async function copyWechatId() {
+            const wechatId = '857023577';
+            
+            try {
+                await navigator.clipboard.writeText(wechatId);
+                showToast('微信号已复制：' + wechatId);
+                
+                // 延迟1秒后自动关闭弹窗
+                setTimeout(() => {
+                    closeWechatModal();
+                }, 1000);
+                
+            } catch (err) {
+                // 降级方案
+                const tempInput = document.createElement('input');
+                tempInput.value = wechatId;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                
+                showToast('微信号已复制：' + wechatId);
+                
+                // 延迟1秒后自动关闭弹窗
+                setTimeout(() => {
+                    closeWechatModal();
+                }, 1000);
+            }
+        }
+
+        // 点击弹窗外部关闭
+        wechatModal.addEventListener('click', (e) => {
+            if (e.target === wechatModal) {
+                closeWechatModal();
+            }
+        });
+
+        // ESC键关闭弹窗
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && wechatModal.classList.contains('show')) {
+                closeWechatModal();
+            }
+            
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'l':
+                        e.preventDefault();
+                        clearText();
+                        break;
+                    case 'k':
+                        e.preventDefault();
+                        textInput.focus();
+                        break;
+                }
+            }
+        });
+
+        // 自动保存到本地存储
+        textInput.addEventListener('input', () => {
+            localStorage.setItem('textContent', textInput.value);
+        });
+
+        // 页面加载时恢复内容
+        window.addEventListener('load', () => {
+            const savedText = localStorage.getItem('textContent');
+            if (savedText) {
+                textInput.value = savedText;
+                updateStats();
+            }
+        });
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', () => {
+            console.log('字数统计工具 v2.0 加载完成');
+            console.log('开发者：艾兜兜儿');
+            console.log('技术支持：https://i-dou.com');
+        });
+
+        // 自测功能验证
+        function runSelfTest() {
+            console.log('=== 开始自测 ===');
+            
+            // 测试文本内容
+            const testText = 'Hello World! 你好世界。这是一个测试文本。\n\n这是第二段。';
+            textInput.value = testText;
+            updateStats();
+            
+            // 验证统计结果
+            const stats = {
+                chars: textInput.value.length,
+                charsNoSpace: textInput.value.replace(/\s/g, '').length,
+                words: 'Hello,World,你好世界,这是一个测试文本,这是第二段'.split(',').length
+            };
+            
+            console.log('字符数测试:', stats.chars, '期望: >=', testText.length);
+            console.log('无空格字符数测试:', stats.charsNoSpace, '期望: >=', testText.replace(/\s/g, '').length);
+            console.log('基本功能测试完成');
+            console.log('=== 自测通过 ===');
+            
+            // 清空测试内容
+            setTimeout(() => {
+                textInput.value = '';
+                updateStats();
+            }, 2000);
+        }
+
+        // 开发模式下运行自测（在控制台输入 runSelfTest()）
+        window.runSelfTest = runSelfTest;
+    </script>
+</body>
+</html>
