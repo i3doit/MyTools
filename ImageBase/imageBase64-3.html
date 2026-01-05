@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能尺寸图片转 Base64 工具</title>
+    <style>
+        :root { --primary: #007AFF; --gray: #8e8e93; --bg: #f5f5f7; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #1d1d1f; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        
+        nav { margin-bottom: 25px; font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        nav a { color: var(--primary); text-decoration: none; margin-right: 15px; }
+
+        .config-section { margin-bottom: 20px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        select { padding: 8px 12px; border-radius: 8px; border: 1px solid #d2d2d7; font-size: 14px; outline: none; }
+
+        .upload-zone { border: 2px dashed #c7c7cc; border-radius: 15px; padding: 40px; text-align: center; cursor: pointer; transition: 0.3s; background: #fafafa; }
+        .upload-zone:hover { border-color: var(--primary); background: #f0f7ff; }
+
+        .result-panel { display: none; margin-top: 25px; animation: slideUp 0.4s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .preview-box { text-align: center; margin-bottom: 20px; padding: 15px; background: #eee; border-radius: 10px; display: inline-block; min-width: 150px; }
+        #previewImg { box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: white; }
+
+        .code-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; color: var(--gray); }
+        textarea { width: 100%; height: 150px; border: 1px solid #d2d2d7; border-radius: 10px; padding: 12px; font-family: monospace; font-size: 11px; box-sizing: border-box; background: #f9f9fb; resize: none; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-main { background: var(--primary); color: white; }
+        .btn-sub { background: #e5e5ea; color: #1d1d1f; }
+        button:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <nav>
+        <a href="#">首页</a>
+        <a href="#">常见尺寸指南</a>
+        <a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Basics_of_HTTP/Data_URLs" target="_blank">Base64 规范</a>
+    </nav>
+
+    <div class="config-section">
+        <strong>选择目标尺寸:</strong>
+        <select id="sizeSelector">
+            <option value="original">原始大小 (仅压缩)</option>
+            <option value="128x128">社交头像 (128x128 px)</option>
+            <option value="295x413">标准 1 寸 (295x413 px)</option>
+            <option value="413x579">标准 2 寸 (413x579 px)</option>
+            <option value="600x800">4.5 寸/入职照 (600x800 px)</option>
+        </select>
+        <span style="font-size: 12px; color: #888;">* 自动居中裁剪</span>
+    </div>
+
+    <div class="upload-zone" id="dropZone">
+        <p style="font-size: 16px; margin: 0;">点击或拖拽图片到这里</p>
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+    </div>
+
+    <div class="result-panel" id="resultPanel">
+        <div style="text-align: center;">
+            <div class="preview-box">
+                <p style="font-size: 12px; color: #666; margin-top: 0;">预览结果</p>
+                <img id="previewImg" alt="预览">
+            </div>
+        </div>
+
+        <div class="code-header">
+            <span id="resTag">尺寸确认</span>
+            <span id="charCount">长度：0 字符</span>
+        </div>
+        <textarea id="base64Output" readonly></textarea>
+
+        <div class="btn-group">
+            <button class="btn-main" onclick="copyCode()">复制代码</button>
+            <button class="btn-sub" onclick="location.reload()">重新上传</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const sizeSelector = document.getElementById('sizeSelector');
+    const resultPanel = document.getElementById('resultPanel');
+    const previewImg = document.getElementById('previewImg');
+    const base64Output = document.getElementById('base64Output');
+    const charCount = document.getElementById('charCount');
+    const resTag = document.getElementById('resTag');
+
+    let currentFile = null;
+
+    dropZone.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => { currentFile = e.target.files[0]; processImage(); };
+    sizeSelector.onchange = () => { if(currentFile) processImage(); };
+
+    function processImage() {
+        if (!currentFile) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                let targetW, targetH;
+                const mode = sizeSelector.value;
+
+                if (mode === 'original') {
+                    // 原始比例，但限制最大宽度防止溢出
+                    const scale = img.width > 1200 ? 1200 / img.width : 1;
+                    targetW = img.width * scale;
+                    targetH = img.height * scale;
+                } else {
+                    const dimensions = mode.split('x');
+                    targetW = parseInt(dimensions[0]);
+                    targetH = parseInt(dimensions[1]);
+                }
+
+                canvas.width = targetW;
+                canvas.height = targetH;
+
+                // 核心算法：居中等比裁剪 (Object-fit: cover 逻辑)
+                const imgRatio = img.width / img.height;
+                const canvasRatio = targetW / targetH;
+                let drawW, drawH, offsetX, offsetY;
+
+                if (imgRatio > canvasRatio) {
+                    drawH = targetH;
+                    drawW = targetH * imgRatio;
+                    offsetX = (targetW - drawW) / 2;
+                    offsetY = 0;
+                } else {
+                    drawW = targetW;
+                    drawH = targetW / imgRatio;
+                    offsetX = 0;
+                    offsetY = (targetH - drawH) / 2;
+                }
+
+                ctx.fillStyle = "#FFFFFF"; // 填充白色底防止透明图变黑
+                ctx.fillRect(0, 0, targetW, targetH);
+                ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+
+                // 生成 Base64 (使用 jpeg 保证代码长度可控)
+                const finalBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                
+                previewImg.src = finalBase64;
+                previewImg.style.width = targetW > 200 ? '200px' : targetW + 'px';
+                base64Output.value = finalBase64;
+                charCount.innerText = `代码长度：${finalBase64.length.toLocaleString()} 字符`;
+                resTag.innerText = `当前尺寸：${targetW} x ${targetH} px`;
+                
+                dropZone.style.display = 'none';
+                resultPanel.style.display = 'block';
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(currentFile);
+    }
+
+    function copyCode() {
+        base64Output.select();
+        document.execCommand('copy');
+        alert('复制成功！可以直接粘贴到 HTML 的 src 属性中。');
+    }
+
+    // 拖拽逻辑支持
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.borderColor = "var(--primary)"; };
+    dropZone.ondragleave = () => { dropZone.style.borderColor = "#c7c7cc"; };
+    dropZone.ondrop = (e) => { e.preventDefault(); currentFile = e.dataTransfer.files[0]; processImage(); };
+</script>
+
+</body>
+</html>
