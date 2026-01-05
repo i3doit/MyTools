@@ -2,312 +2,340 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>高级二维码生成器 - 艾兜兜儿</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>高级二维码生成器 - 移动优化版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
     <style>
         :root {
             --primary: #0071e3;
-            --bg: #f5f7fa;
+            --bg: #f2f2f7;
             --card-bg: #ffffff;
             --text: #1d1d1f;
             --text-sec: #86868b;
             --border: #d2d2d7;
-            --radius: 14px;
-            --shadow: 0 8px 30px rgba(0,0,0,0.08);
+            --radius: 18px;
         }
 
-        [data-theme="dark"] {
-            --bg: #121212;
-            --card-bg: #1e1e1e;
-            --text: #f5f5f7;
-            --text-sec: #a1a1a6;
-            --border: #424245;
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; padding-bottom: 40px; }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 15px; }
+
+        /* 顶部 URL 输入区 - 手机端最先显示 */
+        .top-input-section {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            position: relative;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; }
-        body { background-color: var(--bg); color: var(--text); padding: 20px; line-height: 1.6; transition: 0.3s; }
-
-        .container { max-width: 900px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 40px; }
-        h1 { font-size: 2.2rem; margin-bottom: 10px; background: linear-gradient(90deg, #0071e3, #34c759); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-        .main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
-
-        .app-card { background: var(--card-bg); border-radius: var(--radius); padding: 25px; box-shadow: var(--shadow); border: 1px solid var(--border); height: fit-content; }
+        .url-group label { display: block; font-weight: 600; margin-bottom: 10px; font-size: 0.95rem; }
+        .input-wrapper { position: relative; }
+        input[type="url"], input[type="text"] {
+            width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: 12px;
+            font-size: 1rem; outline: none; transition: 0.2s; background: #f9f9f9;
+        }
+        input:focus { border-color: var(--primary); background: #fff; }
         
-        .form-group { margin-bottom: 18px; position: relative; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; }
-        
-        input[type="text"], input[type="url"], input[type="date"] {
-            width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px;
-            background: var(--bg); color: var(--text); outline: none; transition: 0.3s;
-        }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,113,227,0.1); }
-
-        /* 快捷粘贴浮层 */
-        .paste-tip {
-            position: absolute; right: 10px; top: 38px; background: var(--primary);
-            color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px;
-            cursor: pointer; display: none; z-index: 10;
+        .paste-hint {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            background: var(--primary); color: white; padding: 6px 12px;
+            border-radius: 8px; font-size: 0.8rem; cursor: pointer; display: none;
         }
 
-        /* 预览海报样式 */
-        .poster-preview-wrapper {
-            position: sticky; top: 20px;
-        }
+        /* 布局结构：手机端纵向，PC端双栏 */
+        .main-content { display: flex; flex-direction: column; gap: 20px; }
+
+        /* 海报预览区 */
+        .preview-container { order: 1; display: flex; justify-content: center; }
         #posterArea {
-            width: 300px; padding: 20px; border-radius: 16px; position: relative;
-            background: #ffffff; color: #333; overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1); margin: 0 auto;
-            border: 1px solid #eee;
+            width: 320px; padding: 25px; border-radius: 24px; position: relative;
+            background: #ffffff; box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         .poster-header { display: flex; align-items: center; margin-bottom: 20px; }
-        .avatar-img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; margin-right: 12px; border: 2px solid #fff; }
-        .user-info h4 { font-size: 14px; margin: 0; }
-        .user-info p { font-size: 11px; color: #666; margin: 0; }
+        .avatar-wrap { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #fff; overflow: hidden; margin-right: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .user-meta h4 { font-size: 1rem; margin: 0; }
+        .user-meta p { font-size: 0.75rem; opacity: 0.8; margin: 0; }
 
-        .qr-zone { 
-            background: white; padding: 15px; border-radius: 12px; 
-            display: flex; justify-content: center; align-items: center;
-            margin-bottom: 15px; min-height: 180px;
+        .qr-box { 
+            background: white; padding: 15px; border-radius: 18px; position: relative;
+            display: flex; justify-content: center; align-items: center; margin-bottom: 15px;
         }
+        .center-logo {
+            position: absolute; width: 44px; height: 44px; background: white;
+            border-radius: 10px; padding: 3px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none; z-index: 5;
+        }
+
         .poster-footer { text-align: center; }
-        .expiry-tag { font-size: 11px; background: rgba(0,0,0,0.05); padding: 4px 10px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
-        .promo-text { font-size: 13px; font-weight: 500; color: #444; }
+        .expiry-label { font-size: 0.7rem; background: rgba(0,0,0,0.06); padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
+        .promo-txt { font-size: 0.9rem; font-weight: 700; line-height: 1.4; }
 
-        /* 颜色选择器 */
-        .style-presets { display: flex; gap: 8px; margin-top: 15px; }
-        .color-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 0 1px #ddd; }
+        /* 设置区域 - 手机端显示在海报下方 */
+        .settings-container { order: 2; display: grid; gap: 15px; }
+        .setting-card { background: var(--card-bg); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); }
 
+        .option-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .opt-btn {
+            padding: 8px 16px; border-radius: 50px; border: 1px solid var(--border);
+            font-size: 0.85rem; cursor: pointer; background: #fff; transition: 0.2s;
+        }
+        .opt-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .color-palette { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+        .color-circle { width: 34px; height: 34px; border-radius: 50%; cursor: pointer; border: 3px solid #fff; box-shadow: 0 0 0 1px #ddd; transition: 0.2s; }
+        .color-circle.active { transform: scale(1.2); box-shadow: 0 0 0 2px var(--primary); }
+
+        .action-btns { margin-top: 20px; display: grid; gap: 12px; }
         .btn {
-            width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: 600;
-            cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; padding: 16px; border: none; border-radius: 14px;
+            font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .btn-primary { background: var(--primary); color: white; margin-top: 10px; }
-        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); margin-top: 10px; }
+        .btn-save { background: #34c759; color: white; }
+        .btn-refresh { background: var(--primary); color: white; }
 
-        /* 底部参考样式 */
-        footer { margin-top: 50px; border-top: 1px solid var(--border); padding: 30px 0; text-align: center; color: var(--text-sec); font-size: 0.85rem; }
-        .footer-links { margin-bottom: 15px; }
-        .footer-links a { color: var(--primary); text-decoration: none; margin: 0 10px; }
-        .footer-links a:hover { text-decoration: underline; }
-
-        @media (max-width: 768px) {
-            .main-grid { grid-template-columns: 1fr; }
-            .poster-preview-wrapper { position: static; order: -1; }
+        /* PC端布局调整 */
+        @media (min-width: 768px) {
+            .main-content { flex-direction: row; align-items: flex-start; }
+            .preview-container { order: 2; flex: 1; position: sticky; top: 20px; }
+            .settings-container { order: 1; flex: 1.2; }
         }
+
+        /* 页脚 */
+        footer { margin-top: 40px; text-align: center; font-size: 0.8rem; color: var(--text-sec); border-top: 1px solid var(--border); padding-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header>
-        <h1>高级二维码生成器</h1>
-        <p style="color: var(--text-sec)">安全、快捷、精美的品牌分享工具</p>
-    </header>
-
-    <div class="main-grid">
-        <div class="app-card">
-            <div class="form-group">
-                <label>跳转链接 (URL)</label>
-                <input type="url" id="urlInput" placeholder="https://..." value="https://i3doit.github.io/MyTools/">
-                <div id="pasteTip" class="paste-tip">点击粘贴</div>
+    <section class="top-input-section">
+        <div class="url-group">
+            <label><i class="fas fa-link"></i> 二维码目标网址</label>
+            <div class="input-wrapper">
+                <input type="url" id="urlInput" placeholder="输入或粘贴 https://..." value="https://i3doit.github.io/MyTools/">
+                <div id="pasteHint" class="paste-hint">点击粘贴</div>
             </div>
-
-            <div class="form-group">
-                <label>个性化配置</label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <input type="text" id="nicknameInput" placeholder="显示昵称" maxlength="10" value="艾兜兜儿">
-                    <input type="text" id="promoInput" placeholder="推广文案" value="扫码发现更多精彩内容">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>有效期截止</label>
-                <input type="date" id="expiryInput">
-            </div>
-
-            <div class="form-group">
-                <label>上传头像 (可选)</label>
-                <input type="file" id="avatarUpload" accept="image/*" style="font-size: 12px;">
-            </div>
-
-            <div class="form-group">
-                <label>海报背景</label>
-                <div class="style-presets">
-                    <div class="color-dot" style="background: #ffffff;" onclick="changeBg('#ffffff')"></div>
-                    <div class="color-dot" style="background: #fdf2f2;" onclick="changeBg('#fdf2f2')"></div>
-                    <div class="color-dot" style="background: #f0f7ff;" onclick="changeBg('#f0f7ff')"></div>
-                    <div class="color-dot" style="background: #f6ffed;" onclick="changeBg('#f6ffed')"></div>
-                    <div class="color-dot" style="background: #fffbe6;" onclick="changeBg('#fffbe6')"></div>
-                </div>
-            </div>
-
-            <button class="btn btn-primary" onclick="generateQR()">
-                <i class="fas fa-sync"></i> 立即更新预览
-            </button>
-            <button class="btn btn-outline" onclick="downloadPoster()">
-                <i class="fas fa-download"></i> 下载分享海报
-            </button>
         </div>
+    </section>
 
-        <div class="poster-preview-wrapper">
+    <main class="main-content">
+        <section class="preview-container">
             <div id="posterArea">
                 <div class="poster-header">
-                    <img id="displayAvatar" class="avatar-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAACXBIWXMAAAsTAAALEwEAmpwYAAAB9ElEQVR4nO2Xv0scQRTHP7OCYKWFlZZ2KignInZK0uS0InZp9S8IloII9haC/4KllSBYp9XmHwiChSBYp9XmHwiChSBYp9XmHwiChSCYZ97ubndv9vYm7wcHlt2Z+cx77703uzS7Y69RAnYAnS9vAsX8p0f+mXf/D2Am/70LTAInOfAnAAn8An4BN8AVcAnYAnT+6p9R5T27zG+z0v3uY/y8A9wAm8Am8Bv4BfwCfgG/gH8Z6H73MX7eAW6ATWAT+A38An4B/zLQ/e5j/LwD3ACbwCbwG/gF/AL+ZaD73cf4eQe4ATaBTeA38Av4BfwC/mWh+93H+HkHuAE2gU3gN/AL+AX8An4Bv4B/Weh+9zF+3gFugE1gE/gN/AJ+Ab+Af1nofvcxfq4AdUAnUAd0AnVAJ1AHdAIdv72v+vO7pfrdw/i5AtQBnUAd0AnUAZ1AHdAJdPz2vurP75bqdw/j5wpQB3QCdUAnUAd0AnVAJ9Dx2/uqP79bqt89jJ8rQB3QCdUAnUAd0AnUAZ1Ax2/vq/78bql+9zB+rgB1QCdQB3QCdUAnUAd0Ah2/va/687ul+t3D+LkC1AGdQB3QCdUAnUAd0Al0/Pa+6s/vlup3D+PnClAHdAJ1QCdQB3QCdUAn0PHb+6o/v1uq3z38A73O9R6vWw6OAAAAAElFTkSuQmCC" alt="avatar">
-                    <div class="user-info">
-                        <h4 id="displayNickname">艾兜兜儿</h4>
-                        <p id="displayInvite">邀你一起使用</p>
+                    <div class="avatar-wrap">
+                        <img id="displayAvatar" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAACXBIWXMAAAsTAAALEwEAmpwYAAAB9ElEQVR4nO2Xv0scQRTHP7OCYKWFlZZ2KignInZK0uS0InZp9S8IloII9haC/4KllSBYp9XmHwiChSBYp9XmHwiChSBYp9XmHwiChSCYZ97ubndv9vYm7wcHlt2Z+cx77703uzS7Y69RAnYAnS9vAsX8p0f+mXf/D2Am/70LTAInOfAnAAn8An4BN8AVcAnYAnT+6p9R5T27zG+z0v3uY/y8A9wAm8Am8Bv4BfwCfgG/gH8Z6H73MX7eAW6ATWAT+A38An4B/zLQ/e5j/LwD3ACbwCbwG/gF/AL+ZaD73cf4eQe4ATaBTeA38Av4BfwC/mWh+93H+HkHuAE2gU3gN/AL+AX8An4Bv4B/Weh+9zF+3gFugE1gE/gN/AJ+Ab+Af1nofvcxfq4AdUAnUAd0AnVAJ1AHdAIdv72v+vO7pfrdw/i5AtQBnUAd0AnUAZ1AHdAJdPz2vurP75bqdw/j5wpQB3QCdUAnUAd0AnVAJ1Ax2/vq/78bql+9zB+rgB1QCdQB3QCdUAnUAd0Ah2/va/687ul+t3D+LkC1AGdQB3QCdUAnUAd0Al0/Pa+6s/vlup3D+PnClAHdAJ1QCdQB3QCdUAn0PHb+6o/v1uq3z38A73O9R6vWw6OAAAAAElFTkSuQmCC">
+                    </div>
+                    <div class="user-meta">
+                        <h4 id="viewNick">艾兜兜儿</h4>
+                        <p>邀你一起使用</p>
                     </div>
                 </div>
-                
-                <div class="qr-zone" id="qrcode">
-                    </div>
+
+                <div class="qr-box">
+                    <div id="qrcode"></div>
+                    <img id="qrLogo" class="center-logo">
+                </div>
 
                 <div class="poster-footer">
-                    <div class="expiry-tag" id="displayExpiry">永久有效</div>
-                    <div class="promo-text" id="displayPromo">扫码发现更多精彩内容</div>
+                    <div class="expiry-label" id="viewExp">二维码永久有效</div>
+                    <div class="promo-txt" id="viewPromo">扫码发现更多精彩工具</div>
                 </div>
             </div>
-            <p style="text-align: center; color: var(--text-sec); font-size: 12px; margin-top: 15px;">实时海报预览</p>
-        </div>
-    </div>
+        </section>
+
+        <section class="settings-container">
+            <div class="setting-card">
+                <label>基本信息</label>
+                <input type="text" id="nickInput" value="艾兜兜儿" placeholder="你的昵称" maxlength="10" style="margin-bottom:12px;">
+                <input type="text" id="promoInput" value="扫码发现更多精彩工具" placeholder="推广文案">
+            </div>
+
+            <div class="setting-card">
+                <label>有效期设置</label>
+                <div class="option-grid" id="expiryOptions">
+                    <div class="opt-btn" data-val="7">7天</div>
+                    <div class="opt-btn" data-val="15">15天</div>
+                    <div class="opt-btn active" data-val="0">永久</div>
+                    <div class="opt-btn" data-val="custom">自定义日期</div>
+                </div>
+                <input type="date" id="customDate" style="display:none; margin-top:10px;">
+            </div>
+
+            <div class="setting-card">
+                <label>上传自定义图片</label>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                    <div>
+                        <span style="font-size:0.7rem; color:var(--text-sec)">更换头像</span>
+                        <input type="file" id="upAvatar" accept="image/*" style="font-size:0.7rem; margin-top:5px; width:100%;">
+                    </div>
+                    <div>
+                        <span style="font-size:0.7rem; color:var(--text-sec)">中间 Logo</span>
+                        <input type="file" id="upLogo" accept="image/*" style="font-size:0.7rem; margin-top:5px; width:100%;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-card">
+                <label>卡片背景系</label>
+                <div class="color-palette" id="colorPalette">
+                    </div>
+            </div>
+
+            <div class="action-btns">
+                <button class="btn btn-refresh" onclick="updatePreview()"><i class="fas fa-sync-alt"></i> 更新预览</button>
+                <button class="btn btn-save" onclick="downloadPoster()"><i class="fas fa-file-download"></i> 保存高清图片</button>
+            </div>
+        </section>
+    </main>
 
     <footer>
-        <div class="footer-links">
-            <a href="#">关于我们</a> | 
-            <a href="#">使用协议</a> | 
-            <a href="#">联系作者</a> | 
-            <a href="#">反馈问题</a>
-        </div>
-        <p>Copyright © 2024 - 2026 艾兜兜儿. All Rights Reserved.</p>
-        <p style="margin-top: 5px; opacity: 0.7;">本工具仅供技术交流，严禁用于任何非法引流及违规用途</p>
+        <p>© 2026 艾兜兜儿 | 隐私安全二维码生成工具</p>
     </footer>
 </div>
 
 <script>
-    // 默认头像 (Base64) - 保持极简
-    const defaultAvatar = document.getElementById('displayAvatar').src;
+    // 色系模板配置
+    const colorThemes = [
+        { bg: '#ffffff', text: '#333', name: '经典白' },
+        { bg: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', text: '#1d1d1f', name: '极简灰' },
+        { bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', text: '#fff', name: '幻影紫' },
+        { bg: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)', text: '#d63384', name: '甜心粉' },
+        { bg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', text: '#006d77', name: '青草绿' },
+        { bg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', text: '#b02a37', name: '暖阳橙' },
+        { bg: 'linear-gradient(135deg, #121212 0%, #434343 100%)', text: '#ffd700', name: '暗夜金' }
+    ];
 
-    // 初始化：设置默认日期为15天后
-    const dateInput = document.getElementById('expiryInput');
-    const future = new Date();
-    future.setDate(future.getDate() + 15);
-    dateInput.value = future.toISOString().split('T')[0];
-
-    // URL 输入框点击显示粘贴提示
-    const urlInput = document.getElementById('urlInput');
-    const pasteTip = document.getElementById('pasteTip');
-
-    urlInput.addEventListener('focus', () => {
-        pasteTip.style.display = 'block';
+    // 初始化背景选择器
+    const palette = document.getElementById('colorPalette');
+    colorThemes.forEach((th, idx) => {
+        const dot = document.createElement('div');
+        dot.className = `color-circle ${idx === 0 ? 'active' : ''}`;
+        dot.style.background = th.bg;
+        dot.onclick = () => {
+            document.querySelectorAll('.color-circle').forEach(d => d.classList.remove('active'));
+            dot.classList.add('active');
+            const area = document.getElementById('posterArea');
+            area.style.background = th.bg;
+            area.style.color = th.text;
+        };
+        palette.appendChild(dot);
     });
 
-    document.addEventListener('click', (e) => {
-        if (e.target !== urlInput && e.target !== pasteTip) {
-            pasteTip.style.display = 'none';
-        }
+    // 剪贴板功能
+    const urlIn = document.getElementById('urlInput');
+    const pasteH = document.getElementById('pasteHint');
+    urlIn.onfocus = () => pasteH.style.display = 'block';
+    document.addEventListener('mousedown', (e) => { if (e.target !== urlIn && e.target !== pasteH) pasteH.style.display = 'none'; });
+    pasteH.onclick = async () => {
+        try { const t = await navigator.clipboard.readText(); if(t) urlIn.value = t; updatePreview(); } catch(e){}
+        pasteH.style.display = 'none';
+    };
+
+    // 有效期逻辑
+    const expiryBtns = document.querySelectorAll('#expiryOptions .opt-btn');
+    const datePicker = document.getElementById('customDate');
+    expiryBtns.forEach(btn => {
+        btn.onclick = () => {
+            expiryBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            datePicker.style.display = btn.dataset.val === 'custom' ? 'block' : 'none';
+            updatePreview();
+        };
     });
 
-    pasteTip.addEventListener('click', async () => {
-        try {
-            const text = await navigator.clipboard.readText();
-            if (text) {
-                urlInput.value = text;
-                generateQR();
-            }
-        } catch (err) {
-            alert('无法访问剪贴板，请手动粘贴');
-        }
-        pasteTip.style.display = 'none';
-    });
-
-    // 头像上传预览与安全检查
-    document.getElementById('avatarUpload').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 1024 * 1024) {
-                alert('图片大小不能超过 1MB');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                document.getElementById('displayAvatar').src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    // 背景切换
-    function changeBg(color) {
-        document.getElementById('posterArea').style.backgroundColor = color;
-    }
-
-    // HTML 转义防 XSS
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    // 生成二维码与更新信息
-    let qrcode = new QRCode(document.getElementById("qrcode"), {
-        width: 160,
-        height: 160,
+    // 二维码初始化 (手机端缩小尺寸)
+    const isMobile = window.innerWidth < 768;
+    const qrcode = new QRCode(document.getElementById("qrcode"), {
+        width: isMobile ? 180 : 200,
+        height: isMobile ? 180 : 200,
         correctLevel: QRCode.CorrectLevel.H
     });
 
-    function generateQR() {
-        const url = urlInput.value.trim();
-        if (!url) return alert('请输入有效链接');
+    // 文件处理
+    function setupFile(inputId, imgId, isLogo = false) {
+        document.getElementById(inputId).onchange = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = document.getElementById(imgId);
+                    img.src = ev.target.result;
+                    if(isLogo) img.style.display = 'block';
+                    updatePreview();
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+    }
+    setupFile('upAvatar', 'displayAvatar');
+    setupFile('upLogo', 'qrLogo', true);
 
-        // 安全更新文本
-        document.getElementById('displayNickname').innerHTML = escapeHtml(document.getElementById('nicknameInput').value || '艾兜兜儿');
-        document.getElementById('displayPromo').innerHTML = escapeHtml(document.getElementById('promoInput').value);
+    // 核心更新函数
+    function updatePreview() {
+        const url = urlIn.value.trim() || "https://i3doit.github.io/MyTools/";
+        document.getElementById('viewNick').innerText = document.getElementById('nickInput').value;
+        document.getElementById('viewPromo').innerText = document.getElementById('promoInput').value;
 
-        // 更新日期
-        const expDate = new Date(dateInput.value);
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        
-        if (expDate < today) {
-            document.getElementById('displayExpiry').innerText = '已过期';
-            document.getElementById('displayExpiry').style.color = 'red';
+        // 计算日期
+        const activeBtn = document.querySelector('#expiryOptions .active');
+        const val = activeBtn.dataset.val;
+        const expEl = document.getElementById('viewExp');
+
+        if (val === '0') {
+            expEl.innerText = "二维码永久有效";
         } else {
-            const diff = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-            document.getElementById('displayExpiry').innerText = `有效期至: ${dateInput.value} (剩 ${diff} 天)`;
-            document.getElementById('displayExpiry').style.color = 'inherit';
+            let targetDate;
+            if (val === 'custom') {
+                targetDate = new Date(datePicker.value);
+            } else {
+                targetDate = new Date();
+                targetDate.setDate(targetDate.getDate() + parseInt(val));
+            }
+            
+            if (isNaN(targetDate.getTime())) {
+                expEl.innerText = "请选择日期";
+            } else {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const diff = Math.ceil((targetDate - today) / 86400000);
+                expEl.innerText = `有效期至: ${targetDate.toLocaleDateString()} (剩 ${diff} 天)`;
+            }
         }
-
-        // 生成二维码
         qrcode.makeCode(url);
     }
 
-    // 下载海报
+    // 保存图片
     async function downloadPoster() {
-        const poster = document.getElementById('posterArea');
+        updatePreview();
+        const btn = document.querySelector('.btn-save');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在生成...';
+        
         try {
-            const canvas = await html2canvas(poster, {
+            const canvas = await html2canvas(document.getElementById('posterArea'), {
+                scale: window.devicePixelRatio * 1.5,
                 useCORS: true,
-                scale: 2, // 提高清晰度
                 backgroundColor: null
             });
             const link = document.createElement('a');
-            link.download = `QRPoster_${new Date().getTime()}.png`;
+            link.download = `QRPoster_${Date.now()}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
-        } catch (err) {
-            console.error('生成图片失败:', err);
-            alert('生成图片失败，请重试');
+        } catch (e) {
+            alert('保存失败，请截图保存');
+        } finally {
+            btn.innerHTML = '<i class="fas fa-file-download"></i> 保存高清图片';
         }
     }
 
-    // 初始执行一次
-    generateQR();
+    // 初始生成
+    window.onload = updatePreview;
 </script>
 
 </body>
