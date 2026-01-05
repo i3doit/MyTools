@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社交头像 Base64 转换器</title>
+    <style>
+        :root { --p: #007AFF; --bg: #f2f2f7; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; }
+        .card { width: 100%; max-width: 600px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); }
+        
+        /* 头部与超链接 */
+        header { border-bottom: 1px solid #eee; margin-bottom: 20px; padding-bottom: 10px; }
+        .links { font-size: 13px; margin-bottom: 10px; }
+        .links a { color: var(--p); text-decoration: none; margin-right: 12px; }
+
+        /* 选项区 */
+        .controls { margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 12px; }
+        select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+
+        .upload-box { border: 2px dashed #ccc; border-radius: 15px; padding: 40px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .upload-box:hover { border-color: var(--p); background: #f0f7ff; }
+
+        /* 预览区：增加圆形预览效果 */
+        .preview-area { display: none; text-align: center; margin-top: 20px; }
+        .preview-flex { display: flex; justify-content: center; gap: 20px; align-items: center; margin-bottom: 20px; }
+        .preview-item p { font-size: 12px; color: #666; margin-bottom: 8px; }
+        
+        #rectPreview { width: 100px; height: 100px; object-fit: cover; border: 1px solid #eee; }
+        #circlePreview { width: 100px; height: 100px; object-fit: cover; border-radius: 50%; border: 1px solid #eee; }
+
+        textarea { width: 100%; height: 120px; border: 1px solid #ddd; border-radius: 10px; padding: 10px; font-size: 11px; font-family: monospace; background: #fafafa; box-sizing: border-box; }
+        
+        .btns { margin-top: 15px; display: flex; gap: 10px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .btn-copy { background: var(--p); color: white; }
+        .btn-reset { background: #eee; color: #333; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <header>
+        <div class="links">
+            <a href="#">常用尺寸</a> | <a href="#">CSS教程</a> | <a href="#">意见反馈</a>
+        </div>
+        <h2 style="margin:0">社交头像转 Base64</h2>
+    </header>
+
+    <div class="controls">
+        <label style="font-size: 13px; color: #666;">选择规格（自动居中裁剪为正方形）：</label>
+        <select id="sizeSpec" style="margin-top: 8px;">
+            <option value="512x512">高清社交头像 (512 x 512 px)</option>
+            <option value="128x128">标准社交头像 (128 x 128 px)</option>
+            <option value="295x413">标准 1 寸证件 (295 x 413 px)</option>
+            <option value="413x579">标准 2 寸证件 (413 x 579 px)</option>
+        </select>
+    </div>
+
+    <div class="upload-box" id="dropZone">
+        <strong>点击或拖入图片</strong>
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+    </div>
+
+    <div class="preview-area" id="previewArea">
+        <div class="preview-flex">
+            <div class="preview-item">
+                <p>正方形预览</p>
+                <img id="rectPreview">
+            </div>
+            <div class="preview-item">
+                <p>圆形效果预览</p>
+                <img id="circlePreview">
+            </div>
+        </div>
+        
+        <div style="text-align: left; font-size: 12px; color: #888; margin-bottom: 5px;">Base64 代码：</div>
+        <textarea id="output" readonly></textarea>
+        
+        <div class="btns">
+            <button class="btn-copy" onclick="copyCode()">复制代码</button>
+            <button class="btn-reset" onclick="location.reload()">重新上传</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const sizeSpec = document.getElementById('sizeSpec');
+    const previewArea = document.getElementById('previewArea');
+    const output = document.getElementById('output');
+    const rectPreview = document.getElementById('rectPreview');
+    const circlePreview = document.getElementById('circlePreview');
+
+    let rawImg = null;
+
+    dropZone.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => { handleFile(e.target.files[0]); };
+    sizeSpec.onchange = () => { if(rawImg) process(); };
+
+    function handleFile(file) {
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            rawImg = new Image();
+            rawImg.onload = process;
+            rawImg.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function process() {
+        const [targetW, targetH] = sizeSpec.value.split('x').map(Number);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = targetW;
+        canvas.height = targetH;
+
+        // 居中填充算法
+        const scale = Math.max(targetW / rawImg.width, targetH / rawImg.height);
+        const x = (targetW - rawImg.width * scale) / 2;
+        const y = (targetH - rawImg.height * scale) / 2;
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, targetW, targetH);
+        ctx.drawImage(rawImg, x, y, rawImg.width * scale, rawImg.height * scale);
+
+        const b64 = canvas.toDataURL('image/jpeg', 0.85);
+        output.value = b64;
+        rectPreview.src = b64;
+        circlePreview.src = b64;
+        
+        dropZone.style.display = 'none';
+        previewArea.style.display = 'block';
+    }
+
+    function copyCode() {
+        output.select();
+        document.execCommand('copy');
+        alert('代码已复制！粘贴到 <img> 标签的 src 属性即可。');
+    }
+
+    // 拖拽支持
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.borderColor = "#007AFF"; };
+    dropZone.ondragleave = () => { dropZone.style.borderColor = "#ccc"; };
+    dropZone.ondrop = (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
+</script>
+
+</body>
+</html>
