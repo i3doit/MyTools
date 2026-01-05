@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片转 Base64 编码工具</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --bg-color: #f5f7fa;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        /* 导航/超链接预留区 */
+        nav {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        nav a {
+            color: var(--primary-color);
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        nav a:hover { text-decoration: underline; }
+
+        /* 上传区域 */
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: border 0.3s;
+        }
+        .upload-area:hover { border-color: var(--primary-color); }
+        #fileInput { display: none; }
+
+        /* 预览和结果区 */
+        .result-section {
+            display: none;
+            margin-top: 30px;
+        }
+        .preview-img {
+            max-width: 100%;
+            max-height: 200px;
+            display: block;
+            margin: 0 auto 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+
+        .btn-group {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        .btn-copy { background-color: #2ecc71; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <nav>
+        <a href="#">首页</a> | 
+        <a href="#">关于工具</a> | 
+        <a href="#">使用教程</a> | 
+        <a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Basics_of_HTTP/Data_URLs" target="_blank">什么是 Base64？</a>
+    </nav>
+
+    <header>
+        <h1>图片转 Base64 工具</h1>
+        <p>将图片转换为 Data URI 格式，直接嵌入 HTML/CSS</p>
+    </header>
+
+    <div class="upload-area" id="dropZone">
+        <p>点击此处或将图片拖拽到这里</p>
+        <input type="file" id="fileInput" accept="image/*">
+    </div>
+
+    <div class="result-section" id="resultSection">
+        <h3>预览：</h3>
+        <img id="preview" class="preview-img" src="" alt="预览">
+        
+        <h3>Base64 代码：</h3>
+        <textarea id="base64Output" readonly></textarea>
+        
+        <div class="btn-group">
+            <button class="btn-copy" onclick="copyText()">复制到剪贴板</button>
+            <button onclick="reset()">重新上传</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const resultSection = document.getElementById('resultSection');
+    const preview = document.getElementById('preview');
+    const base64Output = document.getElementById('base64Output');
+
+    // 触发文件选择
+    dropZone.onclick = () => fileInput.click();
+
+    // 处理文件上传
+    fileInput.onchange = (e) => handleFile(e.target.files[0]);
+
+    // 拖拽逻辑
+    dropZone.ondragover = (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--primary-color)';
+    };
+    dropZone.ondragleave = () => dropZone.style.borderColor = '#ccc';
+    dropZone.ondrop = (e) => {
+        e.preventDefault();
+        handleFile(e.dataTransfer.files[0]);
+    };
+
+    function handleFile(file) {
+        if (!file || !file.type.startsWith('image/')) {
+            alert('请选择有效的图片文件！');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64String = e.target.result;
+            preview.src = base64String;
+            base64Output.value = base64String;
+            resultSection.style.display = 'block';
+            dropZone.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function copyText() {
+        base64Output.select();
+        document.execCommand('copy');
+        alert('已复制到剪贴板！');
+    }
+
+    function reset() {
+        resultSection.style.display = 'none';
+        dropZone.style.display = 'block';
+        fileInput.value = '';
+        base64Output.value = '';
+    }
+</script>
+
+</body>
+</html>
