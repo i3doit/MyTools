@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极速图片转 Base64 优化版</title>
+    <style>
+        :root { --p: #007AFF; --bg: #f2f2f7; --card: #ffffff; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #1d1d1f; }
+        .wrapper { max-width: 900px; margin: 0 auto; background: var(--card); padding: 40px; border-radius: 18px; shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        
+        /* 导航区 */
+        nav { margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        nav a { color: var(--p); text-decoration: none; margin-right: 20px; font-weight: 500; font-size: 14px; }
+
+        .drop-box { border: 2px dashed #d2d2d7; border-radius: 12px; padding: 60px 20px; text-align: center; cursor: pointer; transition: all 0.3s; background: #fafafa; }
+        .drop-box:hover { border-color: var(--p); background: #f0f7ff; }
+        
+        .result-area { display: none; margin-top: 30px; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .preview-container { text-align: center; margin-bottom: 20px; }
+        #previewImg { max-width: 200px; border-radius: 8px; border: 1px solid #ddd; }
+
+        .info-bar { font-size: 13px; color: #86868b; margin-bottom: 8px; display: flex; justify-content: space-between; }
+        
+        textarea { width: 100%; height: 180px; border: 1px solid #d2d2d7; border-radius: 10px; padding: 12px; font-family: 'Courier New', monospace; font-size: 12px; box-sizing: border-box; background: #f9f9fb; }
+
+        .btns { margin-top: 20px; display: flex; gap: 12px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-copy { background: var(--p); color: white; }
+        .btn-copy:active { transform: scale(0.98); }
+        .btn-reset { background: #e5e5ea; color: #1d1d1f; }
+
+        .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #e1f0ff; color: var(--p); font-size: 12px; margin-left: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <nav>
+        <a href="#">常用工具</a>
+        <a href="#">开发文档</a>
+        <a href="https://github.com" target="_blank">项目仓库</a>
+    </nav>
+
+    <div style="margin-bottom: 30px;">
+        <h2 style="margin:0 0 10px 0;">图片转 Base64 <span class="tag">已启用智能压缩</span></h2>
+        <p style="color: #86868b; margin: 0;">自动优化大图尺寸，生成更短、更轻量的内置代码。</p>
+    </div>
+
+    <div class="drop-box" id="dropZone">
+        <p style="font-size: 18px; margin: 0;">拖拽图片至此 或 <strong>点击上传</strong></p>
+        <p style="font-size: 13px; color: #86868b; margin-top: 8px;">支持 JPG, PNG, WebP</p>
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+    </div>
+
+    <div class="result-area" id="resultArea">
+        <div class="preview-container">
+            <img id="previewImg">
+        </div>
+
+        <div class="info-bar">
+            <span>Base64 字符串 (已优化)</span>
+            <span id="charCount">长度：0 字符</span>
+        </div>
+        <textarea id="outputField"></textarea>
+
+        <div class="btns">
+            <button class="btn-copy" onclick="copyCode()">复制 Base64 代码</button>
+            <button class="btn-reset" onclick="location.reload()">重新上传</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const resultArea = document.getElementById('resultArea');
+    const outputField = document.getElementById('outputField');
+    const previewImg = document.getElementById('previewImg');
+    const charCount = document.getElementById('charCount');
+
+    dropZone.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => processFile(e.target.files[0]);
+
+    function processFile(file) {
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                // --- 深度优化逻辑 ---
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // 如果图片宽度超过1200px，进行等比缩小
+                const maxWidth = 1200;
+                if (width > maxWidth) {
+                    height = (maxWidth / width) * height;
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // 重点：使用 image/jpeg 并设置 0.7 的压缩质量
+                // 这能让 Base64 字符串长度缩减 50% - 80%
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                
+                // 显示结果
+                previewImg.src = compressedBase64;
+                outputField.value = compressedBase64;
+                charCount.innerText = `长度：${compressedBase64.length.toLocaleString()} 字符`;
+                
+                dropZone.style.display = 'none';
+                resultArea.style.display = 'block';
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function copyCode() {
+        outputField.select();
+        document.execCommand('copy');
+        const btn = document.querySelector('.btn-copy');
+        btn.innerText = '√ 已复制';
+        setTimeout(() => btn.innerText = '复制 Base64 代码', 2000);
+    }
+
+    // 拖拽支持
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.background = '#f0f7ff'; };
+    dropZone.ondragleave = () => { dropZone.style.background = '#fafafa'; };
+    dropZone.ondrop = (e) => { e.preventDefault(); processFile(e.dataTransfer.files[0]); };
+</script>
+
+</body>
+</html>
