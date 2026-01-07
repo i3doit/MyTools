@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sticker Designer - Pro Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'SF Pro Display', 'Noto Sans SC', -apple-system, sans-serif;
+            background-color: #fbfbfd;
+            color: #1d1d1f;
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+            min-height: screen;
+        }
+
+        /* 画布预览区 */
+        .preview-zone {
+            background-image: radial-gradient(#d2d2d7 0.8px, #fbfbfd 0.8px);
+            background-size: 30px 30px;
+            border-radius: 32px;
+            touch-action: none;
+        }
+
+        #floatingInput {
+            display: none;
+            position: absolute;
+            z-index: 100;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            border: 1px solid #d2d2d7;
+            padding: 15px;
+            width: 280px;
+        }
+
+        .apple-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 严格复刻底栏样式 */
+        .footer-container {
+            border-top: 1px solid #e5e5e5;
+            padding: 40px 0;
+            margin-top: 80px;
+        }
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            color: #86868b;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+        @media (min-width: 768px) {
+            .footer-content { flex-direction: row; gap: 30px; }
+        }
+        .footer-link { color: #86868b; text-decoration: none; transition: color 0.3s; }
+        .footer-link:hover { color: #1d1d1f; }
+
+        .btn-action { transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-action:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <input type="file" id="avatarUpload" class="hidden" accept="image/*" onchange="handleAvatarUpload(event)">
+
+    <div id="unlockModal" class="apple-modal">
+        <div class="bg-white w-[90%] max-w-sm rounded-[30px] p-8 text-center shadow-2xl mx-4">
+            <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">🔑</div>
+            <h2 class="text-xl font-bold mb-2">解锁高级功能</h2>
+            <p class="text-gray-400 text-sm mb-6 leading-relaxed">
+                该功能需验证权限<br>
+                微信号 <span class="text-blue-600 font-bold">857023577</span> 已自动复制<br>
+                请添加微信联系作者获取解锁码
+            </p>
+            <input type="text" id="unlockInput" class="w-full px-4 py-4 bg-gray-100 rounded-2xl mb-4 text-center text-lg font-bold outline-none border-2 border-transparent focus:border-blue-500 transition-all" placeholder="输入解锁码">
+            <div class="flex gap-4">
+                <button onclick="closeModal()" class="flex-1 py-4 text-gray-400 font-medium">取消</button>
+                <button onclick="confirmUnlock()" class="flex-1 py-4 bg-black text-white rounded-2xl font-bold btn-action">验证解锁</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="max-w-6xl mx-auto w-full px-6 pt-12 pb-8 text-center">
+        <h1 class="text-3xl md:text-5xl font-bold tracking-tight mb-3">表情包工作室 <span class="text-blue-500">Pro</span></h1>
+        <p class="text-gray-400 text-base md:text-lg font-medium">点击元素直接编辑，自由拖拽生成个性气泡</p>
+    </header>
+
+    <section class="w-full flex-grow flex flex-col items-center justify-center p-4 relative">
+        <div class="relative preview-zone p-2 md:p-10 shadow-sm border border-gray-100">
+            <canvas id="mainCanvas" width="800" height="400" class="max-w-full h-auto"></canvas>
+            
+            <div id="floatingInput">
+                <textarea id="tempText" class="w-full p-4 text-sm bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-blue-400 outline-none" rows="3"></textarea>
+                <div class="flex justify-between items-center mt-3">
+                    <span class="text-[9px] text-gray-400 font-bold tracking-widest uppercase">Content Edit</span>
+                    <button onclick="saveFloatingText()" class="bg-black text-white px-6 py-2 rounded-full text-xs font-bold btn-action">确定</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <button onclick="downloadImage()" class="btn-action bg-black text-white px-14 py-4 rounded-full font-bold shadow-2xl hover:bg-zinc-900">导出保存</button>
+        </div>
+    </section>
+
+    <section class="max-w-6xl mx-auto w-full px-6 py-12 space-y-12">
+        <div class="bg-white border border-gray-100 p-8 rounded-[32px] shadow-sm flex flex-col md:flex-row items-center justify-between gap-10">
+            <div class="flex flex-col gap-4 w-full md:w-auto">
+                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center md:text-left">Style Palette / 配色</h3>
+                <div class="flex items-center justify-center gap-4">
+                    <button onclick="updateColor('#07C160')" class="w-10 h-10 rounded-full bg-[#07C160] border-4 border-white shadow-md transform hover:scale-110 transition"></button>
+                    <button onclick="updateColor('#10aeff')" class="w-10 h-10 rounded-full bg-[#10aeff] border-4 border-white shadow-md transform hover:scale-110 transition"></button>
+                    <button onclick="updateColor('#333333')" class="w-10 h-10 rounded-full bg-[#333333] border-4 border-white shadow-md transform hover:scale-110 transition"></button>
+                    <div class="w-px h-8 bg-gray-200 mx-2"></div>
+                    <div class="relative" onclick="handleColorLock(event)">
+                        <input type="color" oninput="updateColor(this.value)" class="w-10 h-10 border-none bg-transparent cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-4 w-full md:w-auto">
+                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center md:text-left">Features / 高级</h3>
+                <div class="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="badgeToggle" onchange="handleBadgeRequest(this)" class="w-5 h-5 accent-black">
+                        <span class="text-sm font-bold">挂件</span>
+                    </div>
+                    <div id="badgeEditArea" class="hidden">
+                        <input type="text" id="badgeText" maxlength="4" value="IDO" class="w-24 bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold uppercase outline-none" oninput="refreshBadge()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-gray-50 p-6 rounded-2xl text-center">
+                <span class="text-blue-500 font-bold block mb-2 uppercase text-[10px] tracking-widest">Step 01</span>
+                <p class="text-sm text-gray-600 font-medium">点击文字区域修改对话文案</p>
+            </div>
+            <div class="bg-gray-50 p-6 rounded-2xl text-center">
+                <span class="text-blue-500 font-bold block mb-2 uppercase text-[10px] tracking-widest">Step 02</span>
+                <p class="text-sm text-gray-600 font-medium">点击头像区域上传自定义图片</p>
+            </div>
+            <div class="bg-gray-50 p-6 rounded-2xl text-center">
+                <span class="text-blue-500 font-bold block mb-2 uppercase text-[10px] tracking-widest">Step 03</span>
+                <p class="text-sm text-gray-600 font-medium">按住气泡拖动位置，满意后导出</p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer-container">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="footer-content">
+                <a href="https://i3doit.github.io/MyTools/" class="footer-link">More Tools</a>
+                <span class="hidden md:inline">|</span>
+                <p>DESIGNED AND DEVELOPED BY I DO IT</p>
+                <span class="hidden md:inline">|</span>
+                <p>© 2024-2026 ALL RIGHTS RESERVED.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const UNLOCK_CODE = "857023577";
+        const AUTHOR_WECHAT = "857023577";
+        let isUnlocked = false;
+
+        let state = {
+            text: "艾兜兜儿\n857023577",
+            bgColor: '#07C160',
+            avatar: null,
+            badge: "IDO",
+            showBadge: false,
+            textPos: { x: 120, y: 140 },
+            dragging: false,
+            dragOffset: { x: 0, y: 0 },
+            avatarRenderRect: { x: 0, y: 0, w: 0, h: 0 },
+            clickStartTime: 0
+        };
+
+        window.onload = () => {
+            initAvatar();
+            setupInteractions();
+        };
+
+        function initAvatar() {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = "https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg!1";
+            img.onload = () => { state.avatar = img; draw(); };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const fontSize = 34;
+            const lineHeight = fontSize * 1.35;
+            ctx.font = `bold ${fontSize}px 'Noto Sans SC'`;
+
+            const lines = state.text.split('\n');
+            let maxW = 0;
+            lines.forEach(l => {
+                const w = ctx.measureText(l).width;
+                if(w > maxW) maxW = w;
+            });
+
+            const avatarSize = 110;
+            const padding = 40;
+            const avatarMargin = 35;
+            const bW = maxW + avatarSize + avatarMargin + (padding * 2);
+            const bH = Math.max(avatarSize + padding, (lines.length * lineHeight) + padding * 1.5);
+
+            const bx = state.textPos.x - padding;
+            const by = state.textPos.y - fontSize - 10;
+
+            // 气泡
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.06)';
+            ctx.shadowBlur = 40;
+            ctx.fillStyle = state.bgColor;
+            drawRoundRect(ctx, bx, by, bW, bH, 32);
+            ctx.beginPath();
+            ctx.moveTo(bx + 60, by + bH);
+            ctx.lineTo(bx + 45, by + bH + 16);
+            ctx.lineTo(bx + 90, by + bH);
+            ctx.fill();
+            ctx.restore();
+
+            // 文字
+            ctx.fillStyle = "#FFFFFF";
+            ctx.textBaseline = 'top';
+            lines.forEach((l, i) => {
+                ctx.fillText(l, state.textPos.x, state.textPos.y + (i * lineHeight) - fontSize/2);
+            });
+
+            // 头像内嵌
+            if(state.avatar) {
+                const ax = bx + bW - avatarSize - 25;
+                const ay = by + (bH - avatarSize) / 2;
+                state.avatarRenderRect = { x: ax, y: ay, w: avatarSize, h: avatarSize };
+                
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(ax + avatarSize/2, ay + avatarSize/2, avatarSize/2, 0, Math.PI*2);
+                ctx.clip();
+                ctx.drawImage(state.avatar, ax, ay, avatarSize, avatarSize);
+                ctx.restore();
+
+                if(state.showBadge) {
+                    ctx.save();
+                    ctx.fillStyle = "white";
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = 'rgba(0,0,0,0.1)';
+                    ctx.beginPath();
+                    ctx.arc(ax + avatarSize - 12, ay + 12, 24, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.fillStyle = "#1d1d1f";
+                    ctx.font = "bold 11px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillText(state.badge.toUpperCase(), ax + avatarSize - 12, ay + 10);
+                    ctx.restore();
+                }
+            }
+        }
+
+        // 交互判定：核心修复
+        function setupInteractions() {
+            const getCanvasPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: (clientX - rect.left) * (canvas.width / rect.width),
+                    y: (clientY - rect.top) * (canvas.height / rect.height),
+                    rawX: clientX,
+                    rawY: clientY
+                };
+            };
+
+            const onStart = (e) => {
+                const p = getCanvasPos(e);
+                state.clickStartTime = Date.now();
+                
+                // 碰撞检测
+                const isAvatar = (p.x > state.avatarRenderRect.x && p.x < state.avatarRenderRect.x + state.avatarRenderRect.w &&
+                                  p.y > state.avatarRenderRect.y && p.y < state.avatarRenderRect.y + state.avatarRenderRect.h);
+                
+                const isText = (p.x > state.textPos.x - 20 && p.x < state.textPos.x + 300 &&
+                                p.y > state.textPos.y - 20 && p.y < state.textPos.y + 100);
+
+                // 先标记为拖拽准备，但在 Move 中才会正式开启
+                state.dragging = true;
+                state.dragOffset = { x: p.x - state.textPos.x, y: p.y - state.textPos.y };
+                state.lastPos = p;
+            };
+
+            const onMove = (e) => {
+                if (!state.dragging) return;
+                const p = getCanvasPos(e);
+                state.textPos = { x: p.x - state.dragOffset.x, y: p.y - state.dragOffset.y };
+                draw();
+            };
+
+            const onEnd = (e) => {
+                const p = state.lastPos;
+                const duration = Date.now() - state.clickStartTime;
+                
+                // 如果是快速点击且没怎么位移
+                if (duration < 250) {
+                    const av = state.avatarRenderRect;
+                    if(p.x > av.x && p.x < av.x + av.w && p.y > av.y && p.y < av.y + av.h) {
+                        document.getElementById('avatarUpload').click();
+                    } else if(p.x > state.textPos.x - 20 && p.x < state.textPos.x + 300) {
+                        showEditor(p.rawX, p.rawY);
+                    }
+                }
+                state.dragging = false;
+            };
+
+            canvas.addEventListener('mousedown', onStart);
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onEnd);
+            
+            canvas.addEventListener('touchstart', (e) => { onStart(e); e.preventDefault(); }, {passive: false});
+            window.addEventListener('touchmove', onMove, {passive: false});
+            window.addEventListener('touchend', onEnd);
+        }
+
+        function showEditor(x, y) {
+            const el = document.getElementById('floatingInput');
+            el.style.display = 'block';
+            el.style.left = `${Math.min(window.innerWidth - 300, x)}px`;
+            el.style.top = `${y}px`;
+            document.getElementById('tempText').value = state.text;
+            document.getElementById('tempText').focus();
+        }
+
+        function saveFloatingText() {
+            state.text = document.getElementById('tempText').value;
+            document.getElementById('floatingInput').style.display = 'none';
+            draw();
+        }
+
+        function handleAvatarUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => { state.avatar = img; draw(); };
+                img.src = ev.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function handleBadgeRequest(cb) {
+            if (!isUnlocked) {
+                cb.checked = false;
+                triggerUnlock();
+            } else {
+                state.showBadge = cb.checked;
+                document.getElementById('badgeEditArea').style.display = cb.checked ? 'block' : 'none';
+                draw();
+            }
+        }
+
+        function handleColorLock(e) {
+            if (!isUnlocked) {
+                e.preventDefault();
+                triggerUnlock();
+            }
+        }
+
+        function triggerUnlock() {
+            navigator.clipboard.writeText(AUTHOR_WECHAT).then(() => {
+                document.getElementById('unlockModal').style.display = 'flex';
+            });
+        }
+
+        function confirmUnlock() {
+            if (document.getElementById('unlockInput').value === UNLOCK_CODE) {
+                isUnlocked = true;
+                document.getElementById('badgeToggle').checked = true;
+                document.getElementById('badgeEditArea').style.display = 'block';
+                state.showBadge = true;
+                closeModal();
+                draw();
+            } else { alert("解锁码不正确"); }
+        }
+
+        function closeModal() { document.getElementById('unlockModal').style.display = 'none'; }
+        
+        function updateColor(c) {
+            if (isUnlocked || ['#07C160', '#10aeff', '#333333'].includes(c.toLowerCase())) {
+                state.bgColor = c;
+                draw();
+            }
+        }
+
+        function drawRoundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.fill();
+        }
+
+        function refreshBadge() {
+            state.badge = document.getElementById('badgeText').value || "IDO";
+            draw();
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = `sticker-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+        }
+    </script>
+</body>
+</html>
