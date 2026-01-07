@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatSticker Designer - 极简聊天表情包设计器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'SF Pro Display', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+        }
+
+        .apple-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+        }
+
+        #preview-container {
+            background-image: radial-gradient(#d2d2d7 0.5px, #f5f5f7 0.5px);
+            background-size: 20px 20px;
+        }
+
+        .control-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+        .control-panel::-webkit-scrollbar-thumb {
+            background: #d2d2d7;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-10">
+
+    <main class="max-w-5xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold tracking-tight">表情包设计器</h1>
+            <p class="text-gray-500 mt-2">自定义你的专属聊天气泡</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-1 space-y-6 control-panel max-h-[80vh] overflow-y-auto pr-2">
+                
+                <section class="apple-card p-6">
+                    <h3 class="text-sm font-semibold mb-4 text-gray-400 uppercase">1. 样式与颜色</h3>
+                    <div class="flex flex-wrap gap-3 mb-4">
+                        <button onclick="updateColor('#07C160')" class="w-8 h-8 rounded-full border-2 border-white shadow-sm" style="background-color: #07C160;"></button>
+                        <button onclick="updateColor('#10aeff')" class="w-8 h-8 rounded-full border-2 border-white shadow-sm" style="background-color: #10aeff;"></button>
+                        <button onclick="updateColor('#ff5050')" class="w-8 h-8 rounded-full border-2 border-white shadow-sm" style="background-color: #ff5050;"></button>
+                        <button onclick="updateColor('#000000')" class="w-8 h-8 rounded-full border-2 border-white shadow-sm" style="background-color: #000000;"></button>
+                        <input type="color" id="colorPicker" oninput="updateColor(this.value)" class="w-8 h-8 rounded-full cursor-pointer">
+                    </div>
+                </section>
+
+                <section class="apple-card p-6">
+                    <h3 class="text-sm font-semibold mb-4 text-gray-400 uppercase">2. 文案设定</h3>
+                    <input type="text" id="bubbleText" maxlength="12" placeholder="输入文案 (12字以内)" 
+                        class="w-full px-4 py-3 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all mb-4"
+                        oninput="draw()">
+                    
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs text-gray-400 w-full mb-1">热门推荐:</span>
+                        <button onclick="setText('欢迎加入')" class="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition">欢迎加入</button>
+                        <button onclick="setText('赚小钱')" class="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition">赚小钱</button>
+                        <button onclick="setText('给力')" class="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition">给力</button>
+                        <button onclick="setText('优秀')" class="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition">优秀</button>
+                    </div>
+                </section>
+
+                <section class="apple-card p-6">
+                    <h3 class="text-sm font-semibold mb-4 text-gray-400 uppercase">3. 头像上传</h3>
+                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <p class="text-sm text-gray-500">点击上传头像图片</p>
+                        </div>
+                        <input id="avatarInput" type="file" class="hidden" accept="image/*" onchange="handleImage(event)" />
+                    </label>
+                </section>
+
+                <button onclick="downloadImg()" class="w-full py-4 bg-black text-white rounded-2xl font-bold hover:opacity-90 transition shadow-lg">
+                    下载表情包
+                </button>
+            </div>
+
+            <div class="lg:col-span-2 flex flex-col gap-6">
+                <div id="preview-container" class="apple-card flex-grow flex items-center justify-center min-h-[400px] overflow-hidden relative">
+                    <canvas id="mainCanvas" width="800" height="400" class="max-w-full h-auto cursor-move"></canvas>
+                    <p class="absolute bottom-4 text-xs text-gray-400">提示：文案与头像可在画布上拖动 (模拟功能)</p>
+                </div>
+
+                <div class="apple-card p-6">
+                    <h3 class="text-sm font-semibold mb-4 text-gray-400 uppercase">最近创作</h3>
+                    <div id="historyList" class="flex gap-4 overflow-x-auto pb-2">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-20 py-10 border-t border-gray-200 text-center">
+            <div class="flex justify-center space-x-6 mb-4 text-sm font-medium text-gray-500">
+                <a href="#" class="hover:text-black transition">About</a>
+                <a href="#" class="hover:text-black transition">Privacy</a>
+                <a href="https://i3doit.github.io/MyTools/" class="hover:text-black transition">More Tools</a>
+            </div>
+            <p class="text-xs text-gray-400 uppercase tracking-widest">© 2024 I DO IT. ALL RIGHTS RESERVED.</p>
+        </footer>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        let config = {
+            text: '欢迎加入 IP合伙人',
+            bgColor: '#07C160',
+            avatar: null,
+            fontSize: 40,
+            textColor: '#FFFFFF'
+        };
+
+        // 初始化
+        window.onload = () => {
+            loadHistory();
+            draw();
+        };
+
+        function setText(val) {
+            document.getElementById('bubbleText').value = val;
+            config.text = val;
+            draw();
+        }
+
+        function updateColor(val) {
+            config.bgColor = val;
+            draw();
+        }
+
+        function handleImage(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    config.avatar = img;
+                    draw();
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function draw() {
+            config.text = document.getElementById('bubbleText').value || "在这里输入内容";
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const textWidth = ctx.measureText(config.text).width;
+            const bubbleWidth = Math.max(200, textWidth + 180);
+            const bubbleHeight = 120;
+            const x = (canvas.width - bubbleWidth) / 2;
+            const y = (canvas.height - bubbleHeight) / 2;
+
+            // 绘制气泡阴影效果
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'rgba(0,0,0,0.1)';
+            
+            // 绘制圆角矩形气泡
+            ctx.fillStyle = config.bgColor;
+            fillRoundRect(ctx, x, y, bubbleWidth, bubbleHeight, 20);
+            
+            // 绘制气泡小尾巴
+            ctx.beginPath();
+            ctx.moveTo(x + 40, y + bubbleHeight);
+            ctx.lineTo(x + 30, y + bubbleHeight + 20);
+            ctx.lineTo(x + 60, y + bubbleHeight);
+            ctx.fill();
+
+            // 绘制文字
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = config.textColor;
+            ctx.font = "bold 36px 'Noto Sans SC'";
+            ctx.fillText(config.text, x + 40, y + 70);
+
+            // 绘制头像 (模拟自动扣图 - 使用圆形裁剪)
+            if (config.avatar) {
+                const avatarSize = 100;
+                const ax = x + bubbleWidth - 110;
+                const ay = y + 10;
+                
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(ax + 50, ay + 50, 45, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(config.avatar, ax, ay, avatarSize, avatarSize);
+                ctx.restore();
+
+                // 绘制对话框装饰 (I DO)
+                ctx.fillStyle = "white";
+                ctx.beginPath();
+                ctx.arc(ax + 85, ay + 20, 18, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "black";
+                ctx.font = "bold 12px Arial";
+                ctx.fillText("I DO", ax + 73, ay + 25);
+            }
+        }
+
+        /**
+         * 绘制圆角矩形
+         */
+        function fillRoundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function downloadImg() {
+            const link = document.createElement('a');
+            link.download = `sticker-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            saveToHistory(link.href);
+        }
+
+        // 本地存储功能
+        function saveToHistory(dataUrl) {
+            let history = JSON.parse(localStorage.getItem('stickerHistory') || '[]');
+            history.unshift({ img: dataUrl, text: config.text, color: config.bgColor });
+            if(history.length > 5) history.pop();
+            localStorage.setItem('stickerHistory', JSON.stringify(history));
+            loadHistory();
+        }
+
+        function loadHistory() {
+            const list = document.getElementById('historyList');
+            const history = JSON.parse(localStorage.getItem('stickerHistory') || '[]');
+            list.innerHTML = history.length ? '' : '<p class="text-gray-300 text-xs">暂无历史记录</p>';
+            
+            history.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "min-w-[120px] h-20 bg-gray-50 rounded-lg overflow-hidden cursor-pointer border border-gray-100 hover:border-blue-400 transition shadow-sm";
+                div.innerHTML = `<img src="${item.img}" class="w-full h-full object-contain">`;
+                div.onclick = () => {
+                    document.getElementById('bubbleText').value = item.text;
+                    config.bgColor = item.color;
+                    draw();
+                };
+                list.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
