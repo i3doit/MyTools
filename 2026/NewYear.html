@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>元旦科技倒计时 · 智能分享版</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --tech-blue: #0071e3;
+            --tech-cyan: #5ffbf1;
+            --glass: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: #000; color: #fff; 
+            font-family: -apple-system, "SF Pro Display", "PingFang SC", sans-serif;
+            overflow: hidden;
+        }
+
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at center, #001220 0%, #000 100%); }
+        .container { max-width: 500px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; padding: 20px; position: relative; }
+        
+        .view-section { display: none; width: 100%; animation: pageIn 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        .view-section.active { display: block; }
+        @keyframes pageIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        /* 倒计时样式 */
+        .countdown-header { text-align: center; margin-top: 40px; }
+        .year-text { 
+            font-size: 5rem; font-weight: 800; line-height: 1; margin: 0;
+            background: linear-gradient(180deg, #fff 30%, var(--tech-blue));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(0, 113, 227, 0.4));
+        }
+        .timer-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 50px 0; }
+        .timer-card { background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(15px); border-radius: 16px; padding: 15px 5px; text-align: center; }
+        .timer-val { font-size: 1.8rem; font-weight: 700; color: #fff; display: block; font-family: monospace; }
+        .timer-label { font-size: 0.65rem; color: #888; text-transform: uppercase; margin-top: 5px; }
+
+        /* 祝福弹窗 */
+        #wish-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-content { background: #1a1a1a; border: 1px solid var(--tech-cyan); border-radius: 24px; padding: 30px; width: 100%; max-width: 400px; text-align: center; }
+
+        /* 通用组件 */
+        .glass-panel { background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(20px); border-radius: 24px; padding: 25px; margin-bottom: 25px; }
+        .btn { width: 100%; padding: 16px; border-radius: 15px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-primary { background: var(--tech-blue); color: #fff; }
+        .btn-outline { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; text-decoration: none; }
+        
+        #capture-zone { padding: 30px; border-radius: 24px; background: linear-gradient(145deg, #0a0a0a, #1a1a1a); border: 1px solid #333; }
+        .u-avatar { width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--tech-cyan); object-fit: cover; }
+        #qrcode-canvas { background: #fff; padding: 8px; border-radius: 10px; }
+        
+        .footer { text-align: center; margin-top: auto; padding: 30px 0; font-size: 12px; color: #555; }
+    </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div id="wish-modal">
+    <div class="modal-content">
+        <img id="visitor-avatar" src="" class="u-avatar" style="margin-bottom:15px; display:none;">
+        <h2 id="visitor-title" style="color:var(--tech-cyan); margin-top:0;">收到一份祝福</h2>
+        <p id="visitor-msg" style="line-height:1.6; color:#eee; margin:20px 0;"></p>
+        <button class="btn btn-primary" onclick="closeModal()">进入系统</button>
+    </div>
+</div>
+
+<div class="container">
+    <div id="page-timer" class="view-section">
+        <div id="countdown-wrapper">
+            <div class="countdown-header">
+                <p style="letter-spacing: 5px; color: var(--tech-cyan); font-size: 12px;">SYSTEM INITIALIZING</p>
+                <h1 class="year-text" id="dynamic-year">----</h1>
+                <p style="font-size: 1.2rem; font-weight: 300; color: #888;">距离 <span id="zodiac-text">新年</span> 还有</p>
+            </div>
+            <div class="timer-container">
+                <div class="timer-card"><span class="timer-val" id="d">00</span><span class="timer-label">Days</span></div>
+                <div class="timer-card"><span class="timer-val" id="h">00</span><span class="timer-label">Hrs</span></div>
+                <div class="timer-card"><span class="timer-val" id="m">00</span><span class="timer-label">Min</span></div>
+                <div class="timer-card"><span class="timer-val" id="s">00</span><span class="timer-label">Sec</span></div>
+            </div>
+        </div>
+
+        <div id="celebrate-box" style="display:none; text-align:center; padding:40px 0;">
+            <h1 style="font-size:3rem; color:var(--tech-cyan);">元旦快乐!</h1>
+            <p>Happy New Year <span id="current-year-display"></span></p>
+        </div>
+
+        <div class="glass-panel" style="text-align: center;">
+            <button class="btn btn-primary" onclick="goEdit()">制作我的 <span id="btn-year"></span> 祝福卡</button>
+            <a href="https://t.zsxq.com/Dzgm0" class="btn btn-outline">🎁 领取新年福利</a>
+        </div>
+    </div>
+
+    <div id="page-edit" class="view-section">
+        <div class="glass-panel">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <input type="file" id="up-avatar" hidden accept="image/*" onchange="handleAvatar(this)">
+                <img id="edit-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Lucky" class="u-avatar" onclick="document.getElementById('up-avatar').click()" style="cursor:pointer; border-style:dashed;">
+                <div style="flex:1">
+                    <label style="font-size:12px;color:#aaa">发射昵称</label>
+                    <input type="text" id="in-nick" value="艾兜兜儿" oninput="sync()">
+                </div>
+            </div>
+            <div class="input-item">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <label style="font-size:12px;color:#aaa">祝福语</label>
+                    <span style="font-size:12px; color:var(--tech-cyan); cursor:pointer;" onclick="randomWish()">🎲 随机语</span>
+                </div>
+                <textarea id="in-msg" rows="3" oninput="sync()" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); border-radius:12px; color:#fff; padding:12px; outline:none;"></textarea>
+            </div>
+        </div>
+
+        <div id="capture-zone">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <img id="pre-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Lucky" class="u-avatar">
+                <div><p id="pre-nick" style="margin:0; font-weight:600; color:var(--tech-cyan);"></p><p style="margin:0; font-size:12px; color:#777;">正在分享新年好运 ✨</p></div>
+            </div>
+            <div id="pre-msg" style="font-size:16px; line-height:1.7; color:#eee; min-height:60px;"></div>
+            <div style="margin-top:20px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; align-items:center;">
+                <div id="qrcode-canvas"></div>
+                <p style="font-size:10px; color:#555; margin-top:10px;">扫码制作同款倒计时</p>
+            </div>
+        </div>
+
+        <div style="margin-top:20px;">
+            <button class="btn btn-primary" onclick="copyLink()">🔗 复制分享链接</button>
+            <button class="btn btn-outline" onclick="downloadImg()">📸 保存分享卡片图片</button>
+            <button class="btn btn-outline" onclick="location.reload()" style="background:none; border:none; font-size:14px; color:#888;">返回倒计时</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        © <span id="footer-year"></span> Powered by <a href="#" style="color:var(--tech-cyan); text-decoration:none;">艾兜兜儿</a>
+    </div>
+</div>
+
+<script>
+    // --- 逻辑初始化 ---
+    const now = new Date();
+    const isNewYearDay = (now.getMonth() === 0 && now.getDate() === 1);
+    const currentYear = now.getFullYear();
+    const targetYear = isNewYearDay ? currentYear : currentYear + 1;
+    const targetDate = new Date(targetYear, 0, 1, 0, 0, 0);
+
+    function getZodiac(year) {
+        const animals = ['猴', '鸡', '狗', '猪', '鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊'];
+        const gan = ['庚', '辛', '壬', '癸', '甲', '乙', '丙', '丁', '戊', '己'];
+        const zhi = ['申', '酉', '戌', '亥', '子', '丑', '寅', '卯', '辰', '巳', '午', '未'];
+        return `${gan[year%10]}${zhi[year%12]}${animals[year%12]}年`;
+    }
+
+    // --- 访客模式检测 ---
+    function checkVisitor() {
+        const params = new URLSearchParams(window.location.search);
+        const n = params.get('n');
+        const m = params.get('m');
+        if (n || m) {
+            document.getElementById('wish-modal').style.display = 'flex';
+            document.getElementById('visitor-title').innerText = `来自 ${n || '朋友'} 的祝福`;
+            document.getElementById('visitor-msg').innerText = m || '祝你新年快乐，万事如意！';
+            // 同步到编辑区，方便访客保存图片
+            document.getElementById('in-nick').value = n || '朋友';
+            document.getElementById('in-msg').value = m || '元旦快乐';
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('wish-modal').style.display = 'none';
+        show('page-timer');
+    }
+
+    // --- 核心功能 ---
+    function show(id) {
+        document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function goEdit() {
+        show('page-edit');
+        if(!document.getElementById('in-msg').value) randomWish();
+        sync();
+    }
+
+    function sync() {
+        document.getElementById('pre-nick').innerText = document.getElementById('in-nick').value;
+        document.getElementById('pre-msg').innerText = document.getElementById('in-msg').value;
+        const nick = encodeURIComponent(document.getElementById('in-nick').value);
+        const msg = encodeURIComponent(document.getElementById('in-msg').value);
+        const url = window.location.origin + window.location.pathname + `?n=${nick}&m=${msg}`;
+        
+        const qr = document.getElementById('qrcode-canvas');
+        qr.innerHTML = '';
+        new QRCode(qr, { text: url, width: 100, height: 100 });
+    }
+
+    function randomWish() {
+        const info = getZodiac(targetYear);
+        const wishes = [
+            `愿你在${targetYear}年，跨越星辰大海，万事如意！✨`,
+            `新年快乐！愿${info}带给你无限好运与惊喜。`,
+            `2026元旦快乐！所有的美好都会如期而至。🧧`
+        ];
+        document.getElementById('in-msg').value = wishes[Math.floor(Math.random()*wishes.length)];
+        sync();
+    }
+
+    function copyLink() {
+        const nick = encodeURIComponent(document.getElementById('in-nick').value);
+        const msg = encodeURIComponent(document.getElementById('in-msg').value);
+        const url = window.location.origin + window.location.pathname + `?n=${nick}&m=${msg}`;
+        navigator.clipboard.writeText(`✨ 送你一份元旦祝福：\n"${document.getElementById('in-msg').value}"\n查看详情：${url}`).then(() => alert("链接已复制，去发给朋友吧！"));
+    }
+
+    function downloadImg() {
+        const zone = document.getElementById('capture-zone');
+        html2canvas(zone, { scale: 3, backgroundColor: "#000", useCORS: true }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `NewYear-Blessing.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    }
+
+    function handleAvatar(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('edit-avatar').src = e.target.result;
+                document.getElementById('pre-avatar').src = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // --- 倒计时逻辑 ---
+    function initTimer() {
+        document.getElementById('footer-year').innerText = currentYear;
+        document.getElementById('btn-year').innerText = targetYear;
+        
+        if (isNewYearDay) {
+            document.getElementById('countdown-wrapper').style.display = 'none';
+            document.getElementById('celebrate-box').style.display = 'block';
+            document.getElementById('current-year-display').innerText = currentYear;
+        } else {
+            document.getElementById('dynamic-year').innerText = targetYear;
+            document.getElementById('zodiac-text').innerText = getZodiac(targetYear);
+            const up = () => {
+                const diff = targetDate - new Date();
+                if (diff <= 0) { location.reload(); return; }
+                document.getElementById('d').innerText = Math.floor(diff/86400000).toString().padStart(2,'0');
+                document.getElementById('h').innerText = Math.floor((diff%86400000)/3600000).toString().padStart(2,'0');
+                document.getElementById('m').innerText = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
+                document.getElementById('s').innerText = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
+            };
+            up(); setInterval(up, 1000);
+        }
+    }
+
+    // --- 星空背景 ---
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    function initBg() {
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const stars = Array.from({length: 150}, () => ({x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.5}));
+        function animate() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = "rgba(255,255,255,0.5)";
+            stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+    }
+
+    window.onload = () => {
+        initBg();
+        initTimer();
+        checkVisitor();
+        if(!window.location.search) show('page-timer');
+    };
+</script>
+</body>
+</html>
