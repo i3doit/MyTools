@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>潮酷少女：音浪日常 - 表情包适配器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .canvas-container { background-image: radial-gradient(#d2d2d7 0.5px, transparent 0.5px); background-size: 20px 20px; }
+        .spec-label { font-size: 10px; font-weight: bold; color: #86868b; text-transform: uppercase; letter-spacing: 0.1em; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">音浪日常 · 表情包适配工具</h1>
+            <p class="text-gray-500">根据微信 240×240 规范自动生成全套尺寸素材</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="spec-label">Preview & Edit / 编辑预览</span>
+                        <div class="flex gap-2">
+                            <button onclick="document.getElementById('avatarInput').click()" class="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-bold">更换IP头像</button>
+                            <input type="file" id="avatarInput" class="hidden" accept="image/png" onchange="handleImage(event)">
+                        </div>
+                    </div>
+
+                    <div class="canvas-container relative flex justify-center items-center py-20 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200">
+                        <canvas id="mainCanvas" width="240" height="240" class="shadow-2xl bg-transparent"></canvas>
+                        <p class="absolute bottom-4 text-[10px] text-gray-400">Main Sticker (240x240 PNG)</p>
+                    </div>
+
+                    <div class="mt-8 grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="spec-label block mb-2">表情文案</label>
+                            <input type="text" id="stickerText" value="优秀！" oninput="draw()" class="w-full px-4 py-3 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-400">
+                        </div>
+                        <div>
+                            <label class="spec-label block mb-2">文件编号</label>
+                            <input type="text" id="fileIndex" value="01" class="w-full px-4 py-3 bg-gray-100 rounded-xl outline-none">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100">
+                    <span class="spec-label block mb-6">Auto Adaptation / 自动尺寸适配</span>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                            <div>
+                                <p class="font-bold text-sm text-gray-800">缩略图 (Thumbnail)</p>
+                                <p class="text-xs text-gray-400">120×120 PNG < 50KB</p>
+                            </div>
+                            <canvas id="thumbCanvas" width="120" height="120" class="w-12 h-12 bg-white rounded border"></canvas>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                            <div>
+                                <p class="font-bold text-sm text-gray-800">面板图标 (Icon)</p>
+                                <p class="text-xs text-gray-400">50×50 PNG 透明</p>
+                            </div>
+                            <canvas id="iconCanvas" width="50" height="50" class="w-10 h-10 bg-white rounded border"></canvas>
+                        </div>
+                    </div>
+
+                    <button onclick="exportAll()" class="w-full mt-8 py-4 bg-black text-white rounded-2xl font-bold hover:scale-[1.02] transition-transform">
+                        导出全套规范素材
+                    </button>
+                    <p class="text-[10px] text-center text-gray-400 mt-4 leading-relaxed">
+                        符合微信艺术家平台审核规范
+                    </p>
+                </div>
+
+                <div class="p-6 border-2 border-dashed border-gray-200 rounded-[32px]">
+                    <p class="text-xs font-mono text-gray-400">
+                        // TODO: Backend API Hook<br>
+                        const uploadToPlatform = async (data) => { ... }
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        let ipImage = new Image();
+
+        // 初始化加载你上传的 IP 形象
+        window.onload = () => {
+            ipImage.src = 'https://api.placeholder.com/240/240'; // 这里请替换为你透明背景图的本地/网络路径
+            ipImage.onload = draw;
+        };
+
+        function handleImage(e) {
+            const reader = new FileReader();
+            reader.onload = event => {
+                ipImage.src = event.target.result;
+                ipImage.onload = draw;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+
+        function draw() {
+            const text = document.getElementById('stickerText').value;
+            
+            // 1. 绘制主图 (240x240)
+            ctx.clearRect(0, 0, 240, 240);
+            
+            // 绘制 IP 形象
+            ctx.drawImage(ipImage, 20, 10, 200, 200); 
+
+            // 绘制文字描边和样式
+            ctx.font = 'bold 36px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 6;
+            ctx.strokeText(text, 120, 225);
+            ctx.fillStyle = '#333';
+            ctx.fillText(text, 120, 225);
+
+            // 2. 同步缩略图 (120x120)
+            const thumbCtx = document.getElementById('thumbCanvas').getContext('2d');
+            thumbCtx.clearRect(0, 0, 120, 120);
+            thumbCtx.drawImage(canvas, 0, 0, 120, 120);
+
+            // 3. 同步图标 (50x50)
+            const iconCtx = document.getElementById('iconCanvas').getContext('2d');
+            iconCtx.clearRect(0, 0, 50, 50);
+            iconCtx.drawImage(canvas, 0, 0, 50, 50);
+        }
+
+        function exportAll() {
+            const idx = document.getElementById('fileIndex').value;
+            downloadCanvas(canvas, `${idx}.png`);
+            downloadCanvas(document.getElementById('thumbCanvas'), `${idx}_thumb.png`);
+            downloadCanvas(document.getElementById('iconCanvas'), `icon.png`);
+            alert('已生成符合规范的 PNG 文件，请注意检查文件大小！');
+        }
+
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        }
+    </script>
+</body>
+</html>
