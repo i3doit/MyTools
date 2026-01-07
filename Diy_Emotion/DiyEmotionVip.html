@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticker Studio - Pro Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'SF Pro Display', 'Noto Sans SC', -apple-system, sans-serif;
+            background-color: #fbfbfd;
+            color: #1d1d1f;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* 画布背景 */
+        .preview-zone {
+            background-image: radial-gradient(#d2d2d7 0.8px, #fbfbfd 0.8px);
+            background-size: 30px 30px;
+        }
+
+        /* 浮动输入框 */
+        #floatingInput {
+            display: none;
+            position: absolute;
+            z-index: 100;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+            border: 1px solid #d2d2d7;
+            padding: 12px;
+        }
+
+        .apple-modal {
+            display: none;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-action { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-action:active { transform: scale(0.95); }
+
+        /* 版权信息样式复刻 */
+        .footer-link { color: #86868b; text-decoration: none; transition: color 0.3s; }
+        .footer-link:hover { color: #1d1d1f; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <input type="file" id="avatarUpload" class="hidden" accept="image/*" onchange="handleAvatarUpload(event)">
+
+    <div id="unlockModal" class="apple-modal fixed inset-0 z-50 flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[24px] p-8 text-center shadow-2xl">
+            <div class="text-3xl mb-4">💬</div>
+            <h2 class="text-xl font-bold mb-2">解锁高级功能</h2>
+            <p class="text-gray-400 text-sm mb-6 leading-relaxed">
+                编辑挂件文案需验证权限<br>
+                微信号 <span class="text-blue-500 font-bold">857023577</span> 已自动复制<br>
+                请添加微信联系作者获取解锁码
+            </p>
+            <input type="text" id="unlockInput" class="w-full px-4 py-4 bg-gray-100 rounded-2xl mb-4 text-center text-lg font-bold outline-none border-2 border-transparent focus:border-blue-500 transition-all" placeholder="输入解锁码">
+            <div class="flex gap-4">
+                <button onclick="closeModal()" class="flex-1 py-4 text-gray-400 font-medium">取消</button>
+                <button onclick="confirmUnlock()" class="flex-1 py-4 bg-black text-white rounded-2xl font-bold btn-action">验证解锁</button>
+            </div>
+        </div>
+    </div>
+
+    <section class="w-full flex-grow flex flex-col items-center justify-center p-4 md:p-8 relative preview-zone overflow-hidden">
+        <div class="relative">
+            <canvas id="mainCanvas" width="800" height="400" class="max-w-full h-auto cursor-move"></canvas>
+            
+            <div id="floatingInput">
+                <textarea id="tempText" class="w-72 p-4 text-sm bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-blue-400 outline-none" rows="3"></textarea>
+                <div class="flex justify-between items-center mt-3 px-1">
+                    <span class="text-[10px] text-gray-400 uppercase font-bold">Editing Content</span>
+                    <button onclick="saveFloatingText()" class="bg-black text-white px-5 py-2 rounded-full text-xs font-bold">完成</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <button onclick="downloadImage()" class="btn-action bg-black text-white px-12 py-4 rounded-full font-bold shadow-2xl hover:bg-zinc-800">导出表情包</button>
+        </div>
+    </section>
+
+    <section class="max-w-6xl mx-auto w-full px-6 py-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+        
+        <div class="space-y-4">
+            <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Style Palette / 热门配色</h3>
+            <div class="flex items-center gap-4">
+                <button onclick="updateColor('#07C160')" class="w-10 h-10 rounded-full bg-[#07C160] border-4 border-white shadow-lg"></button>
+                <button onclick="updateColor('#10aeff')" class="w-10 h-10 rounded-full bg-[#10aeff] border-4 border-white shadow-lg"></button>
+                <button onclick="updateColor('#333333')" class="w-10 h-10 rounded-full bg-[#333333] border-4 border-white shadow-lg"></button>
+                <button onclick="updateColor('#eb4d4b')" class="w-10 h-10 rounded-full bg-[#eb4d4b] border-4 border-white shadow-lg"></button>
+                <div class="w-px h-8 bg-gray-200 mx-2"></div>
+                <div class="relative group">
+                    <input type="color" oninput="updateColor(this.value)" class="w-10 h-10 border-none bg-transparent cursor-pointer">
+                    <div class="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:block bg-black text-white text-[8px] px-2 py-1 rounded">CUSTOM</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white border border-gray-100 p-6 rounded-[24px] shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <input type="checkbox" id="badgeToggle" onchange="handleBadgeRequest(this)" class="w-5 h-5 accent-black">
+                <span class="text-sm font-bold">高级挂件</span>
+            </div>
+            
+            <div id="badgeEditArea" class="hidden flex-1 w-full sm:w-auto">
+                <input type="text" id="badgeText" maxlength="4" value="IDO" class="w-full bg-gray-100 rounded-xl px-4 py-2 text-sm font-bold uppercase outline-none focus:ring-2 focus:ring-blue-400" oninput="refreshBadge()">
+            </div>
+            
+            <div id="historyBar" class="flex gap-2"></div>
+        </div>
+    </section>
+
+    <footer class="mt-auto py-10 border-t border-gray-100 text-center">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-center items-center gap-6 text-[11px] font-bold text-gray-400 tracking-[0.2em] uppercase">
+                <a href="https://i3doit.github.io/MyTools/" class="footer-link">More Tools</a>
+                <span class="hidden md:inline">|</span>
+                <p>DESIGNED AND DEVELOPED BY I DO IT</p>
+                <span class="hidden md:inline">|</span>
+                <p>© 2024-2026 ALL RIGHTS RESERVED.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const UNLOCK_CODE = "857023577";
+        const AUTHOR_WECHAT = "857023577";
+        let isUnlocked = false;
+
+        let state = {
+            text: "艾兜兜儿\n857023577",
+            bgColor: '#07C160',
+            avatar: null,
+            badge: "IDO",
+            showBadge: false,
+            textPos: { x: 150, y: 150 },
+            dragging: null,
+            dragOffset: { x: 0, y: 0 }
+        };
+
+        window.onload = () => {
+            initAvatar();
+            setupDragging();
+            loadHistory();
+        };
+
+        function initAvatar() {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = "https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg!1";
+            img.onload = () => { state.avatar = img; draw(); };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const fontSize = 34;
+            const lineHeight = fontSize * 1.35;
+            ctx.font = `bold ${fontSize}px 'Noto Sans SC'`;
+
+            const lines = state.text.split('\n');
+            let maxW = 0;
+            lines.forEach(l => {
+                const w = ctx.measureText(l).width;
+                if(w > maxW) maxW = w;
+            });
+
+            // 核心逻辑：计算包含头像的总宽度
+            const avatarSize = 110;
+            const padding = 40;
+            const avatarMargin = 30; // 文字与头像间距
+            
+            const bubbleWidth = maxW + avatarSize + avatarMargin + (padding * 2);
+            const bubbleHeight = Math.max(avatarSize + padding, (lines.length * lineHeight) + padding * 1.5);
+
+            const bx = state.textPos.x - padding;
+            const by = state.textPos.y - fontSize - 10;
+
+            // 1. 绘制气泡
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.06)';
+            ctx.shadowBlur = 40;
+            ctx.fillStyle = state.bgColor;
+            drawRoundRect(ctx, bx, by, bubbleWidth, bubbleHeight, 30);
+            
+            // 尾巴
+            ctx.beginPath();
+            ctx.moveTo(bx + 60, by + bubbleHeight);
+            ctx.lineTo(bx + 45, by + bubbleHeight + 15);
+            ctx.lineTo(bx + 85, by + bubbleHeight);
+            ctx.fill();
+            ctx.restore();
+
+            // 2. 绘制多行文字
+            ctx.fillStyle = "#FFFFFF";
+            ctx.textBaseline = 'top';
+            lines.forEach((l, i) => {
+                ctx.fillText(l, state.textPos.x, state.textPos.y + (i * lineHeight) - fontSize/2);
+            });
+
+            // 3. 绘制内嵌头像 (位于气泡右侧内部)
+            if(state.avatar) {
+                const ax = bx + bubbleWidth - avatarSize - 25;
+                const ay = by + (bubbleHeight - avatarSize) / 2;
+                
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(ax + avatarSize/2, ay + avatarSize/2, avatarSize/2, 0, Math.PI*2);
+                ctx.clip();
+                ctx.drawImage(state.avatar, ax, ay, avatarSize, avatarSize);
+                ctx.restore();
+
+                // 4. 挂件逻辑
+                if(state.showBadge) {
+                    ctx.save();
+                    ctx.fillStyle = "white";
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = 'rgba(0,0,0,0.1)';
+                    ctx.beginPath();
+                    ctx.arc(ax + avatarSize - 12, ay + 12, 24, 0, Math.PI*2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = "#000";
+                    ctx.font = "bold 11px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillText(state.badge.toUpperCase(), ax + avatarSize - 12, ay + 10);
+                    ctx.restore();
+                }
+            }
+        }
+
+        function refreshBadge() {
+            state.badge = document.getElementById('badgeText').value || "IDO";
+            draw();
+        }
+
+        function handleBadgeRequest(cb) {
+            if (!isUnlocked) {
+                cb.checked = false;
+                // 自动复制微信号
+                navigator.clipboard.writeText(AUTHOR_WECHAT).then(() => {
+                    document.getElementById('unlockModal').style.display = 'flex';
+                });
+            } else {
+                state.showBadge = cb.checked;
+                document.getElementById('badgeEditArea').style.display = cb.checked ? 'block' : 'none';
+                draw();
+            }
+        }
+
+        function confirmUnlock() {
+            const val = document.getElementById('unlockInput').value;
+            if (val === UNLOCK_CODE) {
+                isUnlocked = true;
+                document.getElementById('badgeToggle').checked = true;
+                document.getElementById('badgeEditArea').style.display = 'block';
+                state.showBadge = true;
+                closeModal();
+                draw();
+            } else {
+                alert("解锁码不正确，请重新获取");
+            }
+        }
+
+        function closeModal() { document.getElementById('unlockModal').style.display = 'none'; }
+
+        // 编辑与交互
+        function setupDragging() {
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: (e.clientX - rect.left) * (canvas.width / rect.width),
+                    y: (e.clientY - rect.top) * (canvas.height / rect.height)
+                };
+            };
+
+            canvas.onmousedown = (e) => {
+                const pos = getPos(e);
+                // 碰撞检测：如果是点击了内容区域则弹出编辑
+                if (pos.x > state.textPos.x - 20 && pos.x < state.textPos.x + 400) {
+                    if (e.detail === 1) { // 模拟点击
+                        state.dragging = 'text';
+                        state.dragOffset = { x: pos.x - state.textPos.x, y: pos.y - state.textPos.y };
+                    }
+                }
+            };
+
+            canvas.onclick = (e) => {
+                const pos = getPos(e);
+                // 判断点击区域唤起编辑
+                if(pos.x > state.textPos.x && pos.x < state.textPos.x + 200) {
+                    showFloatingEditor(e.clientX, e.clientY);
+                } else if (pos.x > canvas.width * 0.7) {
+                    document.getElementById('avatarUpload').click();
+                }
+            };
+
+            window.onmousemove = (e) => {
+                if (!state.dragging) return;
+                const pos = getPos(e);
+                state.textPos = { x: pos.x - state.dragOffset.x, y: pos.y - state.dragOffset.y };
+                draw();
+            };
+
+            window.onmouseup = () => { state.dragging = null; };
+        }
+
+        function showFloatingEditor(x, y) {
+            const el = document.getElementById('floatingInput');
+            el.style.display = 'block';
+            el.style.left = `${Math.min(window.innerWidth - 300, x)}px`;
+            el.style.top = `${y}px`;
+            document.getElementById('tempText').value = state.text;
+            document.getElementById('tempText').focus();
+        }
+
+        function saveFloatingText() {
+            state.text = document.getElementById('tempText').value;
+            document.getElementById('floatingInput').style.display = 'none';
+            draw();
+        }
+
+        function handleAvatarUpload(e) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => { state.avatar = img; draw(); }
+                img.src = ev.target.result;
+            }
+            reader.readAsDataURL(e.target.files[0]);
+        }
+
+        function drawRoundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.fill();
+        }
+
+        function updateColor(c) { state.bgColor = c; draw(); }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = `sticker-pro-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+            saveToHistory(link.href);
+        }
+
+        function saveToHistory(url) {
+            let history = JSON.parse(localStorage.getItem('sticker_v6') || '[]');
+            history.unshift(url);
+            if(history.length > 5) history.pop();
+            localStorage.setItem('sticker_v6', JSON.stringify(history));
+            loadHistory();
+        }
+
+        function loadHistory() {
+            const bar = document.getElementById('historyBar');
+            const data = JSON.parse(localStorage.getItem('sticker_v6') || '[]');
+            bar.innerHTML = '';
+            data.forEach(imgUrl => {
+                const img = document.createElement('img');
+                img.src = imgUrl;
+                img.className = "w-10 h-10 rounded-lg border cursor-pointer hover:opacity-70 transition";
+                img.onclick = () => { /* 仅做预览展示 */ };
+                bar.appendChild(img);
+            });
+        }
+    </script>
+</body>
+</html>
