@@ -9,7 +9,9 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <style>
         :root { --primary: #007AFF; --bg: #f2f2f7; --danger: #ff3b30; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); -webkit-user-select: none; }
+        /* 修复无法滚动问题 */
+        html, body { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
         
         .container { display: flex; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; box-sizing: border-box; }
         
@@ -22,32 +24,34 @@
         .card { background: white; width: 100%; max-width: 400px; border-radius: 20px; padding: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         .task-group { margin-bottom: 15px; background: #f9f9f9; padding: 12px; border-radius: 14px; position: relative; }
         .input-row { display: flex; align-items: center; border-bottom: 1px solid #eee; margin-bottom: 8px; }
-        input[type="text"] { flex: 1; border: none; background: transparent; padding: 8px 0; font-size: 16px; outline: none; -webkit-user-select: text; }
+        input[type="text"] { flex: 1; border: none; background: transparent; padding: 8px 0; font-size: 16px; outline: none; }
         .clear-btn { padding: 5px; color: #ccc; cursor: pointer; display: none; font-size: 18px; }
         input[type="text"]:not(:placeholder-shown) + .clear-btn { display: block; }
         .time-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #888; }
-        input[type="time"] { border: 1px solid #ddd; border-radius: 6px; padding: 3px 5px; background: white; font-family: inherit; }
+        input[type="time"] { border: 1px solid #ddd; border-radius: 6px; padding: 3px 5px; background: white; }
 
         /* 按钮 */
-        .btn-main { width: 100%; border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 12px; -webkit-appearance: none; }
+        .btn-main { width: 100%; border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 12px; }
         #startBtn { background: var(--primary); color: white; transition: 0.3s; }
         #startBtn.active { background: var(--danger); animation: pulse 2s infinite; }
         .btn-sub { background: #eee; color: #333; }
         
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-        /* 增强版分享模态框 */
-        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); display:none; justify-content:center; align-items:center; z-index:2000; overflow-y:auto; padding:20px; box-sizing:border-box; backdrop-filter: blur(5px); }
-        .modal-content { background: #f2f2f7; width:100%; max-width:420px; border-radius:24px; padding:15px; box-sizing: border-box; }
+        /* 模态框重构 */
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:none; justify-content:center; align-items:flex-start; z-index:2000; overflow-y:auto; padding:20px 10px; box-sizing:border-box; }
+        .modal-content { background: #f2f2f7; width:100%; max-width:420px; border-radius:24px; padding:15px; box-sizing: border-box; margin-bottom: 40px;}
         
-        /* 预览区域即编辑区域 */
-        #previewArea { width: 100%; background: white; border-radius: 16px; overflow: hidden; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .edit-hint { font-size: 11px; color: var(--primary); text-align: center; margin-bottom: 8px; }
+        /* 预览卡片样式 - 参考上传图 */
+        .preview-card { background: #ecf9eb; border-radius: 20px; padding: 25px; text-align: center; position: relative; overflow: hidden; margin-bottom: 20px;}
+        .preview-header { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+        .preview-avatar { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; cursor: pointer; object-fit: cover; background: #eee;}
+        .preview-nick { margin-top: 10px; font-size: 24px; font-weight: bold; border: none; background: transparent; text-align: center; width: 100%; outline: none; color: #333; }
+        .preview-sub { color: #888; font-size: 14px; margin-bottom: 20px; }
         
-        /* 操作栏 */
-        .edit-controls { background: white; padding: 12px; border-radius: 12px; margin-bottom: 15px; font-size: 13px; text-align: left; }
-        .edit-controls label { font-weight: bold; display: block; margin-bottom: 5px; }
-        .edit-controls input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; box-sizing: border-box; }
+        .qr-box { background: white; border-radius: 15px; padding: 20px; display: inline-block; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .qr-placeholder { width: 200px; height: 200px; display: block; }
+        .preview-footer { font-size: 16px; color: #444; margin-top: 10px; }
 
         .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #8e8e93; line-height: 2; }
         .link { color: var(--primary); text-decoration: none; font-weight: 500; cursor: pointer; }
@@ -64,72 +68,65 @@
 
     <div class="card">
         <div id="tasksContainer"></div>
-        <button id="startBtn" class="btn-main" onclick="toggleMonitor()">开启强力提醒模式</button>
-        <button class="btn-main btn-sub" onclick="openShareModal()">生成/定制分享卡片</button>
+        <button id="startBtn" class="btn-main" onclick="handleStart()">开启强力提醒模式</button>
+        <button class="btn-main btn-sub" onclick="openShareModal()">生成分享卡片</button>
         <button class="btn-main btn-sub" onclick="copyLink()" style="background:#e8f2ff; color:var(--primary)">复制工具链接</button>
     </div>
 
     <div class="footer">
         「AI 提效官方群」<span class="link" onclick="copyQQ()">857023577</span><br>
-        技术支持：<a href="https://t.zsxq.com/7tSuP" class="link">艾兜兜儿</a> | 
-        更多：<a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" class="link">点击进入</a><br>
+        技术支持：<a href="https://t.zsxq.com/7tSuP" class="link">艾兜兜儿</a><br>
         &copy; <span id="year"></span> 艾兜兜儿. All Rights Reserved.
     </div>
 </div>
 
 <div class="modal" id="shareModal">
     <div class="modal-content">
-        <div class="edit-hint">提示：下方预览图已根据当前任务自动生成</div>
-        <div id="previewArea">
-            <img id="finalImg" style="width:100%; display:block;">
-        </div>
-        
-        <div class="edit-controls">
-            <label>编辑昵称</label>
-            <input type="text" id="shareNick" oninput="drawCanvas()">
-            <label>编辑头像URL</label>
-            <input type="text" id="shareAvatar" oninput="drawCanvas()">
+        <div class="preview-card" id="captureArea">
+            <div class="preview-header">
+                <img src="https://dkfile.net/uploads/avatars/avatar_1037_2b899c87.jpeg" class="preview-avatar" id="editAvatarImg" onclick="changeAvatar()" title="点击修改头像">
+                <input type="text" class="preview-nick" id="editNickInput" value="艾兜兜儿" maxlength="10">
+                <div class="preview-sub">邀你一起使用</div>
+            </div>
+            
+            <div class="qr-box">
+                <canvas id="qrCanvas" class="qr-placeholder"></canvas>
+            </div>
+            
+            <div class="preview-footer">扫码发现更多精彩内容</div>
         </div>
 
-        <button class="btn-main" onclick="downloadCard()" style="background:var(--primary); color:white;">保存分享图片</button>
+        <button class="btn-main" onclick="downloadCard()" style="background:var(--primary); color:white;">保存分享卡片</button>
         <button class="link" style="margin-top:15px; display:block; width:100%; text-align:center;" onclick="closeModal()">返回修改任务</button>
     </div>
 </div>
 
-<canvas id="shareCanvas" width="600" height="1000"></canvas>
-<audio id="alertAudio" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" loop></audio>
+<canvas id="shareCanvas" width="600" height="900"></canvas>
+<audio id="alertAudio" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 <audio id="keepAlive" loop src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==/"></audio>
 
 <script>
     let isMonitoring = false;
     let checkInterval = null;
     let notifiedSet = new Set();
-    const defaultAvatar = "https://dkfile.net/uploads/avatars/avatar_1037_2b899c87.jpeg";
-    const defaultNick = "艾兜兜儿";
 
     window.onload = () => {
         document.getElementById('year').textContent = new Date().getFullYear();
-        document.getElementById('shareNick').value = defaultNick;
-        document.getElementById('shareAvatar').value = defaultAvatar;
         initTasks();
     };
 
     function initTasks() {
         const container = document.getElementById('tasksContainer');
         container.innerHTML = '';
-        const now = new Date();
-        const saved = JSON.parse(localStorage.getItem('aidoudou_tasks_v5') || '[]');
+        const saved = JSON.parse(localStorage.getItem('aidoudou_tasks_v6') || '[]');
 
         for (let i = 0; i < 3; i++) {
-            const tDate = new Date(now.getTime() + (i + 1) * 5 * 60000);
-            const defTime = `${String(tDate.getHours()).padStart(2,'0')}:${String(tDate.getMinutes()).padStart(2,'0')}`;
-            const text = saved[i]?.text || (saved.length ? "" : `测试任务 ${i+1}`);
-            const time = saved[i]?.time || (saved.length ? "" : defTime);
-
+            const text = saved[i]?.text || "";
+            const time = saved[i]?.time || "";
             container.innerHTML += `
                 <div class="task-group">
                     <div class="input-row">
-                        <input type="text" id="t${i}" placeholder="最重要的事..." value="${text}" oninput="updateData(${i})">
+                        <input type="text" id="t${i}" placeholder="最重要的任务..." value="${text}" oninput="updateData(${i})">
                         <span class="clear-btn" onclick="clearInput(${i})">✕</span>
                     </div>
                     <div class="time-row">
@@ -143,36 +140,47 @@
     function clearInput(i) { document.getElementById('t'+i).value = ''; updateData(i); }
 
     function updateData(i) {
-        // 修改后重置提醒状态
         notifiedSet.delete(i + '_60');
         notifiedSet.delete(i + '_0');
-        
         const data = [0,1,2].map(idx => ({
             text: document.getElementById('t'+idx).value,
             time: document.getElementById('tm'+idx).value
         }));
-        localStorage.setItem('aidoudou_tasks_v5', JSON.stringify(data));
+        localStorage.setItem('aidoudou_tasks_v6', JSON.stringify(data));
     }
 
-    // --- 提醒系统 ---
-    async function toggleMonitor() {
+    // --- 修复按钮无响应问题 ---
+    async function handleStart() {
         const alertAudio = document.getElementById('alertAudio');
         const keepAlive = document.getElementById('keepAlive');
         
-        // 尝试激活所有音频通道
+        // 尝试播放一次以解除 iOS 音频锁定
+        alertAudio.play().then(() => alertAudio.pause()).catch(() => {});
         keepAlive.play().catch(() => {});
 
+        // 请求通知权限
         if (Notification.permission !== "granted") {
-            await Notification.requestPermission();
+            const permission = await Notification.requestPermission();
+            if(permission !== "granted") {
+                alert("请允许通知权限，否则锁屏时无法收到提醒。");
+                return;
+            }
         }
 
+        toggleMonitor();
+    }
+
+    function toggleMonitor() {
         isMonitoring = !isMonitoring;
         const btn = document.getElementById('startBtn');
+        const keepAlive = document.getElementById('keepAlive');
+
         if(isMonitoring) {
-            btn.innerText = "监控中 (请勿杀掉进程)";
+            btn.innerText = "监控运行中 (锁屏有效)";
             btn.classList.add('active');
+            keepAlive.play();
             checkInterval = setInterval(monitorLogic, 10000);
-            alert("开启成功！\n1. 锁屏可提醒（需添加到主屏幕）\n2. 到点后将发出连续提示音");
+            alert("开启成功！请确保手机未处于静音模式，并将本页添加到主屏幕使用效果更佳。");
         } else {
             clearInterval(checkInterval);
             keepAlive.pause();
@@ -184,153 +192,102 @@
     function monitorLogic() {
         const now = new Date();
         const nowMin = now.getHours() * 60 + now.getMinutes();
-
         for (let i = 0; i < 3; i++) {
             const text = document.getElementById('t'+i).value;
             const time = document.getElementById('tm'+i).value;
             if(!text || !time) continue;
-
             const [h, m] = time.split(':');
             const target = parseInt(h) * 60 + parseInt(m);
             const diff = target - nowMin;
 
-            // 预警和超时逻辑
-            if (diff === 60 && !notifiedSet.has(i+'_60')) {
-                triggerAlert(`预警：[${text}] 还有1小时截止！`);
-                notifiedSet.add(i+'_60');
-            }
-            if (diff <= 0) {
-                const overdue = Math.abs(diff);
-                const mark = i + '_' + overdue;
-                if (overdue % 5 === 0 && !notifiedSet.has(mark)) {
-                    triggerAlert(`⚠️ 立即执行：[${text}]！${overdue==0?'时间已到':'已超时'+overdue+'分'}`, true);
-                    notifiedSet.add(mark);
-                }
+            if (diff === 0 && !notifiedSet.has(i+'_0')) {
+                triggerAlert(`⏰ 任务时间到：${text}`);
+                notifiedSet.add(i+'_0');
             }
         }
     }
 
     function triggerAlert(msg) {
-        if (Notification.permission === "granted") {
-            new Notification("艾兜兜儿专注提醒", { body: msg, icon: defaultAvatar });
-        }
+        new Notification("专注提醒", { body: msg });
         const audio = document.getElementById('alertAudio');
         audio.currentTime = 0;
         audio.play();
-        // 模拟连续鸣响 4 次
-        let loops = 1;
-        audio.onended = () => { if(loops < 4) { loops++; audio.play(); } };
     }
 
-    // --- 分享系统 ---
-    async function openShareModal() {
+    // --- 分享卡片直接编辑逻辑 ---
+    function openShareModal() {
         document.getElementById('shareModal').style.display = 'flex';
-        drawCanvas();
+        // 生成当前页面二维码
+        QRCode.toCanvas(document.getElementById('qrCanvas'), window.location.href, {
+            width: 200,
+            margin: 1,
+            color: { dark: "#000000", light: "#ffffff" }
+        });
     }
 
-    async function drawCanvas() {
+    function changeAvatar() {
+        const newUrl = prompt("请输入新的头像图片链接：", document.getElementById('editAvatarImg').src);
+        if(newUrl) {
+            document.getElementById('editAvatarImg').src = newUrl;
+        }
+    }
+
+    function downloadCard() {
         const canvas = document.getElementById('shareCanvas');
         const ctx = canvas.getContext('2d');
-        const nick = document.getElementById('shareNick').value || defaultNick;
-        const avatarSrc = document.getElementById('shareAvatar').value || defaultAvatar;
+        const nick = document.getElementById('editNickInput').value;
+        const avatar = document.getElementById('editAvatarImg');
+        const qr = document.getElementById('qrCanvas');
 
-        // 背景
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0,0,600,1000);
+        // 绘制逻辑
+        ctx.fillStyle = "#ecf9eb";
+        ctx.fillRect(0,0,600,900);
 
-        // 顶部条
-        ctx.fillStyle = "#F8F8F8";
-        ctx.fillRect(0,0,600,160);
-
-        // 绘制头像
-        const avImg = new Image();
-        avImg.crossOrigin = "Anonymous";
-        avImg.src = avatarSrc;
-        await new Promise(r => { avImg.onload = r; avImg.onerror = r; });
+        // 头像
         ctx.save();
         ctx.beginPath();
-        ctx.arc(80, 80, 40, 0, Math.PI*2);
+        ctx.arc(300, 150, 70, 0, Math.PI*2);
         ctx.clip();
-        try { ctx.drawImage(avImg, 40, 40, 80, 80); } catch(e) { ctx.fillStyle="#ddd"; ctx.fill(); }
+        ctx.drawImage(avatar, 230, 80, 140, 140);
         ctx.restore();
 
-        // 昵称与文案
-        ctx.textAlign = "left";
+        // 昵称
         ctx.fillStyle = "#333";
-        ctx.font = "bold 28px sans-serif";
-        ctx.fillText(nick, 140, 75);
-        ctx.fillStyle = "#888";
-        ctx.font = "20px sans-serif";
-        ctx.fillText("邀请你一起专注任务", 140, 110);
-
-        // 主标题
         ctx.textAlign = "center";
-        ctx.fillStyle = "#1c1c1e";
-        ctx.font = "bold 42px sans-serif";
-        ctx.fillText("今日最重要的三件事", 300, 240);
-        ctx.fillStyle = varColor('--primary');
+        ctx.font = "bold 45px sans-serif";
+        ctx.fillText(nick, 300, 290);
+        
         ctx.font = "24px sans-serif";
-        ctx.fillText("专注执行 · 拒绝拖延", 300, 285);
+        ctx.fillStyle = "#888";
+        ctx.fillText("邀你一起使用", 300, 340);
 
-        // 任务列表
-        ctx.textAlign = "left";
-        for(let i=0; i<3; i++) {
-            const txt = document.getElementById('t'+i).value || "未填写任务";
-            const tm = document.getElementById('tm'+i).value || "--:--";
-            ctx.fillStyle = "#f2f2f7";
-            ctx.roundRect(50, 340 + i*130, 500, 100, 15);
-            ctx.fill();
-            ctx.fillStyle = "#333";
-            ctx.font = "bold 28px sans-serif";
-            ctx.fillText(`${i+1}. ${txt.substring(0,20)}`, 80, 385 + i*130);
-            ctx.fillStyle = varColor('--primary');
-            ctx.font = "20px sans-serif";
-            ctx.fillText(`⏰ 截止：${tm}`, 80, 420 + i*130);
-        }
+        // 二维码区域
+        ctx.fillStyle = "white";
+        roundRect(ctx, 150, 400, 300, 300, 20);
+        ctx.fill();
+        ctx.drawImage(qr, 175, 425, 250, 250);
 
-        // 底部：左技术支持，右二维码
-        ctx.textAlign = "left";
-        ctx.fillStyle = "#333";
-        ctx.font = "bold 22px sans-serif";
-        ctx.fillText("技术支持：艾兜兜儿", 50, 840);
-        ctx.fillStyle = "#999";
-        ctx.font = "18px sans-serif";
-        ctx.fillText("AI 驱动效能，让专注更简单", 50, 875);
+        ctx.fillStyle = "#444";
+        ctx.font = "30px sans-serif";
+        ctx.fillText("扫码发现更多精彩内容", 300, 780);
 
-        const qrUrl = await QRCode.toDataURL(window.location.href, { margin: 1, width: 160 });
-        const qrImg = new Image();
-        qrImg.src = qrUrl;
-        await new Promise(r => qrImg.onload = r);
-        ctx.drawImage(qrImg, 400, 780, 150, 150);
-
-        document.getElementById('finalImg').src = canvas.toDataURL("image/png");
+        // 触发下载
+        const link = document.createElement('a');
+        link.download = '分享卡片.png';
+        link.href = canvas.toDataURL();
+        link.click();
     }
 
-    function varColor(name) {
-        return name === '--primary' ? '#007AFF' : '#000';
-    }
-
-    // 绘制圆角矩形辅助
-    CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
-        this.beginPath();
-        this.moveTo(x + r, y);
-        this.arcTo(x + w, y, x + w, y + h, r);
-        this.arcTo(x + w, y + h, x, y + h, r);
-        this.arcTo(x, y + h, x, y, r);
-        this.arcTo(x, y, x + w, y, r);
-        this.closePath();
-        return this;
+    function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r);
+        ctx.arcTo(x+w, y+h, x, y+h, r); ctx.arcTo(x, y+h, x, y, r);
+        ctx.arcTo(x, y, x+w, y, r); ctx.closePath();
     }
 
     function closeModal() { document.getElementById('shareModal').style.display = 'none'; }
-    function downloadCard() {
-        const a = document.createElement('a');
-        a.href = document.getElementById('finalImg').src;
-        a.download = 'aidoudou_share.png';
-        a.click();
-    }
     function copyLink() { navigator.clipboard.writeText(window.location.href); alert("链接已复制"); }
-    function copyQQ() { navigator.clipboard.writeText('857023577'); alert("QQ群已复制"); }
+    function copyQQ() { navigator.clipboard.writeText('857023577'); alert("群号已复制"); }
 </script>
 </body>
 </html>
