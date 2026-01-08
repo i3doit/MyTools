@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>港幣支票金額轉換器 - 護眼專業版</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* 護眼模式變量 */
+        :root {
+            --bg-color: #f4f1ea;        /* 淺米色背景 */
+            --card-bg: #fdfaf2;         /* 暖色卡片 */
+            --text-main: #3c3c3c;       /* 深灰色文字 */
+            --primary: #5d737e;         /* 莫蘭迪藍綠 */
+            --accent: #d98324;          /* 醒目橙 */
+            --danger: #c0392b;          /* 警示紅 */
+            --border: #e0dcd0;          /* 邊框色 */
+            --table-header: #4a5d66;    /* 表頭色 */
+        }
+
+        * { box-sizing: border-box; font-family: 'Noto Sans TC', sans-serif; }
+        
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-main);
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: var(--card-bg); 
+            border-radius: 16px; 
+            padding: 30px; 
+            box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+        }
+
+        h1 { 
+            text-align: center; 
+            color: var(--primary); 
+            margin-bottom: 30px; 
+            font-weight: 500; 
+            letter-spacing: 1px;
+        }
+        
+        /* 輸入區域 */
+        .input-group { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; }
+        
+        input { 
+            width: 100%; 
+            padding: 16px; 
+            border: 2px solid var(--border); 
+            border-radius: 10px; 
+            font-size: 22px; 
+            color: var(--text-main); 
+            background: #fff; 
+            transition: 0.3s;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        
+        input:focus { 
+            border-color: var(--primary); 
+            outline: none; 
+            box-shadow: 0 0 0 4px rgba(93, 115, 126, 0.1); 
+        }
+        
+        .button-group { display: flex; gap: 15px; }
+        
+        button { 
+            padding: 14px 24px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            font-size: 16px; 
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .convert-btn { 
+            flex: 2; 
+            background: var(--primary); 
+            color: white; 
+        }
+        
+        .reset-btn { 
+            flex: 1; 
+            background: var(--danger); 
+            color: white; 
+            box-shadow: 0 4px 10px rgba(192, 57, 43, 0.2);
+        }
+
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+
+        /* 表格樣式 */
+        .table-container { overflow-x: auto; margin: 25px 0; border-radius: 8px; border: 1px solid var(--border); }
+        
+        table { width: 100%; border-collapse: collapse; background: #fff; min-width: 850px; table-layout: fixed; }
+        
+        th, td { padding: 16px; text-align: left; border-bottom: 1px solid var(--border); }
+        
+        th { background-color: var(--table-header); color: #fff; font-weight: 400; font-size: 14px; }
+        
+        td { font-size: 15px; cursor: pointer; word-wrap: break-word; }
+        
+        tr:last-child td { border-bottom: none; }
+        
+        tr:hover td { background-color: #fcfbf7; }
+
+        /* 提醒區域 */
+        .tips-box { 
+            background: #ebe7de; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin-top: 20px; 
+            font-size: 14px;
+        }
+        .tips-box h3 { margin-top: 0; font-size: 16px; color: var(--primary); }
+        .tips-box ul { padding-left: 20px; margin-bottom: 0; }
+
+        /* 底部免責與版權引流 */
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); }
+        
+        .disclaimer-box { 
+            padding: 15px; 
+            background-color: rgba(0,0,0,0.02); 
+            border-radius: 8px; 
+            margin-bottom: 25px;
+        }
+        .disclaimer-box p { margin: 0; color: #7f8c8d; font-size: 12px; text-align: justify; }
+
+        .promo-links { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            gap: 15px; 
+        }
+
+        .promo-links a { 
+            display: block; 
+            text-decoration: none; 
+            color: var(--primary); 
+            background: #fff; 
+            padding: 12px 15px; 
+            border-radius: 8px; 
+            font-size: 13px; 
+            border: 1px solid var(--border);
+            transition: 0.2s;
+        }
+
+        .promo-links a:hover { 
+            border-color: var(--primary); 
+            background: var(--card-bg);
+            transform: translateX(5px);
+        }
+
+        #toast { 
+            display: none; 
+            position: fixed; 
+            bottom: 30px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: rgba(60, 60, 60, 0.9); 
+            color: white; 
+            padding: 10px 25px; 
+            border-radius: 4px; 
+            z-index: 1000; 
+            font-size: 14px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>港幣支票金額轉換器</h1>
+        <div id="toast"></div>
+
+        <div class="input-group">
+            <input type="text" id="amount" placeholder="請輸入阿拉伯數字 (例如: 15,200.75)" oninput="this.value = this.value.replace(/[^\d.,$]/g,'')">
+            <div class="button-group">
+                <button onclick="convert()" class="convert-btn">立即轉換</button>
+                <button class="reset-btn" onclick="resetInput()">重置清空</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="25%">繁體中文大寫</th>
+                        <th width="35%">英文大寫 (Standard English)</th>
+                        <th width="20%">簡體中文大寫</th>
+                        <th width="20%">阿拉伯數字</th>
+                    </tr>
+                </thead>
+                <tbody id="results">
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="tips-box">
+            <h3>📝 支票填寫規範提醒：</h3>
+            <ul>
+                <li><strong>一致性：</strong>大寫與小寫金額必須完全一致。</li>
+                <li><strong>「正」字：</strong>整數金額結尾加「正」；若有角分則不加。</li>
+                <li><strong>防篡改：</strong>數字間不留空格，字跡要緊湊。</li>
+            </ul>
+        </div>
+
+        <footer class="footer">
+            <div class="disclaimer-box">
+                <p><strong>風險免責聲明：</strong>本工具生成的金額僅供參考，不具備法律效力。簽署正式財務憑證前請務必人工複核。因使用本工具導致的任何損失，開發者不承擔法律責任。請確保在安全的瀏覽器環境下使用。</p>
+            </div>
+            
+            <div class="promo-links">
+                <a href="https://t.zsxq.com/iNm3w" target="_blank">❶ 用 DeepSeek 1分鐘生成，你也可去嘗試製作</a>
+                <a href="https://mp.weixin.qq.com/s/Tx7MbtPEqbzBT61arZx07g" target="_blank">❷ 公眾號：艾兜兜兒，支持AI智能回覆。</a>
+                <a href="https://t.zsxq.com/pBPcv" target="_blank">❸ 源碼及商務合作：微信 857023577</a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        let records = [];
+        const T_CN = ["零","壹","貳","參","肆","伍","陸","柒","捌","玖"];
+        const S_CN = ["零","壹","贰","叁","肆","伍","陆","柒","捌","玖"];
+        const UNITS = ["","拾","佰","仟"];
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 2000);
+        }
+
+        function resetInput() { 
+            document.getElementById('amount').value = ''; 
+            showToast("內容已清空");
+        }
+
+        function convert() {
+            let val = document.getElementById('amount').value.replace(/[$,]/g, '');
+            if(!val || isNaN(val)) return showToast("請輸入有效的數字");
+            
+            const num = parseFloat(val);
+            if(num < 0) return showToast("金額不可為負");
+
+            const record = {
+                traditional: toHKChinese(num, T_CN, "萬", "圓"),
+                english: toHKEnglish(num),
+                simplified: toHKChinese(num, S_CN, "万", "元"),
+                numDisplay: "$" + num.toLocaleString('en-US', {minimumFractionDigits: 2})
+            };
+
+            records.unshift(record);
+            render();
+            showToast("轉換成功，點擊內容可複製");
+        }
+
+        function toHKChinese(num, chars, wanUnit, unitName) {
+            let amount = Math.round(num * 100);
+            if(amount === 0) return chars[0] + unitName + "正";
+            let intPart = Math.floor(amount / 100);
+            let decPart = amount % 100;
+            let result = "";
+
+            if (intPart > 0) {
+                let intStr = intPart.toString();
+                let len = intStr.length;
+                let zeroCount = 0;
+                for (let i = 0; i < len; i++) {
+                    let n = parseInt(intStr[i]);
+                    let p = len - i - 1;
+                    let quotient = Math.floor(p / 4);
+                    let modulus = p % 4;
+                    if (n === 0) {
+                        zeroCount++;
+                    } else {
+                        if (zeroCount > 0) result += chars[0];
+                        zeroCount = 0;
+                        result += chars[n] + UNITS[modulus];
+                    }
+                    if (modulus === 0 && quotient > 0) {
+                        if (zeroCount < 4) result += (quotient === 1 ? wanUnit : "億");
+                        zeroCount = 0;
+                    }
+                }
+                result += unitName;
+            }
+            if (result.startsWith("拾")) result = "壹" + result;
+            let jiao = Math.floor(decPart / 10);
+            let fen = decPart % 10;
+            if (jiao === 0 && fen === 0) {
+                result += "正";
+            } else {
+                if (jiao !== 0) result += chars[jiao] + "角";
+                else if (intPart > 0 && fen > 0) result += chars[0];
+                if (fen !== 0) result += chars[fen] + "分";
+            }
+            return result.replace(/零+/g, chars[0]).replace(new RegExp(`零${unitName}`, 'g'), unitName);
+        }
+
+        function toHKEnglish(num) {
+            const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+            const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+            const thousands = ["", "Thousand", "Million", "Billion"];
+            let intPart = Math.floor(num);
+            let decPart = Math.round((num - intPart) * 100);
+            let words = "";
+            if (intPart === 0) words = "Zero";
+            else {
+                let n = intPart;
+                let idx = 0;
+                while (n > 0) {
+                    let chunk = n % 1000;
+                    if (chunk !== 0) {
+                        let s = "";
+                        if (Math.floor(chunk / 100) > 0) s += ones[Math.floor(chunk / 100)] + " Hundred ";
+                        let rem = chunk % 100;
+                        if (rem > 0 && Math.floor(chunk/100) > 0) s += "and ";
+                        if (rem < 20) s += ones[rem];
+                        else s += tens[Math.floor(rem / 10)] + (rem % 10 !== 0 ? "-" + ones[rem % 10] : "");
+                        words = s.trim() + " " + thousands[idx] + " " + words;
+                    }
+                    n = Math.floor(n / 1000);
+                    idx++;
+                }
+            }
+            let res = words.trim() + " Dollars";
+            if (decPart > 0) res += " and Cents " + (decPart < 20 ? ones[decPart] : tens[Math.floor(decPart/10)] + "-" + ones[decPart%10]);
+            return res + " Only";
+        }
+
+        function copy(text) {
+            const el = document.createElement('textarea');
+            el.value = text; document.body.appendChild(el);
+            el.select(); document.execCommand('copy');
+            document.body.removeChild(el);
+            showToast("複製成功");
+        }
+
+        function render() {
+            const tbody = document.getElementById('results');
+            tbody.innerHTML = records.slice(0, 5).map(r => `
+                <tr>
+                    <td onclick="copy('${r.traditional}')" style="color:var(--primary); font-weight:bold;">${r.traditional}</td>
+                    <td onclick="copy('${r.english}')">${r.english}</td>
+                    <td onclick="copy('${r.simplified}')">${r.simplified}</td>
+                    <td style="font-family: monospace;">${r.numDisplay}</td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
