@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>即时任务执行工具 - 艾兜兜儿</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <style>
+        :root { --primary: #007AFF; --bg: #f2f2f7; --danger: #ff3b30; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 40px; }
+        .container { display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        /* 品牌头 */
+        .user-header { text-align: center; padding: 25px 0; }
+        .avatar { width: 75px; height: 75px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .nickname { margin: 10px 0; font-size: 19px; font-weight: 700; color: #1c1c1e; }
+
+        /* 核心卡片 */
+        .card { background: white; width: 92%; max-width: 420px; border-radius: 28px; padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); box-sizing: border-box; }
+        .task-item { margin-bottom: 22px; border-bottom: 1px solid #f2f2f7; padding-bottom: 12px; }
+        .task-item label { display: block; font-size: 13px; color: #8e8e93; font-weight: 600; margin-bottom: 4px; }
+        input[type="text"] { width: 100%; border: none; padding: 10px 0; font-size: 18px; outline: none; font-weight: 500; }
+        .time-row { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 14px; }
+        input[type="time"] { border: 1px solid #e5e5ea; border-radius: 8px; padding: 6px 12px; color: var(--primary); font-family: inherit; font-weight: bold; }
+
+        /* 操作按钮 */
+        .btn-group { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+        button { border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .btn-start { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(0,122,255,0.3); }
+        .btn-start.active { background: var(--danger); box-shadow: 0 4px 15px rgba(255,59,48,0.3); }
+        .btn-share { background: #f2f2f7; color: #1c1c1e; }
+        
+        /* 底部信息 */
+        .footer { padding: 35px 20px; text-align: center; font-size: 12px; color: #8e8e93; line-height: 2; }
+        .link-text { color: var(--primary); cursor: pointer; text-decoration: none; font-weight: 600; }
+        
+        #shareCanvas { display: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="user-header">
+        <img src="https://dkfile.net/uploads/avatars/avatar_1037_2b899c87.jpeg" class="avatar">
+        <div class="nickname">艾兜兜儿</div>
+    </div>
+
+    <div class="card">
+        <div class="task-item">
+            <label>🥇 第一件最重要的事</label>
+            <input type="text" id="t1" placeholder="立刻要执行的任务...">
+            <div class="time-row"><span>截止时间</span><input type="time" id="tm1"></div>
+        </div>
+        <div class="task-item">
+            <label>🥈 第二件重要的事</label>
+            <input type="text" id="t2" placeholder="接下来的重点...">
+            <div class="time-row"><span>截止时间</span><input type="time" id="tm2"></div>
+        </div>
+        <div class="task-item">
+            <label>🥉 第三件必要的事</label>
+            <input type="text" id="t3" placeholder="必须完成的细节...">
+            <div class="time-row"><span>截止时间</span><input type="time" id="tm3"></div>
+        </div>
+        
+        <div class="btn-group">
+            <button class="btn-start" id="startBtn" onclick="toggleReminder()">点击开启强力提醒</button>
+            <button class="btn-share" onclick="generateShareImage()">生成分享卡片 (含二维码)</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>「AI 提效工具官方 QQ 群」<br>
+           <strong class="link-text" onclick="copyQQ()">857023577</strong> (点击自动复制)</p>
+        <p>技术支持：<a href="https://t.zsxq.com/7tSuP" target="_blank" class="link-text">艾兜兜儿</a> | 
+           更多工具：<a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" target="_blank" class="link-text">点击查看</a></p>
+        <p>&copy; <span id="year"></span> 艾兜兜儿. 专注，即是生产力.</p>
+    </div>
+</div>
+
+<canvas id="shareCanvas" width="600" height="900"></canvas>
+<audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+
+<script>
+    const inputIds = ['t1', 't2', 't3', 'tm1', 'tm2', 'tm3'];
+    let monitorInterval = null;
+
+    // 1. 初始化：加载缓存 + 动态年份
+    window.onload = () => {
+        document.getElementById('year').textContent = new Date().getFullYear();
+        inputIds.forEach(id => {
+            const savedData = localStorage.getItem(id);
+            if(savedData) document.getElementById(id).value = savedData;
+            
+            // 自动保存：每输入一个字符都存入本地
+            document.getElementById(id).addEventListener('input', (e) => {
+                localStorage.setItem(id, e.target.value);
+            });
+        });
+    };
+
+    // 2. 复制功能
+    function copyQQ() {
+        navigator.clipboard.writeText('857023577');
+        alert('QQ群号已复制，欢迎加入交流！');
+    }
+
+    // 3. 强力提醒实现
+    function toggleReminder() {
+        const btn = document.getElementById('startBtn');
+        if (monitorInterval) {
+            clearInterval(monitorInterval);
+            monitorInterval = null;
+            btn.innerText = "点击开启强力提醒";
+            btn.classList.remove('active');
+            return;
+        }
+
+        // 申请通知权限
+        if (!("Notification" in window)) {
+            alert("此浏览器不支持消息提醒。");
+            return;
+        }
+
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                btn.innerText = "提醒监控中... (点击关闭)";
+                btn.classList.add('active');
+                startMonitoring();
+                alert("提醒已激活！\n1. 截止前1小时将铃声预警\n2. 超时后每5分钟提醒一次");
+            } else {
+                alert("未获得权限，提醒功能无法生效。");
+            }
+        });
+    }
+
+    function startMonitoring() {
+        monitorInterval = setInterval(() => {
+            const now = new Date();
+            for(let i=1; i<=3; i++) {
+                const title = document.getElementById('t'+i).value;
+                const timeValue = document.getElementById('tm'+i).value;
+                
+                if(!title || !timeValue) continue;
+
+                const [h, m] = timeValue.split(':');
+                const targetTime = new Date();
+                targetTime.setHours(h, m, 0);
+                
+                const diffMs = targetTime - now;
+                const diffMin = Math.floor(diffMs / 60000);
+
+                // 规则 1：提前一小时铃声提醒
+                if (diffMin === 60) {
+                    triggerNotify(`预警：任务 [${title}] 还有 1 小时截止！`);
+                }
+                
+                // 规则 2：超时后每 5 分钟提醒一次
+                if (diffMs <= 0) {
+                    const overTimeMin = Math.abs(diffMin);
+                    if (overTimeMin % 5 === 0) {
+                        triggerNotify(`⚠️ 立即执行：[${title}] 已超时！不要分心！`);
+                    }
+                }
+            }
+        }, 60000); // 每分钟检查一次
+    }
+
+    function triggerNotify(msg) {
+        new Notification("专注提醒 - 艾兜兜儿", { 
+            body: msg, 
+            icon: 'https://dkfile.net/uploads/avatars/avatar_1037_2b899c87.jpeg' 
+        });
+        document.getElementById('beep').play().catch(()=>{}); 
+    }
+
+    // 4. 生成带二维码的分享卡片
+    async function generateShareImage() {
+        const canvas = document.getElementById('shareCanvas');
+        const ctx = canvas.getContext('2d');
+        const currentUrl = window.location.href;
+
+        // 绘制白色圆角卡片背景
+        ctx.fillStyle = '#f2f2f7';
+        ctx.fillRect(0,0,600,900);
+        ctx.fillStyle = '#ffffff';
+        drawRoundedRect(ctx, 30, 30, 540, 840, 40);
+        ctx.fill();
+
+        // 绘制标题
+        ctx.fillStyle = '#1c1c1e';
+        ctx.font = 'bold 46px sans-serif';
+        ctx.fillText('今日最重要的三件事', 70, 130);
+        
+        ctx.font = '24px sans-serif';
+        ctx.fillStyle = '#8e8e93';
+        ctx.fillText('专注执行，拒绝拖延', 70, 180);
+
+        // 绘制任务列表
+        ctx.font = '32px sans-serif';
+        for(let i=1; i<=3; i++) {
+            const task = document.getElementById('t'+i).value || '（未设置任务）';
+            const time = document.getElementById('tm'+i).value || '--:--';
+            
+            ctx.fillStyle = '#007AFF';
+            ctx.fillText(i + '.', 70, 280 + (i*120));
+            
+            ctx.fillStyle = '#1c1c1e';
+            ctx.fillText(task, 110, 280 + (i*120));
+            
+            ctx.font = '20px sans-serif';
+            ctx.fillStyle = '#8e8e93';
+            ctx.fillText('截止时间: ' + time, 110, 320 + (i*120));
+            ctx.font = '32px sans-serif';
+        }
+
+        // 底部：生成二维码并绘制
+        try {
+            const qrUrl = await QRCode.toDataURL(currentUrl, { margin: 1, width: 160 });
+            const qrImg = new Image();
+            qrImg.src = qrUrl;
+            qrImg.onload = () => {
+                ctx.drawImage(qrImg, 380, 680, 150, 150);
+                ctx.fillStyle = '#8e8e93';
+                ctx.font = '16px sans-serif';
+                ctx.fillText('扫码体验此工具', 395, 850);
+                
+                ctx.font = 'bold 22px sans-serif';
+                ctx.fillStyle = '#1c1c1e';
+                ctx.fillText('技术支持：艾兜兜儿', 70, 780);
+                ctx.font = '18px sans-serif';
+                ctx.fillText('AI 驱动效能，让专注更简单', 70, 815);
+
+                // 下载图片
+                const link = document.createElement('a');
+                link.download = `艾兜兜儿_任务打卡_${new Date().getTime()}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            };
+        } catch (err) {
+            alert("生成图片失败，请重试");
+        }
+    }
+
+    // 辅助圆角矩形绘制
+    function drawRoundedRect(ctx, x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+    }
+</script>
+</body>
+</html>
