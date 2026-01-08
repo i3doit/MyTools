@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>即时执行 - 艾兜兜儿</title>
+    <style>
+        :root { --primary: #007AFF; --bg: #f2f2f7; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        /* 头部用户信息 */
+        .user-header { text-align: center; margin-top: 30px; }
+        .avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .nickname { margin: 10px 0; font-size: 18px; font-weight: 600; color: #333; }
+
+        /* 任务容器 */
+        .card { background: white; width: 90%; max-width: 400px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); box-sizing: border-box; }
+        .task-item { margin-bottom: 20px; position: relative; }
+        .task-item label { display: block; font-size: 12px; color: #8e8e93; margin-bottom: 5px; }
+        input[type="text"] { width: 100%; border: none; border-bottom: 2px solid #eee; padding: 10px 0; font-size: 16px; outline: none; transition: border-color 0.3s; }
+        input[type="text"]:focus { border-bottom-color: var(--primary); }
+        input[type="time"] { border: 1px solid #eee; border-radius: 5px; padding: 5px; margin-top: 5px; font-size: 14px; }
+
+        /* 按钮与底部 */
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
+        .btn-start { background: var(--primary); color: white; }
+        .btn-share { background: #34c759; color: white; }
+        
+        .footer { margin-top: auto; padding: 30px 20px; text-align: center; font-size: 12px; color: #8e8e93; line-height: 1.8; }
+        .copy-link { color: var(--primary); text-decoration: none; font-weight: 500; }
+        
+        /* 隐藏 Canvas 用于生成分享图 */
+        #shareCanvas { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="user-header">
+    <img src="https://dkfile.net/uploads/avatars/avatar_1037_2b899c87.jpeg" class="avatar">
+    <div class="nickname">艾兜兜儿</div>
+</div>
+
+<div class="card" id="taskApp">
+    <div class="task-item">
+        <label>第一要务 (Most Important)</label>
+        <input type="text" id="t1" placeholder="输入任务...">
+        <input type="time" id="time1">
+    </div>
+    <div class="task-item">
+        <label>第二要务</label>
+        <input type="text" id="t2" placeholder="输入任务...">
+        <input type="time" id="time2">
+    </div>
+    <div class="task-item">
+        <label>第三要务</label>
+        <input type="text" id="t3" placeholder="输入任务...">
+        <input type="time" id="time3">
+    </div>
+    
+    <div class="btn-group">
+        <button class="btn-start" onclick="initMonitor()">开启强力提醒</button>
+        <button class="btn-share" onclick="generateCard()">分享今日打卡</button>
+    </div>
+</div>
+
+<div class="footer">
+    <p>「AI 提效工具官方 QQ 群」<br>
+       <strong class="copy-link" onclick="copyQQ()">857023577</strong> (点击自动复制)</p>
+    <p>技术支持：<a href="https://t.zsxq.com/7tSuP" class="copy-link">艾兜兜儿</a> | 
+       更多工具：<a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" class="copy-link">点击进入</a></p>
+    <p>&copy; <span id="year"></span> 艾兜兜儿. 基于 AI 驱动效能.</p>
+</div>
+
+<canvas id="shareCanvas" width="600" height="800"></canvas>
+
+<audio id="alertSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+
+<script>
+    // 1. 动态年份
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // 2. 自动复制 QQ
+    function copyQQ() {
+        navigator.clipboard.writeText('857023577');
+        alert('QQ群号 857023577 已复制，去搜索加入吧！');
+    }
+
+    // 3. 核心提醒逻辑
+    let activeInterval = null;
+    function initMonitor() {
+        // 请求通知权限
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                alert("提醒已激活！请保持网页不关闭，或添加到桌面运行。");
+                startTracking();
+            } else {
+                alert("请允许通知权限，否则无法在截止时提醒。");
+            }
+        });
+    }
+
+    function startTracking() {
+        if(activeInterval) clearInterval(activeInterval);
+        
+        activeInterval = setInterval(() => {
+            const now = new Date();
+            const currentTimeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            
+            for(let i=1; i<=3; i++) {
+                const taskName = document.getElementById(`t${i}`).value;
+                const taskTime = document.getElementById(`time${i}`).value;
+                
+                if(!taskName || !taskTime) continue;
+
+                // 计算时间差
+                const [h, m] = taskTime.split(':');
+                const deadline = new Date();
+                deadline.setHours(h, m, 0);
+                const diffMs = deadline - now;
+                const diffMin = Math.floor(diffMs / 1000 / 60);
+
+                // 提前1小时铃声提醒 (且刚好是整一小时)
+                if (diffMin === 60) {
+                    triggerAlert(`任务 [${taskName}] 还有 1 小时截止！`, true);
+                }
+                
+                // 截止后提醒 (每隔5分钟弹出，直到完成)
+                if (diffMs <= 0) {
+                    if (Math.abs(diffMin) % 5 === 0) {
+                        triggerAlert(`⚠️ 立即执行：${taskName}！已超时！`, true);
+                    }
+                }
+            }
+        }, 60000); // 每分钟检查一次
+    }
+
+    function triggerAlert(msg, playSound) {
+        new Notification("任务提醒", { body: msg, icon: 'https://dkfile.net/uploads/avatars/avatar_1037_2b899c87.jpeg' });
+        if(playSound) {
+            document.getElementById('alertSound').play();
+        }
+    }
+
+    // 4. 生成分享卡片
+    function generateCard() {
+        const canvas = document.getElementById('shareCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 绘制背景
+        ctx.fillStyle = '#007AFF';
+        ctx.fillRect(0, 0, 600, 800);
+        ctx.fillStyle = '#ffffff';
+        ctx.roundRect(40, 40, 520, 720, 20);
+        ctx.fill();
+
+        // 绘制文字
+        ctx.fillStyle = '#333';
+        ctx.font = 'bold 36px sans-serif';
+        ctx.fillText('今日最重要的三件事', 80, 120);
+        
+        ctx.font = '24px sans-serif';
+        for(let i=1; i<=3; i++) {
+            const val = document.getElementById(`t${i}`).value || '未安排任务';
+            ctx.fillText(`${i}. ${val}`, 80, 200 + (i*80));
+        }
+
+        ctx.fillStyle = '#8e8e93';
+        ctx.font = '20px sans-serif';
+        ctx.fillText('技术支持：艾兜兜儿', 80, 680);
+        ctx.fillText('扫码加入 AI 提效工具群', 80, 710);
+
+        // 导出图片
+        const dataUrl = canvas.toDataURL("image/png");
+        const link = document.createElement('a');
+        link.download = 'today-task.png';
+        link.href = dataUrl;
+        link.click();
+    }
+</script>
+</body>
+</html>
