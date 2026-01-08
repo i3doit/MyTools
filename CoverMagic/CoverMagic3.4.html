@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoverCanvas - AI封面图生成工具-艾兜兜儿</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=ZCOOL+XiaoWei&family=ZCOOL+KuaiLe&family=Ma+Shan+Zheng&display=swap">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-bg: #e6f7ff;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-primary: #1a2b4d;
+            --accent-color: #4facfe;
+            --shadow-light: 0 8px 32px rgba(31, 38, 135, 0.1);
+            --shadow-deep: 0 12px 48px rgba(31, 38, 135, 0.2);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--primary-bg);
+            background-image: radial-gradient(circle at center, #e6f7ff 0%, #ccefff 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        header { text-align: center; margin-bottom: 30px; }
+        .title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 3.2rem; background: linear-gradient(135deg, #4facfe 0%, #00c1fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .main-content { display: grid; grid-template-columns: 480px 1fr; gap: 30px; margin-bottom: 40px; }
+        @media (max-width: 992px) { .main-content { grid-template-columns: 1fr; } }
+
+        /* 控制面板 */
+        .control-panel { background: var(--card-bg); border-radius: 20px; padding: 25px; box-shadow: var(--shadow-light); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 0.95rem; }
+
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        input, textarea, select {
+            width: 100%; padding: 14px 40px 14px 15px; border: 1px solid rgba(79, 172, 254, 0.2);
+            background: rgba(255, 255, 255, 0.7); border-radius: 10px; font-size: 1rem; outline: none; transition: 0.3s;
+        }
+        input:focus, textarea:focus { background: #fff; border-color: var(--accent-color); }
+
+        .clear-icon { position: absolute; right: 12px; color: #ccc; cursor: pointer; display: none; }
+        .input-wrapper:hover .clear-icon { display: block; }
+
+        .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .color-pickers { display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,0.5); padding: 5px 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.05); }
+        input[type="color"] { width: 35px; height: 35px; border: none; background: none; cursor: pointer; padding: 0; }
+
+        .templates-scroller { display: flex; gap: 12px; overflow-x: auto; padding: 5px 2px 10px 2px; }
+        .template-item { flex: 0 0 60px; height: 60px; border-radius: 10px; cursor: pointer; border: 3px solid transparent; transition: 0.3s; }
+        .template-item.active { border-color: #fff; transform: translateY(-3px); outline: 2px solid var(--accent-color); }
+
+        .ratio-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .ratio-btn { padding: 8px 15px; background: rgba(79, 172, 254, 0.1); border-radius: 8px; cursor: pointer; border: none; font-size: 0.9rem; transition: 0.3s; color: var(--text-primary); }
+        .ratio-btn.active { background: var(--accent-color); color: white; }
+
+        /* 预览区 */
+        .preview-area { position: sticky; top: 20px; }
+        .preview-container { position: relative; width: 100%; overflow: hidden; box-shadow: var(--shadow-deep); background: white; transition: 0.3s; }
+        .preview-content { padding: 8% 10%; display: flex; flex-direction: column; justify-content: center; height: 100%; }
+        
+        .editable { outline: none; transition: 0.2s; border-radius: 4px; }
+        .editable:hover { background: rgba(255,255,255,0.1); outline: 1px dashed rgba(255,255,255,0.5); }
+        .editable:focus { background: rgba(255,255,255,0.15); outline: 2px solid #fff; }
+
+        .preview-title { font-weight: 800; line-height: 1.3; margin-bottom: 20px; font-size: 2.8rem; word-break: break-all; }
+        .preview-subtitle { font-size: 1.3rem; opacity: 0.9; margin-bottom: 30px; line-height: 1.6; }
+        .preview-author { position: absolute; font-weight: 600; padding: 8px 18px; border-radius: 8px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); }
+
+        /* 比例定义 */
+        .ratio-3-4 { aspect-ratio: 3/4; max-width: 480px; margin: 0 auto; }
+        .ratio-4-3 { aspect-ratio: 4/3; }
+        .ratio-2-1 { aspect-ratio: 2/1; }
+        .ratio-2-35-1 { aspect-ratio: 2.35/1; }
+        .ratio-1-1 { aspect-ratio: 1/1; max-width: 550px; margin: 0 auto; }
+
+        /* 特殊逻辑：长图模式隐藏副标题，保持简洁 */
+        .ratio-2-1 .preview-subtitle, 
+        .ratio-2-35-1 .preview-subtitle { display: none !important; }
+
+        /* 作者位置适配 */
+        .ratio-2-35-1 .preview-author { bottom: 15px; right: 40px; }
+        .ratio-2-1 .preview-author { bottom: 20px; right: 40px; }
+        .ratio-3-4 .preview-author { bottom: 40px; right: 35px; }
+        .ratio-4-3 .preview-author { bottom: 35px; right: 35px; }
+        .ratio-1-1 .preview-author { bottom: 30px; right: 30px; }
+
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
+        .btn { padding: 14px; border: none; border-radius: 50px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .btn-primary { background: linear-gradient(to right, #4facfe, #00c1fc); color: white; box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4); }
+        .btn-outline { background: transparent; border: 2px solid #4facfe; color: var(--accent-color); }
+
+        /* 推广与页脚 */
+        .promotion-section { background: rgba(225, 242, 255, 0.6); border-radius: 14px; padding: 25px; margin: 40px auto; border: 1px solid rgba(0, 102, 204, 0.15); max-width: 800px; text-align: center; }
+        .promotion-text { font-size: 16px; color: #0066cc; line-height: 1.7; }
+        .highlight { margin-top: 15px; display: inline-block; padding: 12px 30px; background: #fff; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,102,204,0.1); }
+        .highlight a { color: #0066cc; font-weight: 700; text-decoration: none; }
+        .apple-footer { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-top: 1px solid rgba(0, 0, 0, 0.05); padding: 40px 20px; text-align: center; }
+        .author-links { display: flex; gap: 20px; justify-content: center; margin-bottom: 15px; font-weight: 600; }
+        .author-links a { color: #1a2b4d; display: flex; align-items: center; gap: 5px; text-decoration: none; }
+        .copyright { font-size: 13px; color: #999; }
+
+        /* 字体 */
+        .font-sans { font-family: sans-serif; }
+        .font-serif { font-family: 'ZCOOL XiaoWei', serif; }
+        .font-happy { font-family: 'ZCOOL KuaiLe', cursive; }
+        .font-brush { font-family: 'Ma Shan Zheng', cursive; }
+
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 12px 30px; border-radius: 50px; opacity: 0; transition: 0.3s; z-index: 1000; pointer-events: none; }
+        .toast.show { opacity: 1; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1 class="title">CoverCanvas</h1>
+        <p style="text-align: center; color: #4a5a7b; margin-top: 10px;">三分钟打造你的专属封面图</p>
+    </header>
+
+    <div class="main-content">
+        <div class="control-panel">
+            <div class="form-group">
+                <label>封面主题</label>
+                <div class="input-wrapper">
+                    <input type="text" id="in-title" value="用AI打造爆款设计">
+                    <i class="fas fa-times-circle clear-icon" onclick="clearInput('in-title')"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>封面描述 (公众号比例下自动隐藏)</label>
+                <div class="input-wrapper">
+                    <textarea id="in-sub" rows="2">CoverCanvas帮你制作高质量封面图</textarea>
+                    <i class="fas fa-times-circle clear-icon" onclick="clearInput('in-sub')"></i>
+                </div>
+            </div>
+
+            <div class="tool-grid">
+                <div class="form-group">
+                    <label>字体风格</label>
+                    <select id="font-select">
+                        <option value="font-sans">时尚黑体 (系统)</option>
+                        <option value="font-serif">雅致宋体 (免费商用)</option>
+                        <option value="font-happy">快乐体 (免费商用)</option>
+                        <option value="font-brush">霸气毛笔 (免费商用)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>自定义渐变</label>
+                    <div class="color-pickers">
+                        <input type="color" id="color1">
+                        <span style="font-size: 12px; color: #999;">至</span>
+                        <input type="color" id="color2">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>快速颜色模板</label>
+                <div class="templates-scroller" id="tpl-list"></div>
+            </div>
+
+            <div class="form-group">
+                <label>封面尺寸比例</label>
+                <div class="ratio-group">
+                    <button class="ratio-btn" data-ratio="ratio-3-4">竖版 3:4</button>
+                    <button class="ratio-btn" data-ratio="ratio-4-3">横版 4:3</button>
+                    <button class="ratio-btn" data-ratio="ratio-2-1">长图 2:1</button>
+                    <button class="ratio-btn" data-ratio="ratio-2-35-1">公众号 2.35:1</button>
+                    <button class="ratio-btn" data-ratio="ratio-1-1">方形 1:1</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>作者</label>
+                <div class="input-wrapper">
+                    <input type="text" id="in-author" value="艾兜兜儿">
+                    <i class="fas fa-times-circle clear-icon" onclick="clearInput('in-author')"></i>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" id="downloadBtn">下载封面图</button>
+                <button class="btn btn-outline" id="resetBtn">重置并清除缓存</button>
+            </div>
+        </div>
+
+        <div class="preview-area">
+            <div id="preview" class="preview-container ratio-3-4 font-sans">
+                <div class="preview-content">
+                    <div id="pv-title" class="preview-title editable" contenteditable="true">用AI打造爆款设计</div>
+                    <div id="pv-sub" class="preview-subtitle editable" contenteditable="true">CoverCanvas帮你制作高质量封面图</div>
+                    <div id="pv-author" class="preview-author editable" contenteditable="true">艾兜兜儿</div>
+                </div>
+            </div>
+            <p style="text-align:center; color:#999; font-size:13px; margin-top:15px;">直接点击文字可编辑，长图比例下副标题自动隐藏</p>
+        </div>
+    </div>
+
+    <div class="promotion-section">
+        <p class="promotion-text">我正在参与「AI编程·垂直小流量商业化」星球挑战用AI 写「100个AI小工具」</p>
+        <div class="highlight"><a href="https://t.zsxq.com/yL7L8" target="_blank">「一起加入讨论吧」</a></div>
+    </div>
+</div>
+
+<div class="apple-footer">
+    <div class="author-links">
+        <a href="https://t.zsxq.com/11QO9" target="_blank"><i class="fas fa-headset"></i> 艾兜兜儿</a>
+        <a href="https://mp.weixin.qq.com/s/aB6rkYbBDi1CDau6hLs1jg" target="_blank"><i class="fab fa-weixin"></i> 「我的AI编程日记」</a>
+    </div>
+    <div class="copyright">© <span id="currentYear"></span> CoverCanvas | 免费商用字体 | 保留所有权利</div>
+</div>
+
+<div id="toast" class="toast">操作成功</div>
+
+<script>
+    const tpls = [
+        ['#4facfe', '#00c1fc'], ['#ff7eb3', '#ff758c'], ['#43cea2', '#185a9d'],
+        ['#e0c3fc', '#8ec5fc'], ['#f093fb', '#f5576c'], ['#5ee7df', '#b490ca'],
+        ['#d4fc79', '#96e6a1'], ['#a18cd1', '#fbc2eb'], ['#ffecd2', '#fcb69f'], ['#89f7fe', '#66a6ff']
+    ];
+
+    let state = {
+        title: "用AI打造爆款设计",
+        sub: "CoverCanvas帮你制作高质量封面图",
+        author: "艾兜兜儿",
+        c1: "#4facfe", 
+        c2: "#00c1fc",
+        font: "font-sans", 
+        ratio: "ratio-3-4",
+        tplIdx: 0
+    };
+
+    // 初始化模板
+    const tplList = document.getElementById('tpl-list');
+    tpls.forEach((colors, idx) => {
+        const div = document.createElement('div');
+        div.className = 'template-item';
+        div.style.background = `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`;
+        div.onclick = () => {
+            state.c1 = colors[0]; 
+            state.c2 = colors[1];
+            state.tplIdx = idx;
+            document.getElementById('color1').value = colors[0];
+            document.getElementById('color2').value = colors[1];
+            updatePreview();
+            saveState();
+        };
+        tplList.appendChild(div);
+    });
+
+    function updatePreview() {
+        const pv = document.getElementById('preview');
+        pv.style.background = `linear-gradient(135deg, ${state.c1}, ${state.c2})`;
+        pv.className = `preview-container ${state.ratio} ${state.font}`;
+        
+        // 自动对比色
+        const r = parseInt(state.c1.slice(1,3), 16);
+        const g = parseInt(state.c1.slice(3,5), 16);
+        const b = parseInt(state.c1.slice(5,7), 16);
+        const brightness = (r*299 + g*587 + b*114) / 1000;
+        pv.style.color = brightness > 180 ? '#1a2b4d' : '#ffffff';
+
+        // 同步控件显示
+        document.querySelectorAll('.template-item').forEach((t, i) => t.classList.toggle('active', i === state.tplIdx));
+        document.querySelectorAll('.ratio-btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === state.ratio));
+        document.getElementById('font-select').value = state.font;
+        document.getElementById('color1').value = state.c1;
+        document.getElementById('color2').value = state.c2;
+    }
+
+    function saveState() {
+        state.title = document.getElementById('in-title').value;
+        state.sub = document.getElementById('in-sub').value;
+        state.author = document.getElementById('in-author').value;
+        localStorage.setItem('cover_canvas_persistent_v2', JSON.stringify(state));
+    }
+
+    function loadState() {
+        const saved = localStorage.getItem('cover_canvas_persistent_v2');
+        if (saved) {
+            state = JSON.parse(saved);
+            document.getElementById('in-title').value = state.title;
+            document.getElementById('in-sub').value = state.sub;
+            document.getElementById('in-author').value = state.author;
+            syncInToPv();
+        }
+    }
+
+    window.clearInput = (id) => {
+        document.getElementById(id).value = '';
+        syncInToPv();
+        saveState();
+    };
+
+    function syncInToPv() {
+        document.getElementById('pv-title').innerText = document.getElementById('in-title').value;
+        document.getElementById('pv-sub').innerText = document.getElementById('in-sub').value;
+        document.getElementById('pv-author').innerText = document.getElementById('in-author').value;
+        updatePreview();
+    }
+
+    function syncPvToIn() {
+        document.getElementById('in-title').value = document.getElementById('pv-title').innerText;
+        document.getElementById('in-sub').value = document.getElementById('pv-sub').innerText;
+        document.getElementById('in-author').value = document.getElementById('pv-author').innerText;
+        saveState();
+    }
+
+    // 事件监听
+    document.getElementById('color1').oninput = (e) => { state.c1 = e.target.value; state.tplIdx = -1; updatePreview(); saveState(); };
+    document.getElementById('color2').oninput = (e) => { state.c2 = e.target.value; state.tplIdx = -1; updatePreview(); saveState(); };
+    document.getElementById('font-select').onchange = (e) => { state.font = e.target.value; updatePreview(); saveState(); };
+    
+    document.querySelectorAll('.ratio-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            state.ratio = e.target.dataset.ratio;
+            updatePreview();
+            saveState();
+        };
+    });
+
+    ['in-title', 'in-sub', 'in-author'].forEach(id => {
+        document.getElementById(id).oninput = () => { syncInToPv(); saveState(); };
+    });
+
+    ['pv-title', 'pv-sub', 'pv-author'].forEach(id => {
+        document.getElementById(id).oninput = syncPvToIn;
+        if(id !== 'pv-sub') {
+            document.getElementById(id).onkeydown = (e) => { if(e.key === 'Enter') e.preventDefault(); };
+        }
+    });
+
+    document.getElementById('downloadBtn').onclick = function() {
+        const originalText = this.innerText;
+        this.innerText = "生成中...";
+        html2canvas(document.getElementById('preview'), { scale: 2, useCORS: true }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Cover-${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            this.innerText = originalText;
+            showToast("图片下载已开始");
+        });
+    };
+
+    document.getElementById('resetBtn').onclick = () => {
+        if(confirm("确定要彻底重置所有内容和缓存吗？")) {
+            localStorage.removeItem('cover_canvas_persistent_v2');
+            location.reload();
+        }
+    };
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    window.onload = () => {
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+        loadState();
+        updatePreview();
+    };
+</script>
+
+</body>
+</html>
