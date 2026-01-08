@@ -3,21 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sticker Designer - Pro Editor</title>
+    <title>气泡表情包 Pro - 批量制作工具</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
         body {
             font-family: 'SF Pro Display', 'Noto Sans SC', -apple-system, sans-serif;
-            background-color: #fbfbfd;
+            background-color: #f5f5f7;
             color: #1d1d1f;
             -webkit-font-smoothing: antialiased;
         }
         .preview-zone {
-            background-image: radial-gradient(#d2d2d7 0.8px, #fbfbfd 0.8px);
+            background-image: radial-gradient(#d2d2d7 0.8px, #ffffff 0.8px);
             background-size: 30px 30px;
-            border-radius: 32px;
+            border-radius: 24px;
             touch-action: none;
+            transition: all 0.3s ease;
+        }
+        .apple-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
         }
         #floatingInput {
             display: none;
@@ -30,146 +39,120 @@
             padding: 15px;
             width: 280px;
         }
-        .apple-modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 999;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            align-items: center;
-            justify-content: center;
-        }
-        .footer-container {
-            border-top: 1px solid #e5e5e5;
-            padding: 40px 0;
-            margin-top: 80px;
-        }
-        .footer-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            color: #86868b;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-        }
-        @media (min-width: 768px) { .footer-content { flex-direction: row; gap: 30px; } }
-        .footer-link { color: #86868b; text-decoration: none; transition: color 0.3s; }
-        .footer-link:hover { color: #1d1d1f; }
-        .btn-action { transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-action { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         .btn-action:active { transform: scale(0.95); }
+        .tab-active { background: white; shadow: 0 2px 10px rgba(0,0,0,0.1); color: black; }
+        
+        /* 隐藏滚动条 */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
     <input type="file" id="avatarUpload" class="hidden" accept="image/*" onchange="handleAvatarUpload(event)">
 
-    <div id="unlockModal" class="apple-modal">
-        <div class="bg-white w-[90%] max-w-sm rounded-[30px] p-8 text-center shadow-2xl mx-4">
-            <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">🔑</div>
-            <h2 class="text-xl font-bold mb-2">解锁高级功能</h2>
-            <p class="text-gray-400 text-sm mb-6 leading-relaxed">
-                该功能需验证权限<br>
-                微信号 <span class="text-blue-600 font-bold">857023577</span> 已自动复制<br>
-                请添加微信联系作者获取解锁码
-            </p>
-            <input type="text" id="unlockInput" class="w-full px-4 py-4 bg-gray-100 rounded-2xl mb-4 text-center text-lg font-bold outline-none border-2 border-transparent focus:border-blue-500 transition-all" placeholder="输入解锁码">
-            <div class="flex gap-4">
-                <button onclick="closeModal()" class="flex-1 py-4 text-gray-400 font-medium">取消</button>
-                <button onclick="confirmUnlock()" class="flex-1 py-4 bg-black text-white rounded-2xl font-bold btn-action">验证解锁</button>
-            </div>
-        </div>
-    </div>
-
-    <header class="max-w-6xl mx-auto w-full px-6 pt-12 pb-8 text-center">
-        <h1 class="text-3xl md:text-5xl font-bold tracking-tight mb-3">表情包工作室 <span class="text-blue-500">Pro</span></h1>
-        <p class="text-gray-400 text-base md:text-lg font-medium">点击元素直接编辑，自由拖拽生成个性气泡</p>
+    <header class="max-w-6xl mx-auto w-full px-6 pt-10 pb-6 text-center">
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-2">表情包工作室 <span class="text-blue-500">Pro</span></h1>
+        <p class="text-gray-500 text-sm md:text-base">高效生成个性化社交气泡表情</p>
     </header>
 
-    <section class="w-full flex-grow flex flex-col items-center justify-center p-4 relative">
-        <div class="relative preview-zone p-2 md:p-10 shadow-sm border border-gray-100">
-            <canvas id="mainCanvas" width="800" height="400" class="max-w-full h-auto"></canvas>
-            
-            <div id="floatingInput">
-                <textarea id="tempText" class="w-full p-4 text-sm bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-blue-400 outline-none" rows="3"></textarea>
-                <div class="flex justify-between items-center mt-3">
-                    <span class="text-[9px] text-gray-400 font-bold tracking-widest uppercase">Content Edit</span>
-                    <button onclick="saveFloatingText()" class="bg-black text-white px-6 py-2 rounded-full text-xs font-bold btn-action">确定</button>
-                </div>
-            </div>
+    <main class="max-w-5xl mx-auto w-full px-4 flex-grow space-y-6">
+        
+        <div class="apple-card p-2 flex gap-1 w-fit mx-auto mb-6">
+            <button onclick="switchMode('single')" id="btn-single" class="px-6 py-2 rounded-xl text-sm font-bold transition-all bg-black text-white">单张模式</button>
+            <button onclick="switchMode('batch')" id="btn-batch" class="px-6 py-2 rounded-xl text-sm font-bold transition-all text-gray-500">批量模式</button>
         </div>
 
-        <div class="mt-8">
-            <button onclick="downloadImage()" class="btn-action bg-black text-white px-14 py-4 rounded-full font-bold shadow-2xl hover:bg-zinc-900">导出保存</button>
-        </div>
-    </section>
-
-    <section class="max-w-6xl mx-auto w-full px-6 py-12 space-y-8">
-        <div class="bg-white border border-gray-100 p-8 rounded-[32px] shadow-sm grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-            
-            <div class="space-y-4">
-                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Style Palette / 配色</h3>
-                <div class="flex items-center gap-4">
-                    <button onclick="updateColor('#07C160')" class="w-10 h-10 rounded-full bg-[#07C160] border-4 border-white shadow-md transform hover:scale-110 transition"></button>
-                    <button onclick="updateColor('#10aeff')" class="w-10 h-10 rounded-full bg-[#10aeff] border-4 border-white shadow-md transform hover:scale-110 transition"></button>
-                    <button onclick="updateColor('#333333')" class="w-10 h-10 rounded-full bg-[#333333] border-4 border-white shadow-md transform hover:scale-110 transition"></button>
-                    <div class="w-px h-8 bg-gray-200"></div>
-                    <div class="relative" onclick="handleColorLock(event)">
-                        <input type="color" oninput="updateColor(this.value)" class="w-10 h-10 border-none bg-transparent cursor-pointer">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-7 space-y-4">
+                <div class="preview-zone relative p-4 md:p-8 shadow-xl border border-white flex items-center justify-center min-h-[300px]">
+                    <canvas id="mainCanvas" width="800" height="400" class="max-w-full h-auto drop-shadow-2xl"></canvas>
+                    
+                    <div id="floatingInput">
+                        <textarea id="tempText" class="w-full p-3 text-sm bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-blue-400 outline-none" rows="3"></textarea>
+                        <div class="flex justify-between items-center mt-3">
+                            <span class="text-[9px] text-gray-400 font-bold uppercase">Editor</span>
+                            <button onclick="saveFloatingText()" class="bg-black text-white px-5 py-2 rounded-full text-xs font-bold btn-action">完成</button>
+                        </div>
                     </div>
                 </div>
+
+                <div id="batchInputArea" class="hidden apple-card p-6 space-y-3">
+                    <h3 class="text-sm font-bold text-gray-800">批量文案输入 (每行一张图片)</h3>
+                    <textarea id="batchTexts" class="w-full p-4 h-40 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 outline-none text-sm leading-relaxed" placeholder="优秀！&#10;安排！&#10;这就去办！"></textarea>
+                </div>
             </div>
 
-            <div class="space-y-4">
-                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Avatar / 头像设置</h3>
-                <label class="flex items-center gap-3 cursor-pointer group">
-                    <div class="relative">
-                        <input type="checkbox" id="maskToggle" checked onchange="handleMaskChange(this)" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-500 transition-colors"></div>
-                        <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+            <div class="lg:col-span-5 space-y-4">
+                <div class="apple-card p-6 space-y-6">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Theme Color / 主题色</h3>
+                            <span id="colorHex" class="text-[10px] font-mono text-gray-400">#07C160</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="updateColor('#07C160')" class="w-8 h-8 rounded-full bg-[#07C160] ring-offset-2 ring-2 ring-transparent active:ring-[#07C160] transition-all"></button>
+                            <button onclick="updateColor('#10aeff')" class="w-8 h-8 rounded-full bg-[#10aeff] ring-offset-2 ring-2 ring-transparent active:ring-[#10aeff] transition-all"></button>
+                            <button onclick="updateColor('#333333')" class="w-8 h-8 rounded-full bg-[#333333] ring-offset-2 ring-2 ring-transparent active:ring-[#333333] transition-all"></button>
+                            <input type="color" oninput="updateColor(this.value)" class="w-8 h-8 border-none bg-transparent cursor-pointer rounded-full">
+                        </div>
                     </div>
-                    <span class="text-sm font-bold text-gray-600">圆形边框遮罩</span>
-                </label>
-            </div>
 
-            <div class="space-y-4">
-                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Badge / 挂件设置</h3>
-                <div class="flex items-center gap-4 bg-gray-50 p-3 rounded-2xl">
-                    <input type="checkbox" id="badgeToggle" checked onchange="handleBadgeRequest(this)" class="w-5 h-5 accent-black">
-                    <input type="text" id="badgeText" maxlength="6" value="艾兜兜儿" class="flex-1 bg-transparent border-none text-sm font-bold outline-none" oninput="refreshBadge()">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-3">
+                            <h3 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Avatar / 头像</h3>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="maskToggle" checked onchange="handleMaskChange(this)" class="w-4 h-4 accent-blue-500">
+                                <span class="text-xs font-bold text-gray-600">圆形遮罩</span>
+                            </label>
+                        </div>
+                        <div class="space-y-3">
+                            <h3 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Badge / 挂件</h3>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="badgeToggle" checked onchange="handleBadgeToggle(this)" class="w-4 h-4 accent-blue-500">
+                                <span class="text-xs font-bold text-gray-600">显示挂件</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Nickname / 挂件名称</h3>
+                        <input type="text" id="badgeText" maxlength="10" value="艾兜兜儿" class="w-full bg-gray-100 p-3 rounded-xl text-sm font-bold outline-none focus:bg-gray-200 transition-all" oninput="refreshBadge()">
+                    </div>
+
+                    <div id="singleAction" class="pt-4">
+                        <button onclick="downloadImage()" class="w-full btn-action bg-black text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-zinc-800">保存图片</button>
+                    </div>
+                    <div id="batchAction" class="hidden pt-4">
+                        <button onclick="downloadBatch()" class="w-full btn-action bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-blue-700">生成并打包下载 (.zip)</button>
+                    </div>
+                </div>
+
+                <div class="apple-card p-6">
+                    <h3 class="text-xs font-bold text-gray-800 mb-4">使用技巧</h3>
+                    <ul class="text-[13px] text-gray-500 space-y-3 font-medium">
+                        <li class="flex gap-2">核心：<span class="text-gray-800">点击画布文字可直接编辑，头像可更换。</span></li>
+                        <li class="flex gap-2">拖拽：<span class="text-gray-800">气泡位置支持自由拖拽移动。</span></li>
+                        <li class="flex gap-2">批量：<span class="text-gray-800">切换批量模式，一行文案生成一张图。</span></li>
+                    </ul>
                 </div>
             </div>
         </div>
+    </main>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-gray-50 p-6 rounded-2xl text-center">
-                <span class="text-blue-500 font-bold block mb-2 uppercase text-[10px] tracking-widest">Step 01</span>
-                <p class="text-sm text-gray-600 font-medium">点击文字区域修改对话文案</p>
-            </div>
-            <div class="bg-gray-50 p-6 rounded-2xl text-center">
-                <span class="text-blue-500 font-bold block mb-2 uppercase text-[10px] tracking-widest">Step 02</span>
-                <p class="text-sm text-gray-600 font-medium">点击头像更换图片，可开关圆形遮罩</p>
-            </div>
-            <div class="bg-gray-50 p-6 rounded-2xl text-center">
-                <span class="text-blue-500 font-bold block mb-2 uppercase text-[10px] tracking-widest">Step 03</span>
-                <p class="text-sm text-gray-600 font-medium">气泡支持自由拖拽，满意后导出</p>
-            </div>
-        </div>
-    </section>
+    <footer class="mt-12 mb-8 px-6">
+        <div class="max-w-5xl mx-auto pt-8 border-t border-gray-200">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6 text-[11px] font-bold text-gray-400 tracking-wider uppercase">
+                <div class="flex gap-6">
+                    <a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" target="_blank" class="hover:text-black transition-colors">更多工具</a>
+                    <a href="https://t.zsxq.com/7tSuP" target="_blank" class="hover:text-black transition-colors">技术支持：艾兜兜儿</a>
+                </div>
+                
+                <div onclick="copyQQ()" class="cursor-pointer hover:text-blue-500 transition-colors bg-gray-100 px-4 py-2 rounded-full">
+                    AI 提效工具官方 QQ 群：<span id="qqNum">857023577</span> (点击复制)
+                </div>
 
-    <footer class="footer-container">
-        <div class="max-w-6xl mx-auto px-6">
-            <div class="footer-content">
-                <a href="https://mp.weixin.qq.com/s/MD9p_GnqA07OyOZGrbMV0A" class="footer-link">More Tools</a>
-                <span class="hidden md:inline">|</span>
-                <p>DESIGNED AND DEVELOPED BY I DO IT</p>
-                <span class="hidden md:inline">|</span>
-                <p>© 2024-2026 ALL RIGHTS RESERVED.</p>
+                <div id="copyright">© 2024 - <span id="currentYear"></span> ALL RIGHTS RESERVED.</div>
             </div>
         </div>
     </footer>
@@ -177,9 +160,7 @@
     <script>
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
-        const UNLOCK_CODE = "BQWX857023577";
-        const AUTHOR_WECHAT = "BQWX857023577";
-        let isUnlocked = false;
+        let currentMode = 'single';
 
         let state = {
             text: "优秀！",
@@ -192,11 +173,11 @@
             dragging: false,
             dragOffset: { x: 0, y: 0 },
             avatarRenderRect: { x: 0, y: 0, w: 0, h: 0 },
-            bubbleBounds: { x: 0, y: 0, w: 0, h: 0 },
-            clickStartTime: 0
+            bubbleBounds: { x: 0, y: 0, w: 0, h: 0 }
         };
 
         window.onload = () => {
+            document.getElementById('currentYear').innerText = new Date().getFullYear();
             initAvatar();
             setupInteractions();
         };
@@ -204,16 +185,16 @@
         function initAvatar() {
             const img = new Image();
             img.crossOrigin = "anonymous";
-            img.src = "https://images.zsxq.com/FjJCljNf3_Zkd_4c1HAaevGQ4ZQ6?imageMogr2/auto-orient/thumbnail/750x/format/jpg/blur/1x0/quality/75&e=1772294399&s=mtttmjytmmyjyj&token=kIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zD:3q3csBXHxw8-oDJOAzReRedm6EY=";
+            img.src = "https://dkfile.net/uploads/avatars/avatar_1037_2b899c87.jpeg";
             img.onload = () => { state.avatar = img; draw(); };
         }
 
-        function draw(targetCtx = ctx) {
+        function draw(targetCtx = ctx, customText = null) {
+            const renderText = customText || state.text;
             targetCtx.clearRect(0, 0, canvas.width, canvas.height);
-            const lines = state.text.split('\n');
+            const lines = renderText.split('\n');
             const isSingleLine = lines.length === 1;
 
-            // 动态调节字号
             const fontSize = isSingleLine ? 56 : 42; 
             targetCtx.font = `italic 900 ${fontSize}px 'Noto Sans SC'`;
 
@@ -225,7 +206,7 @@
 
             const avatarSize = 125;
             const paddingH = 45;
-            const paddingV = isSingleLine ? 25 : 35; // 单行高度自适应收紧
+            const paddingV = isSingleLine ? 25 : 35;
             const avatarMargin = 30;
             
             const bW = Math.max(300, maxW + avatarSize + avatarMargin + (paddingH * 2));
@@ -234,7 +215,11 @@
 
             const bx = state.textPos.x - paddingH;
             const by = state.textPos.y - paddingV;
-            state.bubbleBounds = { x: bx - 10, y: by - 10, w: bW + 20, h: bH + 40 };
+            
+            // 只有在主画布绘制时更新边界信息用于交互和导出
+            if (targetCtx === ctx) {
+                state.bubbleBounds = { x: bx - 10, y: by - 10, w: bW + 20, h: bH + 40 };
+            }
 
             // 1. 气泡背景
             targetCtx.save();
@@ -250,21 +235,20 @@
             targetCtx.fill();
             targetCtx.restore();
 
-            // 2. 绘制文字 (垂直居中)
+            // 2. 文字
             targetCtx.fillStyle = "#FFFFFF";
             targetCtx.textBaseline = 'middle';
             const centerY = by + bH / 2;
             const startY = centerY - ((lines.length - 1) * (fontSize * 1.15) / 2);
-            
             lines.forEach((l, i) => {
                 targetCtx.fillText(l, state.textPos.x, startY + (i * (fontSize * 1.15)));
             });
 
-            // 3. 绘制头像
+            // 3. 头像
             if(state.avatar) {
                 const ax = bx + bW - avatarSize - 25;
                 const ay = by + (bH - avatarSize) / 2;
-                state.avatarRenderRect = { x: ax, y: ay, w: avatarSize, h: avatarSize };
+                if (targetCtx === ctx) state.avatarRenderRect = { x: ax, y: ay, w: avatarSize, h: avatarSize };
                 
                 targetCtx.save();
                 if(state.isCircleMask) {
@@ -275,10 +259,9 @@
                 targetCtx.drawImage(state.avatar, ax, ay, avatarSize, avatarSize);
                 targetCtx.restore();
 
-                // 4. 挂件气泡优化 (带尾巴的形状)
+                // 4. 挂件
                 if(state.showBadge) {
-                    const badgeFont = "bold 13px Arial";
-                    targetCtx.font = badgeFont;
+                    targetCtx.font = "bold 13px Arial";
                     const btxtW = targetCtx.measureText(state.badge).width + 24;
                     const btxtH = 28;
                     const bpx = ax + avatarSize - btxtW/2 - 10;
@@ -288,16 +271,12 @@
                     targetCtx.shadowBlur = 10;
                     targetCtx.shadowColor = 'rgba(0,0,0,0.15)';
                     targetCtx.fillStyle = "white";
-                    
-                    // 挂件小气泡外形
                     drawRoundRect(targetCtx, bpx, bpy, btxtW, btxtH, 14);
-                    // 挂件小尾巴
                     targetCtx.beginPath();
                     targetCtx.moveTo(bpx + btxtW/2 + 5, bpy + btxtH);
                     targetCtx.lineTo(bpx + btxtW/2, bpy + btxtH + 6);
                     targetCtx.lineTo(bpx + btxtW/2 - 5, bpy + btxtH);
                     targetCtx.fill();
-
                     targetCtx.fillStyle = "#1d1d1f";
                     targetCtx.textAlign = "center";
                     targetCtx.textBaseline = "middle";
@@ -305,9 +284,10 @@
                     targetCtx.restore();
                 }
             }
+            return { w: bW + 20, h: bH + 40, bx, by };
         }
 
-        // 交互逻辑
+        // 核心交互逻辑
         function setupInteractions() {
             const getCanvasPos = (e) => {
                 const rect = canvas.getBoundingClientRect();
@@ -320,22 +300,23 @@
                 };
             };
 
-            const onStart = (e) => {
+            canvas.addEventListener('mousedown', (e) => {
                 const p = getCanvasPos(e);
                 state.clickStartTime = Date.now();
                 state.lastPos = p;
                 state.dragging = true;
                 state.dragOffset = { x: p.x - state.textPos.x, y: p.y - state.textPos.y };
-            };
+            });
 
-            const onMove = (e) => {
+            window.addEventListener('mousemove', (e) => {
                 if (!state.dragging) return;
                 const p = getCanvasPos(e);
                 state.textPos = { x: p.x - state.dragOffset.x, y: p.y - state.dragOffset.y };
                 draw();
-            };
+            });
 
-            const onEnd = (e) => {
+            window.addEventListener('mouseup', (e) => {
+                if (!state.dragging) return;
                 const duration = Date.now() - state.clickStartTime;
                 if (duration < 250) {
                     const p = state.lastPos;
@@ -347,16 +328,80 @@
                     }
                 }
                 state.dragging = false;
-            };
-
-            canvas.addEventListener('mousedown', onStart);
-            window.addEventListener('mousemove', onMove);
-            window.addEventListener('mouseup', onEnd);
-            canvas.addEventListener('touchstart', (e) => { onStart(e); e.preventDefault(); }, {passive: false});
-            window.addEventListener('touchmove', onMove, {passive: false});
-            window.addEventListener('touchend', onEnd);
+            });
         }
 
+        // 模式切换
+        function switchMode(mode) {
+            currentMode = mode;
+            const isSingle = mode === 'single';
+            document.getElementById('btn-single').className = isSingle ? 'px-6 py-2 rounded-xl text-sm font-bold transition-all bg-black text-white' : 'px-6 py-2 rounded-xl text-sm font-bold transition-all text-gray-500';
+            document.getElementById('btn-batch').className = !isSingle ? 'px-6 py-2 rounded-xl text-sm font-bold transition-all bg-black text-white' : 'px-6 py-2 rounded-xl text-sm font-bold transition-all text-gray-500';
+            
+            document.getElementById('batchInputArea').classList.toggle('hidden', isSingle);
+            document.getElementById('singleAction').classList.toggle('hidden', !isSingle);
+            document.getElementById('batchAction').classList.toggle('hidden', isSingle);
+        }
+
+        // 导出 & 批量处理
+        function downloadImage() {
+            const dataUrl = generateFinalImage(state.text);
+            const link = document.createElement('a');
+            link.download = `sticker-${Date.now()}.png`;
+            link.href = dataUrl;
+            link.click();
+        }
+
+        async function downloadBatch() {
+            const lines = document.getElementById('batchTexts').value.split('\n').filter(t => t.trim() !== "");
+            if (lines.length === 0) return alert("请输入文案");
+
+            const zip = new JSZip();
+            const btn = document.getElementById('batchAction').querySelector('button');
+            const originalText = btn.innerText;
+            btn.innerText = "处理中...";
+            btn.disabled = true;
+
+            for (let i = 0; i < lines.length; i++) {
+                const dataUrl = generateFinalImage(lines[i]);
+                const base64Data = dataUrl.replace(/^data:image\/(png|jpg);base64,/, "");
+                zip.file(`sticker-${i+1}.png`, base64Data, {base64: true});
+            }
+
+            const content = await zip.generateAsync({type:"blob"});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = `stickers-batch-${Date.now()}.zip`;
+            link.click();
+            
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+
+        function generateFinalImage(text) {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            // 先用临时画布算尺寸
+            const info = draw(tempCtx, text);
+            
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = info.w;
+            finalCanvas.height = info.h;
+            const finalCtx = finalCanvas.getContext('2d');
+            finalCtx.translate(-info.bx + 10, -info.by + 10);
+            draw(finalCtx, text);
+            return finalCanvas.toDataURL('image/png', 1.0);
+        }
+
+        // 辅助功能
+        function updateColor(c) {
+            state.bgColor = c;
+            document.getElementById('colorHex').innerText = c.toUpperCase();
+            draw();
+        }
+        function handleMaskChange(cb) { state.isCircleMask = cb.checked; draw(); }
+        function handleBadgeToggle(cb) { state.showBadge = cb.checked; draw(); }
+        function refreshBadge() { state.badge = document.getElementById('badgeText').value; draw(); }
         function showEditor(x, y) {
             const el = document.getElementById('floatingInput');
             el.style.display = 'block';
@@ -365,13 +410,11 @@
             document.getElementById('tempText').value = state.text;
             document.getElementById('tempText').focus();
         }
-
         function saveFloatingText() {
             state.text = document.getElementById('tempText').value;
             document.getElementById('floatingInput').style.display = 'none';
             draw();
         }
-
         function handleAvatarUpload(e) {
             const file = e.target.files[0];
             if(!file) return;
@@ -383,50 +426,10 @@
             }
             reader.readAsDataURL(file);
         }
-
-        function handleMaskChange(cb) {
-            state.isCircleMask = cb.checked;
-            draw();
+        function copyQQ() {
+            const qq = document.getElementById('qqNum').innerText;
+            navigator.clipboard.writeText(qq).then(() => alert('QQ号已复制: ' + qq));
         }
-
-        function downloadImage() {
-            const tempCanvas = document.createElement('canvas');
-            const b = state.bubbleBounds;
-            tempCanvas.width = b.w;
-            tempCanvas.height = b.h;
-            const tCtx = tempCanvas.getContext('2d');
-            tCtx.translate(-b.x, -b.y);
-            draw(tCtx);
-            const link = document.createElement('a');
-            link.download = `sticker-${Date.now()}.png`;
-            link.href = tempCanvas.toDataURL('image/png', 1.0);
-            link.click();
-        }
-
-        function updateColor(c) {
-            if (isUnlocked || ['#07C160', '#10aeff', '#333333'].includes(c.toLowerCase())) {
-                state.bgColor = c; draw();
-            } else { triggerUnlock(); }
-        }
-
-        function handleBadgeRequest(cb) {
-            if (!isUnlocked) { cb.checked = false; triggerUnlock(); }
-            else { state.showBadge = cb.checked; draw(); }
-        }
-
-        function triggerUnlock() {
-            navigator.clipboard.writeText(AUTHOR_WECHAT).then(() => {
-                document.getElementById('unlockModal').style.display = 'flex';
-            });
-        }
-
-        function confirmUnlock() {
-            if (document.getElementById('unlockInput').value === UNLOCK_CODE) {
-                isUnlocked = true; closeModal(); draw();
-            } else { alert("验证码错误"); }
-        }
-
-        function closeModal() { document.getElementById('unlockModal').style.display = 'none'; }
         function drawRoundRect(ctx, x, y, w, h, r) {
             ctx.beginPath();
             ctx.moveTo(x + r, y);
@@ -435,10 +438,6 @@
             ctx.arcTo(x, y + h, x, y, r);
             ctx.arcTo(x, y, x + w, y, r);
             ctx.fill();
-        }
-        function refreshBadge() {
-            state.badge = document.getElementById('badgeText').value || "";
-            draw();
         }
     </script>
 </body>
