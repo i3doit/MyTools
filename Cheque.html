@@ -19,12 +19,11 @@
         .reset-btn { background: #f44336; }
         button:hover { opacity: 0.9; transform: translateY(-1px); }
         
-        /* 表格优化 */
         .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; background: white; min-width: 800px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; background: white; min-width: 850px; }
         th, td { padding: 14px; text-align: left; border-bottom: 1px solid #e0f2e9; }
         th { background-color: #2e7d32; color: white; font-weight: 500; white-space: nowrap; }
-        td { color: #333; font-size: 14px; cursor: pointer; }
+        td { color: #333; font-size: 14px; cursor: pointer; word-break: break-word; }
         td:hover { background-color: #f1f8e9; }
         tr:nth-child(even) { background-color: #fafffa; }
 
@@ -47,7 +46,7 @@
         <div id="toast"></div>
 
         <div class="input-group">
-            <input type="number" id="amount" placeholder="输入金额（如：12345.67）" step="0.01">
+            <input type="number" id="amount" placeholder="输入数字金额（如：12345.67）" step="0.01">
             <div class="button-group">
                 <button onclick="convert()" class="convert-btn">立即转换</button>
                 <button class="reset-btn" onclick="resetInput()">重置</button>
@@ -58,13 +57,14 @@
             <table>
                 <thead>
                     <tr>
-                        <th width="20%">简体金额</th>
-                        <th width="20%">繁体金额</th>
-                        <th width="40%">英文大写</th>
-                        <th width="20%">转换时间</th>
+                        <th width="20%">中文大写（繁体）</th>
+                        <th width="35%">英文大写</th>
+                        <th width="20%">中文大写（简体）</th>
+                        <th width="25%">转换时间</th>
                     </tr>
                 </thead>
-                <tbody id="results"></tbody>
+                <tbody id="results">
+                    </tbody>
             </table>
         </div>
 
@@ -78,15 +78,14 @@
     </div>
 
     <script>
-        let records = JSON.parse(localStorage.getItem('check_records')) || [];
+        let records = JSON.parse(localStorage.getItem('check_records_v2')) || [];
         let currentPage = 1;
         const pageSize = 5;
 
-        // 数字映射
+        // 字符映射
         const S_CN = ["零","壹","贰","叁","肆","伍","陆","柒","捌","玖"];
         const T_CN = ["零","壹","貳","參","肆","伍","陸","柒","捌","玖"];
         const UNITS = ["","拾","佰","仟"];
-        const T_UNITS = ["","拾","佰","仟"];
 
         function showToast(msg) {
             const t = document.getElementById('toast');
@@ -100,59 +99,64 @@
         }
 
         function convert() {
-            const val = document.getElementById('amount').value;
+            const val = document.getElementById('amount').value.trim();
             if(!val || isNaN(val)) return showToast("请输入有效数字");
+            
             const num = parseFloat(val);
-            if(num < 0) return showToast("金额不能为负");
-            if(num >= 1000000000000) return showToast("金额过大");
+            if(num < 0) return showToast("金额不能为负数");
+            if(num >= 1000000000000) return showToast("金额超过上限（1万亿）");
 
             const record = {
-                simplified: toChinese(num, S_CN, UNITS),
-                traditional: toChinese(num, T_CN, T_UNITS),
+                traditional: toChinese(num, T_CN),
                 english: toEnglish(num),
+                simplified: toChinese(num, S_CN),
                 time: new Date().toLocaleString()
             };
 
             records.unshift(record);
-            localStorage.setItem('check_records', JSON.stringify(records));
+            localStorage.setItem('check_records_v2', JSON.stringify(records));
+            currentPage = 1;
             render();
         }
 
-        function toChinese(num, chars, units) {
-            let str = "";
+        function toChinese(num, chars) {
             let [intPart, decPart] = num.toFixed(2).split('.');
-            
-            // 整数部分
             let intNum = parseInt(intPart);
-            if (intNum === 0) str = chars[0];
-            else {
-                const sections = [];
-                while(intNum > 0) {
-                    sections.push(intNum % 10000);
-                    intNum = Math.floor(intNum / 10000);
-                }
+            let str = "";
+            
+            if (intNum === 0) {
+                str = chars[0];
+            } else {
                 const bigUnits = ["", "万", "亿", "万亿"];
-                for(let i=0; i<sections.length; i++) {
-                    let s = sectionToChinese(sections[i], chars, units);
-                    if(s !== "") str = s + bigUnits[i] + str;
-                    else if(i === 0 && sections.length > 1) str = chars[0] + str;
+                let unitIdx = 0;
+                while(intNum > 0) {
+                    let section = intNum % 10000;
+                    let sectionStr = sectionToChinese(section, chars);
+                    if(sectionStr !== "") {
+                        str = sectionStr + bigUnits[unitIdx] + str;
+                    } else if (str !== "" && !str.startsWith(chars[0])) {
+                        str = chars[0] + str; // 处理万级中间的零
+                    }
+                    intNum = Math.floor(intNum / 10000);
+                    unitIdx++;
                 }
             }
-            str = str.replace(/零+/g, "零").replace(/零$/, "") + "元";
+            str = str.replace(/零+/g, chars[0]).replace(/零$/, "") + "元";
 
-            // 小数部分
+            // 小数处理
             let d1 = parseInt(decPart[0]);
             let d2 = parseInt(decPart[1]);
-            if(d1 === 0 && d2 === 0) str += "整";
-            else {
+            if(d1 === 0 && d2 === 0) {
+                str += "整";
+            } else {
                 if(d1 !== 0) str += chars[d1] + "角";
-                else str += "零";
+                else if(intPart !== "0") str += chars[0]; // 10.05 -> 拾元零伍分
                 if(d2 !== 0) str += chars[d2] + "分";
             }
-            return str.replace(/零分$/, "").replace(/零元/, "元");
+            return str;
         }
 
-        function sectionToChinese(section, chars, units) {
+        function sectionToChinese(section, chars) {
             let s = "";
             let zero = false;
             for(let i=0; i<4; i++) {
@@ -161,7 +165,7 @@
                     if(s !== "" && !zero) zero = true;
                 } else {
                     if(zero) { s += chars[0]; zero = false; }
-                    s += chars[v] + units[3-i];
+                    s += chars[v] + UNITS[3-i];
                 }
             }
             return s;
@@ -175,7 +179,7 @@
             let [intPart, decPart] = num.toFixed(2).split('.');
             let n = parseInt(intPart);
             
-            if(n === 0) return "ZERO AND CENTS " + decPart + "/100 ONLY";
+            if(n === 0) return "SAY ZERO AND CENTS " + decPart + "/100 ONLY";
 
             let words = "";
             let idx = 0;
@@ -192,23 +196,33 @@
                 n = Math.floor(n / 1000);
                 idx++;
             }
-
             return "SAY " + words.trim() + " AND CENTS " + decPart + "/100 ONLY";
         }
 
         function copy(text) {
-            navigator.clipboard.writeText(text);
+            if (!navigator.clipboard) {
+                const el = document.createElement('textarea');
+                el.value = text;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+            } else {
+                navigator.clipboard.writeText(text);
+            }
             showToast("已复制到剪贴板");
         }
 
         function render() {
             const start = (currentPage - 1) * pageSize;
             const data = records.slice(start, start + pageSize);
-            document.getElementById('results').innerHTML = data.map(r => `
+            const tbody = document.getElementById('results');
+            
+            tbody.innerHTML = data.map(r => `
                 <tr>
-                    <td onclick="copy('${r.simplified}')">${r.simplified}</td>
                     <td onclick="copy('${r.traditional}')">${r.traditional}</td>
                     <td onclick="copy('${r.english}')">${r.english}</td>
+                    <td onclick="copy('${r.simplified}')">${r.simplified}</td>
                     <td>${r.time}</td>
                 </tr>
             `).join('');
@@ -218,15 +232,20 @@
 
         function renderPager() {
             const total = Math.ceil(records.length / pageSize);
+            const container = document.getElementById('pagination');
+            if(total <= 0) { container.innerHTML = ""; return; }
+
             let html = `<span class="page-item" onclick="goPage(${currentPage-1})">«</span>`;
             for(let i=1; i<=total; i++) {
                 if(i==1 || i==total || Math.abs(i-currentPage) < 2) {
                     html += `<span class="page-item ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</span>`;
+                } else if (Math.abs(i-currentPage) === 2) {
+                    html += `<span>...</span>`;
                 }
             }
             html += `<span class="page-item" onclick="goPage(${currentPage+1})">»</span>`;
-            html += `<span class="total-count">共 ${records.length} 条</span>`;
-            document.getElementById('pagination').innerHTML = total > 0 ? html : "";
+            html += `<span class="total-count">共 ${records.length} 条记录</span>`;
+            container.innerHTML = html;
         }
 
         function goPage(p) {
