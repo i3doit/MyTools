@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>气泡表情包 Pro - 智能动态版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Alimama+ShuHeiTi:wght@700&family=Noto+Sans+SC:wght@900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'SF Pro Display', 'Noto Sans SC', sans-serif; background-color: #f5f5f7; overflow-x: hidden; }
+        .preview-zone { background: white; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); touch-action: none; position: relative; }
+        #floatingInput { 
+            display: none; position: fixed; z-index: 1000; background: white; 
+            border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
+            border: 1px solid #ddd; padding: 16px; width: 320px;
+        }
+        .btn-action:active { transform: scale(0.95); }
+        .effect-active { background: #0071e3 !important; color: white !important; }
+        canvas { cursor: crosshair; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center">
+
+    <script>
+        const presetData = [
+            { text: "宝，想你了", effect: "breath", badge: "爱你哟" },
+            { text: "笑不活了", effect: "shake", badge: "哈利路亚" },
+            { text: "今晚又要加班了\n呜呜呜", effect: "slideIn", badge: "打工人" },
+            { text: "卧槽？？？", effect: "bounce", badge: "吃瓜群众" },
+            { text: "暴富暴瘦\n暴开心", effect: "typewriter", badge: "2026" }
+        ];
+
+        async function fetchRemoteData() {
+            // 这里预留给 API 请求
+            // const response = await fetch('your-api-url');
+            // return await response.json();
+            return presetData[Math.floor(Math.random() * presetData.length)];
+        }
+    </script>
+
+    <div id="floatingInput">
+        <textarea id="tempText" class="w-full p-3 text-sm bg-gray-50 rounded-xl outline-none border mb-3" rows="3"></textarea>
+        <p class="text-[10px] font-bold text-gray-400 mb-2 uppercase">选择特效</p>
+        <div class="grid grid-cols-3 gap-1 mb-4">
+            <button onclick="setEffect('none')" id="eff-none" class="text-[9px] py-2 border rounded-lg transition">静止</button>
+            <button onclick="setEffect('bounce')" id="eff-bounce" class="text-[9px] py-2 border rounded-lg transition">上下跳动</button>
+            <button onclick="setEffect('shake')" id="eff-shake" class="text-[9px] py-2 border rounded-lg transition">循环摇摆</button>
+            <button onclick="setEffect('breath')" id="eff-breath" class="text-[9px] py-2 border rounded-lg transition">轻微呼吸</button>
+            <button onclick="setEffect('typewriter')" id="eff-typewriter" class="text-[9px] py-2 border rounded-lg transition">打印机</button>
+            <button onclick="setEffect('slideIn')" id="eff-slideIn" class="text-[9px] py-2 border rounded-lg transition">左侧滑入</button>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="saveFloatingText()" class="flex-1 bg-blue-600 text-white py-2 rounded-xl text-xs font-bold">确定</button>
+            <button onclick="closeEditor()" class="px-4 py-2 border rounded-xl text-xs">取消</button>
+        </div>
+    </div>
+
+    <header class="w-full max-w-4xl px-6 pt-12 text-center">
+        <h1 class="text-4xl font-bold tracking-tight mb-4">表情包编辑器 <span class="text-blue-500">Live</span></h1>
+        <div class="flex justify-center gap-2 mb-8">
+            <button onclick="switchMode('single')" id="tab-single" class="px-6 py-2 rounded-full text-sm font-bold bg-black text-white">单张创作</button>
+            <button onclick="switchMode('batch')" id="tab-batch" class="px-6 py-2 rounded-full text-sm font-bold bg-gray-200 text-gray-500">批量模式</button>
+        </div>
+    </header>
+
+    <main class="w-full flex flex-col items-center">
+        <div class="preview-zone border border-gray-100 mb-6">
+            <canvas id="mainCanvas" width="800" height="500" class="max-w-full h-auto"></canvas>
+        </div>
+
+        <div id="batchInputArea" class="hidden w-full max-w-2xl px-4 mb-6">
+            <textarea id="batchTexts" class="w-full p-4 bg-white border border-gray-200 rounded-3xl shadow-sm text-sm outline-none h-32" placeholder="每行一个文案..."></textarea>
+        </div>
+
+        <div class="flex gap-4 mb-10">
+            <button id="mainDownloadBtn" onclick="handleDownload()" class="btn-action bg-black text-white px-12 py-4 rounded-full font-bold shadow-xl">导出 GIF/图片</button>
+        </div>
+
+        <section class="w-full max-w-4xl px-4 pb-20">
+            <div class="bg-white p-6 rounded-[32px] grid grid-cols-1 md:grid-cols-3 gap-6 shadow-sm border">
+                <div>
+                    <h3 class="text-[10px] font-bold text-gray-400 mb-3 uppercase">气泡与文字颜色</h3>
+                    <div class="flex gap-3 items-center">
+                        <input type="color" id="colorPicker" oninput="state.bgColor=this.value" class="w-10 h-10 border-none cursor-pointer">
+                        <select onchange="state.fontFamily=this.value" class="bg-gray-50 p-2 rounded-lg text-xs outline-none flex-1">
+                            <option value="'Noto Sans SC'">思源黑体</option>
+                            <option value="'ZCOOL KuaiLe'">站酷快乐体</option>
+                            <option value="'Alimama ShuHeiTi'">阿里妈妈数黑</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="md:col-span-2">
+                    <h3 class="text-[10px] font-bold text-gray-400 mb-3 uppercase">头像与挂件管理</h3>
+                    <div class="flex items-center gap-4 flex-wrap">
+                        <button onclick="document.getElementById('avatarUpload').click()" class="text-xs font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg">更换头像</button>
+                        <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-lg">
+                            <input type="checkbox" id="badgeToggle" onchange="state.showBadge=this.checked" class="accent-black">
+                            <input type="text" id="badgeInput" maxlength="4" value="打工人" class="bg-transparent text-xs w-20 outline-none font-bold" oninput="state.badge=this.value">
+                            <span class="text-[9px] text-gray-400">限4字</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <input type="file" id="avatarUpload" class="hidden" accept="image/*" onchange="handleAvatarUpload(event)">
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        let currentMode = 'single';
+        let startTime = Date.now();
+
+        let state = {
+            text: "",
+            bgColor: '#07C160',
+            fontFamily: "'Noto Sans SC'",
+            avatar: null,
+            badge: "2026",
+            showBadge: true,
+            isCircleMask: true,
+            textPos: { x: 100, y: 150 },
+            effect: 'none',
+            bubbleBounds: { x: 0, y: 0, w: 0, h: 0 },
+            isEditing: false
+        };
+
+        window.onload = async () => {
+            // 加载随机预设或接口数据
+            const data = await fetchRemoteData();
+            state.text = data.text;
+            state.effect = data.effect;
+            state.badge = data.badge;
+            document.getElementById('badgeInput').value = data.badge;
+            
+            initDefaultAvatar();
+            setupInteractions();
+            renderLoop();
+            setEffectUI(state.effect);
+        };
+
+        function renderLoop() {
+            draw(ctx);
+            requestAnimationFrame(renderLoop);
+        }
+
+        function initDefaultAvatar() {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = "https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg!1";
+            img.onload = () => state.avatar = img;
+        }
+
+        function draw(tCtx, customText = null, customTime = null) {
+            const activeText = customText || state.text;
+            const time = customTime !== null ? customTime : (Date.now() - startTime) / 1000;
+            
+            tCtx.clearRect(0, 0, tCtx.canvas.width, tCtx.canvas.height);
+            
+            const fontSize = 48;
+            const lineHeight = fontSize * 1.3;
+            tCtx.font = `italic 900 ${fontSize}px ${state.fontFamily}`;
+            
+            const avatarSize = 160; 
+            const padding = 50;
+            const maxTextWidth = 450;
+
+            // 分行处理
+            const sourceLines = activeText.split('\n');
+            let drawLines = [];
+            sourceLines.forEach(sl => {
+                let current = "";
+                for(let char of sl) {
+                    if(tCtx.measureText(current + char).width > maxTextWidth) {
+                        drawLines.push(current);
+                        current = char;
+                    } else { current += char; }
+                }
+                drawLines.push(current);
+            });
+
+            // 计算气泡尺寸
+            let textW = 0;
+            drawLines.forEach(l => textW = Math.max(textW, tCtx.measureText(l).width));
+            const bW = textW + avatarSize + padding * 2;
+            const bH = Math.max(avatarSize + 20, drawLines.length * lineHeight + padding * 2);
+
+            const bx = state.textPos.x;
+            const by = state.textPos.y;
+
+            // 1. 气泡绘制
+            tCtx.save();
+            tCtx.fillStyle = state.bgColor;
+            drawRoundRect(tCtx, bx, by, bW, bH, 50);
+            tCtx.beginPath(); // 尖角
+            tCtx.moveTo(bx + 70, by + bH);
+            tCtx.lineTo(bx + 55, by + bH + 25);
+            tCtx.lineTo(bx + 110, by + bH);
+            tCtx.fill();
+            tCtx.restore();
+
+            // 2. 动态文案渲染
+            tCtx.save();
+            tCtx.fillStyle = "white";
+            tCtx.textBaseline = "middle";
+
+            const totalTextH = drawLines.length * lineHeight;
+            const startY = by + (bH / 2) - (totalTextH / 2) + (lineHeight / 2);
+
+            drawLines.forEach((l, i) => {
+                let ox = 0, oy = 0, alpha = 1, scale = 1;
+                let curLineText = l;
+
+                // 特效逻辑
+                if (state.effect === 'bounce') oy = Math.sin(time * 10) * 12;
+                if (state.effect === 'shake') ox = Math.sin(time * 12) * 8;
+                if (state.effect === 'breath') scale = 1 + Math.sin(time * 5) * 0.05;
+                if (state.effect === 'slideIn') {
+                    const progress = Math.min(1, (time % 2) * 1.5);
+                    ox = (1 - progress) * -50;
+                    alpha = progress;
+                }
+                if (state.effect === 'typewriter') {
+                    const charsToShow = Math.floor((time % 3) * 10);
+                    curLineText = l.substring(0, charsToShow);
+                }
+
+                tCtx.globalAlpha = alpha;
+                tCtx.save();
+                tCtx.translate(bx + padding + ox, startY + (i * lineHeight) + oy);
+                tCtx.scale(scale, scale);
+                tCtx.fillText(curLineText, 0, 0);
+                tCtx.restore();
+            });
+            tCtx.restore();
+
+            // 3. 头像与挂件 (头像位置跟随气泡高度垂直居中或贴顶)
+            if (state.avatar) {
+                const ax = bx + bW - avatarSize - 20;
+                // 让头像始终在气泡顶部区域，即便气泡拉长，也保持在上方露出
+                const ay = by - 70; 
+                
+                tCtx.save();
+                if (state.isCircleMask) {
+                    tCtx.beginPath();
+                    tCtx.arc(ax + avatarSize/2, ay + avatarSize/2, avatarSize/2, 0, Math.PI*2);
+                    tCtx.clip();
+                }
+                tCtx.drawImage(state.avatar, ax, ay, avatarSize, avatarSize);
+                tCtx.restore();
+
+                if (state.showBadge) {
+                    tCtx.save();
+                    tCtx.font = "bold 16px Arial";
+                    const badgeText = state.badge.substring(0, 4);
+                    const tw = tCtx.measureText(badgeText).width + 30;
+                    const th = 36; // 高度增加
+                    tCtx.fillStyle = "white";
+                    drawRoundRect(tCtx, ax + avatarSize - tw, ay + 10, tw, th, 18);
+                    tCtx.fillStyle = "#333";
+                    tCtx.textAlign = "center";
+                    tCtx.fillText(badgeText, ax + avatarSize - tw/2, ay + 10 + th/2 + 5);
+                    tCtx.restore();
+                }
+
+                if (tCtx === ctx) {
+                    state.bubbleBounds = { x: bx - 20, y: by - 100, w: bW + 40, h: bH + 150 };
+                    state.avatarRect = { x: ax, y: ay, w: avatarSize, h: avatarSize };
+                }
+            }
+        }
+
+        // 交互：空白点击关闭
+        function setupInteractions() {
+            canvas.addEventListener('mousedown', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+                const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+                
+                // 判断点击区域
+                const isInsideBubble = (x > state.bubbleBounds.x && x < state.bubbleBounds.x + state.bubbleBounds.w &&
+                                       y > state.bubbleBounds.y && y < state.bubbleBounds.y + state.bubbleBounds.h);
+                
+                if (isInsideBubble) {
+                    state.dragging = true;
+                    state.dragOffset = { x: x - state.textPos.x, y: y - state.textPos.y };
+                    state.clickTime = Date.now();
+                } else {
+                    // 点击空白处关闭编辑
+                    closeEditor();
+                }
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!state.dragging) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+                const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+                state.textPos = { x: x - state.dragOffset.x, y: y - state.dragOffset.y };
+            });
+
+            window.addEventListener('mouseup', (e) => {
+                if (state.dragging && Date.now() - state.clickTime < 200) {
+                    showEditor(e.clientX, e.clientY);
+                }
+                state.dragging = false;
+            });
+        }
+
+        function showEditor(x, y) {
+            const el = document.getElementById('floatingInput');
+            el.style.display = 'block';
+            // 位置微调，显示在鼠标点击位置附近
+            el.style.left = `${Math.min(window.innerWidth - 340, x - 160)}px`;
+            el.style.top = `${Math.min(window.innerHeight - 400, y - 100)}px`;
+            document.getElementById('tempText').value = state.text;
+            state.isEditing = true;
+        }
+
+        function closeEditor() {
+            document.getElementById('floatingInput').style.display = 'none';
+            state.isEditing = false;
+        }
+
+        function saveFloatingText() {
+            state.text = document.getElementById('tempText').value;
+            closeEditor();
+        }
+
+        function setEffect(eff) {
+            state.effect = eff;
+            setEffectUI(eff);
+        }
+
+        function setEffectUI(eff) {
+            const btns = document.querySelectorAll('#floatingInput button[id^="eff-"]');
+            btns.forEach(b => b.classList.remove('effect-active'));
+            document.getElementById(`eff-${eff}`).classList.add('effect-active');
+        }
+
+        async function handleDownload() {
+            const btn = document.getElementById('mainDownloadBtn');
+            if (currentMode === 'batch') {
+                batchDownload(btn);
+            } else {
+                if (state.effect === 'none') {
+                    const link = document.createElement('a');
+                    link.download = `sticker-${Date.now()}.png`;
+                    link.href = getCroppedCanvas(state.text, 0).toDataURL();
+                    link.click();
+                } else {
+                    exportGif(btn);
+                }
+            }
+        }
+
+        function exportGif(btn) {
+            btn.innerText = "合成中...";
+            const gif = new GIF({
+                workers: 2, quality: 10,
+                width: state.bubbleBounds.w, height: state.bubbleBounds.h,
+                workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+            });
+
+            for (let i = 0; i < 15; i++) {
+                const c = getCroppedCanvas(state.text, i * 0.1);
+                gif.addFrame(c, {delay: 80, copy: true});
+            }
+            gif.on('finished', blob => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = "anim.gif";
+                a.click();
+                btn.innerText = "导出 GIF/图片";
+            });
+            gif.render();
+        }
+
+        function getCroppedCanvas(text, time) {
+            const temp = document.createElement('canvas');
+            temp.width = state.bubbleBounds.w;
+            temp.height = state.bubbleBounds.h;
+            const tCtx = temp.getContext('2d');
+            tCtx.translate(-state.bubbleBounds.x, -state.bubbleBounds.y);
+            draw(tCtx, text, time);
+            return temp;
+        }
+
+        function handleAvatarUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => state.avatar = img;
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function switchMode(m) {
+            currentMode = m;
+            document.getElementById('tab-single').className = m === 'single' ? 'px-6 py-2 rounded-full text-sm font-bold bg-black text-white' : 'px-6 py-2 rounded-full text-sm font-bold bg-gray-200 text-gray-500';
+            document.getElementById('tab-batch').className = m === 'batch' ? 'px-6 py-2 rounded-full text-sm font-bold bg-black text-white' : 'px-6 py-2 rounded-full text-sm font-bold bg-gray-200 text-gray-500';
+            document.getElementById('batchInputArea').classList.toggle('hidden', m !== 'batch');
+        }
+
+        function drawRoundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath(); ctx.moveTo(x+r, y);
+            ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r);
+            ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath(); ctx.fill();
+        }
+    </script>
+</body>
+</html>
