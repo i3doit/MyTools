@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>气泡表情包 Pro - 商业增强版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Alimama+ShuHeiTi:wght@700&family=Noto+Sans+SC:wght@900&display=swap" rel="stylesheet">
+    <style>
+        :root { --apple-blue: #0071e3; }
+        body { font-family: 'SF Pro Display', 'Noto Sans SC', sans-serif; background-color: #f5f5f7; color: #1d1d1f; }
+        .preview-zone { background: white; border-radius: 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); }
+        
+        /* 编辑窗优化：不遮挡核心预览 */
+        #floatingInput { 
+            display: none; position: fixed; z-index: 1000; background: rgba(255,255,255,0.95); 
+            backdrop-filter: blur(20px); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); 
+            border: 1px solid #fff; padding: 20px; width: 300px;
+        }
+
+        .lock-icon::after { content: ' 🔒'; font-size: 10px; }
+        .btn-action:active { transform: scale(0.95); }
+        .effect-btn { border: 1px solid #e5e5e5; font-size: 11px; padding: 6px; border-radius: 10px; background: white; }
+        .effect-active { background: var(--apple-blue) !important; color: white !important; border-color: var(--apple-blue); }
+        
+        .apple-modal { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); align-items: center; justify-content: center; }
+        .status-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #eee; color: #666; margin-left: 5px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div id="unlockModal" class="apple-modal">
+        <div class="bg-white w-80 rounded-[30px] p-6 text-center shadow-xl">
+            <div class="text-3xl mb-3">💎</div>
+            <h2 class="text-lg font-bold mb-2">解锁高级功能</h2>
+            <p id="unlockTips" class="text-xs text-gray-500 mb-4 leading-relaxed"></p>
+            <input type="text" id="unlockPass" class="w-full px-4 py-3 bg-gray-100 rounded-xl mb-4 text-center font-bold outline-none border-2 border-transparent focus:border-blue-500" placeholder="输入解锁码">
+            <div class="flex gap-2">
+                <button onclick="closeUnlock()" class="flex-1 py-3 text-gray-400 text-sm font-medium">取消</button>
+                <button onclick="verifyUnlock()" class="flex-1 py-3 bg-black text-white rounded-xl text-sm font-bold">立即解锁</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="w-full bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+            <div class="flex gap-4">
+                <span>1. 点击编辑</span>
+                <span>2. 拖动位置</span>
+            </div>
+            <div id="usageStats" class="text-blue-500 font-black">免费额度已就绪</div>
+        </div>
+    </nav>
+
+    <div id="floatingInput">
+        <textarea id="tempText" class="w-full p-3 text-sm bg-gray-50 rounded-xl outline-none border-none mb-3" rows="3" placeholder="说点什么..."></textarea>
+        <div class="grid grid-cols-3 gap-1.5 mb-4">
+            <button onclick="setEffect('none')" id="eff-none" class="effect-btn">无</button>
+            <button onclick="setEffect('typewriter')" id="eff-typewriter" class="effect-btn">打字机</button>
+            <button onclick="setEffect('bounce')" id="eff-bounce" class="effect-btn">跳动</button>
+            <button onclick="setEffect('shake')" id="eff-shake" class="effect-btn">摇摆</button>
+            <button onclick="setEffect('breath')" id="eff-breath" class="effect-btn">呼吸</button>
+            <button onclick="setEffect('slideIn')" id="eff-slideIn" class="effect-btn">滑入</button>
+        </div>
+        <button onclick="saveText()" class="w-full bg-black text-white py-3 rounded-xl text-xs font-bold btn-action">确认修改</button>
+    </div>
+
+    <main class="flex-grow flex flex-col items-center py-10 px-4">
+        <h1 class="text-3xl font-black mb-6 tracking-tight">表情工坊 <span class="text-blue-600">Pro</span></h1>
+        
+        <div class="flex gap-2 mb-6">
+            <button onclick="switchMode('single')" id="tab-single" class="px-6 py-2 rounded-full text-xs font-bold bg-black text-white">单张</button>
+            <button onclick="switchMode('batch')" id="tab-batch" class="px-6 py-2 rounded-full text-xs font-bold bg-gray-200 text-gray-500">批量 <span class="lock-icon"></span></button>
+        </div>
+
+        <div class="preview-zone relative mb-8">
+            <canvas id="mainCanvas" width="800" height="500" class="max-w-full h-auto cursor-move"></canvas>
+        </div>
+
+        <div id="batchArea" class="hidden w-full max-w-2xl mb-8">
+            <textarea id="batchInput" class="w-full p-5 bg-white border border-gray-100 rounded-3xl text-sm h-32 outline-none shadow-sm" placeholder="每行一个文案..."></textarea>
+        </div>
+
+        <button id="downloadBtn" onclick="handleDownload()" class="btn-action bg-black text-white px-16 py-4 rounded-full font-bold shadow-2xl text-lg mb-10">导出作品</button>
+
+        <div class="w-full max-w-4xl bg-white p-8 rounded-[40px] border border-gray-50 grid grid-cols-1 md:grid-cols-3 gap-8 shadow-sm">
+            <div>
+                <h3 class="text-[10px] font-bold text-gray-400 mb-4 uppercase">气泡底色</h3>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="setColor('#07C160')" class="w-8 h-8 rounded-full bg-[#07C160] border-2 border-white shadow-sm"></button>
+                    <button onclick="setColor('#10aeff')" class="w-8 h-8 rounded-full bg-[#10aeff] border-2 border-white shadow-sm"></button>
+                    <button onclick="setColor('#ff4d4f')" class="w-8 h-8 rounded-full bg-[#ff4d4f] border-2 border-white shadow-sm"></button>
+                    <div class="relative group">
+                        <input type="color" id="customColor" oninput="checkColorUnlock(this.value)" class="w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm cursor-pointer">
+                        <span class="absolute -top-2 -right-1 text-[8px]">🔒</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-[10px] font-bold text-gray-400 mb-4 uppercase">头像设置</h3>
+                <button onclick="document.getElementById('avatarFile').click()" class="bg-gray-50 px-4 py-2 rounded-xl text-xs font-bold text-blue-600">上传并保存头像</button>
+                <p class="text-[9px] text-gray-300 mt-2">刷新不丢失已上传头像</p>
+            </div>
+            <div>
+                <h3 class="text-[10px] font-bold text-gray-400 mb-4 uppercase">思考挂件 <span class="lock-icon"></span></h3>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="badgeSwitch" onchange="checkBadgeUnlock(this.checked)" class="accent-black">
+                    <input type="text" id="badgeText" maxlength="4" class="bg-gray-50 px-3 py-2 rounded-lg text-xs font-bold w-20 outline-none" value="想什么" oninput="state.badge=this.value">
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="py-10 text-center border-t border-gray-100 bg-white">
+        <p class="text-[10px] text-gray-400 font-bold tracking-widest uppercase mb-2">Emotion Studio 2026</p>
+        <p class="text-[9px] text-gray-300 italic">解锁码请咨询微信：857023577</p>
+    </footer>
+
+    <input type="file" id="avatarFile" class="hidden" accept="image/*" onchange="uploadAvatar(event)">
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const UNLOCK_KEY = "PASS888"; // 预留解锁码
+        
+        let state = {
+            text: "",
+            bgColor: '#07C160',
+            fontFamily: "'Noto Sans SC'",
+            avatar: null,
+            badge: "思考中",
+            showBadge: false,
+            effect: 'none',
+            textPos: { x: 120, y: 160 },
+            isUnlocked: false,
+            gifCount: 0,
+            batchCount: 0,
+            userHasEdited: false
+        };
+
+        const presets = [
+            "宝，想你了", "笑不活了\n真的离谱", "今晚加班\n呜呜呜", "卧槽？？？", "暴富暴瘦\n暴开心"
+        ];
+
+        window.onload = () => {
+            // 初始化头像
+            const savedAvatar = localStorage.getItem('user_avatar');
+            if(savedAvatar) {
+                const img = new Image();
+                img.onload = () => { state.avatar = img; renderLoop(); };
+                img.src = savedAvatar;
+            } else {
+                initDefaultAvatar();
+            }
+
+            // 初始化文案
+            state.text = presets[Math.floor(Math.random() * presets.length)];
+            
+            setupEvents();
+            renderLoop();
+        };
+
+        function initDefaultAvatar() {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = "https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg!1";
+            img.onload = () => { state.avatar = img; };
+        }
+
+        function renderLoop() {
+            draw();
+            requestAnimationFrame(renderLoop);
+        }
+
+        function draw(tCtx = ctx, customText = null, customTime = null) {
+            const activeText = customText || state.text;
+            const time = customTime !== null ? customTime : (Date.now() / 1000);
+            
+            tCtx.clearRect(0, 0, tCtx.canvas.width, tCtx.canvas.height);
+            
+            const fontSize = 48;
+            const lineHeight = fontSize * 1.35;
+            tCtx.font = `italic 900 ${fontSize}px ${state.fontFamily}`;
+            
+            const avatarSize = 160;
+            const padding = 50;
+            const maxTextW = 450;
+
+            // 文案处理
+            const lines = [];
+            activeText.split('\n').forEach(line => {
+                let cur = "";
+                for(let char of line) {
+                    if(tCtx.measureText(cur + char).width > maxTextW) {
+                        lines.push(cur); cur = char;
+                    } else { cur += char; }
+                }
+                lines.push(cur);
+            });
+
+            let textMaxW = 0;
+            lines.forEach(l => textMaxW = Math.max(textMaxW, tCtx.measureText(l).width));
+            
+            const bW = textMaxW + avatarSize + padding * 2;
+            const bH = Math.max(avatarSize + 20, lines.length * lineHeight + padding * 2);
+            const bx = state.textPos.x, by = state.textPos.y;
+
+            // 1. 气泡
+            tCtx.save();
+            tCtx.fillStyle = state.bgColor;
+            drawRoundRect(tCtx, bx, by, bW, bH, 50);
+            // 尖角
+            tCtx.beginPath();
+            tCtx.moveTo(bx + 80, by + bH);
+            tCtx.lineTo(bx + 60, by + bH + 25);
+            tCtx.lineTo(bx + 130, by + bH);
+            tCtx.fill();
+            tCtx.restore();
+
+            // 2. 文案
+            tCtx.save();
+            tCtx.fillStyle = "white";
+            tCtx.textBaseline = "middle";
+            const textTotalH = lines.length * lineHeight;
+            const startY = by + (bH/2) - (textTotalH/2) + (lineHeight/2);
+
+            lines.forEach((l, i) => {
+                let ox = 0, oy = 0, alpha = 1, scale = 1;
+                if(state.effect === 'bounce') oy = Math.sin(time * 10) * 10;
+                if(state.effect === 'shake') ox = Math.sin(time * 12) * 8;
+                if(state.effect === 'breath') scale = 1 + Math.sin(time * 5) * 0.05;
+                if(state.effect === 'typewriter') l = l.substring(0, Math.floor((time*10)%20));
+                if(state.effect === 'slideIn') {
+                    const p = Math.min(1, (time%2)*1.5);
+                    ox = (1-p)*-50; alpha = p;
+                }
+                tCtx.globalAlpha = alpha;
+                tCtx.save();
+                tCtx.translate(bx + padding + ox, startY + (i * lineHeight) + oy);
+                tCtx.scale(scale, scale);
+                tCtx.fillText(l, 0, 0);
+                tCtx.restore();
+            });
+            tCtx.restore();
+
+            // 3. 头像与思考挂件
+            if(state.avatar) {
+                const ax = bx + bW - avatarSize - 20, ay = by - 70;
+                tCtx.save();
+                tCtx.beginPath();
+                tCtx.arc(ax + avatarSize/2, ay + avatarSize/2, avatarSize/2, 0, Math.PI*2);
+                tCtx.clip();
+                tCtx.drawImage(state.avatar, ax, ay, avatarSize, avatarSize);
+                tCtx.restore();
+
+                // 思考气泡型挂件设计
+                if(state.showBadge) {
+                    const badgeText = (state.badge || "").substring(0, 4);
+                    tCtx.save();
+                    tCtx.font = "bold 16px Arial";
+                    const tw = tCtx.measureText(badgeText).width + 30;
+                    const th = 38;
+                    const gx = ax + avatarSize - tw + 10, gy = ay - 10;
+
+                    // 思考云朵由多个圆组成
+                    tCtx.fillStyle = "white";
+                    tCtx.shadowBlur = 10; tCtx.shadowColor = "rgba(0,0,0,0.1)";
+                    drawRoundRect(tCtx, gx, gy, tw, th, 15);
+                    
+                    // 云朵的小尾巴（三个渐小的圆）
+                    const dotColor = state.bgColor;
+                    tCtx.fillStyle = "white";
+                    tCtx.beginPath(); tCtx.arc(gx + 10, gy + th + 5, 6, 0, Math.PI*2); tCtx.fill();
+                    tCtx.beginPath(); tCtx.arc(gx, gy + th + 15, 4, 0, Math.PI*2); tCtx.fill();
+                    
+                    // 文字
+                    tCtx.fillStyle = state.bgColor;
+                    tCtx.textAlign = "center";
+                    tCtx.fillText(badgeText, gx + tw/2, gy + th/2 + 6);
+                    tCtx.restore();
+                }
+                
+                state.bounds = { x: bx, y: by - 80, w: bW, h: bH + 100 };
+            }
+        }
+
+        // --- 逻辑函数 ---
+
+        function setupEvents() {
+            canvas.onmousedown = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left) * (canvas.width/rect.width);
+                const y = (e.clientY - rect.top) * (canvas.height/rect.height);
+                
+                if(x > state.bounds.x && x < state.bounds.x + state.bounds.w && y > state.bounds.y && y < state.bounds.y + state.bounds.h) {
+                    state.dragging = true;
+                    state.dragOffset = { x: x - state.textPos.x, y: y - state.textPos.y };
+                    state.clickTime = Date.now();
+                } else {
+                    closeEditor();
+                }
+            };
+
+            window.onmousemove = (e) => {
+                if(!state.dragging) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left) * (canvas.width/rect.width);
+                const y = (e.clientY - rect.top) * (canvas.height/rect.height);
+                state.textPos = { x: x - state.dragOffset.x, y: y - state.dragOffset.y };
+            };
+
+            window.onmouseup = (e) => {
+                if(state.dragging && Date.now() - state.clickTime < 200) {
+                    openEditor(e.clientX, e.clientY);
+                }
+                state.dragging = false;
+            };
+        }
+
+        function openEditor(x, y) {
+            const el = document.getElementById('floatingInput');
+            el.style.display = 'block';
+            // 计算居中位置，但不遮住气泡
+            el.style.left = `${Math.min(window.innerWidth - 320, Math.max(20, x - 150))}px`;
+            el.style.top = `${Math.min(window.innerHeight - 350, Math.max(20, y + 50))}px`;
+            document.getElementById('tempText').value = state.text;
+            setEffectUI(state.effect);
+        }
+
+        function closeEditor() { document.getElementById('floatingInput').style.display = 'none'; }
+
+        function saveText() {
+            const val = document.getElementById('tempText').value;
+            // 简单安全过滤
+            state.text = val.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            state.userHasEdited = true;
+            closeEditor();
+        }
+
+        // --- 商业化加锁逻辑 ---
+
+        function checkColorUnlock(val) {
+            if(!state.isUnlocked) {
+                document.getElementById('customColor').value = state.bgColor;
+                triggerUnlock("自定义背景色属于高级功能");
+            } else {
+                state.bgColor = val;
+            }
+        }
+
+        function checkBadgeUnlock(checked) {
+            if(checked && !state.isUnlocked) {
+                document.getElementById('badgeSwitch').checked = false;
+                triggerUnlock("专属气泡挂件属于高级功能");
+            } else {
+                state.showBadge = checked;
+            }
+        }
+
+        function handleDownload() {
+            if(currentMode === 'batch') {
+                if(state.batchCount >= 5 && !state.isUnlocked) return triggerUnlock("批量模式免费额度已用完");
+                state.batchCount++;
+                // 批量逻辑...
+            } else {
+                if(state.effect !== 'none') {
+                    if(state.gifCount >= 5 && !state.isUnlocked) return triggerUnlock("动态效果导出额度已用完");
+                    state.gifCount++;
+                    exportGif();
+                } else {
+                    // 静态下载...
+                    const link = document.createElement('a');
+                    link.download = "emoji.png";
+                    link.href = getCanvasSnapshot(state.text, 0).toDataURL();
+                    link.click();
+                }
+            }
+            updateStatsUI();
+        }
+
+        function triggerUnlock(msg) {
+            document.getElementById('unlockTips').innerText = msg;
+            document.getElementById('unlockModal').style.display = 'flex';
+        }
+
+        function closeUnlock() { document.getElementById('unlockModal').style.display = 'none'; }
+
+        function verifyUnlock() {
+            const pass = document.getElementById('unlockPass').value;
+            // 预留接口：此处将来对接后台接口 fetch('/api/verify', {body: pass})
+            if(pass === UNLOCK_KEY) {
+                state.isUnlocked = true;
+                alert("恭喜！所有高级功能已永久解锁");
+                closeUnlock();
+                updateStatsUI();
+            } else {
+                alert("无效的解锁码");
+            }
+        }
+
+        function updateStatsUI() {
+            const stats = document.getElementById('usageStats');
+            if(state.isUnlocked) {
+                stats.innerText = "已解锁专业版";
+            } else {
+                stats.innerText = `GIF/批量剩余: ${5 - Math.max(state.gifCount, state.batchCount)} 次`;
+            }
+        }
+
+        function uploadAvatar(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => { 
+                    state.avatar = img; 
+                    localStorage.setItem('user_avatar', ev.target.result); // 持久化
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- 工具函数 ---
+
+        function setColor(c) { state.bgColor = c; }
+        function setEffect(e) { state.effect = e; setEffectUI(e); }
+        function setEffectUI(e) {
+            document.querySelectorAll('.effect-btn').forEach(b => b.classList.remove('effect-active'));
+            const activeBtn = Array.from(document.querySelectorAll('.effect-btn')).find(b => b.innerText.includes(e === 'none' ? '无' : ''));
+            // 逻辑简化，直接通过ID匹配
+            const target = document.getElementById(`eff-${e}`);
+            if(target) target.classList.add('effect-active');
+        }
+
+        function getCanvasSnapshot(text, time) {
+            const temp = document.createElement('canvas');
+            temp.width = state.bounds.w; temp.height = state.bounds.h;
+            const tCtx = temp.getContext('2d');
+            tCtx.translate(-state.bounds.x, -state.bounds.y);
+            draw(tCtx, text, time);
+            return temp;
+        }
+
+        function exportGif() {
+            const gif = new GIF({ workers: 2, quality: 10, workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js' });
+            for(let i=0; i<10; i++) gif.addFrame(getCanvasSnapshot(state.text, i*0.1), {delay: 100});
+            gif.on('finished', b => { window.open(URL.createObjectURL(b)); });
+            gif.render();
+        }
+
+        function drawRoundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath(); ctx.moveTo(x+r, y);
+            ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r);
+            ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath(); ctx.fill();
+        }
+
+        function switchMode(m) {
+            if(m === 'batch' && !state.isUnlocked) return triggerUnlock("批量模式需要解锁");
+            currentMode = m;
+            document.getElementById('tab-single').className = m === 'single' ? 'px-6 py-2 rounded-full text-xs font-bold bg-black text-white' : 'px-6 py-2 rounded-full text-xs font-bold bg-gray-200 text-gray-500';
+            document.getElementById('tab-batch').className = m === 'batch' ? 'px-6 py-2 rounded-full text-xs font-bold bg-black text-white' : 'px-6 py-2 rounded-full text-xs font-bold bg-gray-200 text-gray-500';
+            document.getElementById('batchArea').style.display = m === 'batch' ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>
