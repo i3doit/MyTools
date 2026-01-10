@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>星尘爆裂 - 极简爽快感</title>
+    <style>
+        body {
+            margin: 0; overflow: hidden; background: #050510;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            touch-action: none; user-select: none;
+        }
+        #ui {
+            position: absolute; top: 20px; width: 100%; display: flex;
+            justify-content: space-around; color: #fff; pointer-events: none; z-index: 10;
+        }
+        .info-box { text-align: center; text-shadow: 0 0 10px rgba(0,255,255,0.5); }
+        .val { font-size: 1.8rem; font-weight: bold; color: #00f2ff; display: block; }
+        
+        #overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: radial-gradient(circle, #101030 0%, #000 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; transition: 0.5s;
+        }
+        h2 { color: #fff; font-size: 2.5rem; letter-spacing: 5px; margin: 0; }
+        button {
+            margin-top: 40px; padding: 15px 60px; border: 2px solid #00f2ff;
+            background: transparent; color: #00f2ff; border-radius: 50px;
+            cursor: pointer; font-size: 1.2rem; transition: 0.3s;
+        }
+        button:hover { background: rgba(0,242,255,0.1); box-shadow: 0 0 20px #00f2ff; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div class="info-box">剩余时间<span class="val" id="timer">60</span></div>
+    <div class="info-box">捕获能量<span class="val" id="score">0</span></div>
+</div>
+
+<div id="overlay">
+    <h2>STARDUST POP</h2>
+    <p style="color: rgba(255,255,255,0.6); margin-top:15px;">戳破晶球，享受破碎的瞬间</p>
+    <button onclick="initGame()">进入空间</button>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let score = 0;
+let timeLeft = 60;
+let particles = [];
+let bubbles = [];
+let gameActive = false;
+let audioCtx;
+
+// 极简短促的音效合成
+function playPopSound() {
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'triangle'; // 更有木质感，不刺耳
+    osc.frequency.setValueAtTime(600 + Math.random() * 400, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
+    
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.05);
+}
+
+class Particle {
+    constructor(x, y, color) {
+        this.x = x; this.y = y;
+        this.color = color;
+        this.radius = Math.random() * 2 + 0.5;
+        this.vx = (Math.random() - 0.5) * 12;
+        this.vy = (Math.random() - 0.5) * 12;
+        this.alpha = 1;
+    }
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= 0.96;
+        this.vy *= 0.96;
+        this.alpha -= 0.03;
+    }
+    draw() {
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
+        ctx.fill();
+    }
+}
+
+class Bubble {
+    constructor() {
+        this.radius = Math.random() * 20 + 10;
+        this.x = Math.random() * (canvas.width - this.radius * 2) + this.radius;
+        this.y = canvas.height + this.radius;
+        this.speed = Math.random() * 2 + 1.5;
+        // 使用更高级的明亮色系
+        const hues = [180, 200, 280, 320];
+        this.color = `hsl(${hues[Math.floor(Math.random()*hues.length)]}, 100%, 70%)`;
+    }
+    update() {
+        this.y -= this.speed;
+    }
+    draw() {
+        ctx.save();
+        // 极短的微光渐变，不拉长
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = this.color;
+        
+        // 绘制晶球外观
+        let grad = ctx.createRadialGradient(this.x-3, this.y-3, 1, this.x, this.y, this.radius);
+        grad.addColorStop(0, '#fff');
+        grad.addColorStop(1, this.color);
+        
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+function initGame() {
+    document.getElementById('overlay').style.display = 'none';
+    gameActive = true;
+    score = 0;
+    timeLeft = 60;
+    bubbles = [];
+    particles = [];
+    
+    // 启动计时器
+    const timerTask = setInterval(() => {
+        if(!gameActive) { clearInterval(timerTask); return; }
+        timeLeft--;
+        document.getElementById('timer').innerText = timeLeft;
+        if(timeLeft <= 0) {
+            gameActive = false;
+            document.getElementById('overlay').style.display = 'flex';
+            document.getElementById('overlay').querySelector('h2').innerText = "时间到！得分: " + score;
+        }
+    }, 1000);
+
+    animate();
+}
+
+const handleAction = (e) => {
+    if(!gameActive) return;
+    const mx = (e.clientX || (e.touches && e.touches[0].pageX));
+    const my = (e.clientY || (e.touches && e.touches[0].pageY));
+    
+    for(let i = bubbles.length - 1; i >= 0; i--) {
+        let b = bubbles[i];
+        if(Math.hypot(b.x - mx, b.y - my) < b.radius + 20) {
+            playPopSound();
+            // 产生大量破碎粒子
+            for(let j=0; j<40; j++) particles.push(new Particle(b.x, b.y, b.color));
+            bubbles.splice(i, 1);
+            score += 10;
+            document.getElementById('score').innerText = score;
+        }
+    }
+};
+
+canvas.addEventListener('pointerdown', handleAction);
+
+function animate() {
+    if(!gameActive && bubbles.length === 0 && particles.length === 0) return;
+
+    // 关键优化：覆盖层颜色接近全黑，且不透明度高，从而缩短拖尾
+    ctx.fillStyle = 'rgba(5, 5, 16, 0.4)'; 
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if(gameActive && Math.random() < 0.06) bubbles.push(new Bubble());
+
+    bubbles.forEach((b, i) => {
+        b.update();
+        b.draw();
+        if(b.y < -b.radius) bubbles.splice(i, 1);
+    });
+
+    particles.forEach((p, i) => {
+        p.update();
+        p.draw();
+        if(p.alpha <= 0) particles.splice(i, 1);
+    });
+
+    requestAnimationFrame(animate);
+}
+
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+</script>
+</body>
+</html>
