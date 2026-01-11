@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PureDrop Ultra | 专业抠图优化版</title>
+    <style>
+        :root { --accent: #0071e3; --bg: #000; --panel: rgba(28, 28, 30, 0.95); }
+        * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; }
+        body { margin: 0; height: 100dvh; background: var(--bg); font-family: -apple-system, sans-serif; overflow: hidden; display: flex; flex-direction: column; }
+        
+        header { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: #1c1c1e; border-bottom: 1px solid #333; z-index: 100; }
+        .logo { color: white; font-weight: 600; font-size: 15px; }
+
+        #viewport { flex: 1; position: relative; overflow: hidden; background: #2c2c2e; display: flex; align-items: center; justify-content: center; }
+        #canvas-wrapper { position: relative; transform-origin: center; will-change: transform; }
+        canvas { display: block; background-image: conic-gradient(#333 0.25turn, #444 0 0.5turn, #333 0 0.75turn, #444 0); background-size: 20px 20px; }
+        #maskCanvas { position: absolute; top: 0; left: 0; pointer-events: none; opacity: 0.5; }
+
+        .panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 450px;
+            background: var(--panel); backdrop-filter: blur(25px); border-radius: 28px; padding: 16px;
+            display: flex; flex-direction: column; gap: 12px; border: 1px solid #444; box-shadow: 0 20px 50px rgba(0,0,0,0.8); z-index: 1000; }
+        
+        .mode-row { display: flex; background: rgba(0,0,0,0.3); border-radius: 14px; padding: 4px; gap: 4px; }
+        .mode-btn { flex: 1; border: none; background: none; color: #8e8e93; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .mode-btn.active { background: #555; color: #fff; }
+        .mode-btn.highlight { background: var(--accent); color: #fff; }
+
+        .tools { display: flex; align-items: center; gap: 12px; }
+        .circle-btn { width: 42px; height: 42px; border-radius: 50%; border: none; background: #444; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .slider-wrap { flex: 1; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); height: 8px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">PureDrop Studio</div>
+    <div style="display: flex; gap: 8px;">
+        <button class="mode-btn" style="padding: 6px 12px; background:#444; color:white;" onclick="clearStorage()">清空</button>
+        <button class="mode-btn" style="padding: 6px 12px; background:#444; color:white;" onclick="document.getElementById('fileInput').click()">换图</button>
+        <button class="mode-btn highlight" style="padding: 6px 12px;" onclick="downloadImage()">导出</button>
+    </div>
+</header>
+
+<main id="viewport">
+    <div id="canvas-wrapper">
+        <canvas id="mainCanvas"></canvas>
+        <canvas id="maskCanvas"></canvas>
+    </div>
+</main>
+
+<div class="panel">
+    <div class="mode-row">
+        <button class="mode-btn active" id="btn-select" onclick="setMode('select')">🖌️ 涂抹保留</button>
+        <button class="mode-btn" id="btn-erase" onclick="setMode('erase')">🧽 精细橡皮</button>
+    </div>
+
+    <div id="apply-bar" style="display: block;">
+        <button class="mode-btn highlight" style="width:100%; border-radius: 12px;" onclick="executeCut()">确认提取</button>
+    </div>
+
+    <div class="tools">
+        <button class="circle-btn" onclick="undo()">↩️</button>
+        <div class="slider-wrap">
+            <input type="range" id="brushSize" min="1" max="150" value="40">
+        </div>
+        <button class="circle-btn" onclick="resetView()">🎯</button>
+    </div>
+    <input type="file" id="fileInput" hidden accept="image/*">
+</div>
+
+<script>
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const mask = document.getElementById('maskCanvas');
+    const mctx = mask.getContext('2d');
+    const wrapper = document.getElementById('canvas-wrapper');
+    const viewport = document.getElementById('viewport');
+    const sizeInput = document.getElementById('brushSize');
+
+    let mode = 'select';
+    let scale = 1, posX = 0, posY = 0;
+    let history = [];
+    let isDrawing = false;
+    let isZooming = false; // 新增：是否正在缩放的锁
+    let initialDist = 0;
+    let lastMidX, lastMidY;
+    const brushSettings = { select: 60, erase: 10 };
+
+    // --- 逻辑函数 ---
+    function saveToLocal() {
+        const data = { image: canvas.toDataURL(), scale, posX, posY, brushSettings };
+        localStorage.setItem('puredrop_cache', JSON.stringify(data));
+    }
+
+    function loadFromLocal() {
+        const cache = localStorage.getItem('puredrop_cache');
+        if (!cache) return;
+        const data = JSON.parse(cache);
+        const img = new Image();
+        img.onload = () => {
+            canvas.width = mask.width = img.width;
+            canvas.height = mask.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            scale = data.scale || 1;
+            posX = data.posX || 0;
+            posY = data.posY || 0;
+            updateTransform();
+            saveState();
+        };
+        img.src = data.image;
+    }
+
+    function clearStorage() {
+        if(confirm("确定清空吗？")) { localStorage.removeItem('puredrop_cache'); location.reload(); }
+    }
+
+    window.onload = loadFromLocal;
+
+    document.getElementById('fileInput').onchange = e => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const img = new Image();
+        img.onload = () => {
+            canvas.width = mask.width = img.width;
+            canvas.height = mask.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            saveState();
+            resetView();
+            saveToLocal();
+        };
+        img.src = URL.createObjectURL(file);
+    };
+
+    function setMode(m) {
+        mode = m;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + m).classList.add('active');
+        document.getElementById('apply-bar').style.display = (m === 'select') ? 'block' : 'none';
+        sizeInput.value = brushSettings[m];
+    }
+
+    // --- 触控核心优化 ---
+    viewport.addEventListener('touchstart', e => {
+        if (e.touches.length >= 2) {
+            isZooming = true;  // 激活缩放锁
+            isDrawing = false; // 强制停止绘画
+            const t1 = e.touches[0], t2 = e.touches[1];
+            initialDist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
+            lastMidX = (t1.pageX + t2.pageX) / 2;
+            lastMidY = (t1.pageY + t2.pageY) / 2;
+        } else if (e.touches.length === 1 && !isZooming) {
+            // 单指按下，先标记准备绘画
+            isDrawing = true;
+            if(mode === 'erase') saveState();
+            handleDraw(e.touches[0], true); // 初始点
+        }
+    }, {passive: false});
+
+    viewport.addEventListener('touchmove', e => {
+        e.preventDefault();
+        
+        if (e.touches.length >= 2) {
+            isZooming = true;
+            isDrawing = false; // 双指模式下绝对不准绘画
+            
+            const t1 = e.touches[0], t2 = e.touches[1];
+            const dist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
+            const midX = (t1.pageX + t2.pageX) / 2;
+            const midY = (t1.pageY + t2.pageY) / 2;
+
+            // 缩放
+            const zoomChange = dist / initialDist;
+            scale *= zoomChange;
+            initialDist = dist;
+
+            // 平移
+            if (lastMidX) {
+                posX += (midX - lastMidX);
+                posY += (midY - lastMidY);
+            }
+            lastMidX = midX;
+            lastMidY = midY;
+            
+            updateTransform();
+        } else if (isDrawing && !isZooming) {
+            // 只有非缩放状态才允许绘画
+            handleDraw(e.touches[0]);
+        }
+    }, {passive: false});
+
+    viewport.addEventListener('touchend', e => {
+        // 当屏幕上没有任何手指时，重置所有状态
+        if (e.touches.length === 0) {
+            isDrawing = false;
+            isZooming = false; 
+            lastMidX = null;
+            lastMidY = null;
+            mctx.beginPath();
+            if(mode === 'erase') saveToLocal();
+        } else if (e.touches.length === 1) {
+            // 如果还剩一只手指，依然保持缩放锁，防止松开一只手指时突然画出一笔
+            isDrawing = false;
+        }
+    });
+
+    function handleDraw(t, isFirstPoint = false) {
+        if (isZooming) return; // 二次保险
+
+        const rect = canvas.getBoundingClientRect();
+        // 计算画布上的实际坐标
+        const x = (t.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (t.clientY - rect.top) * (canvas.height / rect.height);
+        const size = sizeInput.value / scale; // 笔触大小随缩放自动调整
+
+        if (mode === 'select') {
+            mctx.fillStyle = '#30d158';
+            mctx.beginPath(); 
+            mctx.arc(x, y, size/2, 0, Math.PI*2); 
+            mctx.fill();
+        } else {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            if (isFirstPoint) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            }
+            ctx.lineTo(x, y);
+            ctx.lineWidth = size;
+            ctx.stroke();
+            ctx.globalCompositeOperation = 'source-over';
+        }
+    }
+
+    // --- 其他功能 ---
+    function executeCut() {
+        saveState();
+        const temp = document.createElement('canvas');
+        temp.width = canvas.width; temp.height = canvas.height;
+        const tctx = temp.getContext('2d');
+        tctx.drawImage(canvas, 0, 0);
+        tctx.globalCompositeOperation = 'destination-in';
+        tctx.drawImage(mask, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(temp, 0, 0);
+        mctx.clearRect(0, 0, mask.width, mask.height);
+        setMode('erase');
+        saveToLocal();
+    }
+
+    function saveState() {
+        if(history.length > 15) history.shift();
+        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }
+
+    function undo() {
+        if(history.length < 2) return;
+        history.pop();
+        ctx.putImageData(history[history.length - 1], 0, 0);
+        saveToLocal();
+    }
+
+    function resetView() {
+        const v = viewport.getBoundingClientRect();
+        scale = Math.min(v.width/canvas.width, v.height/canvas.height) * 0.8;
+        posX = 0; posY = 0; updateTransform();
+    }
+
+    function updateTransform() { 
+        wrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`; 
+    }
+
+    function downloadImage() {
+        const link = document.createElement('a');
+        link.download = `puredrop_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+</script>
+</body>
+</html>
