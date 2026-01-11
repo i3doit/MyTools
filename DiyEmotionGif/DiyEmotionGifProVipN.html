@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>动态表情包 Pro - 旗舰版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@900&display=swap" rel="stylesheet">
+    <style>
+        :root { --main-color: #07C160; }
+        body { font-family: -apple-system, sans-serif; background: #f0f2f5; margin: 0; min-height: 100vh; }
+        
+        .app-header { background: #fff; padding: 12px; text-align: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
+        .mode-switch { display: inline-flex; background: #f1f1f6; padding: 4px; border-radius: 12px; margin-top: 8px; }
+        .mode-btn { padding: 6px 16px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .mode-btn.active { background: #fff; color: #000; shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .preview-container { padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .canvas-wrapper { width: 100%; max-width: 360px; aspect-ratio: 1/1; background: #fff; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; position: relative; }
+        canvas { width: 100% !important; height: 100% !important; }
+
+        /* 16宫格大图预览 */
+        #batchGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; max-width: 800px; padding: 10px; }
+        .batch-item { background: #fff; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px solid transparent; position: relative; }
+        .batch-item.active { border-color: #07C160; }
+        .batch-label { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.5); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+
+        .controls { background: white; border-radius: 24px 24px 0 0; padding: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); }
+        .control-card { background: #f8f8fa; padding: 12px; border-radius: 16px; height: 100%; }
+        
+        #lockModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        #drawer { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-radius: 24px 24px 0 0; padding: 20px; z-index: 2000; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.1); }
+        #drawer.active { transform: translateY(0); }
+        #loading { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 4000; flex-direction: column; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <h1 class="text-lg font-black italic">表情包 PRO</h1>
+        <div class="mode-switch">
+            <div class="mode-btn active" id="btnSingle" onclick="setMode('single')">单张编辑</div>
+            <div class="mode-btn" id="btnBatch" onclick="setMode('batch')">批量生成</div>
+        </div>
+    </header>
+
+    <div id="lockModal">
+        <div class="bg-white rounded-[32px] p-8 w-[320px] text-center">
+            <div class="text-4xl mb-4">🔓</div>
+            <h3 class="font-black text-xl mb-2">解锁批量特权</h3>
+            <p class="text-gray-400 text-xs mb-6">关注公众号获取验证码</p>
+            <input type="text" id="unlockCode" placeholder="输入解锁码" class="w-full bg-gray-100 p-3 rounded-xl mb-4 text-center font-bold outline-none border-2 focus:border-green-500">
+            <button onclick="checkUnlock()" class="w-full bg-black text-white py-3 rounded-xl font-bold">立即验证</button>
+            <button onclick="setMode('single')" class="mt-4 text-gray-400 text-xs">取消</button>
+        </div>
+    </div>
+
+    <main class="preview-container">
+        <div id="singleView" class="w-full flex justify-center">
+            <div class="canvas-wrapper">
+                <canvas id="mainCanvas"></canvas>
+            </div>
+        </div>
+
+        <div id="batchView" class="hidden w-full">
+            <div class="bg-white rounded-2xl p-4 mb-4 shadow-sm">
+                <p class="text-[10px] font-black text-gray-400 mb-2">16行文案输入 (自动同步)</p>
+                <textarea id="batchInput" class="w-full bg-gray-50 p-3 rounded-xl text-sm outline-none border-none" rows="5" oninput="syncBatchData()"></textarea>
+                <div class="flex gap-2 mt-3 items-center">
+                    <span class="text-[10px] font-black text-gray-400">动画效果:</span>
+                    <select id="animType" class="text-xs bg-gray-100 p-1 rounded" onchange="state.anim=this.value">
+                        <option value="wave">跳动</option>
+                        <option value="slide">左入右出</option>
+                        <option value="zoom">缩放</option>
+                        <option value="none">静止</option>
+                    </select>
+                </div>
+            </div>
+            <div id="batchGrid"></div>
+        </div>
+    </main>
+
+    <div class="controls max-w-xl mx-auto">
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="control-card">
+                <span class="text-[10px] font-black text-gray-400 block mb-2 text-center">外观配置</span>
+                <div class="flex justify-around items-center">
+                    <button onclick="document.getElementById('avaInp').click()" class="bg-blue-600 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold">头像</button>
+                    <label class="flex items-center gap-1 cursor-pointer">
+                        <input type="checkbox" checked onchange="state.hasBorder=this.checked; syncBatchData()" class="w-3 h-3">
+                        <span class="text-[10px] font-bold">边框</span>
+                    </label>
+                    <button onclick="state.isRound=!state.isRound; syncBatchData()" class="bg-white border text-[10px] px-2 py-1.5 rounded-lg font-bold">方/圆</button>
+                </div>
+            </div>
+            <div class="control-card">
+                <span class="text-[10px] font-black text-gray-400 block mb-2 text-center">颜色 & 挂件</span>
+                <div class="flex items-center gap-2 justify-center">
+                    <div class="flex gap-1">
+                        <div onclick="updateColor('#07C160')" class="w-5 h-5 rounded-full bg-[#07C160] border-2 border-white shadow-sm cursor-pointer"></div>
+                        <div onclick="updateColor('#FF2D55')" class="w-5 h-5 rounded-full bg-[#FF2D55] border-2 border-white shadow-sm cursor-pointer"></div>
+                        <input type="color" oninput="updateColor(this.value)" class="w-5 h-5 bg-transparent border-0 p-0">
+                    </div>
+                    <input type="text" id="badgeInput" value="爱自己" class="w-14 text-[10px] border-b text-center outline-none" oninput="state.badge=this.value; syncBatchData()">
+                </div>
+            </div>
+        </div>
+        <button onclick="exportHandler()" class="w-full py-4 bg-black text-white rounded-2xl font-black shadow-lg active:scale-95 transition-all">
+            下载表情包 (高清)
+        </button>
+    </div>
+
+    <div id="drawer">
+        <div class="flex justify-between items-center mb-4">
+            <span class="font-black text-gray-800">编辑表情文案</span>
+            <button onclick="closeEditor()" class="bg-blue-600 text-white px-6 py-2 rounded-full text-xs font-bold shadow-md">保存修改</button>
+        </div>
+        <textarea id="drawerText" class="w-full p-4 bg-gray-50 rounded-2xl text-base outline-none border-none" rows="3"></textarea>
+    </div>
+
+    <input type="file" id="avaInp" class="hidden" accept="image/*" onchange="loadAva(event)">
+    <div id="loading"><div class="animate-spin text-3xl mb-2">🌀</div><p class="font-bold text-gray-600">正在生成高清GIF <span id="progress">0%</span></p></div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        let currentMode = 'single';
+        let batchItems = [];
+        let state = { 
+            text: "点我编辑文案\n支持换行哦", color: '#07C160', 
+            avatar: null, isRound: true, hasBorder: true, 
+            badge: "爱自己", pos: { x: 40, y: 150 }, 
+            drag: { active: false }, anim: 'wave', lastTap: 0 
+        };
+
+        function updateColor(c) {
+            state.color = c;
+            syncBatchData();
+        }
+
+        function setMode(m) {
+            if(m === 'batch' && localStorage.getItem('v5_pro_ok') !== 'true') {
+                document.getElementById('lockModal').style.display = 'flex';
+                return;
+            }
+            currentMode = m;
+            document.getElementById('lockModal').style.display = 'none';
+            document.getElementById('btnSingle').classList.toggle('active', m === 'single');
+            document.getElementById('btnBatch').classList.toggle('active', m === 'batch');
+            document.getElementById('singleView').classList.toggle('hidden', m === 'batch');
+            document.getElementById('batchView').classList.toggle('hidden', m === 'single');
+            if(m === 'batch') initBatch();
+        }
+
+        function initBatch() {
+            if(batchItems.length === 0) {
+                const samples = ["加油鸭", "早起努力", "想吃火锅", "太酷了", "么么哒", "好运连连", "收到请回答", "赞", "很有精神", "稳住能赢", "带带我", "绝了", "瑞思拜", "笔心", "安排", "冲冲冲"];
+                batchItems = samples.map(t => ({ text: t }));
+                document.getElementById('batchInput').value = samples.join('\n');
+            }
+            syncBatchData();
+        }
+
+        function syncBatchData() {
+            const lines = document.getElementById('batchInput').value.split('\n');
+            const grid = document.getElementById('batchGrid');
+            grid.innerHTML = '';
+            
+            for(let i=0; i<16; i++) {
+                if(lines[i] !== undefined) batchItems[i] = { text: lines[i] || "表情包" };
+                const item = batchItems[i];
+                const div = document.createElement('div');
+                div.className = 'batch-item';
+                div.innerHTML = `<div class="batch-label">${i+1}</div><canvas id="cvs_${i}"></canvas>`;
+                div.onclick = () => {
+                    currentEditIdx = i;
+                    document.getElementById('drawerText').value = item.text;
+                    document.getElementById('drawer').classList.add('active');
+                };
+                grid.appendChild(div);
+                
+                // 立即渲染预览图
+                const cvs = document.getElementById(`cvs_${i}`);
+                cvs.width = 300; cvs.height = 300;
+                drawCore(cvs.getContext('2d'), item.text, 300, 0, false);
+            }
+        }
+
+        let currentEditIdx = -1;
+        function closeEditor() {
+            const newTxt = document.getElementById('drawerText').value;
+            if(currentMode === 'single') state.text = newTxt;
+            else {
+                batchItems[currentEditIdx].text = newTxt;
+                document.getElementById('batchInput').value = batchItems.map(it => it.text).join('\n');
+                syncBatchData();
+            }
+            document.getElementById('drawer').classList.remove('active');
+        }
+
+        function drawCore(tCtx, text, size, time, isExport) {
+            const scale = size / 400;
+            const cleanText = text.replace(/<[^>]*>?/gm, '');
+            const lines = cleanText.split('\n').slice(0, 3);
+            
+            tCtx.clearRect(0, 0, size, size);
+            tCtx.font = `italic 900 ${38 * scale}px "Noto Sans SC"`;
+            
+            let maxW = 0; lines.forEach(l => maxW = Math.max(maxW, tCtx.measureText(l).width));
+            const avaSize = 120 * scale;
+            const bW = Math.min(maxW + avaSize + 50 * scale, size * 0.95);
+            const bH = Math.max(avaSize, lines.length * 55 * scale + 40 * scale);
+            
+            // 批量模式或下载模式强制居中
+            let dx = (currentMode === 'batch' || isExport) ? (size - bW) / 2 : state.pos.x;
+            let dy = (currentMode === 'batch' || isExport) ? (size - bH) / 2 + 20 * scale : state.pos.y;
+
+            // 绘制气泡
+            tCtx.fillStyle = state.color;
+            tCtx.beginPath(); tCtx.roundRect(dx, dy, bW, bH, 25 * scale); tCtx.fill();
+            tCtx.beginPath(); tCtx.moveTo(dx + 50 * scale, dy + bH); tCtx.lineTo(dx + 40 * scale, dy + bH + 15 * scale); tCtx.lineTo(dx + 80 * scale, dy + bH); tCtx.fill();
+
+            // 绘制文字及动画
+            tCtx.fillStyle = "white"; tCtx.textBaseline = "middle";
+            const startY = dy + (bH/2) - ((lines.length-1)*(50*scale)/2);
+            lines.forEach((l, i) => {
+                let ox = 0, oy = 0, opacity = 1;
+                if(!isExport || time > 0) { // 导出时也包含动画
+                    if(state.anim === 'wave') oy = Math.sin(time/200 + i) * 5;
+                    if(state.anim === 'slide') ox = Math.sin(time/500) * 20;
+                    if(state.anim === 'zoom') { const s = 1 + Math.sin(time/300)*0.05; tCtx.setTransform(s,0,0,s,(1-s)*(dx+20),(1-s)*startY); }
+                }
+                tCtx.fillText(l, dx + 25 * scale + ox, startY + (i * 55 * scale) + oy);
+                tCtx.setTransform(1,0,0,1,0,0);
+            });
+
+            // 绘制头像
+            if(state.avatar) {
+                const ax = dx + bW - avaSize - 10 * scale;
+                const ay = dy - 45 * scale;
+                tCtx.save();
+                tCtx.beginPath();
+                if(state.isRound) tCtx.arc(ax + avaSize/2, ay + avaSize/2, avaSize/2, 0, Math.PI*2);
+                else tCtx.roundRect(ax, ay, avaSize, avaSize, 12 * scale);
+                tCtx.clip();
+                tCtx.drawImage(state.avatar, ax, ay, avaSize, avaSize);
+                tCtx.restore();
+
+                if(state.hasBorder) {
+                    tCtx.strokeStyle = "white"; tCtx.lineWidth = 3 * scale;
+                    tCtx.stroke();
+                }
+
+                // 挂件
+                const gx = ax + avaSize - 60 * scale, gy = ay - 10 * scale;
+                const gw = 80 * scale, gh = 30 * scale;
+                tCtx.fillStyle = "white";
+                tCtx.beginPath(); tCtx.arc(gx+gh/2, gy+gh/2, gh/2, 0, Math.PI*2); 
+                tCtx.arc(gx+gw-gh/2, gy+gh/2, gh/2, 0, Math.PI*2);
+                tCtx.rect(gx+gh/2, gy, gw-gh, gh); tCtx.fill();
+                tCtx.strokeStyle = state.color; tCtx.lineWidth = 1; tCtx.stroke();
+                tCtx.fillStyle = state.color; tCtx.font = `bold ${14 * scale}px sans-serif`; tCtx.textAlign = "center";
+                tCtx.fillText(state.badge, gx + gw/2, gy + gh/2 + 2 * scale); tCtx.textAlign = "left";
+            }
+            if(currentMode === 'single') state.hit = { x: dx, y: dy, w: bW, h: bH };
+        }
+
+        async function exportHandler() {
+            const load = document.getElementById('loading'); load.style.display = 'flex';
+            const targets = currentMode === 'single' ? [{text: state.text}] : batchItems;
+            
+            for(let i=0; i<targets.length; i++) {
+                document.getElementById('progress').innerText = `${i+1}/${targets.length}`;
+                await renderGif(targets[i].text, `emoji_${i+1}.gif`);
+            }
+            load.style.display = 'none';
+        }
+
+        function renderGif(text, name) {
+            return new Promise(async (resolve) => {
+                const gif = new GIF({ workers: 2, quality: 10, width: 400, height: 400, transparent: 'rgba(0,0,0,0)', workerScript: URL.createObjectURL(new Blob([await (await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js')).text()], {type:'text/javascript'})) });
+                for(let f=0; f<12; f++) {
+                    const c = document.createElement('canvas'); c.width = 400; c.height = 400;
+                    drawCore(c.getContext('2d'), text, 400, f * 100, true);
+                    gif.addFrame(c, {delay: 80, copy: true, transparent: true});
+                }
+                gif.on('finished', b => {
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; a.click();
+                    resolve();
+                });
+                gif.render();
+            });
+        }
+
+        // 基础逻辑
+        window.onload = () => {
+            canvas.width = 360 * window.devicePixelRatio; canvas.height = 360 * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            const img = new Image(); img.crossOrigin = "anonymous";
+            img.src = "https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg!1";
+            img.onload = () => { state.avatar = img; render(); };
+            initEvents();
+        };
+
+        function render() {
+            if(currentMode === 'single') drawCore(ctx, state.text, 360, Date.now(), false);
+            else if(Date.now() % 1000 < 100) syncBatchData(); // 批量模式低频刷新预览动画
+            requestAnimationFrame(render);
+        }
+
+        function initEvents() {
+            const start = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const ev = e.touches ? e.touches[0] : e;
+                const x = ev.clientX - rect.left;
+                const y = ev.clientY - rect.top;
+                if(state.hit && x > state.hit.x && x < state.hit.x + state.hit.w && y > state.hit.y && y < state.hit.y + state.hit.h) {
+                    if(Date.now() - state.lastTap < 300) {
+                        document.getElementById('drawerText').value = state.text;
+                        document.getElementById('drawer').classList.add('active');
+                    }
+                    state.drag.active = true;
+                    state.drag.ox = x - state.pos.x;
+                    state.drag.oy = y - state.pos.y;
+                    state.lastTap = Date.now();
+                }
+            };
+            const move = (e) => {
+                if(!state.drag.active) return;
+                const rect = canvas.getBoundingClientRect();
+                const ev = e.touches ? e.touches[0] : e;
+                state.pos.x = (ev.clientX - rect.left) - state.drag.ox;
+                state.pos.y = (ev.clientY - rect.top) - state.drag.oy;
+            };
+            canvas.addEventListener('mousedown', start); canvas.addEventListener('touchstart', start);
+            window.addEventListener('mousemove', move); window.addEventListener('touchmove', move);
+            window.addEventListener('mouseup', () => state.drag.active = false); window.addEventListener('touchend', () => state.drag.active = false);
+        }
+
+        function loadAva(e) {
+            const r = new FileReader();
+            r.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => { state.avatar = img; syncBatchData(); };
+                img.src = ev.target.result;
+            };
+            r.readAsDataURL(e.target.files[0]);
+        }
+
+        function checkUnlock() {
+            if (document.getElementById('unlockCode').value.trim() === "BQWX857023577") {
+                localStorage.setItem('v5_pro_ok', 'true');
+                setMode('batch');
+            } else { alert('解锁码错误'); }
+        }
+    </script>
+</body>
+</html>
