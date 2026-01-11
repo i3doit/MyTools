@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PureDrop Ultra | 边缘修复增强版</title>
+    <title>PureDrop Ultra | 边缘修复最终版</title>
     <style>
         :root { --accent: #0071e3; --bg: #000; --panel: rgba(28, 28, 30, 0.95); }
         * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; }
@@ -18,7 +18,7 @@
         #maskCanvas { position: absolute; top: 0; left: 0; pointer-events: none; opacity: 0.5; }
 
         /* 颜色预览小窗 */
-        #color-preview { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: none; }
+        #color-preview { width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; display: none; background: #000; }
 
         .panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 450px;
             background: var(--panel); backdrop-filter: blur(25px); border-radius: 28px; padding: 16px;
@@ -38,9 +38,10 @@
 <body>
 
 <header>
-    <div class="logo">PureDrop Repair</div>
+    <div class="logo">PureDrop Studio</div>
     <div style="display: flex; gap: 8px; align-items: center;">
         <div id="color-preview"></div>
+        <button class="mode-btn" style="padding: 6px 12px; background:#444; color:white;" onclick="document.getElementById('fileInput').click()">换图</button>
         <button class="mode-btn highlight" style="padding: 6px 12px;" onclick="downloadImage()">导出</button>
     </div>
 </header>
@@ -61,7 +62,7 @@
     </div>
 
     <div id="apply-bar">
-        <button class="mode-btn highlight" style="width:100%; border-radius: 12px;" onclick="executeCut()">确认提取(仅涂抹模式用)</button>
+        <button class="mode-btn highlight" style="width:100%; border-radius: 12px;" onclick="executeCut()">确认提取(仅用于涂抹模式)</button>
     </div>
 
     <div class="tools">
@@ -92,16 +93,32 @@
     let pickedColor = 'rgba(0,0,0,1)';
     const brushSettings = { select: 40, erase: 15, repair: 20 };
 
-    function setMode(m) {
-        mode = m;
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('btn-' + m).classList.add('active');
-        document.getElementById('apply-bar').style.display = (m === 'select') ? 'block' : 'none';
-        colorPreview.style.display = (m === 'repair' || m === 'picker') ? 'block' : 'none';
-        if(brushSettings[m]) sizeInput.value = brushSettings[m];
+    // --- 自动保存与加载 ---
+    function saveToLocal() {
+        const data = { image: canvas.toDataURL(), scale, posX, posY };
+        localStorage.setItem('puredrop_repair_cache', JSON.stringify(data));
     }
 
-    // 处理文件上传
+    function loadFromLocal() {
+        const cache = localStorage.getItem('puredrop_repair_cache');
+        if (!cache) return;
+        const data = JSON.parse(cache);
+        const img = new Image();
+        img.onload = () => {
+            canvas.width = mask.width = img.width;
+            canvas.height = mask.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            scale = data.scale || 1;
+            posX = data.posX || 0;
+            posY = data.posY || 0;
+            updateTransform();
+            saveState();
+        };
+        img.src = data.image;
+    }
+
+    window.onload = loadFromLocal;
+
     function handleFile(input) {
         const file = input.files[0];
         if(!file) return;
@@ -112,11 +129,21 @@
             ctx.drawImage(img, 0, 0);
             saveState();
             resetView();
+            saveToLocal();
         };
         img.src = URL.createObjectURL(file);
     }
 
-    // --- 触控核心逻辑 ---
+    function setMode(m) {
+        mode = m;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + m).classList.add('active');
+        document.getElementById('apply-bar').style.display = (m === 'select') ? 'block' : 'none';
+        colorPreview.style.display = (m === 'repair' || m === 'picker') ? 'block' : 'none';
+        if(brushSettings[m]) sizeInput.value = brushSettings[m];
+    }
+
+    // --- 触控交互（解决乱跑问题） ---
     viewport.addEventListener('touchstart', e => {
         if (e.touches.length >= 2) {
             isZooming = true; isDrawing = false;
@@ -149,6 +176,7 @@
     }, {passive: false});
 
     viewport.addEventListener('touchend', () => {
+        if (isDrawing && mode !== 'select' && mode !== 'picker') saveToLocal();
         isDrawing = false; isZooming = false;
         mctx.beginPath();
         ctx.beginPath();
@@ -175,9 +203,8 @@
             drawPath(ctx, x, y, size, isFirst);
             ctx.globalCompositeOperation = 'source-over';
         } else if (mode === 'repair') {
-            // 修复画笔：使用取到的颜色，带一点点透明度进行融合
             ctx.strokeStyle = pickedColor;
-            ctx.globalAlpha = 0.5; // 半透明融合更自然
+            ctx.globalAlpha = 0.5;
             drawPath(ctx, x, y, size, isFirst);
             ctx.globalAlpha = 1.0;
         }
@@ -192,7 +219,6 @@
         context.stroke();
     }
 
-    // --- 核心功能 ---
     function executeCut() {
         saveState();
         const temp = document.createElement('canvas');
@@ -204,7 +230,8 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(temp, 0, 0);
         mctx.clearRect(0, 0, mask.width, mask.height);
-        setMode('repair'); // 抠图后自动切到修复模式
+        setMode('repair');
+        saveToLocal();
     }
 
     function saveState() {
@@ -216,6 +243,7 @@
         if(history.length < 2) return;
         history.pop();
         ctx.putImageData(history[history.length - 1], 0, 0);
+        saveToLocal();
     }
 
     function resetView() {
