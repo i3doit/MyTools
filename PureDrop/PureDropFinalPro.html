@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PureDrop | 闭环抠图工具</title>
+    <style>
+        :root { --blue: #0071e3; --bg: #1c1c1e; }
+        * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; }
+        body { margin: 0; height: 100dvh; background: #000; font-family: -apple-system, sans-serif; overflow: hidden; display: flex; flex-direction: column; }
+        
+        header { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; background: #1c1c1e; border-bottom: 1px solid #333; z-index: 100; }
+        
+        #viewport { flex: 1; position: relative; overflow: hidden; background: #2c2c2e; display: flex; align-items: center; justify-content: center; }
+        #canvas-wrapper { position: relative; transform-origin: center; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
+        canvas { display: block; background-image: 
+            linear-gradient(45deg, #444 25%, transparent 25%), linear-gradient(-45deg, #444 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #444 75%), linear-gradient(-45deg, transparent 75%, #444 75%);
+            background-size: 10px 10px; }
+        
+        /* 辅助画布用于显示绿色涂抹层 */
+        #maskCanvas { position: absolute; top: 0; left: 0; opacity: 0.6; pointer-events: none; }
+
+        .panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 480px;
+            background: rgba(44, 44, 46, 0.95); backdrop-filter: blur(20px); border-radius: 20px; padding: 15px;
+            display: flex; flex-direction: column; gap: 12px; border: 1px solid #3a3a3c; z-index: 1000; }
+        
+        .mode-row { display: flex; background: #1c1c1e; border-radius: 10px; padding: 3px; gap: 4px; }
+        .mode-btn { flex: 1; border: none; background: none; color: #8e8e93; padding: 8px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .mode-btn.active { background: #3a3a3c; color: #fff; }
+        .mode-btn.highlight { background: var(--blue); color: white; }
+
+        .ctrl-row { display: flex; align-items: center; gap: 10px; }
+        .btn { padding: 8px 12px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; background: #3a3a3c; color: white; }
+        input[type="range"] { flex: 1; accent-color: var(--blue); }
+        .label { font-size: 11px; color: #8e8e93; min-width: 45px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="color:white; font-size: 14px; font-weight: 600;">PureDrop Pro</div>
+    <div style="display: flex; gap: 8px;">
+        <button class="btn" onclick="document.getElementById('fileInput').click()">打开照片</button>
+        <button class="btn" style="background:var(--blue)" onclick="downloadImage()">导出高清</button>
+    </div>
+</header>
+
+<main id="viewport">
+    <div id="canvas-wrapper">
+        <canvas id="mainCanvas"></canvas>
+        <canvas id="maskCanvas"></canvas>
+    </div>
+</main>
+
+<div class="panel">
+    <div class="mode-row">
+        <button class="mode-btn active" id="btn-view" onclick="setMode('view')">🔍 移动缩放</button>
+        <button class="mode-btn" id="btn-select" onclick="setMode('select')">🖌️ 涂抹保留区</button>
+        <button class="mode-btn" id="btn-erase" onclick="setMode('erase')">🧽 细节橡皮</button>
+    </div>
+
+    <div id="apply-row" style="display:none">
+        <button class="mode-btn highlight" style="width:100%" onclick="executeCut()">确认：仅保留绿色涂抹部分</button>
+    </div>
+
+    <div class="ctrl-row">
+        <button class="btn" onclick="undo()" style="width:40px">↩️</button>
+        <span class="label">画笔大小</span>
+        <input type="range" id="brushSize" min="5" max="150" value="40">
+        <button class="btn" onclick="resetView()">居中</button>
+    </div>
+    <input type="file" id="fileInput" hidden accept="image/*">
+</div>
+
+<script>
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const mask = document.getElementById('maskCanvas');
+    const mctx = mask.getContext('2d');
+    const wrapper = document.getElementById('canvas-wrapper');
+    const viewport = document.getElementById('viewport');
+
+    let mode = 'view';
+    let scale = 1, posX = 0, posY = 0;
+    let isDown = false;
+    let history = []; 
+
+    // 1. 文件导入
+    document.getElementById('fileInput').onchange = e => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = f => {
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = mask.width = img.width;
+                canvas.height = mask.height = img.height;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                saveState();
+                resetView();
+            };
+            img.src = f.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // 2. 模式控制
+    function setMode(m) {
+        mode = m;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + m).classList.add('active');
+        document.getElementById('apply-row').style.display = (m === 'select') ? 'block' : 'none';
+        // 切换模式时清空临时遮罩，但不影响主图
+        mctx.clearRect(0, 0, mask.width, mask.height);
+    }
+
+    function resetView() {
+        const v = viewport.getBoundingClientRect();
+        scale = Math.min(v.width/canvas.width, v.height/canvas.height) * 0.9;
+        posX = 0; posY = 0;
+        updateUI();
+    }
+
+    function updateUI() {
+        wrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+    }
+
+    // 3. 核心交互
+    viewport.onpointerdown = e => {
+        isDown = true;
+        if(mode !== 'view') handleDraw(e);
+    };
+
+    viewport.onpointermove = e => {
+        if(!isDown) return;
+        if(mode === 'view') {
+            posX += e.movementX;
+            posY += e.movementY;
+            updateUI();
+        } else {
+            handleDraw(e);
+        }
+    };
+
+    window.onpointerup = () => { isDown = false; mctx.beginPath(); };
+
+    function handleDraw(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        const size = document.getElementById('brushSize').value / scale;
+
+        if(mode === 'select') {
+            // 绿色笔迹提示
+            mctx.fillStyle = '#30d158';
+            mctx.beginPath();
+            mctx.arc(x, y, size/2, 0, Math.PI*2);
+            mctx.fill();
+        } else if(mode === 'erase') {
+            // 直接操作主画布
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(x, y, size/2, 0, Math.PI*2);
+            ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+        }
+    }
+
+    // 4. 执行剪裁 (关联核心逻辑)
+    function executeCut() {
+        saveState();
+        // 创建一个临时画布来做交集运算
+        const temp = document.createElement('canvas');
+        temp.width = canvas.width; temp.height = canvas.height;
+        const tctx = temp.getContext('2d');
+        
+        // 1. 先把主图画到临时画布
+        tctx.drawImage(canvas, 0, 0);
+        // 2. 设置混合模式为：只保留遮罩重叠的部分
+        tctx.globalCompositeOperation = 'destination-in';
+        tctx.drawImage(mask, 0, 0);
+        
+        // 3. 将结果写回主画布
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(temp, 0, 0);
+        
+        mctx.clearRect(0, 0, mask.width, mask.height); // 清空绿色提示
+        setMode('erase'); // 自动关联到精细化模式
+    }
+
+    // 5. 数据保存与撤销
+    function saveState() {
+        if(history.length > 10) history.shift();
+        history.push(canvas.toDataURL());
+    }
+
+    function undo() {
+        if(history.length < 2) return;
+        history.pop();
+        const img = new Image();
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+        };
+        img.src = history[history.length - 1];
+    }
+
+    function downloadImage() {
+        const link = document.createElement('a');
+        link.download = `表情包_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+
+    viewport.onwheel = e => { e.preventDefault(); scale *= e.deltaY > 0 ? 0.9 : 1.1; updateUI(); };
+</script>
+</body>
+</html>
