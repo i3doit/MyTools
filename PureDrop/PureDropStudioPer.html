@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PureDrop | 实时保存版</title>
+    <style>
+        :root { --accent: #0071e3; --bg: #000; --panel: rgba(28, 28, 30, 0.95); }
+        * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; }
+        body { margin: 0; height: 100dvh; background: var(--bg); font-family: -apple-system, sans-serif; overflow: hidden; display: flex; flex-direction: column; }
+        
+        header { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: #1c1c1e; border-bottom: 1px solid #333; z-index: 100; }
+        .logo { color: white; font-weight: 600; font-size: 15px; }
+
+        #viewport { flex: 1; position: relative; overflow: hidden; background: #2c2c2e; display: flex; align-items: center; justify-content: center; }
+        #canvas-wrapper { position: relative; transform-origin: center; }
+        canvas { display: block; background-image: conic-gradient(#333 0.25turn, #444 0 0.5turn, #333 0 0.75turn, #444 0); background-size: 20px 20px; }
+        #maskCanvas { position: absolute; top: 0; left: 0; pointer-events: none; opacity: 0.5; }
+
+        .panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 450px;
+            background: var(--panel); backdrop-filter: blur(25px); border-radius: 28px; padding: 16px;
+            display: flex; flex-direction: column; gap: 12px; border: 1px solid #444; box-shadow: 0 20px 50px rgba(0,0,0,0.8); z-index: 1000; }
+        
+        .mode-row { display: flex; background: rgba(0,0,0,0.3); border-radius: 14px; padding: 4px; gap: 4px; }
+        .mode-btn { flex: 1; border: none; background: none; color: #8e8e93; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .mode-btn.active { background: #555; color: #fff; }
+        .mode-btn.highlight { background: var(--accent); color: #fff; }
+
+        .tools { display: flex; align-items: center; gap: 12px; }
+        .circle-btn { width: 42px; height: 42px; border-radius: 50%; border: none; background: #444; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .slider-wrap { flex: 1; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); height: 8px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">PureDrop Studio</div>
+    <div style="display: flex; gap: 8px;">
+        <button class="mode-btn" style="padding: 6px 12px; background:#444; color:white;" onclick="clearStorage()">清空重来</button>
+        <button class="mode-btn" style="padding: 6px 12px; background:#444; color:white;" onclick="document.getElementById('fileInput').click()">换图</button>
+        <button class="mode-btn highlight" style="padding: 6px 12px;" onclick="downloadImage()">导出</button>
+    </div>
+</header>
+
+<main id="viewport">
+    <div id="canvas-wrapper">
+        <canvas id="mainCanvas"></canvas>
+        <canvas id="maskCanvas"></canvas>
+    </div>
+</main>
+
+<div class="panel">
+    <div class="mode-row">
+        <button class="mode-btn active" id="btn-select" onclick="setMode('select')">🖌️ 涂抹保留</button>
+        <button class="mode-btn" id="btn-erase" onclick="setMode('erase')">🧽 精细橡皮</button>
+    </div>
+
+    <div id="apply-bar" style="display: block;">
+        <button class="mode-btn highlight" style="width:100%; border-radius: 12px;" onclick="executeCut()">确认提取</button>
+    </div>
+
+    <div class="tools">
+        <button class="circle-btn" onclick="undo()">↩️</button>
+        <div class="slider-wrap">
+            <input type="range" id="brushSize" min="1" max="150" value="40">
+        </div>
+        <button class="circle-btn" onclick="resetView()">🎯</button>
+    </div>
+    <input type="file" id="fileInput" hidden accept="image/*">
+</div>
+
+<script>
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const mask = document.getElementById('maskCanvas');
+    const mctx = mask.getContext('2d');
+    const wrapper = document.getElementById('canvas-wrapper');
+    const viewport = document.getElementById('viewport');
+    const sizeInput = document.getElementById('brushSize');
+
+    let mode = 'select';
+    let scale = 1, posX = 0, posY = 0;
+    let history = [];
+    let isDrawing = false;
+    let initialDist = 0, lastX, lastY;
+    const brushSettings = { select: 60, erase: 10 };
+
+    // --- 实时保存逻辑 ---
+    function saveToLocal() {
+        const data = {
+            image: canvas.toDataURL(),
+            scale: scale,
+            posX: posX,
+            posY: posY,
+            brushSettings: brushSettings
+        };
+        localStorage.setItem('puredrop_cache', JSON.stringify(data));
+    }
+
+    function loadFromLocal() {
+        const cache = localStorage.getItem('puredrop_cache');
+        if (!cache) return;
+        const data = JSON.parse(cache);
+        const img = new Image();
+        img.onload = () => {
+            canvas.width = mask.width = img.width;
+            canvas.height = mask.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            scale = data.scale || 1;
+            posX = data.posX || 0;
+            posY = data.posY || 0;
+            Object.assign(brushSettings, data.brushSettings);
+            updateTransform();
+            saveState(); // 放入撤销栈
+        };
+        img.src = data.image;
+    }
+
+    function clearStorage() {
+        if(confirm("确定要清空当前进度吗？")) {
+            localStorage.removeItem('puredrop_cache');
+            location.reload();
+        }
+    }
+
+    window.onload = loadFromLocal;
+
+    // --- 核心交互 ---
+    document.getElementById('fileInput').onchange = e => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const img = new Image();
+        img.onload = () => {
+            canvas.width = mask.width = img.width;
+            canvas.height = mask.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            saveState();
+            resetView();
+            saveToLocal();
+        };
+        img.src = URL.createObjectURL(file);
+    };
+
+    function setMode(m) {
+        mode = m;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + m).classList.add('active');
+        document.getElementById('apply-bar').style.display = (m === 'select') ? 'block' : 'none';
+        sizeInput.value = brushSettings[m];
+    }
+
+    viewport.addEventListener('touchstart', e => {
+        if (e.touches.length === 2) {
+            isDrawing = false;
+            initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+        } else if (e.touches.length === 1) {
+            isDrawing = true;
+            if(mode === 'erase') saveState();
+            handleDraw(e.touches[0]);
+        }
+    }, {passive: false});
+
+    viewport.addEventListener('touchmove', e => {
+        e.preventDefault();
+        if (e.touches.length === 2) {
+            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            scale *= dist / initialDist;
+            initialDist = dist;
+            if(lastX) {
+                posX += ((e.touches[0].pageX + e.touches[1].pageX)/2) - lastX;
+                posY += ((e.touches[0].pageY + e.touches[1].pageY)/2) - lastY;
+            }
+            lastX = (e.touches[0].pageX + e.touches[1].pageX)/2;
+            lastY = (e.touches[0].pageY + e.touches[1].pageY)/2;
+            updateTransform();
+        } else if (isDrawing) {
+            handleDraw(e.touches[0]);
+        }
+    }, {passive: false});
+
+    viewport.addEventListener('touchend', () => {
+        isDrawing = false; lastX = null;
+        mctx.beginPath();
+        if(mode === 'erase') saveToLocal(); // 橡皮擦动作结束后保存
+    });
+
+    function handleDraw(t) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (t.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (t.clientY - rect.top) * (canvas.height / rect.height);
+        const size = sizeInput.value / scale;
+        if (mode === 'select') {
+            mctx.fillStyle = '#30d158';
+            mctx.beginPath(); mctx.arc(x, y, size/2, 0, Math.PI*2); mctx.fill();
+        } else {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath(); ctx.arc(x, y, size/2, 0, Math.PI*2); ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+        }
+    }
+
+    function executeCut() {
+        saveState();
+        const temp = document.createElement('canvas');
+        temp.width = canvas.width; temp.height = canvas.height;
+        const tctx = temp.getContext('2d');
+        tctx.drawImage(canvas, 0, 0);
+        tctx.globalCompositeOperation = 'destination-in';
+        tctx.drawImage(mask, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(temp, 0, 0);
+        mctx.clearRect(0, 0, mask.width, mask.height);
+        setMode('erase');
+        saveToLocal(); // 剪裁完成后保存
+    }
+
+    function saveState() {
+        if(history.length > 15) history.shift();
+        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }
+
+    function undo() {
+        if(history.length < 2) return;
+        history.pop();
+        ctx.putImageData(history[history.length - 1], 0, 0);
+        saveToLocal();
+    }
+
+    function resetView() {
+        const v = viewport.getBoundingClientRect();
+        scale = Math.min(v.width/canvas.width, v.height/canvas.height) * 0.9;
+        posX = 0; posY = 0; updateTransform(); saveToLocal();
+    }
+
+    function updateTransform() { wrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`; }
+
+    function downloadImage() {
+        const link = document.createElement('a');
+        link.download = `puredrop_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+</script>
+</body>
+</html>
