@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PureDrop Ultra | 边缘修复增强版</title>
+    <style>
+        :root { --accent: #0071e3; --bg: #000; --panel: rgba(28, 28, 30, 0.95); }
+        * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; }
+        body { margin: 0; height: 100dvh; background: var(--bg); font-family: -apple-system, sans-serif; overflow: hidden; display: flex; flex-direction: column; }
+        
+        header { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: #1c1c1e; border-bottom: 1px solid #333; z-index: 100; }
+        .logo { color: white; font-weight: 600; font-size: 15px; }
+
+        #viewport { flex: 1; position: relative; overflow: hidden; background: #2c2c2e; display: flex; align-items: center; justify-content: center; }
+        #canvas-wrapper { position: relative; transform-origin: center; will-change: transform; }
+        canvas { display: block; background-image: conic-gradient(#333 0.25turn, #444 0 0.5turn, #333 0 0.75turn, #444 0); background-size: 20px 20px; }
+        #maskCanvas { position: absolute; top: 0; left: 0; pointer-events: none; opacity: 0.5; }
+
+        /* 颜色预览小窗 */
+        #color-preview { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: none; }
+
+        .panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 450px;
+            background: var(--panel); backdrop-filter: blur(25px); border-radius: 28px; padding: 16px;
+            display: flex; flex-direction: column; gap: 12px; border: 1px solid #444; box-shadow: 0 20px 50px rgba(0,0,0,0.8); z-index: 1000; }
+        
+        .mode-row { display: flex; background: rgba(0,0,0,0.3); border-radius: 14px; padding: 4px; gap: 4px; overflow-x: auto; }
+        .mode-btn { flex: 1; border: none; background: none; color: #8e8e93; padding: 10px 5px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .mode-btn.active { background: #555; color: #fff; }
+        .mode-btn.highlight { background: var(--accent); color: #fff; }
+
+        .tools { display: flex; align-items: center; gap: 12px; }
+        .circle-btn { width: 42px; height: 42px; border-radius: 50%; border: none; background: #444; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .slider-wrap { flex: 1; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); height: 8px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">PureDrop Repair</div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+        <div id="color-preview"></div>
+        <button class="mode-btn highlight" style="padding: 6px 12px;" onclick="downloadImage()">导出</button>
+    </div>
+</header>
+
+<main id="viewport">
+    <div id="canvas-wrapper">
+        <canvas id="mainCanvas"></canvas>
+        <canvas id="maskCanvas"></canvas>
+    </div>
+</main>
+
+<div class="panel">
+    <div class="mode-row">
+        <button class="mode-btn active" id="btn-select" onclick="setMode('select')">🖌️ 涂抹保留</button>
+        <button class="mode-btn" id="btn-erase" onclick="setMode('erase')">🧽 精细橡皮</button>
+        <button class="mode-btn" id="btn-picker" onclick="setMode('picker')">🧪 吸管取色</button>
+        <button class="mode-btn" id="btn-repair" onclick="setMode('repair')">🎨 修复笔</button>
+    </div>
+
+    <div id="apply-bar">
+        <button class="mode-btn highlight" style="width:100%; border-radius: 12px;" onclick="executeCut()">确认提取(仅涂抹模式用)</button>
+    </div>
+
+    <div class="tools">
+        <button class="circle-btn" onclick="undo()">↩️</button>
+        <div class="slider-wrap">
+            <input type="range" id="brushSize" min="1" max="100" value="30">
+        </div>
+        <button class="circle-btn" onclick="resetView()">🎯</button>
+    </div>
+    <input type="file" id="fileInput" hidden accept="image/*" onchange="handleFile(this)">
+</div>
+
+<script>
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const mask = document.getElementById('maskCanvas');
+    const mctx = mask.getContext('2d');
+    const wrapper = document.getElementById('canvas-wrapper');
+    const viewport = document.getElementById('viewport');
+    const sizeInput = document.getElementById('brushSize');
+    const colorPreview = document.getElementById('color-preview');
+
+    let mode = 'select';
+    let scale = 1, posX = 0, posY = 0;
+    let history = [];
+    let isDrawing = false, isZooming = false;
+    let initialDist = 0, lastMidX = 0, lastMidY = 0;
+    let pickedColor = 'rgba(0,0,0,1)';
+    const brushSettings = { select: 40, erase: 15, repair: 20 };
+
+    function setMode(m) {
+        mode = m;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + m).classList.add('active');
+        document.getElementById('apply-bar').style.display = (m === 'select') ? 'block' : 'none';
+        colorPreview.style.display = (m === 'repair' || m === 'picker') ? 'block' : 'none';
+        if(brushSettings[m]) sizeInput.value = brushSettings[m];
+    }
+
+    // 处理文件上传
+    function handleFile(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const img = new Image();
+        img.onload = () => {
+            canvas.width = mask.width = img.width;
+            canvas.height = mask.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            saveState();
+            resetView();
+        };
+        img.src = URL.createObjectURL(file);
+    }
+
+    // --- 触控核心逻辑 ---
+    viewport.addEventListener('touchstart', e => {
+        if (e.touches.length >= 2) {
+            isZooming = true; isDrawing = false;
+            const t1 = e.touches[0], t2 = e.touches[1];
+            initialDist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
+            lastMidX = (t1.pageX + t2.pageX) / 2;
+            lastMidY = (t1.pageY + t2.pageY) / 2;
+        } else if (e.touches.length === 1 && !isZooming) {
+            isDrawing = true;
+            if(mode !== 'picker' && mode !== 'select') saveState();
+            handleDraw(e.touches[0], true);
+        }
+    }, {passive: false});
+
+    viewport.addEventListener('touchmove', e => {
+        e.preventDefault();
+        if (e.touches.length >= 2) {
+            const t1 = e.touches[0], t2 = e.touches[1];
+            const dist = Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
+            const midX = (t1.pageX + t2.pageX) / 2;
+            const midY = (t1.pageY + t2.pageY) / 2;
+            const nextScale = scale * (dist / initialDist);
+            if (nextScale > 0.1 && nextScale < 20) scale = nextScale;
+            posX += (midX - lastMidX); posY += (midY - lastMidY);
+            initialDist = dist; lastMidX = midX; lastMidY = midY;
+            updateTransform();
+        } else if (isDrawing && !isZooming) {
+            handleDraw(e.touches[0]);
+        }
+    }, {passive: false});
+
+    viewport.addEventListener('touchend', () => {
+        isDrawing = false; isZooming = false;
+        mctx.beginPath();
+        ctx.beginPath();
+    });
+
+    function handleDraw(t, isFirst = false) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (t.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (t.clientY - rect.top) * (canvas.height / rect.height);
+        const size = sizeInput.value / scale;
+
+        if (mode === 'picker') {
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+            pickedColor = `rgba(${pixel[0]},${pixel[1]},${pixel[2]},${pixel[3]/255})`;
+            colorPreview.style.backgroundColor = pickedColor;
+            return;
+        }
+
+        if (mode === 'select') {
+            mctx.fillStyle = '#30d158';
+            mctx.beginPath(); mctx.arc(x, y, size/2, 0, Math.PI*2); mctx.fill();
+        } else if (mode === 'erase') {
+            ctx.globalCompositeOperation = 'destination-out';
+            drawPath(ctx, x, y, size, isFirst);
+            ctx.globalCompositeOperation = 'source-over';
+        } else if (mode === 'repair') {
+            // 修复画笔：使用取到的颜色，带一点点透明度进行融合
+            ctx.strokeStyle = pickedColor;
+            ctx.globalAlpha = 0.5; // 半透明融合更自然
+            drawPath(ctx, x, y, size, isFirst);
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
+    function drawPath(context, x, y, size, isFirst) {
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.lineWidth = size;
+        if(isFirst) context.moveTo(x, y);
+        context.lineTo(x, y);
+        context.stroke();
+    }
+
+    // --- 核心功能 ---
+    function executeCut() {
+        saveState();
+        const temp = document.createElement('canvas');
+        temp.width = canvas.width; temp.height = canvas.height;
+        const tctx = temp.getContext('2d');
+        tctx.drawImage(canvas, 0, 0);
+        tctx.globalCompositeOperation = 'destination-in';
+        tctx.drawImage(mask, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(temp, 0, 0);
+        mctx.clearRect(0, 0, mask.width, mask.height);
+        setMode('repair'); // 抠图后自动切到修复模式
+    }
+
+    function saveState() {
+        if(history.length > 20) history.shift();
+        history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }
+
+    function undo() {
+        if(history.length < 2) return;
+        history.pop();
+        ctx.putImageData(history[history.length - 1], 0, 0);
+    }
+
+    function resetView() {
+        const v = viewport.getBoundingClientRect();
+        scale = Math.min(v.width/canvas.width, v.height/canvas.height) * 0.9;
+        posX = 0; posY = 0; updateTransform();
+    }
+
+    function updateTransform() { wrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`; }
+
+    function downloadImage() {
+        const link = document.createElement('a');
+        link.download = `puredrop_final.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+</script>
+</body>
+</html>
