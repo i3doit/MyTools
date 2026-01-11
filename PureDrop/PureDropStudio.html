@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PureDrop Studio | 专业表情包精修</title>
+    <style>
+        :root { --apple-blue: #0071e3; --apple-bg: #1c1c1e; --apple-gray: #3a3a3c; }
+        * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; }
+        body { margin: 0; height: 100dvh; background: #000; font-family: -apple-system, sans-serif; overflow: hidden; display: flex; flex-direction: column; }
+        
+        header { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: rgba(28,28,30,0.95); border-bottom: 1px solid #333; z-index: 100; }
+        
+        #viewport { flex: 1; position: relative; overflow: hidden; background: #2c2c2e; display: flex; align-items: center; justify-content: center; }
+        #canvas-wrapper { position: relative; transform-origin: center; cursor: crosshair; }
+        canvas { display: block; background-image: 
+            linear-gradient(45deg, #333 25%, transparent 25%), linear-gradient(-45deg, #333 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #333 75%), linear-gradient(-45deg, transparent 75%, #333 75%);
+            background-size: 12px 12px; }
+        #overlayCanvas { position: absolute; top: 0; left: 0; pointer-events: none; opacity: 0.6; }
+
+        .panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 500px;
+            background: rgba(44, 44, 46, 0.98); backdrop-filter: blur(25px); border-radius: 24px; padding: 16px;
+            display: flex; flex-direction: column; gap: 14px; border: 1px solid #48484a; box-shadow: 0 25px 50px rgba(0,0,0,0.6); z-index: 1000; }
+        
+        .mode-tabs { display: flex; background: #1c1c1e; border-radius: 12px; padding: 3px; gap: 4px; }
+        .tab { flex: 1; border: none; background: none; color: #8e8e93; padding: 10px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .tab.active { background: #48484a; color: #fff; }
+        .tab.action { background: var(--apple-blue); color: #fff; }
+
+        .controls { display: flex; align-items: center; gap: 12px; }
+        .btn-icon { width: 44px; height: 44px; border-radius: 12px; border: none; background: #3a3a3c; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .slider-box { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        input[type="range"] { width: 100%; accent-color: var(--apple-blue); cursor: pointer; }
+        .label-row { display: flex; justify-content: space-between; font-size: 10px; color: #8e8e93; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="color:white; font-weight: 700; font-size: 16px;">PureDrop Studio</div>
+    <div style="display: flex; gap: 10px;">
+        <button class="tab" style="background:#3a3a3c; color:white; padding: 6px 12px;" onclick="document.getElementById('fileInput').click()">打开</button>
+        <button class="tab action" style="padding: 6px 12px;" onclick="downloadImage()">导出 PNG</button>
+    </div>
+</header>
+
+<main id="viewport">
+    <div id="canvas-wrapper">
+        <canvas id="mainCanvas"></canvas>
+        <canvas id="overlayCanvas"></canvas>
+    </div>
+</main>
+
+<div class="panel">
+    <div class="mode-tabs">
+        <button class="tab active" id="mode-view" onclick="setMode('view')">🔍 缩放平移</button>
+        <button class="tab" id="mode-select" onclick="setMode('select')">🖌️ 涂抹保留</button>
+        <button class="tab" id="mode-erase" onclick="setMode('erase')">🧽 精细擦除</button>
+    </div>
+
+    <div id="select-bar" style="display: none;">
+        <button class="tab action" style="width: 100%;" onclick="confirmSelection()">提取涂抹部分 (删除背景)</button>
+    </div>
+
+    <div class="controls">
+        <button class="btn-icon" onclick="undo()" title="撤销">↩️</button>
+        <div class="slider-box">
+            <div class="label-row"><span>笔触粗细</span><span id="brushVal">20px</span></div>
+            <input type="range" id="brushSize" min="1" max="100" value="20" oninput="document.getElementById('brushVal').innerText = this.value + 'px'">
+        </div>
+        <button class="btn-icon" onclick="resetView()" title="居中">🎯</button>
+    </div>
+    <input type="file" id="fileInput" hidden accept="image/*">
+</div>
+
+<script>
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const overlay = document.getElementById('overlayCanvas');
+    const octx = overlay.getContext('2d');
+    const wrapper = document.getElementById('canvas-wrapper');
+    const viewport = document.getElementById('viewport');
+    const fileInput = document.getElementById('fileInput');
+
+    let mode = 'view';
+    let scale = 1, posX = 0, posY = 0;
+    let isDrawing = false;
+    let undoStack = [];
+
+    // --- 1. 修复图片加载问题 ---
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const img = new Image();
+        img.onload = function() {
+            // 确保同步画布尺寸
+            canvas.width = overlay.width = img.width;
+            canvas.height = overlay.height = img.height;
+            wrapper.style.width = img.width + 'px';
+            wrapper.style.height = img.height + 'px';
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            
+            undoStack = []; // 重置撤销栈
+            saveState(); // 存入初始状态
+            resetView();
+            setMode('view');
+            fileInput.value = ''; // 清除 input 以便下次能触发同一个文件
+        };
+        img.src = URL.createObjectURL(file);
+    });
+
+    // --- 2. 缩放平移逻辑 (全局保持) ---
+    function updateTransform() {
+        wrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+    }
+
+    function resetView() {
+        const v = viewport.getBoundingClientRect();
+        scale = Math.min(v.width / canvas.width, v.height / canvas.height) * 0.85;
+        posX = 0; posY = 0;
+        updateTransform();
+    }
+
+    // --- 3. 模式与关联逻辑 ---
+    function setMode(newMode) {
+        mode = newMode;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('mode-' + newMode).classList.add('active');
+        document.getElementById('select-bar').style.display = (mode === 'select') ? 'block' : 'none';
+        octx.clearRect(0, 0, overlay.width, overlay.height);
+    }
+
+    viewport.onpointerdown = e => {
+        isDrawing = true;
+        if (mode !== 'view') {
+            if (mode === 'erase') saveState(); // 橡皮擦动作前保存
+            draw(e);
+        }
+    };
+
+    viewport.onpointermove = e => {
+        if (!isDrawing) return;
+        if (mode === 'view') {
+            posX += e.movementX;
+            posY += e.movementY;
+            updateTransform();
+        } else {
+            draw(e);
+        }
+    };
+
+    window.onpointerup = () => {
+        isDrawing = false;
+        octx.beginPath();
+    };
+
+    function draw(e) {
+        const rect = canvas.getBoundingClientRect();
+        // 核心修复：基于当前缩放比例计算画布内的精确像素坐标
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        const brushSize = document.getElementById('brushSize').value;
+
+        if (mode === 'select') {
+            octx.fillStyle = '#30d158'; // 亮绿色提示
+            octx.beginPath();
+            octx.arc(x, y, brushSize/2, 0, Math.PI*2);
+            octx.fill();
+        } else if (mode === 'erase') {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(x, y, brushSize/2, 0, Math.PI*2);
+            ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+        }
+    }
+
+    // --- 4. 选区关联：确认提取 ---
+    function confirmSelection() {
+        saveState(); // 记录提取前的原始图
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tctx = tempCanvas.getContext('2d');
+
+        tctx.drawImage(canvas, 0, 0); // 存原图
+        tctx.globalCompositeOperation = 'destination-in'; // 核心逻辑：相交
+        tctx.drawImage(overlay, 0, 0); // 盖上绿色遮罩
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(tempCanvas, 0, 0); // 写回
+        
+        octx.clearRect(0, 0, overlay.width, overlay.height);
+        setMode('erase'); // 提取完立即进入精修模式
+    }
+
+    // --- 5. 关联撤销功能 ---
+    function saveState() {
+        if (undoStack.length >= 20) undoStack.shift();
+        undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }
+
+    function undo() {
+        if (undoStack.length < 2) return;
+        undoStack.pop(); // 弹出当前
+        const prevData = undoStack[undoStack.length - 1];
+        ctx.putImageData(prevData, 0, 0);
+    }
+
+    function downloadImage() {
+        const link = document.createElement('a');
+        link.download = `PureDrop_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+
+    // PC 滚轮缩放支持
+    viewport.onwheel = e => {
+        e.preventDefault();
+        const factor = e.deltaY > 0 ? 0.9 : 1.1;
+        scale *= factor;
+        updateTransform();
+    };
+</script>
+</body>
+</html>
