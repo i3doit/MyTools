@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>动态表情包 Pro - 创意制作</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@900&display=swap" rel="stylesheet">
+    <style>
+        :root { --main-color: #07C160; }
+        body { font-family: -apple-system, "Noto Sans SC", sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* VIP 样式 */
+        .vip-badge { 
+            background: linear-gradient(45deg, #f3d149, #f9a63c); 
+            color: #fff; font-size: 10px; padding: 2px 6px; 
+            border-radius: 4px; display: none; margin-left: 6px;
+            box-shadow: 0 2px 4px rgba(249, 166, 60, 0.3);
+        }
+        .is-vip .vip-badge { display: inline-block; }
+
+        /* 画布容器 */
+        .preview-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .canvas-container {
+            width: 100%; max-width: 360px; aspect-ratio: 1/1;
+            background: #fff; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            position: relative; overflow: hidden;
+            background-image: radial-gradient(#ddd 1px, transparent 1px); background-size: 20px 20px;
+        }
+        canvas { width: 100% !important; height: 100% !important; touch-action: none; }
+
+        /* iOS 风格开关 */
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; inset: 0;
+            background-color: #ccc; transition: .4s; border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px;
+            left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #07C160; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* 颜色按钮 */
+        .color-dot { 
+            width: 28px; height: 28px; border-radius: 50%; 
+            border: 2px solid white; cursor: pointer; 
+            transition: all 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.15); 
+        }
+        .color-dot:active { transform: scale(0.85); }
+
+        /* 底部面板 */
+        .controls { 
+            background: white; border-radius: 32px 32px 0 0; 
+            padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.05); 
+            max-width: 600px; margin: 0 auto; width: 100%;
+        }
+
+        /* 抽屉层 */
+        #drawer { 
+            position: fixed; bottom: 0; left: 0; right: 0; 
+            background: white; border-radius: 32px 32px 0 0; 
+            padding: 25px; z-index: 1000; transform: translateY(100%); 
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 -20px 60px rgba(0,0,0,0.2); 
+        }
+        #drawer.active { transform: translateY(0); }
+
+        #lockModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); }
+        #loading { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body id="appBody">
+
+    <header class="bg-white py-4 px-6 flex flex-col items-center border-b border-gray-100">
+        <h1 class="text-xl font-black text-gray-800 flex items-center">
+            动态表情包 Pro <span id="vipTag" class="vip-badge">VIP</span>
+        </h1>
+        <p class="text-[11px] text-gray-400 mt-1">双击文字编辑 · 拖动气泡位置</p>
+    </header>
+
+    <div id="lockModal">
+        <div class="bg-white w-full max-w-xs rounded-[32px] p-8 text-center shadow-2xl">
+            <div class="text-4xl mb-4">💎</div>
+            <h3 class="text-lg font-bold text-gray-800 mb-2">解锁高级特权</h3>
+            <p class="text-xs text-gray-400 mb-6">自定义取色、挂件修改及<br>更多动画效果已锁定</p>
+            <div class="bg-gray-50 rounded-2xl p-4 mb-6 text-left border border-gray-100">
+                <p class="text-[10px] text-gray-500 mb-2 font-bold">解锁步骤：</p>
+                <p class="text-[11px] text-gray-600 mb-1">1. 关注公众号：<span class="text-green-600 font-bold">AI程序员小艾</span></p>
+                <p class="text-[11px] text-gray-600">2. 发送关键词：<span class="text-blue-600 font-bold">解锁码</span></p>
+            </div>
+            <input type="text" id="unlockCodeInp" placeholder="在此输入解锁码" class="w-full bg-gray-100 rounded-xl p-3 mb-4 outline-none text-center font-bold">
+            <div class="flex gap-3">
+                <button onclick="hideLock()" class="flex-1 text-gray-400 text-xs font-bold">取消</button>
+                <button onclick="verifyVip()" class="flex-[2] bg-black text-white py-3 rounded-xl font-bold">验证解锁</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="preview-area">
+        <div class="canvas-container">
+            <canvas id="mainCanvas"></canvas>
+        </div>
+    </main>
+
+    <div class="controls">
+        <div class="bg-gray-50 rounded-2xl p-4 mb-4">
+            <span class="text-[10px] font-black text-gray-400 block text-center mb-3 tracking-widest uppercase">个性化配置</span>
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-2 bg-white p-2 rounded-full shadow-sm border border-gray-100">
+                    <div onclick="applyColor('#07C160')" class="color-dot" style="background: #07C160;"></div>
+                    <div onclick="applyColor('#FF2D55')" class="color-dot" style="background: #FF2D55;"></div>
+                    <div onclick="applyColor('#007AFF')" class="color-dot" style="background: #007AFF;"></div>
+                    <div onclick="applyColor('#1a1a1a')" class="color-dot" style="background: #1a1a1a;"></div>
+                    <div class="w-px h-4 bg-gray-200 mx-1"></div>
+                    <input type="color" id="colorPicker" oninput="handleColorSelect(this.value)" class="w-6 h-6 bg-transparent border-none p-0 cursor-pointer">
+                </div>
+                <select id="animSelect" onchange="state.animType=this.value;saveState()" class="bg-white border border-gray-100 rounded-lg px-3 py-2 text-xs font-bold outline-none">
+                    <option value="wave">波浪动画</option>
+                    <option value="breath">呼吸动画</option>
+                    <option value="jump">跳动动画</option>
+                    <option value="slide">滑入动画</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="bg-gray-50 rounded-2xl p-4 flex flex-col items-center">
+                <span class="text-[10px] font-black text-gray-400 mb-3 uppercase">头像设置</span>
+                <div class="flex items-center gap-3">
+                    <button onclick="document.getElementById('avaInp').click()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold">更换</button>
+                    <button onclick="toggleShape()" class="bg-white border border-gray-200 w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold">O/□</button>
+                    <label class="switch">
+                        <input type="checkbox" id="borderSwitch" onchange="toggleBorder(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="bg-gray-50 rounded-2xl p-4 flex flex-col items-center">
+                <span class="text-[10px] font-black text-gray-400 mb-3 uppercase">挂件管理</span>
+                <div class="flex items-center gap-3">
+                    <label class="switch">
+                        <input type="checkbox" id="badgeSwitch" onchange="toggleBadge(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                    <button onclick="openBadgeEditor()" id="editBadgeBtn" class="bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-[10px] font-bold opacity-50 pointer-events-none">文案</button>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="exportGif()" class="w-full py-4 bg-black text-white rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">导出透明 GIF 表情包</button>
+    </div>
+
+    <div id="drawer">
+        <div class="flex justify-between items-center mb-4">
+            <span id="drawerTitle" class="font-black text-gray-800">编辑内容</span>
+            <button onclick="closeEditor()" class="bg-green-600 text-white px-6 py-2 rounded-full text-xs font-bold">完成</button>
+        </div>
+        <textarea id="textInp" class="w-full p-4 bg-gray-50 rounded-2xl text-base outline-none border-2 border-transparent focus:border-green-100" rows="3"></textarea>
+    </div>
+
+    <input type="file" id="avaInp" class="hidden" accept="image/*" onchange="loadAva(event)">
+    <div id="loading">
+        <div class="w-12 h-12 border-4 border-gray-200 border-t-green-500 rounded-full animate-spin mb-4"></div>
+        <p class="font-bold text-gray-600">正在生成渲染... <span id="progress">0%</span></p>
+    </div>
+
+    <script>
+        const SECRET_KEY = "QlFXWDg1NzAyMzU3Nw=="; 
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let state = JSON.parse(localStorage.getItem('v5_state')) || {
+            text: "先爱自己\n再爱世界",
+            color: '#07C160',
+            isRound: true,
+            hasBorder: true,
+            showBadge: false,
+            badge: "爱自己",
+            animType: 'wave',
+            pos: { x: 40, y: 140 }
+        };
+
+        let isVip = localStorage.getItem('v5_pro_ok') === 'true';
+        let currentEditTarget = 'text';
+
+        function saveState() {
+            const saveObj = { ...state };
+            delete saveObj.avatar;
+            localStorage.setItem('v5_state', JSON.stringify(saveObj));
+        }
+
+        function checkVipUI() {
+            if(isVip) {
+                document.getElementById('appBody').classList.add('is-vip');
+            }
+            document.getElementById('badgeSwitch').checked = state.showBadge;
+            document.getElementById('borderSwitch').checked = state.hasBorder;
+            document.getElementById('colorPicker').value = state.color;
+            document.getElementById('animSelect').value = state.animType;
+            document.getElementById('editBadgeBtn').style.opacity = state.showBadge ? '1' : '0.5';
+            document.getElementById('editBadgeBtn').style.pointerEvents = state.showBadge ? 'auto' : 'none';
+        }
+
+        window.onload = () => {
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = canvas.offsetWidth * dpr;
+            canvas.height = canvas.offsetHeight * dpr;
+            ctx.scale(dpr, dpr);
+            checkVipUI();
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => { state.avatar = img; };
+            img.src = localStorage.getItem('v5_ava_data') || "https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg!1";
+            initEvents();
+            requestAnimationFrame(render);
+        };
+
+        function draw(tCtx, time, isExport = false) {
+            const size = isExport ? 400 : canvas.width / (window.devicePixelRatio || 1);
+            const scale = size / 400;
+            tCtx.clearRect(0, 0, size, size);
+            
+            tCtx.font = `italic 900 ${38 * scale}px "Noto Sans SC"`;
+            const lines = state.text.split('\n').slice(0, 4);
+            let maxW = 0; 
+            lines.forEach(l => maxW = Math.max(maxW, tCtx.measureText(l).width));
+            
+            const bW = Math.min(maxW + 130 * scale + 70 * scale, size * 0.95);
+            const bH = Math.max(150 * scale, lines.length * (55 * scale) + 70 * scale);
+            let dx = isExport ? (400 - bW) / 2 : state.pos.x;
+            let dy = isExport ? (400 - bH) / 2 + 20 : state.pos.y;
+
+            // 气泡
+            tCtx.fillStyle = state.color;
+            tCtx.beginPath(); tCtx.roundRect(dx, dy, bW, bH, 30 * scale); tCtx.fill();
+            tCtx.beginPath(); tCtx.moveTo(dx + 50 * scale, dy + bH); tCtx.lineTo(dx + 40 * scale, dy + bH + 18 * scale); tCtx.lineTo(dx + 85 * scale, dy + bH); tCtx.fill();
+
+            // 文案
+            tCtx.fillStyle = "white"; 
+            tCtx.textBaseline = "middle";
+            const startY = dy + (bH/2) - ((lines.length-1)*(55*scale)/2);
+            lines.forEach((l, i) => {
+                let offset = 0;
+                if(state.animType === 'wave') offset = Math.sin(time/200 + i) * 5;
+                if(state.animType === 'breath') offset = Math.sin(time/400) * 3;
+                if(state.animType === 'jump') offset = Math.abs(Math.sin(time/300 + i)) * -8;
+                if(state.animType === 'slide') offset = (Math.sin(time/500) * 10) - 5;
+                tCtx.fillText(l, dx + 35 * scale, startY + (i * 55 * scale) + offset);
+            });
+
+            if(state.avatar) {
+                const avaSize = 130 * scale;
+                const ax = dx + bW - avaSize - 15 * scale;
+                const ay = dy - 45 * scale;
+                tCtx.save();
+                tCtx.beginPath();
+                if(state.isRound) tCtx.arc(ax + avaSize/2, ay + avaSize/2, avaSize/2, 0, Math.PI*2);
+                else tCtx.roundRect(ax, ay, avaSize, avaSize, 20 * scale);
+                tCtx.clip();
+                tCtx.drawImage(state.avatar, ax, ay, avaSize, avaSize);
+                tCtx.restore();
+
+                if(state.hasBorder) {
+                    tCtx.strokeStyle = "#ffffff";
+                    tCtx.lineWidth = 5 * scale;
+                    tCtx.beginPath();
+                    if(state.isRound) tCtx.arc(ax + avaSize/2, ay + avaSize/2, avaSize/2, 0, Math.PI*2);
+                    else tCtx.roundRect(ax, ay, avaSize, avaSize, 20 * scale);
+                    tCtx.stroke();
+                }
+
+                if(state.showBadge) {
+                    const gx = ax + avaSize - 65 * scale, gy = ay - 12 * scale;
+                    const gw = 85 * scale, gh = 34 * scale;
+                    tCtx.fillStyle = "white";
+                    tCtx.beginPath(); tCtx.roundRect(gx, gy, gw, gh, 17 * scale); tCtx.fill();
+                    tCtx.strokeStyle = state.color; tCtx.lineWidth = 2; tCtx.stroke();
+                    tCtx.fillStyle = state.color; tCtx.font = `bold ${14 * scale}px sans-serif`; tCtx.textAlign = "center";
+                    tCtx.fillText(state.badge, gx + gw/2, gy + gh/2 + 2 * scale);
+                    tCtx.textAlign = "left";
+                    state.badgeHit = {gx, gy, gw, gh};
+                }
+                if(!isExport) state.hit = { ax, ay, as: avaSize, bx: dx, by: dy, bw: bW, bh: bH };
+            }
+        }
+
+        function render() { draw(ctx, Date.now()); requestAnimationFrame(render); }
+
+        function applyColor(hex) { state.color = hex; document.getElementById('colorPicker').value = hex; saveState(); }
+        function handleColorSelect(val) { if(!isVip) { document.getElementById('lockModal').style.display='flex'; return; } applyColor(val); }
+        function toggleBorder(v) { if(!isVip) { document.getElementById('lockModal').style.display='flex'; document.getElementById('borderSwitch').checked = state.hasBorder; return; } state.hasBorder = v; saveState(); }
+        function toggleShape() { state.isRound = !state.isRound; saveState(); }
+        function toggleBadge(v) { if(v && !isVip) { document.getElementById('lockModal').style.display='flex'; document.getElementById('badgeSwitch').checked = false; return; } state.showBadge = v; checkVipUI(); saveState(); }
+        function verifyVip() { const code = document.getElementById('unlockCodeInp').value.trim(); if(btoa(code) === SECRET_KEY) { isVip = true; localStorage.setItem('v5_pro_ok', 'true'); hideLock(); checkVipUI(); alert("VIP 解锁成功！"); } else { alert("解锁码错误"); } }
+        function hideLock() { document.getElementById('lockModal').style.display='none'; }
+        function openEditor() { currentEditTarget = 'text'; document.getElementById('drawerTitle').innerText = "编辑文案"; const dr = document.getElementById('drawer'); const inp = document.getElementById('textInp'); dr.classList.add('active'); inp.value = state.text; inp.focus(); }
+        function openBadgeEditor() { currentEditTarget = 'badge'; document.getElementById('drawerTitle').innerText = "编辑挂件"; const dr = document.getElementById('drawer'); const inp = document.getElementById('textInp'); dr.classList.add('active'); inp.value = state.badge; inp.maxLength = 4; inp.focus(); }
+        function closeEditor() { const val = document.getElementById('textInp').value; if(currentEditTarget === 'text') state.text = val || "先爱自己"; else state.badge = val || "爱自己"; document.getElementById('drawer').classList.remove('active'); checkVipUI(); saveState(); }
+        function loadAva(e) { const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = (ev) => { const img = new Image(); img.onload = () => { state.avatar = img; localStorage.setItem('v5_ava_data', ev.target.result); saveState(); }; img.src = ev.target.result; }; reader.readAsDataURL(file); }
+
+        async function exportGif() {
+            const load = document.getElementById('loading'); load.style.display = 'flex';
+            const workerBlob = new Blob(['importScripts("https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js");'], { type: 'application/javascript' });
+            const workerUrl = URL.createObjectURL(workerBlob);
+            const gif = new GIF({ workers: 2, quality: 10, width: 400, height: 400, transparent: 0x00000000, workerScript: workerUrl });
+
+            for(let i=0; i<15; i++) {
+                const c = document.createElement('canvas'); c.width = 400; c.height = 400;
+                draw(c.getContext('2d'), i * 80, true);
+                gif.addFrame(c, {delay: 60, copy: true});
+                document.getElementById('progress').innerText = Math.round((i/15)*50)+'%';
+            }
+            gif.on('progress', p => document.getElementById('progress').innerText = Math.round(50 + p*50)+'%');
+            gif.on('finished', b => {
+                load.style.display = 'none';
+                URL.revokeObjectURL(workerUrl);
+                const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `emoji_${Date.now()}.gif`; a.click();
+            });
+            gif.render();
+        }
+
+        function initEvents() {
+            let lastClick = 0;
+            const start = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const ev = e.touches ? e.touches[0] : e;
+                const dpr = (canvas.width / rect.width / (window.devicePixelRatio || 1));
+                const x = (ev.clientX - rect.left) * dpr;
+                const y = (ev.clientY - rect.top) * dpr;
+                if(state.showBadge && state.badgeHit && x > state.badgeHit.gx && x < state.badgeHit.gx + state.badgeHit.gw && y > state.badgeHit.gy && y < state.badgeHit.gy + state.badgeHit.gh) { openBadgeEditor(); return; }
+                if(state.hit && x > state.hit.ax && x < state.hit.ax + state.hit.as && y > state.hit.ay && y < state.hit.ay + state.hit.as) { document.getElementById('avaInp').click(); return; }
+                if(state.hit && x > state.hit.bx && x < state.hit.bx + state.hit.bw && y > state.hit.by && y < state.hit.by + state.hit.bh) { state.drag = { active: true, x: x - state.pos.x, y: y - state.pos.y }; if(Date.now() - lastClick < 300) openEditor(); lastClick = Date.now(); }
+            };
+            const move = (e) => { if(!state.drag?.active) return; const ev = e.touches ? e.touches[0] : e; const rect = canvas.getBoundingClientRect(); const dpr = (canvas.width / rect.width / (window.devicePixelRatio || 1)); state.pos.x = ((ev.clientX - rect.left) * dpr) - state.drag.x; state.pos.y = ((ev.clientY - rect.top) * dpr) - state.drag.y; e.preventDefault(); };
+            const end = () => { if(state.drag) { state.drag.active = false; saveState(); } };
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('touchstart', start, {passive:false});
+            window.addEventListener('mousemove', move);
+            window.addEventListener('touchmove', move, {passive: false});
+            window.addEventListener('mouseup', end);
+            window.addEventListener('touchend', end);
+        }
+    </script>
+</body>
+</html>
