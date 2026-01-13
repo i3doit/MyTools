@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI海报大师 Pro - 2026 增强版</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --apple-blue: #007AFF;
+            --text-main: #1C1C1E;
+            --text-sec: #8E8E93;
+            --bg-current: #FDFCF8;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, "PingFang SC", sans-serif; }
+        body { margin: 0; background: #F5F5F7; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px 0; }
+
+        #toast { position: fixed; top: 15%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 24px; border-radius: 20px; font-size: 13px; z-index: 10000; display: none; }
+
+        /* 控制面板 */
+        .controls { width: 90%; max-width: 380px; background: #fff; padding: 15px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .input-group { position: relative; display: flex; align-items: center; margin-bottom: 12px; }
+        .input-group input, .input-group select { width: 100%; padding: 10px 10px; border: 1px solid #DDD; border-radius: 8px; font-size: 14px; outline: none; }
+        .input-clear { position: absolute; right: 10px; color: #CCC; cursor: pointer; font-size: 18px; }
+        
+        .color-row { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+        .c-btn { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 0 1px #DDD; }
+
+        /* 海报容器 */
+        .poster-box {
+            width: 360px; height: 640px; background: var(--bg-current);
+            position: relative; display: flex; flex-direction: column;
+            border-radius: 12px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.12);
+        }
+
+        .p-header { padding: 25px 25px 5px; display: flex; align-items: center; gap: 12px; }
+        .p-avatar { width: 46px; height: 46px; border-radius: 50%; border: 2px solid #fff; overflow: hidden; background: #EEE; cursor: pointer; }
+        .p-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .p-nick-wrap { display: flex; flex-direction: column; }
+        .p-nick { border: none; background: transparent; font-size: 16px; font-weight: 600; outline: none; color: var(--text-main); }
+        .p-sub { font-size: 11px; color: var(--text-sec); margin-top: 2px; }
+
+        .p-title-wrap { padding: 5px 25px; transition: all 0.3s; }
+        .p-title { font-size: 19px; font-weight: 700; line-height: 1.3; outline: none; color: var(--text-main); min-height: 1.2em; }
+        .p-title:empty::before { content: "点击输入标题..."; color: #CCC; }
+
+        .p-main-img-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 10px 30px; min-height: 100px; }
+        #display-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; display: none; }
+        .img-tip { color: #BBB; font-size: 12px; border: 1px dashed #CCC; padding: 20px; border-radius: 8px; text-align: center; cursor: pointer; }
+
+        .p-footer { padding: 15px 25px 25px; font-size: 10px; color: var(--text-sec); line-height: 1.8; border-top: 1px solid rgba(0,0,0,0.03); }
+        .f-link { color: var(--apple-blue); font-weight: 700; cursor: pointer; text-decoration: none; }
+
+        /* 拖拽二维码整体容器 */
+        #qr-drag-node {
+            position: absolute; bottom: 100px; right: 25px; 
+            background: #FFF; padding: 8px; border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08); cursor: move; touch-action: none;
+            display: flex; flex-direction: column; align-items: center; z-index: 100;
+        }
+        #qrcode-view { width: 80px; height: 80px; position: relative; }
+        #qr-logo-view { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; border: 1px solid #fff; border-radius: 3px; display: none; object-fit: cover; }
+        .qr-expiry-tag { font-size: 8px; color: #FF3B30; margin-top: 4px; transform: scale(0.85); white-space: nowrap; }
+
+        /* 按钮 */
+        .btn-group { width: 360px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        .btn { padding: 12px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .btn-blue { background: var(--apple-blue); color: #fff; }
+        .btn-white { background: #fff; border: 1px solid #DDD; }
+
+        /* 解锁码弹窗 */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 10001; }
+        .modal-content { background: #fff; padding: 25px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; }
+        .modal-content h3 { margin: 0 0 15px; font-size: 18px; }
+        .modal-content p { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 20px; }
+        .modal-content input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; outline: none; }
+        .link-text { color: var(--apple-blue); font-weight: bold; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div id="unlock-modal" class="modal">
+    <div class="modal-content">
+        <h3>功能已加锁</h3>
+        <p>关注公众号<span class="link-text" onclick="copyAndJumpMP()">「AI 程序员小艾」</span>输入关键词<span class="link-text" onclick="copyUnlockKey()">「解锁码 008」</span>获取暗号解锁。</p>
+        <input type="text" id="unlock-input" placeholder="请输入暗号">
+        <button class="btn btn-blue" style="width: 100%;" onclick="checkUnlockCode()">立即解锁</button>
+    </div>
+</div>
+
+<div class="controls">
+    <div class="input-group">
+        <input type="text" id="url-input" placeholder="输入二维码链接" onfocus="handleUrlFocus()" oninput="updateQR()">
+        <span class="input-clear" onclick="clearUrl()">×</span>
+    </div>
+    <div class="input-group">
+        <select id="expiry-select" onchange="updateExpiryDate()">
+            <option value="7">有效期 7 天</option>
+            <option value="15">有效期 15 天</option>
+            <option value="30" selected>有效期 30 天</option>
+            <option value="180">有效期 半年</option>
+            <option value="365">有效期 一年</option>
+            <option value="99999">永久有效</option>
+        </select>
+    </div>
+    <div class="color-row">
+        <span style="font-size:12px; color:#999">背景色：</span>
+        <div class="c-btn" style="background:#FDFCF8" onclick="setBg('#FDFCF8')"></div>
+        <div class="c-btn" style="background:#F0F7FF" onclick="setBg('#F0F7FF')"></div>
+        <div class="c-btn" style="background:#FFF0F0" onclick="setBg('#FFF0F0')"></div>
+        <input type="color" id="color-picker" style="width:24px;height:24px;border:none;padding:0;background:none;" oninput="setBg(this.value)">
+    </div>
+</div>
+
+<div class="poster-box" id="capture-area">
+    <div class="p-header">
+        <div class="p-avatar" onclick="triggerFile('file-avatar')">
+            <img id="view-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix">
+        </div>
+        <div class="p-nick-wrap">
+            <input type="text" class="p-nick" id="view-nick" value="AI 程序员小艾" oninput="saveAll()">
+            <span class="p-sub">邀你一起体验新工具</span>
+        </div>
+    </div>
+
+    <div class="p-title-wrap">
+        <div class="p-title" id="view-title" contenteditable="true" oninput="saveAll()">邀你扫码体验更多工具</div>
+    </div>
+
+    <div class="p-main-img-area" onclick="handleImgUploadClick()">
+        <div class="img-tip" id="img-placeholder">点击上传截图<br>(自动适配且留白)</div>
+        <img id="display-img" src="">
+    </div>
+
+    <div class="p-footer">
+        技术支持：<span class="f-link" onclick="goStar()">艾兜兜儿</span> | 
+        微信号：<span style="cursor:pointer; border-bottom:1px dotted;" onclick="copyWX('857023577')">857023577</span><br>
+        © <span id="year-text"></span> <span class="f-link" onclick="goMP()">AI 程序员小艾</span> 版权所有
+    </div>
+
+    <div id="qr-drag-node">
+        <div id="qrcode-view">
+            <img id="qr-logo-view" src="">
+        </div>
+        <div id="expiry-display" class="qr-expiry-tag">有效期至：2026-02-12</div>
+    </div>
+</div>
+
+<div class="btn-group">
+    <button class="btn btn-white" onclick="triggerFile('file-logo')">上传中心 Logo</button>
+    <button class="btn btn-blue" onclick="downloadPoster()">保存高清海报</button>
+</div>
+
+<input type="file" id="file-main" hidden accept="image/*" onchange="previewFile(event, 'display-img')">
+<input type="file" id="file-avatar" hidden accept="image/*" onchange="previewFile(event, 'view-avatar')">
+<input type="file" id="file-logo" hidden accept="image/*" onchange="previewFile(event, 'qr-logo-view')">
+
+<script>
+    let qr;
+    const STORAGE_KEY = "POSTER_PRO_DATA_V2";
+    const UNLOCK_KEY = "POSTER_UNLOCK_STATUS";
+    const CORRECT_CODE = "AI888"; // 模拟解锁码
+
+    window.onload = () => {
+        qr = new QRCode(document.getElementById("qrcode-view"), {
+            width: 80, height: 80, colorDark: "#000", colorLight: "#fff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        loadAll();
+        initYear();
+        updateExpiryDate();
+        initDraggable(document.getElementById('qr-drag-node'));
+    };
+
+    function toast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg; t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 2500);
+    }
+
+    // --- 解锁码逻辑 ---
+    function handleImgUploadClick() {
+        const unlockData = JSON.parse(localStorage.getItem(UNLOCK_KEY) || "{}");
+        const now = new Date().getTime();
+        
+        // 检查是否解锁且未超过半年 (180天)
+        if (unlockData.status === 'success' && (now - unlockData.time < 180 * 24 * 60 * 60 * 1000)) {
+            triggerFile('file-main');
+        } else {
+            document.getElementById('unlock-modal').style.display = 'flex';
+        }
+    }
+
+    function checkUnlockCode() {
+        const code = document.getElementById('unlock-input').value;
+        if (code === CORRECT_CODE) {
+            const unlockStatus = { status: 'success', time: new Date().getTime() };
+            localStorage.setItem(UNLOCK_KEY, JSON.stringify(unlockStatus));
+            toast("解锁成功！有效期半年");
+            document.getElementById('unlock-modal').style.display = 'none';
+        } else {
+            toast("暗号错误，请前往公众号获取");
+            // 预留支付功能接口
+            initiatePayment();
+        }
+    }
+
+    function initiatePayment() {
+        console.log("预留支付接口：此处可对接扫码支付逻辑");
+    }
+
+    function copyUnlockKey() {
+        navigator.clipboard.writeText("解锁码 008");
+        toast("已复制关键词，快去「AI 程序员小艾」公众号获取暗号解锁吧");
+    }
+
+    function copyAndJumpMP() {
+        navigator.clipboard.writeText("https://mp.weixin.qq.com/s/8C62f0ayY4HjO8VUqwBdig");
+        toast("链接已复制，正在跳转公众号...");
+        setTimeout(() => {
+            window.location.href = "https://mp.weixin.qq.com/s/8C62f0ayY4HjO8VUqwBdig";
+        }, 1000);
+    }
+
+    // --- 有效期逻辑 ---
+    function updateExpiryDate() {
+        const days = parseInt(document.getElementById('expiry-select').value);
+        const display = document.getElementById('expiry-display');
+        
+        if (days > 30000) {
+            display.innerText = "永久有效";
+        } else {
+            const date = new Date();
+            date.setDate(date.getDate() + days);
+            const dateStr = date.toISOString().split('T')[0];
+            display.innerText = "有效期至：" + dateStr;
+            
+            // 模拟过期逻辑
+            checkIfExpired(date);
+        }
+        saveAll();
+    }
+
+    function checkIfExpired(expiryDate) {
+        // 此处逻辑通常在扫码后的落地页执行，但在海报预览中可模拟
+        const now = new Date();
+        if (now > expiryDate) {
+            copyWX("857023577", "二维码已过期！已复制微信号，请联系获取最新链接。");
+        }
+    }
+
+    // --- URL 逻辑 ---
+    async function handleUrlFocus() {
+        const input = document.getElementById('url-input');
+        input.value = ""; 
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text && text.startsWith('http')) {
+                input.value = text;
+                updateQR();
+                toast("已自动粘贴链接");
+            }
+        } catch (e) {}
+    }
+
+    function clearUrl() {
+        document.getElementById('url-input').value = "";
+        updateQR();
+    }
+
+    function updateQR() {
+        const url = document.getElementById('url-input').value || " ";
+        qr.clear();
+        qr.makeCode(url);
+        saveAll();
+    }
+
+    function setBg(color) {
+        document.documentElement.style.setProperty('--bg-current', color);
+        document.getElementById('color-picker').value = color;
+        saveAll();
+    }
+
+    function saveAll() {
+        const data = {
+            url: document.getElementById('url-input').value,
+            nick: document.getElementById('view-nick').value,
+            title: document.getElementById('view-title').innerText,
+            bg: getComputedStyle(document.documentElement).getPropertyValue('--bg-current'),
+            expiry: document.getElementById('expiry-select').value,
+            qrPos: {
+                left: document.getElementById('qr-drag-node').style.left,
+                top: document.getElementById('qr-drag-node').style.top
+            }
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function loadAll() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const data = JSON.parse(saved);
+            document.getElementById('url-input').value = data.url || "";
+            document.getElementById('view-nick').value = data.nick || "AI 程序员小艾";
+            document.getElementById('view-title').innerText = data.title || "邀你扫码体验更多工具";
+            document.getElementById('expiry-select').value = data.expiry || "30";
+            if (data.bg) setBg(data.bg.trim());
+            if (data.qrPos && data.qrPos.left) {
+                document.getElementById('qr-drag-node').style.left = data.qrPos.left;
+                document.getElementById('qr-drag-node').style.top = data.qrPos.top;
+            }
+        }
+        updateQR();
+    }
+
+    function triggerFile(id) { document.getElementById(id).click(); }
+
+    function previewFile(e, tid) {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = document.getElementById(tid);
+            img.src = ev.target.result;
+            img.style.display = 'block';
+            if(tid === 'display-img') document.getElementById('img-placeholder').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function initYear() {
+        const y = new Date().getFullYear();
+        document.getElementById('year-text').innerText = y > 2026 ? `2026-${y}` : y;
+    }
+
+    function copyWX(num, customMsg) {
+        navigator.clipboard.writeText(num);
+        toast(customMsg || "微信号已复制：857023577 (备注来源说明)");
+    }
+
+    function goStar() { window.location.href = "https://t.zsxq.com/XNHXs"; }
+    function goMP() { window.location.href = "https://mp.weixin.qq.com/s/5LNiXmYNWlsfBUp0kaiAtQ"; }
+
+    function initDraggable(el) {
+        let sx = 0, sy = 0, dx = 0, dy = 0;
+        const container = document.getElementById('capture-area');
+        const start = (e) => {
+            const p = e.type.includes('touch') ? e.touches[0] : e;
+            sx = p.clientX; sy = p.clientY;
+            dx = el.offsetLeft; dy = el.offsetTop;
+            document.onmousemove = move; document.onmouseup = end;
+            document.ontouchmove = move; document.ontouchend = end;
+        };
+        const move = (e) => {
+            const p = e.type.includes('touch') ? e.touches[0] : e;
+            let nx = dx + (p.clientX - sx);
+            let ny = dy + (p.clientY - sy);
+            nx = Math.max(0, Math.min(nx, container.offsetWidth - el.offsetWidth));
+            ny = Math.max(0, Math.min(ny, container.offsetHeight - el.offsetHeight));
+            el.style.left = nx + 'px'; el.style.top = ny + 'px';
+            saveAll();
+        };
+        const end = () => { document.onmousemove = null; document.onmouseup = null; document.ontouchmove = null; document.ontouchend = null; };
+        el.onmousedown = start; el.ontouchstart = start;
+    }
+
+    async function downloadPoster() {
+        toast("海报生成中...");
+        const canvas = await html2canvas(document.getElementById('capture-area'), { scale: 3, useCORS: true });
+        const link = document.createElement('a');
+        link.download = `AI-Poster-${Date.now()}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    }
+</script>
+</body>
+</html>
