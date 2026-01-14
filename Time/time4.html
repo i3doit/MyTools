@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间感知看板 - 完美导出版</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        :root { --bg: #020617; --card: #1e293b; --accent: #22d3ee; --green: #10b981; --red: #f43f5e; --text: #f8fafc; }
+        body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; margin: 0; padding: 10px; }
+        
+        .main-layout { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        @media (min-width: 900px) { .main-layout { flex-direction: row; align-items: flex-start; } }
+
+        /* 左侧：录入面板 */
+        .sidebar { flex: 1; background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .timer-display { font-size: 3rem; font-weight: 800; text-align: center; color: var(--accent); margin: 15px 0; font-family: 'Courier New', monospace; text-shadow: 0 0 15px rgba(34,211,238,0.3); }
+        
+        /* 右侧：报告看板（这是导出的主体） */
+        #reportWrapper { flex: 2; padding: 10px; background: #0f172a; border-radius: 24px; }
+        #canvasArea { background: var(--card); padding: 30px; border-radius: 20px; position: relative; width: 100%; box-sizing: border-box; }
+        
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 20px 0; }
+        .stat-card { background: rgba(15,23,42,0.6); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #334155; }
+        .stat-value { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
+        .stat-label { font-size: 12px; color: #94a3b8; margin-top: 5px; }
+
+        /* 输入控件样式 */
+        .input-item { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+        input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #020617; color: white; box-sizing: border-box; }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        button { border: none; padding: 14px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-add { background: var(--accent); color: #020617; width: 100%; font-size: 1rem; }
+        .btn-export { background: #6366f1; color: white; width: 100%; margin-top: 20px; }
+        
+        #chart { width: 100%; height: 450px; min-height: 400px; }
+        .watermark { text-align: right; font-size: 12px; color: #475569; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="main-layout">
+    <div class="sidebar">
+        <h2 style="margin-top:0; font-size:1.2rem;">时间实验室控制台</h2>
+        <div class="timer-display" id="timer">00:00:00</div>
+        
+        <div class="input-item">
+            <label>活动内容</label>
+            <input type="text" id="taskName" placeholder="输入当前在做的事...">
+        </div>
+        
+        <div class="btn-group">
+            <button style="background:var(--green); color:white;" onclick="setRatio(0.6)">✨ 心流 (快)</button>
+            <button style="background:var(--red); color:white;" onclick="setRatio(2.0)">⌛ 煎熬 (慢)</button>
+        </div>
+
+        <div class="input-item">
+            <label>体感倍率 (手动微调)</label>
+            <input type="number" id="ratio" value="1.0" step="0.1">
+        </div>
+        
+        <button class="btn-add" onclick="addData()">保存并入库</button>
+        <button class="btn-export" onclick="downloadReport()">📸 导出完整画布</button>
+        <button onclick="clearAll()" style="background:transparent; color:#475569; width:100%; margin-top:10px; font-size:12px;">清空历史记录</button>
+    </div>
+
+    <div id="reportWrapper">
+        <div id="canvasArea">
+            <h1 style="margin:0; font-size:1.5rem; letter-spacing:1px;">时间感知分析报告</h1>
+            <p style="color:#64748b; font-size:13px;">Time Perception Analysis Dashboard</p>
+            
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="v-real">0</div>
+                    <div class="stat-label">客观分钟</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="v-sub">0</div>
+                    <div class="stat-label">体感分钟</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="v-index">1.0</div>
+                    <div class="stat-label">压缩指数</div>
+                </div>
+            </div>
+
+            <div id="chart"></div>
+            <div class="watermark">记录于: <span id="reportDate"></span> | Powered by Gemini Lab</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let myChart = echarts.init(document.getElementById('chart'), 'dark');
+    let timerSec = 0;
+
+    // 1. 计时逻辑
+    setInterval(() => {
+        timerSec++;
+        const hrs = String(Math.floor(timerSec / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((timerSec % 3600) / 60)).padStart(2, '0');
+        const secs = String(timerSec % 60).padStart(2, '0');
+        document.getElementById('timer').innerText = `${hrs}:${mins}:${secs}`;
+    }, 1000);
+
+    function setRatio(r) { document.getElementById('ratio').value = r; }
+
+    // 2. 数据持久化与图表
+    function addData() {
+        const name = document.getElementById('taskName').value || '未知活动';
+        const real = Math.max(1, Math.round(timerSec / 60));
+        const ratio = parseFloat(document.getElementById('ratio').value);
+        
+        const record = {
+            name,
+            real,
+            sub: (real * ratio).toFixed(1),
+            ratio,
+            time: new Date().toLocaleTimeString()
+        };
+
+        let history = JSON.parse(localStorage.getItem('tp_data') || '[]');
+        history.push(record);
+        localStorage.setItem('tp_data', JSON.stringify(history));
+        
+        timerSec = 0; // 重置
+        render();
+    }
+
+    function render() {
+        const history = JSON.parse(localStorage.getItem('tp_data') || '[]');
+        document.getElementById('reportDate').innerText = new Date().toLocaleDateString();
+
+        let tReal = 0, tSub = 0;
+        history.forEach(h => {
+            tReal += parseFloat(h.real);
+            tSub += parseFloat(h.sub);
+        });
+
+        document.getElementById('v-real').innerText = tReal;
+        document.getElementById('v-sub').innerText = tSub.toFixed(0);
+        document.getElementById('v-index').innerText = tReal ? (tSub / tReal).toFixed(2) : "1.0";
+
+        const option = {
+            backgroundColor: 'transparent',
+            grid: { left: '10%', right: '10%', bottom: '15%', top: '10%' },
+            xAxis: { name: '实际时间', splitLine: { lineStyle: { color: '#334155' } } },
+            yAxis: { name: '感官时间', splitLine: { lineStyle: { color: '#334155' } } },
+            series: [{
+                type: 'scatter',
+                data: history.map(h => ({
+                    name: h.name,
+                    value: [h.real, h.sub, h.ratio],
+                    itemStyle: { color: h.ratio < 1 ? '#10b981' : h.ratio > 1.2 ? '#f43f5e' : '#22d3ee' }
+                })),
+                symbolSize: (val) => Math.min(val[0] * 2 + 10, 80),
+                label: { show: true, formatter: '{b}', position: 'top' }
+            }]
+        };
+        myChart.setOption(option);
+    }
+
+    // 3. 完美导出功能
+    async function downloadReport() {
+        const element = document.getElementById('canvasArea');
+        // 强制 ECharts 渲染完成后再截图
+        const dataUrl = myChart.getDataURL({ pixelRatio: 2 }); 
+        
+        html2canvas(element, {
+            scale: 2,
+            backgroundColor: '#1e293b',
+            useCORS: true
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `时间感知报告-${Date.now()}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        });
+    }
+
+    function clearAll() {
+        if(confirm('确定清除吗？')) {
+            localStorage.removeItem('tp_data');
+            render();
+        }
+    }
+
+    window.onload = render;
+    window.onresize = () => myChart.resize();
+</script>
+
+</body>
+</html>
