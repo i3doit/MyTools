@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>时间感知可视化原型</title>
+    <style>
+        body { background: #1a1a1a; color: #eee; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        canvas { background: #222; border-radius: 50%; box-shadow: 0 0 30px rgba(0,0,0,0.5); margin: 20px; }
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; transition: 0.3s; font-weight: bold; }
+        .btn-slow { background: #4caf50; color: white; } /* 心流：感官时间慢 */
+        .btn-normal { background: #2196f3; color: white; }
+        .btn-fast { background: #f44336; color: white; } /* 无聊：感官时间快 */
+        .info { text-align: center; max-width: 500px; line-height: 1.6; color: #888; }
+        .stats { font-family: monospace; font-size: 1.2rem; margin: 10px; color: #00ffcc; }
+    </style>
+</head>
+<body>
+
+    <h2>时间感知可视化：主观 vs 客观</h2>
+    
+    <div class="stats">
+        客观流逝: <span id="obj-time">0</span>s | 
+        主观感受: <span id="sub-time">0</span>s
+    </div>
+
+    <canvas id="clockCanvas" width="400" height="400"></canvas>
+
+    <div class="controls">
+        <button class="btn-slow" onclick="setWarp(0.5)">进入心流 (感觉很快)</button>
+        <button class="btn-normal" onclick="setWarp(1.0)">平常状态</button>
+        <button class="btn-fast" onclick="setWarp(2.5)">无聊/焦虑 (感觉极慢)</button>
+    </div>
+
+    <div class="info">
+        <b>视觉说明：</b><br>
+        白色指针代表<b>客观时间</b>。红色虚影代表你的<b>主观感知</b>。<br>
+        当你处于心流状态时，客观时间走得远，你却觉得才过了一会儿。
+    </div>
+
+    <script>
+        const canvas = document.getElementById('clockCanvas');
+        const ctx = canvas.getContext('2d');
+        const radius = canvas.width / 2;
+        ctx.translate(radius, radius);
+
+        let objectiveSeconds = 0;
+        let subjectiveSeconds = 0;
+        let warpFactor = 1.0; // 时间扭曲系数
+
+        function setWarp(val) { warpFactor = val; }
+
+        function draw() {
+            // 更新数据
+            objectiveSeconds += 1/60; 
+            subjectiveSeconds += (1/60) * warpFactor;
+
+            document.getElementById('obj-time').innerText = objectiveSeconds.toFixed(1);
+            document.getElementById('sub-time').innerText = subjectiveSeconds.toFixed(1);
+
+            // 清屏
+            ctx.clearRect(-radius, -radius, canvas.width, canvas.height);
+
+            // 绘制表盘背景
+            ctx.beginPath();
+            ctx.arc(0, 0, radius - 10, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 10;
+            ctx.stroke();
+
+            // 绘制刻度
+            for(let i=0; i<12; i++) {
+                ctx.rotate(Math.PI/6);
+                ctx.moveTo(0, -radius+20);
+                ctx.lineTo(0, -radius+35);
+                ctx.strokeStyle = '#555';
+                ctx.stroke();
+            }
+
+            // 1. 绘制客观时间指针 (白色)
+            drawHand(objectiveSeconds % 60, radius * 0.8, '#ffffff', 3);
+            
+            // 2. 绘制主观感知指针 (红色/发光)
+            drawHand(subjectiveSeconds % 60, radius * 0.6, '#ff4336', 5, true);
+
+            requestAnimationFrame(draw);
+        }
+
+        function drawHand(pos, length, color, width, glow = false) {
+            const angle = (pos * Math.PI / 30) - (Math.PI / 2);
+            ctx.beginPath();
+            ctx.lineWidth = width;
+            ctx.lineCap = "round";
+            ctx.strokeStyle = color;
+            if(glow) {
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = color;
+            } else {
+                ctx.shadowBlur = 0;
+            }
+            ctx.moveTo(0, 0);
+            ctx.lineTo(Math.cos(angle) * length, Math.sin(angle) * length);
+            ctx.stroke();
+            ctx.shadowBlur = 0; // 重置阴影
+        }
+
+        draw();
+    </script>
+</body>
+</html>
