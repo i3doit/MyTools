@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>时间感知可视化：全天复盘</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body { background: #0f172a; color: #f8fafc; font-family: -apple-system, sans-serif; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 90%; max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        h1 { color: #38bdf8; margin-bottom: 30px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #94a3b8; font-size: 0.9rem; }
+        input, select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; }
+        button { width: 100%; padding: 10px; background: #38bdf8; color: #0f172a; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #7dd3fc; }
+        #chart { width: 100%; height: 400px; }
+    </style>
+</head>
+<body>
+
+    <h1>时间感知可视化系统 v2.0</h1>
+
+    <div class="container">
+        <div class="card">
+            <h3>添加记录</h3>
+            <div class="input-group">
+                <label>活动名称</label>
+                <input type="text" id="taskName" placeholder="例如：深度工作、刷短视频">
+            </div>
+            <div class="input-group">
+                <label>客观用时 (分钟)</label>
+                <input type="number" id="realTime" value="30">
+            </div>
+            <div class="input-group">
+                <label>感知倍率 (你觉得像过了多久?)</label>
+                <select id="perceptionRatio">
+                    <option value="0.5">转瞬即逝 (0.5倍速)</option>
+                    <option value="1.0" selected>正常流逝 (1.0倍速)</option>
+                    <option value="1.5">感觉有点慢 (1.5倍速)</option>
+                    <option value="2.5">度日如年 (2.5倍速)</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>认知压力 (0-100)</label>
+                <input type="range" id="stress" min="0" max="100" value="50">
+            </div>
+            <button onclick="addData()">记录并更新图表</button>
+        </div>
+
+        <div class="card">
+            <h3>时间感官热力分布</h3>
+            <div id="chart"></div>
+        </div>
+    </div>
+
+    <script>
+        let myChart = echarts.init(document.getElementById('chart'), 'dark');
+        let chartData = [];
+
+        function addData() {
+            const name = document.getElementById('taskName').value || '未命名任务';
+            const real = parseFloat(document.getElementById('realTime').value);
+            const ratio = parseFloat(document.getElementById('perceptionRatio').value);
+            const stress = parseInt(document.getElementById('stress').value);
+
+            // 计算主观感受时长
+            const subjective = real * ratio;
+            
+            // 存入数据点：[客观时长, 主观时长, 压力大小(气泡大小), 任务名]
+            chartData.push([real, subjective, stress, name]);
+            updateChart();
+        }
+
+        function updateChart() {
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    formatter: function (params) {
+                        return `${params.data[3]}<br/>实际: ${params.data[0]}min<br/>体感: ${params.data[1]}min<br/>压力值: ${params.data[2]}`;
+                    }
+                },
+                xAxis: { name: '客观时间', splitLine: { lineStyle: { type: 'dashed' } } },
+                yAxis: { name: '体感时间', splitLine: { lineStyle: { type: 'dashed' } } },
+                series: [{
+                    type: 'scatter',
+                    data: chartData,
+                    symbolSize: function (data) {
+                        return Math.sqrt(data[2]) * 5; // 压力越大，气泡越大
+                    },
+                    itemStyle: {
+                        color: function(params) {
+                            // 根据感知比例自动变色：比例越高(越煎熬)越红
+                            const r = params.data[1] / params.data[0];
+                            return r > 1 ? '#ef4444' : '#10b981';
+                        },
+                        opacity: 0.8
+                    },
+                    label: {
+                        show: true,
+                        formatter: function(param) { return param.data[3]; },
+                        position: 'top',
+                        color: '#fff'
+                    }
+                }]
+            };
+            myChart.setOption(option);
+        }
+
+        // 初始化
+        updateChart();
+    </script>
+</body>
+</html>
