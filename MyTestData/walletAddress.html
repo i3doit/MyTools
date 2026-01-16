@@ -3,147 +3,288 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>测试数据生成器 - 钱包地址</title>
+    <title>錢包地址測試數據生成器</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <style>
-        /* ... 你的原有样式 ... */
-        .address-cell {
-            font-family: 'Courier New', Courier, monospace; /* 使用等宽字体更像钱包地址 */
-            word-break: break-all;
-            font-size: 0.85rem;
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 4px;
-            display: inline-block;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
         }
-        /* 针对表格增加固定布局，防止长地址撑开 */
-        table { table-layout: fixed; width: 100%; }
-        th:nth-child(1) { width: 60px; }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 30px;
+        }
+        header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #f0f0f0; padding-bottom: 20px; }
+        h1 { color: #2c7744; margin-bottom: 10px; }
+        .description { color: #666; font-size: 0.95rem; }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .input-group { display: flex; align-items: center; gap: 10px; }
+        input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn-group { display: flex; gap: 10px; }
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+        .btn-primary { background: #4CAF50; color: white; }
+        .btn-primary:hover { background: #45a049; }
+        .btn-export { background: #2196F3; color: white; }
+        .btn-reset { background: #f44336; color: white; }
+
+        .table-container { overflow-x: auto; margin-top: 10px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed; /* 固定佈局防止長地址撐開 */
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            word-break: break-all; /* 強制長字符串換行 */
+        }
+        th { background: #f8fcf9; color: #2c7744; font-weight: 600; }
+        tr:hover { background: #fafafa; }
+        
+        .address-cell {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+            transition: 0.2s;
+        }
+        .erc-address { color: #1976D2; background: #e3f2fd; }
+        .trc-address { color: #E64A19; background: #fbe9e7; }
+        .address-cell:hover { filter: brightness(0.9); }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        .page-info { font-size: 0.9rem; color: #666; }
+        .page-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .page-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: none;
+            z-index: 1000;
+        }
+        footer { text-align: center; margin-top: 30px; color: #888; font-size: 0.8rem; }
     </style>
 </head>
 <body>
-    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-    <script>
-        let walletData = [];
-        let lastId = 0;
-        const itemsPerPage = 10;
-        let currentPage = 1;
 
-        // --- 核心优化：TRC-20 生成逻辑 ---
-        function generateTRC20Address() {
-            // Base58 字符集：去掉了 0, O, I, l
-            const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-            let address = 'T'; 
-            // 还需要 33 位随机字符，总长 34 位
-            for (let i = 0; i < 33; i++) {
-                address += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return address;
-        }
+<div class="container">
+    <header>
+        <h1>錢包地址測試數據生成器</h1>
+        <p class="description">支持 ERC-20 (以太坊) 與 TRC-20 (波場) 格式模擬</p>
+    </header>
 
-        function generateERC20Address() {
-            const chars = '0123456789abcdef';
-            let address = '0x';
-            for (let i = 0; i < 40; i++) {
-                address += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return address;
-        }
+    <div class="controls">
+        <div class="input-group">
+            <label>生成數量：</label>
+            <input type="number" id="address-count" min="1" max="1000" value="10">
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="generate-btn">追加生成</button>
+            <button class="btn btn-export" id="export-btn">導出 Excel</button>
+            <button class="btn btn-reset" id="reset-btn">重置</button>
+        </div>
+    </div>
 
-        // --- 修复后的渲染逻辑 ---
-        function renderTable() {
-            const tableBody = document.getElementById('table-body');
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const pageData = walletData.slice(startIndex, startIndex + itemsPerPage);
-            
-            tableBody.innerHTML = '';
-            if (pageData.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="3" style="text-align: center;">暂无数据</td></tr>`;
-                return;
-            }
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 80px;">編號</th>
+                    <th>ERC-20 地址</th>
+                    <th>TRC-20 地址</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                </tbody>
+        </table>
+    </div>
 
-            pageData.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.id}</td>
-                    <td><span class="address-cell erc-address" onclick="copyText('${item.erc20}')">${item.erc20}</span></td>
-                    <td><span class="address-cell trc-address" onclick="copyText('${item.trc20}')">${item.trc20}</span></td>
-                `;
-                tableBody.appendChild(row);
-            });
-            renderPagination();
-        }
+    <div class="pagination" id="pagination"></div>
 
-        // --- 优化：使用事件委托处理分页，避免内存泄漏 ---
-        function renderPagination() {
-            const totalPages = Math.ceil(walletData.length / itemsPerPage);
-            const container = document.getElementById('pagination');
-            container.innerHTML = ''; 
+    <footer>技術支持 - 艾兜兜兒 | 僅供軟件測試模擬使用</footer>
+</div>
 
-            if (totalPages <= 1) return;
+<div class="toast" id="toast">地址已復制</div>
 
-            // 简单逻辑：上一页 + 当前页/总页 + 下一页
-            const prevBtn = document.createElement('button');
-            prevBtn.innerText = '上一页';
-            prevBtn.className = 'page-btn' + (currentPage === 1 ? ' disabled' : '');
-            prevBtn.onclick = () => { if(currentPage > 1) { currentPage--; renderTable(); } };
+<script>
+    let walletData = [];
+    let lastId = 0;
+    let currentPage = 1;
+    const itemsPerPage = 10;
 
-            const info = document.createElement('span');
-            info.innerText = ` 第 ${currentPage} / ${totalPages} 页 (共 ${walletData.length} 条) `;
+    // --- 1. 地址生成邏輯 ---
+    function generateERC20() {
+        const hex = '0123456789abcdef';
+        let addr = '0x';
+        for (let i = 0; i < 40; i++) addr += hex[Math.floor(Math.random() * 16)];
+        return addr;
+    }
 
-            const nextBtn = document.createElement('button');
-            nextBtn.innerText = '下一页';
-            nextBtn.className = 'page-btn' + (currentPage === totalPages ? ' disabled' : '');
-            nextBtn.onclick = () => { if(currentPage < totalPages) { currentPage++; renderTable(); } };
+    function generateTRC20() {
+        // Base58 字符集 (TRON 官方標準)
+        const b58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        let addr = 'T'; // TRC-20 必須以 T 開頭
+        for (let i = 0; i < 33; i++) addr += b58[Math.floor(Math.random() * b58.length)];
+        return addr;
+    }
 
-            container.appendChild(prevBtn);
-            container.appendChild(info);
-            container.appendChild(nextBtn);
-        }
-
-        // 复制功能
-        function copyText(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                const toast = document.getElementById('toast');
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 1500);
+    function createDataPairs(count) {
+        for (let i = 0; i < count; i++) {
+            lastId++;
+            walletData.push({
+                id: lastId,
+                erc20: generateERC20(),
+                trc20: generateTRC20()
             });
         }
+    }
 
-        // 生成按钮
-        document.getElementById('generate-btn').onclick = () => {
-            const count = parseInt(document.getElementById('address-count').value) || 10;
-            // 限制单次生成数量，防止浏览器卡死
-            const safeCount = Math.min(count, 5000); 
-            
-            for (let i = 0; i < safeCount; i++) {
-                lastId++;
-                walletData.push({
-                    id: lastId,
-                    erc20: generateERC20Address(),
-                    trc20: generateTRC20Address()
-                });
-            }
+    // --- 2. 渲染邏輯 ---
+    function renderTable() {
+        const tbody = document.getElementById('table-body');
+        const start = (currentPage - 1) * itemsPerPage;
+        const pageData = walletData.slice(start, start + itemsPerPage);
+
+        tbody.innerHTML = pageData.map(item => `
+            <tr>
+                <td>${item.id}</td>
+                <td><span class="address-cell erc-address" onclick="copyToClipboard('${item.erc20}')">${item.erc20}</span></td>
+                <td><span class="address-cell trc-address" onclick="copyToClipboard('${item.trc20}')">${item.trc20}</span></td>
+            </tr>
+        `).join('') || '<tr><td colspan="3" style="text-align:center">暫無數據</td></tr>';
+
+        renderPagination();
+    }
+
+    function renderPagination() {
+        const totalPages = Math.ceil(walletData.length / itemsPerPage);
+        const container = document.getElementById('pagination');
+        if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+        container.innerHTML = `
+            <button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(-1)">上一頁</button>
+            <span class="page-info">第 ${currentPage} / ${totalPages} 頁 (共 ${walletData.length} 條)</span>
+            <button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(1)">下一頁</button>
+        `;
+    }
+
+    function changePage(step) {
+        currentPage += step;
+        renderTable();
+    }
+
+    // --- 3. 功能操作 ---
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 1500);
+        });
+    }
+
+    // --- 4. 事件綁定 ---
+    document.getElementById('generate-btn').onclick = () => {
+        const count = parseInt(document.getElementById('address-count').value) || 10;
+        createDataPairs(count);
+        saveData();
+        renderTable();
+    };
+
+    document.getElementById('reset-btn').onclick = () => {
+        if (confirm('確定清空所有數據嗎？')) {
+            walletData = [];
+            lastId = 0;
+            currentPage = 1;
+            localStorage.removeItem('wallet_mock_data');
             renderTable();
-        };
+        }
+    };
 
-        // 重置
-        document.getElementById('reset-btn').onclick = () => {
-            if(confirm('清空所有模拟数据？')) {
-                walletData = [];
-                lastId = 0;
-                currentPage = 1;
-                renderTable();
-            }
-        };
+    document.getElementById('export-btn').onclick = () => {
+        if (walletData.length === 0) return alert('沒有數據可以導出');
+        const ws = XLSX.utils.json_to_sheet(walletData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "WalletAddresses");
+        XLSX.writeFile(wb, `Wallet_Test_Data_${new Date().getTime()}.xlsx`);
+    };
 
-        // 导出 Excel
-        document.getElementById('export-btn').onclick = () => {
-            if (walletData.length === 0) return alert('没数据！');
-            const ws = XLSX.utils.json_to_sheet(walletData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "WalletData");
-            XLSX.writeFile(wb, `Wallet_Test_Data_${new Date().getTime()}.xlsx`);
-        };
-    </script>
+    function saveData() {
+        localStorage.setItem('wallet_mock_data', JSON.stringify({
+            data: walletData,
+            lastId: lastId
+        }));
+    }
+
+    // --- 5. 初始化加載 ---
+    window.onload = () => {
+        const cache = localStorage.getItem('wallet_mock_data');
+        if (cache) {
+            const parsed = JSON.parse(cache);
+            walletData = parsed.data;
+            lastId = parsed.lastId;
+        } else {
+            // 首次打開，默認生成 10 條
+            createDataPairs(10);
+            saveData();
+        }
+        renderTable();
+    };
+</script>
+
 </body>
 </html>
