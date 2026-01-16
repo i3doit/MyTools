@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试数据生成器 - 钱包地址</title>
+    <style>
+        /* ... 你的原有样式 ... */
+        .address-cell {
+            font-family: 'Courier New', Courier, monospace; /* 使用等宽字体更像钱包地址 */
+            word-break: break-all;
+            font-size: 0.85rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        /* 针对表格增加固定布局，防止长地址撑开 */
+        table { table-layout: fixed; width: 100%; }
+        th:nth-child(1) { width: 60px; }
+    </style>
+</head>
+<body>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script>
+        let walletData = [];
+        let lastId = 0;
+        const itemsPerPage = 10;
+        let currentPage = 1;
+
+        // --- 核心优化：TRC-20 生成逻辑 ---
+        function generateTRC20Address() {
+            // Base58 字符集：去掉了 0, O, I, l
+            const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+            let address = 'T'; 
+            // 还需要 33 位随机字符，总长 34 位
+            for (let i = 0; i < 33; i++) {
+                address += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return address;
+        }
+
+        function generateERC20Address() {
+            const chars = '0123456789abcdef';
+            let address = '0x';
+            for (let i = 0; i < 40; i++) {
+                address += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return address;
+        }
+
+        // --- 修复后的渲染逻辑 ---
+        function renderTable() {
+            const tableBody = document.getElementById('table-body');
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const pageData = walletData.slice(startIndex, startIndex + itemsPerPage);
+            
+            tableBody.innerHTML = '';
+            if (pageData.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="3" style="text-align: center;">暂无数据</td></tr>`;
+                return;
+            }
+
+            pageData.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.id}</td>
+                    <td><span class="address-cell erc-address" onclick="copyText('${item.erc20}')">${item.erc20}</span></td>
+                    <td><span class="address-cell trc-address" onclick="copyText('${item.trc20}')">${item.trc20}</span></td>
+                `;
+                tableBody.appendChild(row);
+            });
+            renderPagination();
+        }
+
+        // --- 优化：使用事件委托处理分页，避免内存泄漏 ---
+        function renderPagination() {
+            const totalPages = Math.ceil(walletData.length / itemsPerPage);
+            const container = document.getElementById('pagination');
+            container.innerHTML = ''; 
+
+            if (totalPages <= 1) return;
+
+            // 简单逻辑：上一页 + 当前页/总页 + 下一页
+            const prevBtn = document.createElement('button');
+            prevBtn.innerText = '上一页';
+            prevBtn.className = 'page-btn' + (currentPage === 1 ? ' disabled' : '');
+            prevBtn.onclick = () => { if(currentPage > 1) { currentPage--; renderTable(); } };
+
+            const info = document.createElement('span');
+            info.innerText = ` 第 ${currentPage} / ${totalPages} 页 (共 ${walletData.length} 条) `;
+
+            const nextBtn = document.createElement('button');
+            nextBtn.innerText = '下一页';
+            nextBtn.className = 'page-btn' + (currentPage === totalPages ? ' disabled' : '');
+            nextBtn.onclick = () => { if(currentPage < totalPages) { currentPage++; renderTable(); } };
+
+            container.appendChild(prevBtn);
+            container.appendChild(info);
+            container.appendChild(nextBtn);
+        }
+
+        // 复制功能
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const toast = document.getElementById('toast');
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 1500);
+            });
+        }
+
+        // 生成按钮
+        document.getElementById('generate-btn').onclick = () => {
+            const count = parseInt(document.getElementById('address-count').value) || 10;
+            // 限制单次生成数量，防止浏览器卡死
+            const safeCount = Math.min(count, 5000); 
+            
+            for (let i = 0; i < safeCount; i++) {
+                lastId++;
+                walletData.push({
+                    id: lastId,
+                    erc20: generateERC20Address(),
+                    trc20: generateTRC20Address()
+                });
+            }
+            renderTable();
+        };
+
+        // 重置
+        document.getElementById('reset-btn').onclick = () => {
+            if(confirm('清空所有模拟数据？')) {
+                walletData = [];
+                lastId = 0;
+                currentPage = 1;
+                renderTable();
+            }
+        };
+
+        // 导出 Excel
+        document.getElementById('export-btn').onclick = () => {
+            if (walletData.length === 0) return alert('没数据！');
+            const ws = XLSX.utils.json_to_sheet(walletData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "WalletData");
+            XLSX.writeFile(wb, `Wallet_Test_Data_${new Date().getTime()}.xlsx`);
+        };
+    </script>
+</body>
+</html>
