@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flag 海报 Pro - 智能目标管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* 使用系统默认商用字体库，确保无版权风险 */
+        body { font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+        .poster-box { width: 100%; max-width: 375px; min-height: 620px; transition: all 0.3s ease; }
+        .hide-on-export { transition: opacity 0.2s; }
+        /* 导出时隐藏移除按钮 */
+        .exporting .hide-on-export { display: none !important; }
+        /* 历史记录小红点 */
+        .history-badge { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen pb-10">
+
+    <header class="bg-white py-4 px-6 shadow-sm flex justify-between items-center sticky top-0 z-50">
+        <h1 class="text-xl font-black italic tracking-tighter">FLAG POSTER <span class="text-orange-500">PRO</span></h1>
+        <div class="relative cursor-pointer" onclick="toggleHistory()">
+            <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span id="historyCount" class="history-badge">0</span>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6 max-w-6xl">
+        <div class="flex flex-col lg:flex-row gap-8">
+            
+            <div class="flex-1 space-y-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm">
+                    <h3 class="text-xs font-bold text-gray-400 mb-4 uppercase">预设方案与自定义</h3>
+                    <div class="grid grid-cols-4 gap-2 mb-4">
+                        <button onclick="applyTheme('#ffffff', '#1f2937')" class="h-8 rounded border bg-white"></button>
+                        <button onclick="applyTheme('#1f2937', '#ffffff')" class="h-8 rounded border bg-gray-800"></button>
+                        <button onclick="applyTheme('#ffedd5', '#9a3412')" class="h-8 rounded border bg-orange-100"></button>
+                        <button onclick="applyTheme('#0f172a', '#38bdf8')" class="h-8 rounded border bg-slate-900"></button>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="flex-1">
+                            <label class="text-[10px] text-gray-400 uppercase">背景色</label>
+                            <input type="color" id="bgColorInput" value="#ffffff" class="w-full h-10 border-none bg-transparent cursor-pointer">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-[10px] text-gray-400 uppercase">文字色</label>
+                            <input type="color" id="textColorInput" value="#1f2937" class="w-full h-10 border-none bg-transparent cursor-pointer">
+                        </div>
+                    </div>
+                    <input type="text" id="titleInput" value="我的新年目标" class="w-full mt-4 border-gray-200 rounded-lg p-2 border outline-none">
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm">
+                    <div class="flex flex-col gap-3">
+                        <div class="relative">
+                            <input type="text" id="categoryInput" list="categoryList" placeholder="分类(可输入或选择)" class="w-full border-gray-200 rounded-lg p-3 border outline-none">
+                            <datalist id="categoryList">
+                                <option value="📖 读书">
+                                <option value="💰 搞钱">
+                                <option value="🏃 健康">
+                                <option value="🛠️ 副业">
+                            </datalist>
+                        </div>
+                        <input type="text" id="goalInput" placeholder="具体目标内容..." class="w-full border-gray-200 rounded-lg p-3 border outline-none">
+                        <button onclick="addGoal()" class="bg-blue-600 text-white font-bold py-3 rounded-lg active:scale-95 transition-all">添加至预览</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col items-center" id="blankArea">
+                <div id="posterCanvas" class="poster-box bg-white shadow-2xl relative p-8 flex flex-col">
+                    <div id="topAccent" class="absolute top-0 left-0 w-full h-2 bg-gray-900"></div>
+                    
+                    <h2 id="posterTitle" class="text-3xl font-black mt-8 mb-10 text-center break-all" contenteditable="true">我的新年目标</h2>
+                    
+                    <div id="goalsList" class="flex-1 space-y-6">
+                        <div id="topLine" class="hidden w-12 h-1 bg-gray-900 mb-6 opacity-30"></div>
+                    </div>
+
+                    <div class="mt-8 pt-6 border-t border-gray-100 flex justify-between items-end">
+                        <div class="text-[10px] opacity-60 font-medium leading-tight" id="posterFooterText">
+                            <p class="font-bold mb-1 uppercase tracking-widest">Target achieved 2026</p>
+                            <p>Powered by 艾兜兜儿</p>
+                            <p id="posterDate" class="mt-1"></p>
+                        </div>
+                        <div id="qrcode" class="w-16 h-16 p-1 bg-white border"></div>
+                    </div>
+                </div>
+
+                <button onclick="downloadPoster()" class="mt-6 w-full max-w-[375px] bg-black text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all">
+                    <span>📥 下载高清海报</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t py-8 px-4 mt-10">
+        <div class="max-w-5xl mx-auto text-center space-y-4">
+            <p class="text-sm text-gray-500">© <span id="currentYear"></span> AI 提效工具官方 QQ 群：<span onclick="copyQQ()" class="text-blue-600 font-bold cursor-pointer underline">857023577</span></p>
+            <div class="text-xs text-gray-400 space-x-4">
+                <a href="https://t.zsxq.com/7tSuP" target="_blank">技术支持：艾兜兜儿</a>
+                <a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" target="_blank">更多工具</a>
+            </div>
+        </div>
+    </footer>
+
+    <div id="historyDrawer" class="fixed inset-0 bg-black/50 z-[100] hidden overflow-y-auto p-4">
+        <div class="bg-white max-w-md mx-auto mt-20 rounded-2xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold">历史目标记录</h3>
+                <button onclick="toggleHistory()" class="text-gray-400 text-xl">×</button>
+            </div>
+            <div id="historyContent" class="space-y-3 text-sm text-gray-600"></div>
+            <button onclick="clearHistory()" class="mt-6 text-xs text-red-400 underline">清空历史</button>
+        </div>
+    </div>
+
+    <script>
+        let clickCount = 0;
+        let categories = new Set(['📖 读书', '💰 搞钱', '🏃 健康', '🛠️ 副业']);
+
+        // 初始化
+        document.getElementById('currentYear').innerText = new Date().getFullYear();
+        document.getElementById('posterDate').innerText = new Date().toLocaleDateString();
+        refreshHistory();
+
+        const qrcodeObj = new QRCode(document.getElementById("qrcode"), {
+            text: window.location.href,
+            width: 64,
+            height: 64,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+
+        // 颜色与背景同步逻辑
+        const bgColorInput = document.getElementById('bgColorInput');
+        const textColorInput = document.getElementById('textColorInput');
+        const posterCanvas = document.getElementById('posterCanvas');
+
+        function updateColors() {
+            const bg = bgColorInput.value;
+            const text = textColorInput.value;
+            posterCanvas.style.backgroundColor = bg;
+            posterCanvas.style.color = text;
+            document.getElementById('topAccent').style.backgroundColor = text;
+            document.querySelectorAll('.goal-num').forEach(el => el.style.color = text + '33'); // 数字设为透明度
+        }
+
+        bgColorInput.addEventListener('input', updateColors);
+        textColorInput.addEventListener('input', updateColors);
+
+        function applyTheme(bg, text) {
+            bgColorInput.value = bg;
+            textColorInput.value = text;
+            updateColors();
+        }
+
+        // 标题同步
+        document.getElementById('titleInput').addEventListener('input', (e) => {
+            document.getElementById('posterTitle').innerText = e.target.value;
+        });
+
+        // 添加目标
+        function addGoal() {
+            const cat = document.getElementById('categoryInput').value || '目标';
+            const val = document.getElementById('goalInput').value;
+            if(!val) return alert('请输入内容');
+
+            // 更新分类列表
+            if(!categories.has(cat)) {
+                categories.add(cat);
+                const option = document.createElement('option');
+                option.value = cat;
+                document.getElementById('categoryList').appendChild(option);
+            }
+
+            const list = document.getElementById('goalsList');
+            document.getElementById('topLine').classList.remove('hidden');
+
+            const item = createGoalElement(cat, val);
+            list.appendChild(item);
+            
+            saveToHistory(cat, val);
+            reindexGoals();
+            document.getElementById('goalInput').value = '';
+        }
+
+        function createGoalElement(cat, val) {
+            const div = document.createElement('div');
+            div.className = "flex items-start gap-4 relative group goal-row";
+            div.innerHTML = `
+                <div class="goal-num text-2xl font-black italic opacity-20 select-none">00</div>
+                <div class="flex-1">
+                    <div class="text-[10px] font-bold uppercase tracking-widest mb-1 opacity-80" contenteditable="true">${cat}</div>
+                    <div class="text-base font-bold leading-tight outline-none" contenteditable="true">${val}</div>
+                </div>
+                <button onclick="removeGoal(this)" class="hide-on-export absolute -right-2 top-0 text-red-400 p-1 opacity-0 group-hover:opacity-100 transition">✕</button>
+            `;
+            return div;
+        }
+
+        function removeGoal(btn) {
+            btn.closest('.goal-row').remove();
+            reindexGoals();
+            if(document.querySelectorAll('.goal-row').length === 0) {
+                document.getElementById('topLine').classList.add('hidden');
+            }
+        }
+
+        function reindexGoals() {
+            document.querySelectorAll('.goal-row').forEach((row, index) => {
+                row.querySelector('.goal-num').innerText = (index + 1).toString().padStart(2, '0');
+            });
+        }
+
+        // 历史数据
+        function saveToHistory(cat, val) {
+            let history = JSON.parse(localStorage.getItem('flag_history') || '[]');
+            history.unshift({ cat, val, date: new Date().toLocaleString() });
+            localStorage.setItem('flag_history', JSON.stringify(history.slice(0, 50)));
+            refreshHistory();
+        }
+
+        function refreshHistory() {
+            const history = JSON.parse(localStorage.getItem('flag_history') || '[]');
+            document.getElementById('historyCount').innerText = history.length;
+            const content = history.map(h => `<div class="p-2 bg-gray-50 rounded"><b>[${h.cat}]</b> ${h.val}</div>`).join('');
+            document.getElementById('historyContent').innerHTML = content || '暂无数据';
+        }
+
+        function toggleHistory() {
+            const d = document.getElementById('historyDrawer');
+            d.classList.toggle('hidden');
+        }
+
+        function clearHistory() {
+            localStorage.removeItem('flag_history');
+            refreshHistory();
+        }
+
+        // 隐藏功能：连续点击5次预览区外围
+        document.getElementById('blankArea').addEventListener('click', () => {
+            clickCount++;
+            if (clickCount === 5) {
+                const newUrl = prompt("【隐藏功能】输入二维码指向的 URL：", window.location.href);
+                if (newUrl) {
+                    qrcodeObj.clear();
+                    qrcodeObj.makeCode(newUrl);
+                    alert('二维码已更新');
+                }
+                clickCount = 0;
+            }
+            setTimeout(() => clickCount = 0, 2000);
+        });
+
+        // 复制 QQ
+        function copyQQ() {
+            navigator.clipboard.writeText('857023577').then(() => alert('QQ群号已复制'));
+        }
+
+        // 下载
+        function downloadPoster() {
+            const poster = document.getElementById('posterCanvas');
+            poster.classList.add('exporting');
+            
+            html2canvas(poster, {
+                scale: 3,
+                useCORS: true,
+                backgroundColor: null
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `MyFlag-${Date.now()}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                poster.classList.remove('exporting');
+            });
+        }
+    </script>
+</body>
+</html>
