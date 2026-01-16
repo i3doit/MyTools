@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的新年目标 - 立 Flag 海报工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap');
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f3f4f6; }
+        .poster-shadow { box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10">
+        
+        <div class="bg-white p-6 rounded-2xl shadow-sm space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold mb-4">⚙️ 配置你的 Flag</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">海报标题</label>
+                        <input type="text" id="titleInput" value="我的新年目标" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-orange-500 focus:border-orange-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">背景颜色</label>
+                        <input type="color" id="bgColorInput" value="#ffffff" class="mt-1 block w-20 h-10 border-none cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">添加目标 (分类 + 内容)</label>
+                        <div class="flex gap-2 mt-1">
+                            <select id="categorySelect" class="border rounded p-2">
+                                <option>📖 读书</option>
+                                <option>💰 工作搞钱</option>
+                                <option>✈️ 旅游</option>
+                                <option>🛠️ 副业</option>
+                                <option>📱 公众号/私域</option>
+                                <option>🏃 健康</option>
+                            </select>
+                            <input type="text" id="goalInput" placeholder="输入简短的目标..." class="flex-1 border rounded p-2">
+                            <button onclick="addGoal()" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">添加</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t pt-4">
+                <button onclick="downloadPoster()" class="w-full bg-black text-white py-3 rounded-xl font-bold hover:opacity-80 transition">生成并下载海报</button>
+            </div>
+
+            <div class="text-xs text-gray-500 space-y-2 pt-4 border-t">
+                <p>© <span id="currentYear"></span> AI 提效工具官方 QQ 群：
+                    <span class="text-blue-500 cursor-pointer" onclick="copyQQ()">857023577</span> (点击复制)
+                </p>
+                <p>技术支持：<a href="https://t.zsxq.com/7tSuP" target="_blank" class="text-blue-500">艾兜兜儿</a></p>
+                <p>更多工具：<a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" target="_blank" class="text-blue-500">点击查看</a></p>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center">
+            <div id="posterCanvas" class="w-[375px] min-h-[600px] bg-white p-8 poster-shadow relative flex flex-col">
+                <div class="absolute top-0 left-0 w-full h-2 bg-orange-400"></div>
+                
+                <h1 id="posterTitle" class="text-3xl font-black mt-8 mb-10 text-gray-800 tracking-wider text-center">我的新年目标</h1>
+                
+                <div id="goalsList" class="flex-1 space-y-6">
+                    </div>
+
+                <div class="mt-auto pt-10 flex justify-between items-end border-t border-gray-100">
+                    <div class="text-[10px] text-gray-400 leading-relaxed">
+                        <p>Powered by 艾兜兜儿</p>
+                        <p>Focus on what matters.</p>
+                        <p class="mt-1" id="posterDate"></p>
+                    </div>
+                    <div id="qrcode" class="w-16 h-16 bg-gray-100"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化年份
+        document.getElementById('currentYear').innerText = new Date().getFullYear();
+        document.getElementById('posterDate').innerText = new Date().toLocaleDateString();
+
+        // 初始化二维码 (默认当前页面 URL)
+        const qrcode = new QRCode(document.getElementById("qrcode"), {
+            text: window.location.href,
+            width: 64,
+            height: 64
+        });
+
+        // 实时同步标题
+        document.getElementById('titleInput').addEventListener('input', (e) => {
+            document.getElementById('posterTitle').innerText = e.target.value;
+        });
+
+        // 实时同步背景色
+        document.getElementById('bgColorInput').addEventListener('input', (e) => {
+            document.getElementById('posterCanvas').style.backgroundColor = e.target.value;
+        });
+
+        // 添加目标功能
+        function addGoal() {
+            const cat = document.getElementById('categorySelect').value;
+            const text = document.getElementById('goalInput').value;
+            if(!text) return;
+
+            const list = document.getElementById('goalsList');
+            const item = document.createElement('div');
+            item.className = "group relative border-l-4 border-orange-400 pl-4 py-1 animate-fade-in";
+            item.innerHTML = `
+                <div class="text-xs font-bold text-orange-500 uppercase tracking-widest">${cat}</div>
+                <div class="text-lg text-gray-700 font-medium">${text}</div>
+                <button onclick="this.parentElement.remove()" class="absolute right-0 top-0 text-red-300 hover:text-red-500 text-xs opacity-0 group-hover:opacity-100 transition">删除</button>
+            `;
+            list.appendChild(item);
+            document.getElementById('goalInput').value = '';
+        }
+
+        // 复制 QQ 号
+        function copyQQ() {
+            navigator.clipboard.writeText('857023577');
+            alert('QQ号已复制到剪贴板');
+        }
+
+        // 生成海报图片并下载
+        function downloadPoster() {
+            const poster = document.getElementById('posterCanvas');
+            html2canvas(poster, {
+                useCORS: true,
+                scale: 3, // 提高清晰度
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Flag-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>
