@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>冷静购 - 你的智能消费守卫</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://fav.farm/🛡️">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --apple-bg: #f5f5f7;
+            --apple-card: rgba(255, 255, 255, 0.75);
+            --apple-text: #1d1d1f;
+            --apple-blue: #0071e3;
+            --apple-green: #34c759;
+            --apple-red: #ff3b30;
+            --glass-blur: 25px;
+            --shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans SC', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            background-attachment: fixed;
+            color: var(--apple-text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* 顶部输入区 */
+        .input-container {
+            width: 100%; max-width: 500px;
+            background: var(--apple-card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border-radius: 24px; padding: 24px; box-shadow: var(--shadow);
+            margin-bottom: 24px; animation: slideUp 0.6s ease-out;
+        }
+
+        .list-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+
+        h1 { font-weight: 500; font-size: 22px; text-align: center; margin-bottom: 20px; }
+
+        .form-group { position: relative; margin-bottom: 16px; }
+        label { display: block; font-size: 12px; color: #6e6e73; margin-bottom: 6px; margin-left: 4px; }
+
+        input, textarea {
+            width: 100%; padding: 12px 40px 12px 14px;
+            border: 1px solid rgba(0,0,0,0.08); border-radius: 14px;
+            background: rgba(255,255,255,0.4); font-size: 15px; outline: none;
+            transition: all 0.3s;
+        }
+        input:focus, textarea:focus { border-color: var(--apple-blue); background: #fff; }
+
+        .clear-btn {
+            position: absolute; right: 12px; top: 32px; cursor: pointer; color: #c1c1c6;
+            display: none; font-size: 20px; width: 24px; height: 24px; line-height: 24px; text-align: center;
+        }
+
+        .btn {
+            width: 100%; padding: 14px; border: none; border-radius: 14px;
+            font-size: 16px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-primary { background: var(--apple-blue); color: white; }
+        .btn-ghost { background: rgba(255,255,255,0.4); border: 1px solid rgba(0,0,0,0.1); color: var(--apple-text); margin-top: 10px; }
+        .btn:active { transform: scale(0.97); }
+
+        /* 物品卡片 */
+        .item-card {
+            background: var(--apple-card); backdrop-filter: blur(var(--glass-blur));
+            border-radius: 20px; padding: 20px; box-shadow: var(--shadow);
+            border: 1px solid rgba(255,255,255,0.3); animation: fadeIn 0.4s ease;
+        }
+        .tag { display: inline-flex; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-bottom: 12px; }
+        .tag-waiting { background: rgba(255, 159, 10, 0.15); color: #ff9f0a; }
+        .tag-ready { background: rgba(52, 199, 89, 0.15); color: var(--apple-green); }
+
+        /* 历史记录面板 */
+        .history-panel { width: 100%; max-width: 500px; display: none; background: rgba(255,255,255,0.6); border-radius: 20px; padding: 20px; margin-top: 10px; }
+        .history-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed rgba(0,0,0,0.1); font-size: 13px; }
+
+        /* 弹窗样式 */
+        #shareModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); z-index: 5000; display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(10px);
+        }
+
+        #toast { position: fixed; top: 30px; background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 50px; font-size: 14px; display: none; z-index: 9999; }
+
+        footer { margin-top: auto; padding: 40px 0; text-align: center; font-size: 12px; color: #6e6e73; line-height: 1.8; }
+        footer a { color: var(--apple-blue); text-decoration: none; }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="toast"></div>
+
+    <div class="input-container">
+        <h1>冷静购 🛡️</h1>
+        <div class="form-group">
+            <label>商品名称</label>
+            <input type="text" id="itemName" placeholder="输入那个让你心痒痒的商品..." oninput="toggleClear(this)">
+            <span class="clear-btn" onclick="clearInp('itemName')">×</span>
+        </div>
+        <div class="form-group">
+            <label>预估价格 (元)</label>
+            <input type="number" id="itemPrice" placeholder="想清楚，这真的值得吗？" oninput="toggleClear(this)">
+            <span class="clear-btn" onclick="clearInp('itemPrice')">×</span>
+        </div>
+        <div class="form-group">
+            <label>冷静理由</label>
+            <textarea id="itemReason" rows="2" placeholder="写下一条它不会落灰的理由..." oninput="toggleClear(this)"></textarea>
+            <span class="clear-btn" style="top:30px" onclick="clearInp('itemReason')">×</span>
+        </div>
+        <button class="btn btn-primary" onclick="addToColdBox()">存入冷静盒</button>
+        <button id="notiBtn" class="btn" style="background:none; color:var(--apple-blue); font-size:12px; text-decoration:underline;" onclick="requestNoti()">开启冷静期满提醒 🔔</button>
+    </div>
+
+    <div class="list-container" id="itemList"></div>
+
+    <div style="width:100%; max-width:500px;">
+        <button class="btn btn-ghost" onclick="openShareModal()">生成我的省钱战报 📊</button>
+        <button class="btn btn-ghost" onclick="toggleHistory()">查看历史数据 ⏳</button>
+    </div>
+
+    <div id="historyPanel" class="history-panel">
+        <h4 style="margin-bottom:10px; font-size:14px;">已省下的商品：</h4>
+        <div id="historyContent"></div>
+    </div>
+
+    <div id="shareModal">
+        <div class="input-container" style="text-align:center; background:#fff;">
+            <canvas id="shareCanvas" style="width: 100%; border-radius: 12px;"></canvas>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn btn-primary" style="background:var(--apple-green)" onclick="downloadImage()">保存到相册</button>
+                <button class="btn" style="background:#86868b; color:white;" onclick="closeShareModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© <span id="year"></span> 冷静购 - 拒绝冲动消费</p>
+        <p>AI 提效工具官方 QQ 群：<span style="cursor:pointer; text-decoration:underline" onclick="copyQQ('857023577')">857023577</span></p>
+        <p>技术支持：<a href="https://t.zsxq.com/7tSuP" target="_blank">艾兜兜儿</a> | <a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" target="_blank">更多工具</a></p>
+    </footer>
+
+    <script>
+        // 1. 数据持久化初始化
+        let storage = JSON.parse(localStorage.getItem('cold_box_v2')) || [];
+        let savedTotal = parseFloat(localStorage.getItem('saved_total')) || 0;
+        let savedCount = parseInt(localStorage.getItem('saved_count')) || 0;
+        let historyData = JSON.parse(localStorage.getItem('history_data')) || [];
+
+        document.getElementById('year').innerText = new Date().getFullYear();
+
+        // 2. 核心功能函数
+        function showToast(m) { const t=document.getElementById('toast'); t.innerText=m; t.style.display='block'; setTimeout(()=>t.style.display='none',2000); }
+        function toggleClear(el) { el.nextElementSibling.style.display = el.value ? 'block' : 'none'; }
+        function clearInp(id) { const el=document.getElementById(id); el.value=''; toggleClear(el); }
+
+        function addToColdBox() {
+            const name = document.getElementById('itemName').value.trim();
+            const priceVal = document.getElementById('itemPrice').value;
+            const price = parseFloat(priceVal);
+            const reason = document.getElementById('itemReason').value.trim();
+
+            if(!name || isNaN(price) || price <= 0 || price > 999999) {
+                showToast("请输入有效名称和价格 (最大99万) ⚠️"); return;
+            }
+
+            const item = {
+                id: Date.now(), name, price: price.toFixed(2), reason: reason || "无理由入库",
+                createTime: Date.now(), coldHours: 48, notified: false
+            };
+
+            storage.unshift(item);
+            saveData();
+            createCard(item);
+            ['itemName','itemPrice','itemReason'].forEach(id => clearInp(id));
+            showToast("🔒 物品已锁定，开始48小时冷静期");
+        }
+
+        function createCard(item) {
+            const list = document.getElementById('itemList');
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            card.id = `card-${item.id}`;
+            list.prepend(card);
+            updateCard(item);
+        }
+
+        function updateCard(item) {
+            const card = document.getElementById(`card-${item.id}`);
+            if(!card) return;
+            const now = Date.now();
+            const diff = (item.createTime + item.coldHours * 3600000) - now;
+            const isReady = diff <= 0;
+
+            let timeStr = isReady ? "✅ 冷静期结束" : `⏳ 剩余 ${formatTime(diff)}`;
+            const tagClass = isReady ? "tag-ready" : "tag-waiting";
+
+            card.innerHTML = `
+                <span class="tag ${tagClass}" id="time-${item.id}">${timeStr}</span>
+                <div style="font-size:18px; font-weight:500;">${item.name}</div>
+                <div style="font-size:20px; font-weight:600; color:var(--apple-blue); margin:8px 0;">￥${item.price.toLocaleString()}</div>
+                <div style="font-size:12px; color:#86868b; background:rgba(0,0,0,0.03); padding:8px; border-radius:10px;">理由：${item.reason}</div>
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button class="btn btn-primary" style="background:var(--apple-red); flex:1; padding:10px;" onclick="handleAction(${item.id}, true)">我不买了</button>
+                    ${isReady ? `<button class="btn btn-primary" style="background:var(--apple-green); flex:1; padding:10px;" onclick="handleAction(${item.id}, false)">确认已买</button>` : ''}
+                </div>
+            `;
+        }
+
+        function formatTime(ms) {
+            const h = Math.floor(ms/3600000);
+            const m = Math.floor((ms%3600000)/60000);
+            const s = Math.floor((ms%60000)/1000);
+            return `${h}时${m}分${s}秒`;
+        }
+
+        function handleAction(id, isSaved) {
+            const idx = storage.findIndex(i => i.id === id);
+            if(isSaved) {
+                const item = storage[idx];
+                savedTotal += parseFloat(item.price);
+                savedCount++;
+                historyData.unshift({ name: item.name, price: item.price, date: new Date().toLocaleDateString() });
+                localStorage.setItem('saved_total', savedTotal);
+                localStorage.setItem('saved_count', savedCount);
+                localStorage.setItem('history_data', JSON.stringify(historyData));
+                showToast(`🎉 成功节省 ￥${item.price}！`);
+            }
+            storage.splice(idx, 1);
+            saveData();
+            document.getElementById(`card-${id}`).remove();
+        }
+
+        // 3. 定时器：局部更新时间，不闪烁
+        setInterval(() => {
+            const now = Date.now();
+            storage.forEach(item => {
+                const diff = (item.createTime + item.coldHours * 3600000) - now;
+                const timeEl = document.getElementById(`time-${item.id}`);
+                if(timeEl) {
+                    if(diff > 0) {
+                        timeEl.innerText = `⏳ 剩余 ${formatTime(diff)}`;
+                    } else if(!timeEl.classList.contains('tag-ready')) {
+                        updateCard(item); // 仅状态切换时重绘
+                        if(!item.notified && Notification.permission === "granted") {
+                            new Notification("冷静购：冷静期结束 ✅", { body: `商品 [${item.name}] 的冷静期已结束，请决定是否购买。` });
+                            item.notified = true;
+                            saveData();
+                        }
+                    }
+                }
+            });
+        }, 1000);
+
+        // 4. 历史记录切换
+        function toggleHistory() {
+            const panel = document.getElementById('historyPanel');
+            const content = document.getElementById('historyContent');
+            if(panel.style.display === 'block') {
+                panel.style.display = 'none';
+            } else {
+                panel.style.display = 'block';
+                content.innerHTML = historyData.length ? historyData.map(h => 
+                    `<div class="history-item"><span>${h.date} - ${h.name}</span><span style="color:var(--apple-green)">+￥${h.price}</span></div>`
+                ).join('') : "<p style='color:#999; font-size:12px;'>暂无省钱历史</p>";
+            }
+        }
+
+        // 5. 分享战报 (优化金额溢出)
+        function openShareModal() {
+            document.getElementById('shareModal').style.display = 'flex';
+            const canvas = document.getElementById('shareCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 600; canvas.height = 850;
+
+            // 背景渐变
+            const grad = ctx.createLinearGradient(0,0,0,850);
+            grad.addColorStop(0, '#8ec5fc'); grad.addColorStop(1, '#e0c3fc');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, 600, 850);
+            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.roundRect(40, 40, 520, 770, 30); ctx.fill();
+
+            // 文字
+            ctx.fillStyle = '#1d1d1f'; ctx.textAlign = 'center'; ctx.font = 'bold 36px sans-serif';
+            ctx.fillText('冷静购 · 省钱战报', 300, 120);
+            ctx.fillStyle = '#6e6e73'; ctx.font = '22px sans-serif';
+            ctx.fillText(`我已成功抵制冲动消费 ${savedCount} 次`, 300, 175);
+
+            // 动态字号
+            let amtStr = `￥${savedTotal.toLocaleString()}`;
+            let fontSize = savedTotal > 100000 ? 60 : 80;
+            ctx.fillStyle = '#0071e3'; ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.fillText(amtStr, 300, 300);
+
+            ctx.fillStyle = '#34c759'; ctx.font = 'bold 28px sans-serif';
+            ctx.fillText('“扫码一起省省省”', 300, 380);
+
+            // 引流区域
+            ctx.textAlign = 'left'; ctx.fillStyle = '#1d1d1f'; ctx.font = 'bold 20px sans-serif';
+            ctx.fillText('技术支持：艾兜兜儿', 70, 680);
+            ctx.fillStyle = '#86868b'; ctx.font = '16px sans-serif';
+            ctx.fillText('AI 提效工具 · 拒绝多巴胺陷阱', 70, 715);
+            ctx.fillText('识别右侧二维码开启自律人生', 70, 745);
+
+            const qrImg = new Image();
+            qrImg.crossOrigin = "anonymous";
+            qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent(window.location.href);
+            qrImg.onload = () => ctx.drawImage(qrImg, 400, 640, 130, 130);
+        }
+
+        function downloadImage() {
+            const canvas = document.getElementById('shareCanvas');
+            const link = document.createElement('a');
+            link.download = `省钱战报-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast("若无法下载，请长按图片保存 📸");
+        }
+
+        function closeShareModal() { document.getElementById('shareModal').style.display = 'none'; }
+        function saveData() { localStorage.setItem('cold_box_v2', JSON.stringify(storage)); }
+        function copyQQ(num) { navigator.clipboard.writeText(num).then(() => showToast("QQ群号已复制 📋")); }
+        function requestNoti() {
+            if(!("Notification" in window)) return alert("请添加到主屏幕使用推送功能");
+            Notification.requestPermission().then(p => {
+                if(p === "granted") new Notification("开启成功", { body: "冷静期满会准时提醒你！" });
+            });
+        }
+
+        // 初始化渲染
+        storage.forEach(item => createCard(item));
+    </script>
+</body>
+</html>
