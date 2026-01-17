@@ -180,7 +180,7 @@
 
             const item = {
                 id: Date.now(), name, price: price.toFixed(2), reason: reason || "无理由入库",
-                createTime: Date.now(), coldHours: 48, notified: false
+                createTime: Date.now(), coldHours: 0.06, notified: false
             };
 
             storage.unshift(item);
