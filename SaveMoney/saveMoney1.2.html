@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冷静购 - 你的智能消费守卫</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://fav.farm/🛡️">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --apple-bg: #f5f5f7;
+            --apple-card: rgba(255, 255, 255, 0.75);
+            --apple-text: #1d1d1f;
+            --apple-blue: #0071e3;
+            --apple-green: #34c759;
+            --apple-red: #ff3b30;
+            --glass-blur: 25px;
+            --shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans SC', sans-serif; }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            background-attachment: fixed;
+            color: var(--apple-text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* 布局分离：输入卡片 */
+        .input-container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--apple-card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        /* 布局分离：列表容器（不带背景，让子卡片悬浮） */
+        .list-container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        h1 { font-weight: 500; font-size: 22px; text-align: center; margin-bottom: 20px; color: var(--apple-text); }
+
+        .form-group { position: relative; margin-bottom: 16px; }
+        label { display: block; font-size: 12px; color: #6e6e73; margin-bottom: 6px; margin-left: 4px; }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px 40px 12px 14px;
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.4);
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        input:focus, textarea:focus { border-color: var(--apple-blue); background: #fff; box-shadow: 0 0 0 4px rgba(0,113,227,0.1); }
+
+        .clear-btn {
+            position: absolute; right: 12px; top: 32px; cursor: pointer; color: #c1c1c6;
+            display: none; font-size: 20px; width: 24px; height: 24px; text-align: center;
+        }
+
+        .btn-submit {
+            width: 100%; padding: 14px; background: var(--apple-blue); color: white;
+            border: none; border-radius: 14px; font-size: 16px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .btn-submit:active { transform: scale(0.97); opacity: 0.9; }
+
+        /* 独立物品卡片样式 */
+        .item-card {
+            background: var(--apple-card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.5s ease;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .tag { 
+            display: inline-flex; align-items: center; padding: 4px 12px; 
+            border-radius: 20px; font-size: 11px; font-weight: 600; margin-bottom: 12px;
+        }
+        .tag-waiting { background: rgba(255, 159, 10, 0.15); color: #ff9f0a; }
+        .tag-ready { background: rgba(52, 199, 89, 0.15); color: var(--apple-green); }
+
+        .item-name { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+        .item-price { font-size: 20px; font-weight: 600; color: var(--apple-blue); margin-bottom: 12px; }
+        .item-reason { font-size: 13px; color: #6e6e73; line-height: 1.5; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 10px; }
+
+        #toast {
+            position: fixed; top: 30px; background: rgba(0,0,0,0.8); color: white;
+            padding: 12px 24px; border-radius: 50px; font-size: 14px; display: none; z-index: 9999;
+        }
+
+        /* 弹窗及 Canvas 预览隐藏 */
+        #shareModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); z-index: 5000; display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(10px);
+        }
+
+        footer { margin-top: auto; padding: 40px 0; text-align: center; font-size: 12px; color: #6e6e73; line-height: 1.8; }
+        footer a { color: var(--apple-blue); text-decoration: none; }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="toast"></div>
+
+    <div class="input-container">
+        <h1>冷静购 🛡️</h1>
+        <div class="form-group">
+            <label>我想买：</label>
+            <input type="text" id="itemName" placeholder="例如：新款耳机" oninput="toggleClear(this)">
+            <span class="clear-btn" onclick="clearInput('itemName')">×</span>
+        </div>
+        <div class="form-group">
+            <label>价格 (元)：</label>
+            <input type="number" id="itemPrice" placeholder="0.00" oninput="toggleClear(this)">
+            <span class="clear-btn" onclick="clearInput('itemPrice')">×</span>
+        </div>
+        <div class="form-group">
+            <label>理由：</label>
+            <textarea id="itemReason" rows="2" placeholder="为什么需要它？" oninput="toggleClear(this)"></textarea>
+            <span class="clear-btn" style="top:30px" onclick="clearInput('itemReason')">×</span>
+        </div>
+        <button class="btn-submit" onclick="addToColdBox()">存入冷静盒</button>
+    </div>
+
+    <div class="list-container" id="itemList"></div>
+
+    <div style="width:100%; max-width:500px; margin-top:20px;">
+        <button class="btn-submit" style="background:rgba(255,255,255,0.4); color:var(--apple-text); border:1px solid rgba(0,0,0,0.1);" onclick="openShareModal()">生成省钱战报 📊</button>
+    </div>
+
+    <div id="shareModal">
+        <div class="input-container" style="text-align:center; background:#fff;">
+            <h2 style="margin-bottom:15px;">省钱大捷卡片</h2>
+            <canvas id="shareCanvas" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></canvas>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn-submit" style="background:var(--apple-green)" onclick="downloadImage()">保存到相册</button>
+                <button class="btn-submit" style="background:#86868b" onclick="closeShareModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© <span id="year"></span> 冷静购 - 拒绝冲动消费</p>
+        <p>AI 提效工具官方 QQ 群：<span style="cursor:pointer; text-decoration:underline" onclick="copyQQ('857023577')">857023577</span></p>
+        <p>技术支持：<a href="https://t.zsxq.com/7tSuP" target="_blank">艾兜兜儿</a> | <a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" target="_blank">更多工具</a></p>
+    </footer>
+
+    <script>
+        let storage = JSON.parse(localStorage.getItem('cold_box_data')) || [];
+        let savedTotal = parseFloat(localStorage.getItem('saved_total')) || 0;
+        let savedCount = parseInt(localStorage.getItem('saved_count')) || 0;
+
+        document.getElementById('year').innerText = new Date().getFullYear();
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 2000);
+        }
+
+        function toggleClear(el) { el.nextElementSibling.style.display = el.value ? 'block' : 'none'; }
+        function clearInput(id) { const el = document.getElementById(id); el.value = ''; toggleClear(el); }
+
+        function addToColdBox() {
+            const name = document.getElementById('itemName').value.trim();
+            const price = document.getElementById('itemPrice').value.trim();
+            const reason = document.getElementById('itemReason').value.trim();
+
+            if (!name || !price) { showToast("请完整填写信息 ⚠️"); return; }
+
+            const newItem = {
+                id: Date.now(),
+                name: name,
+                price: parseFloat(price).toFixed(2),
+                reason: reason || "没有填写理由",
+                createTime: Date.now(),
+                coldHours: 48
+            };
+
+            storage.unshift(newItem);
+            localStorage.setItem('cold_box_data', JSON.stringify(storage));
+            renderList();
+            ['itemName', 'itemPrice', 'itemReason'].forEach(id => clearInput(id));
+            showToast("🔒 冷静倒计时开始");
+        }
+
+        // 核心：每秒更新一次列表时间
+        function renderList() {
+            const listEl = document.getElementById('itemList');
+            listEl.innerHTML = '';
+            const now = Date.now();
+
+            storage.forEach(item => {
+                const diff = (item.createTime + item.coldHours * 3600000) - now;
+                const isReady = diff <= 0;
+
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                
+                // 计算倒计时格式
+                let timeStr = "";
+                if (!isReady) {
+                    const hours = Math.floor(diff / 3600000);
+                    const mins = Math.floor((diff % 3600000) / 60000);
+                    const secs = Math.floor((diff % 60000) / 1000);
+                    timeStr = `⏳ 剩余 ${hours}小时 ${mins}分 ${secs}秒`;
+                } else {
+                    timeStr = "✅ 冷静期已满";
+                }
+
+                card.innerHTML = `
+                    <span class="tag ${isReady ? 'tag-ready' : 'tag-waiting'}">${timeStr}</span>
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-price">￥${item.price}</div>
+                    <div class="item-reason">${item.reason}</div>
+                    <div style="display:flex; gap:10px; margin-top:15px;">
+                        <button class="btn-submit" style="background:var(--apple-red); flex:1" onclick="removeItem(${item.id}, true)">我不买了</button>
+                        ${isReady ? `<button class="btn-submit" style="background:var(--apple-green); flex:1" onclick="removeItem(${item.id}, false)">确认已买</button>` : ''}
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        function removeItem(id, isSaved) {
+            const item = storage.find(i => i.id === id);
+            if (isSaved && item) {
+                savedTotal += parseFloat(item.price);
+                savedCount += 1;
+                localStorage.setItem('saved_total', savedTotal);
+                localStorage.setItem('saved_count', savedCount);
+                showToast(`🎉 成功省下 ￥${item.price}`);
+            }
+            storage = storage.filter(i => i.id !== id);
+            localStorage.setItem('cold_box_data', JSON.stringify(storage));
+            renderList();
+        }
+
+        // 定时刷新器
+        setInterval(renderList, 1000);
+
+        // Canvas 分享图生成
+        function openShareModal() {
+            const modal = document.getElementById('shareModal');
+            modal.style.display = 'flex';
+            drawShareCard();
+        }
+
+        function closeShareModal() { document.getElementById('shareModal').style.display = 'none'; }
+
+        function drawShareCard() {
+            const canvas = document.getElementById('shareCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 600;
+            canvas.height = 800;
+
+            // 背景渐变
+            const grad = ctx.createLinearGradient(0,0,0,800);
+            grad.addColorStop(0, '#8ec5fc');
+            grad.addColorStop(1, '#e0c3fc');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 600, 800);
+
+            // 白色卡片区
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.roundRect(50, 50, 500, 700, 30);
+            ctx.fill();
+
+            // 文字绘制
+            ctx.fillStyle = '#1d1d1f';
+            ctx.font = 'bold 36px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('冷静购省钱大捷', 300, 130);
+
+            ctx.fillStyle = '#6e6e73';
+            ctx.font = '24px sans-serif';
+            ctx.fillText(`我已成功抵制冲动消费 ${savedCount} 次`, 300, 190);
+
+            ctx.fillStyle = '#0071e3';
+            ctx.font = 'bold 72px sans-serif';
+            ctx.fillText(`￥${savedTotal.toFixed(2)}`, 300, 300);
+
+            ctx.fillStyle = '#34c759';
+            ctx.font = '28px sans-serif';
+            ctx.fillText('“扫码一起省省省”', 300, 380);
+
+            // 文案
+            ctx.fillStyle = '#86868b';
+            ctx.font = '20px sans-serif';
+            const lines = ["拒绝多巴胺陷阱", "每一分省下的钱", "都是未来的自由"];
+            lines.forEach((l, i) => ctx.fillText(l, 300, 460 + i*35));
+
+            // 二维码区域绘制（模拟二维码）
+            // 提示：真实环境下可接入 https://api.qrserver.com/v1/create-qr-code/?data=URL
+            const qrImg = new Image();
+            qrImg.crossOrigin = "anonymous";
+            qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent(window.location.href);
+            qrImg.onload = () => {
+                ctx.drawImage(qrImg, 400, 600, 120, 120);
+                ctx.textAlign = 'right';
+                ctx.font = '14px sans-serif';
+                ctx.fillText('长按扫码加入冷静购', 520, 740);
+            };
+        }
+
+        function downloadImage() {
+            const canvas = document.getElementById('shareCanvas');
+            const link = document.createElement('a');
+            link.download = `我的省钱战报-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function copyQQ(num) {
+            navigator.clipboard.writeText(num).then(() => showToast("QQ群号已复制 📋"));
+        }
+
+        renderList();
+    </script>
+</body>
+</html>
