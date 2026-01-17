@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>冷静购 - 你的智能消费守卫</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://fav.farm/🛡️">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --apple-blue: #0071e3; --apple-red: #ff3b30; --apple-green: #34c759;
+            --apple-card: rgba(255, 255, 255, 0.8); --glass-blur: 20px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans SC', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { min-height: 100vh; background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); background-attachment: fixed; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        /* 容器样式 */
+        .card-box { width: 100%; max-width: 500px; background: var(--apple-card); backdrop-filter: blur(var(--glass-blur)); border-radius: 24px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        
+        h1 { font-size: 22px; text-align: center; margin-bottom: 20px; }
+        .form-group { position: relative; margin-bottom: 15px; }
+        label { display: block; font-size: 12px; color: #6e6e73; margin-bottom: 5px; margin-left: 5px; }
+        
+        input, textarea { width: 100%; padding: 12px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; background: rgba(255,255,255,0.5); font-size: 16px; outline: none; }
+        .clear-btn { position: absolute; right: 10px; top: 30px; color: #ccc; display: none; font-size: 20px; cursor: pointer; }
+        
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 14px; font-size: 16px; font-weight: 500; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        .btn-primary { background: var(--apple-blue); color: white; }
+        .btn-ghost { background: rgba(255,255,255,0.3); border: 1px solid rgba(0,0,0,0.1); color: #1d1d1f; }
+        
+        /* 列表项样式 */
+        .item-card { background: white; border-radius: 18px; padding: 15px; margin-bottom: 15px; border-left: 5px solid var(--apple-blue); animation: slideIn 0.3s ease; }
+        .tag { font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 10px; margin-bottom: 8px; display: inline-block; }
+        .tag-wait { background: #fff2cc; color: #d4a017; }
+        .tag-done { background: #d1e7dd; color: #0f5132; }
+
+        /* 弹窗 */
+        #modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 999; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: white; border-radius: 24px; width: 100%; max-width: 400px; padding: 20px; text-align: center; }
+        #canvasContainer { width: 100%; margin-bottom: 15px; border-radius: 12px; overflow: hidden; border: 1px solid #eee; }
+        canvas { width: 100%; height: auto; display: block; }
+
+        /* 历史记录 */
+        .history-box { text-align: left; max-height: 150px; overflow-y: auto; margin: 15px 0; font-size: 12px; border-top: 1px solid #eee; padding-top: 10px; }
+        .history-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #f0f0f0; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="toast" style="position:fixed; top:30px; background:rgba(0,0,0,0.8); color:white; padding:10px 20px; border-radius:20px; z-index:10000; display:none; font-size:14px;"></div>
+
+    <div class="card-box">
+        <h1>冷静购 🛡️</h1>
+        <div class="form-group">
+            <label>商品名称 (限20字)</label>
+            <input type="text" id="itemName" maxlength="20" oninput="toggleClear(this)">
+            <span class="clear-btn" onclick="clearInp('itemName')">×</span>
+        </div>
+        <div class="form-group">
+            <label>价格 (0.01 - 999,999)</label>
+            <input type="number" id="itemPrice" step="0.01" oninput="toggleClear(this)">
+            <span class="clear-btn" onclick="clearInp('itemPrice')">×</span>
+        </div>
+        <div class="form-group">
+            <label>冷静理由</label>
+            <textarea id="itemReason" rows="2" maxlength="50" oninput="toggleClear(this)"></textarea>
+            <span class="clear-btn" style="top:30px" onclick="clearInp('itemReason')">×</span>
+        </div>
+        <button class="btn btn-primary" onclick="addItem()">存入冷静期 (48h)</button>
+    </div>
+
+    <div id="list" style="width:100%; max-width:500px;"></div>
+
+    <button class="btn btn-ghost" style="max-width:500px;" onclick="openModal()">生成战报 & 历史记录 📊</button>
+
+    <div id="modal">
+        <div class="modal-content">
+            <div id="canvasContainer">
+                <canvas id="shareCanvas"></canvas>
+            </div>
+            <p style="font-size: 11px; color: #999; margin-bottom: 10px;">长按上方图片或点击下载保存</p>
+            
+            <div class="history-box" id="historyList"></div>
+
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-primary" style="margin:0; background:var(--apple-green)" onclick="downloadImg()">保存相册</button>
+                <button class="btn btn-ghost" style="margin:0" onclick="closeModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let storage = JSON.parse(localStorage.getItem('cg_items')) || [];
+        let history = JSON.parse(localStorage.getItem('cg_history')) || [];
+        let totalSaved = parseFloat(localStorage.getItem('cg_total')) || 0;
+
+        // 1. 基础功能
+        function showToast(m) { const t=document.getElementById('toast'); t.innerText=m; t.style.display='block'; setTimeout(()=>t.style.display='none',2000); }
+        function toggleClear(el) { el.nextElementSibling.style.display = el.value ? 'block' : 'none'; }
+        function clearInp(id) { const el=document.getElementById(id); el.value=''; toggleClear(el); }
+
+        // 2. 价格边界与验证
+        function addItem() {
+            const name = document.getElementById('itemName').value.trim();
+            const priceInp = document.getElementById('itemPrice').value;
+            const price = parseFloat(priceInp);
+            const reason = document.getElementById('itemReason').value.trim();
+
+            if(!name) return showToast("请输入商品名");
+            if(isNaN(price) || price < 0.01 || price > 999999) return showToast("价格需在 0.01 - 999,999 之间");
+
+            const item = { id: Date.now(), name, price, reason, createAt: Date.now(), notified: false };
+            storage.unshift(item);
+            save();
+            render();
+            ['itemName','itemPrice','itemReason'].forEach(id => clearInp(id));
+            showToast("已开启冷静期 🔒");
+            if (Notification.permission !== 'granted') Notification.requestPermission();
+        }
+
+        // 3. 动态列表渲染
+        function render() {
+            const container = document.getElementById('list');
+            container.innerHTML = '';
+            const now = Date.now();
+
+            storage.forEach(item => {
+                const remains = (item.createAt + 48*3600000) - now;
+                const isReady = remains <= 0;
+                
+                const div = document.createElement('div');
+                div.className = 'item-card';
+                div.innerHTML = `
+                    <span class="tag ${isReady ? 'tag-done':'tag-wait'}">${isReady ? '✅ 冷静期结束' : '⏳ '+formatTime(remains)}</span>
+                    <h3 style="font-size:16px;">${item.name}</h3>
+                    <p style="color:var(--apple-blue); font-weight:600; font-size:18px;">￥${item.price.toLocaleString()}</p>
+                    <p style="font-size:12px; color:#86868b; margin-top:5px;">理由：${item.reason || '无'}</p>
+                    <div style="display:flex; gap:10px; margin-top:12px;">
+                        <button class="btn btn-primary" style="margin:0; flex:1; background:var(--apple-red)" onclick="removeItem(${item.id}, true)">省下了</button>
+                        ${isReady ? `<button class="btn btn-primary" style="margin:0; flex:1; background:var(--apple-green)" onclick="removeItem(${item.id}, false)">买了</button>`:''}
+                    </div>
+                `;
+                container.appendChild(div);
+
+                // 推送检查
+                if(isReady && !item.notified) {
+                    new Notification("冷静购提示", { body: `[${item.name}] 冷静期已结束，去看看还想买吗？`, icon: "https://fav.farm/🛡️" });
+                    item.notified = true;
+                }
+            });
+        }
+
+        function formatTime(ms) {
+            const h = Math.floor(ms / 3600000);
+            const m = Math.floor((ms % 3600000) / 60000);
+            const s = Math.floor((ms % 60000) / 1000);
+            return `${h}时${m}分${s}秒`;
+        }
+
+        function removeItem(id, saved) {
+            const idx = storage.findIndex(i => i.id === id);
+            if(saved) {
+                totalSaved += storage[idx].price;
+                history.unshift({ name: storage[idx].name, price: storage[idx].price, date: new Date().toLocaleDateString() });
+                localStorage.setItem('cg_total', totalSaved);
+                localStorage.setItem('cg_history', JSON.stringify(history.slice(0, 20)));
+            }
+            storage.splice(idx, 1);
+            save();
+            render();
+            showToast(saved ? "成就达成！省下一笔 💰" : "消费记录已更新");
+        }
+
+        function save() { localStorage.setItem('cg_items', JSON.stringify(storage)); }
+
+        // 4. 分享卡片绘制 (优化金额溢出)
+        function openModal() {
+            document.getElementById('modal').style.display = 'flex';
+            renderHistory();
+            drawCanvas();
+        }
+
+        function renderHistory() {
+            const hList = document.getElementById('historyList');
+            hList.innerHTML = '<strong>省钱历史 (最近20条):</strong>';
+            if(history.length === 0) hList.innerHTML += '<p style="color:#ccc">暂无数据</p>';
+            history.forEach(h => {
+                hList.innerHTML += `<div class="history-item"><span>${h.date} ${h.name}</span> <span style="color:var(--apple-green)">+￥${h.price.toLocaleString()}</span></div>`;
+            });
+        }
+
+        function drawCanvas() {
+            const canvas = document.getElementById('shareCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 600; canvas.height = 800;
+
+            // 背景
+            ctx.fillStyle = '#8ec5fc'; ctx.fillRect(0,0,600,800);
+            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.roundRect(30,30,540,740,40); ctx.fill();
+
+            // 标题
+            ctx.fillStyle = '#1d1d1f'; ctx.font = 'bold 36px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('冷静购 · 省钱成就', 300, 100);
+
+            // 金额 (动态缩放防止溢出)
+            const displayAmt = '￥' + totalSaved.toLocaleString();
+            let fontSize = 90;
+            if(displayAmt.length > 8) fontSize = 60;
+            if(displayAmt.length > 12) fontSize = 40;
+            
+            ctx.fillStyle = '#34c759'; ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.fillText(displayAmt, 300, 300);
+            
+            ctx.fillStyle = '#86868b'; ctx.font = '24px sans-serif';
+            ctx.fillText('我已成功节省', 300, 200);
+            ctx.fillText('理智，是通往财务自由的阶梯', 300, 400);
+
+            // 引流区域
+            ctx.fillStyle = '#f5f5f7'; ctx.fillRect(30, 600, 540, 170);
+            ctx.fillStyle = '#1d1d1f'; ctx.textAlign = 'left'; ctx.font = 'bold 22px sans-serif';
+            ctx.fillText('技术支持：艾兜兜儿', 60, 660);
+            ctx.font = '18px sans-serif'; ctx.fillText('扫码开启你的冷静消费之旅', 60, 700);
+            ctx.fillStyle = '#34c759'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('“扫码一起省省省”', 60, 740);
+
+            // 二维码 (模拟)
+            const qrSize = 120;
+            const qrImg = new Image();
+            qrImg.crossOrigin = "anonymous";
+            qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent(window.location.href);
+            qrImg.onload = () => ctx.drawImage(qrImg, 420, 625, qrSize, qrSize);
+        }
+
+        // 5. 图片下载兼容性修复
+        function downloadImg() {
+            const canvas = document.getElementById('shareCanvas');
+            try {
+                // 将 canvas 转为 Blob
+                canvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `冷静购成就-${Date.now()}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast("下载指令已发送，请查看");
+                }, 'image/png');
+            } catch (e) {
+                // 如果是移动端浏览器限制点击，引导用户长按
+                showToast("请长按图片手动保存");
+            }
+        }
+
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
+        setInterval(render, 1000);
+        render();
+    </script>
+</body>
+</html>
