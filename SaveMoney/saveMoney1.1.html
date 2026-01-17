@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>冷静购 - 你的智能消费守卫</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="冷静购">
-<link rel="apple-touch-icon" href="https://fav.farm/🛡️">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="冷静购">
+    <link rel="apple-touch-icon" href="https://fav.farm/🛡️">
 
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
@@ -37,7 +37,6 @@
             padding: 20px;
         }
 
-        /* 毛玻璃容器 */
         .container {
             width: 100%;
             max-width: 500px;
@@ -71,7 +70,6 @@
 
         input:focus, textarea:focus { border-color: var(--apple-blue); background: #fff; }
 
-        /* 清空按钮 */
         .clear-btn {
             position: absolute;
             right: 12px;
@@ -97,7 +95,6 @@
 
         .btn-submit:active { transform: scale(0.98); }
 
-        /* 冷静期列表 */
         .item-list { margin-top: 30px; width: 100%; }
         .card {
             background: rgba(255,255,255,0.8);
@@ -112,7 +109,6 @@
         .tag-waiting { background: #fff2cc; color: #d4a017; }
         .tag-ready { background: #d1e7dd; color: #0f5132; }
 
-        /* Toast 提示 */
         #toast {
             position: fixed;
             top: 20px;
@@ -122,11 +118,10 @@
             border-radius: 50px;
             font-size: 14px;
             display: none;
-            z-index: 1000;
+            z-index: 3000;
             animation: slideDown 0.3s ease;
         }
 
-        /* 底部 */
         footer {
             margin-top: auto;
             padding: 40px 0 20px;
@@ -137,6 +132,10 @@
         }
 
         footer a { color: var(--apple-blue); text-decoration: none; }
+
+        /* 历史记录样式 */
+        .history-list { text-align: left; max-height: 200px; overflow-y: auto; margin-top: 15px; font-size: 13px; }
+        .history-item { padding: 8px 0; border-bottom: 1px dashed #eee; color: #666; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -157,7 +156,7 @@
         </div>
         <div class="form-group">
             <label>价格 (元)：</label>
-            <input type="number" id="itemPrice" placeholder="0.00" oninput="toggleClear(this)">
+            <input type="number" id="itemPrice" placeholder="0.00" step="0.01" oninput="toggleClear(this)">
             <span class="clear-btn" onclick="clearInput('itemPrice')">×</span>
         </div>
         <div class="form-group">
@@ -166,28 +165,36 @@
             <span class="clear-btn" style="top:35px" onclick="clearInput('itemReason')">×</span>
         </div>
         <button class="btn-submit" onclick="addToColdBox()">存入冷静期</button>
+        <button id="notiBtn" class="btn-submit" style="background:none; color:var(--apple-blue); font-size:12px; margin-top:10px; text-decoration:underline;" onclick="requestNoti()">开启冷静期结束提醒 🔔</button>
 
-        <div class="item-list" id="itemList">
-            </div>
+        <div class="item-list" id="itemList"></div>
     </div>
-        <div id="shareModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
-        <div class="container" style="margin-top:0; position:relative; text-align:center; background: rgba(255,255,255,0.95);">
+
+    <div id="shareModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center; backdrop-filter: blur(5px);">
+        <div class="container" style="margin-top:0; position:relative; text-align:center; background: rgba(255,255,255,0.98);">
             <h2 style="margin-bottom:15px;">💰 省钱大捷</h2>
             <div id="shareContent">
                 <p style="font-size:18px; color:var(--apple-text);">我已成功抵制冲动 <span id="savedCount" style="color:var(--apple-blue); font-weight:bold;">0</span> 次</p>
                 <h1 style="font-size:48px; margin:20px 0; color:#34c759;">￥<span id="totalSaved">0.00</span></h1>
-                <p style="color:#6e6e73; font-size:14px; padding:0 20px;" id="inspireText">省下的每一分钱，都是通往财务自由的子弹。🚀</p>
+                <p style="color:#6e6e73; font-size:14px; padding:0 20px;" id="inspireText"></p>
+                
+                <div id="historySection" style="display:none;">
+                    <hr style="margin:15px 0; border:none; border-top:1px solid #eee;">
+                    <p style="font-size:14px; font-weight:500;">历史省钱清单：</p>
+                    <div class="history-list" id="historyList"></div>
+                </div>
             </div>
             <hr style="margin:25px 0; border:none; border-top:1px solid #eee;">
-            <button class="btn-submit" onclick="closeShare()">返回守卫</button>
-            <p style="font-size:12px; color:#999; margin-top:15px;">截图即可分享给好友</p>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-submit" style="background:#86868b" onclick="toggleHistory()">历史数据</button>
+                <button class="btn-submit" onclick="closeShare()">返回守卫</button>
+            </div>
         </div>
     </div>
     
     <div style="width:100%; max-width:500px; margin-top:15px;">
         <button class="btn-submit" style="background:rgba(255,255,255,0.3); color:var(--apple-text); border:1px solid rgba(0,0,0,0.1);" onclick="generateShareCard()">生成我的省钱战报 📊</button>
     </div>
-
 
     <footer>
         <p>© <span id="year"></span> 冷静购 - 拒绝冲动消费</p>
@@ -199,80 +206,79 @@
     <script>
         // 初始化数据
         let storage = JSON.parse(localStorage.getItem('cold_box_data')) || [];
+        let savedTotal = parseFloat(localStorage.getItem('saved_total')) || 0;
+        let savedCount = parseInt(localStorage.getItem('saved_count')) || 0;
+        let historyData = JSON.parse(localStorage.getItem('history_data')) || [];
 
-        // 动态更新年份
         document.getElementById('year').innerText = new Date().getFullYear();
 
-        // 提示功能
-        function showToast(msg, persistent = false) {
+        function showToast(msg) {
             const toast = document.getElementById('toast');
             toast.innerText = msg;
             toast.style.display = 'block';
-            if (!persistent) {
-                setTimeout(() => { toast.style.display = 'none'; }, 2000);
-            }
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
         }
 
-        // 清空输入控件
         function toggleClear(el) {
             const btn = el.nextElementSibling;
-            btn.style.display = el.value ? 'block' : 'none';
+            btn.style.display = (el.value.length > 0) ? 'block' : 'none';
         }
 
         function clearInput(id) {
             const input = document.getElementById(id);
             input.value = '';
-            toggleClear(input);
+            input.dispatchEvent(new Event('input')); // 触发隐藏按钮
         }
 
-        // 安全校验与存储
+        // 安全校验：防止 XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         function addToColdBox() {
             const name = document.getElementById('itemName').value.trim();
-            const price = document.getElementById('itemPrice').value.trim();
+            const priceVal = document.getElementById('itemPrice').value.trim();
             const reason = document.getElementById('itemReason').value.trim();
 
-            if (!name || !price) {
-                showToast("请填写商品名称和价格 ⚠️");
+            // 安全校验
+            if (!name || !priceVal) {
+                showToast("请填写商品名称和合法价格 ⚠️");
+                return;
+            }
+            const price = parseFloat(priceVal);
+            if (isNaN(price) || price <= 0) {
+                showToast("价格必须大于 0 哦 💰");
                 return;
             }
 
-            // 检查存储量 (简单模拟)
             if (storage.length > 100) {
-                showToast("存储量已达上限，请先处理旧的愿望哦 📦", true);
+                showToast("存储量已达上限 📦");
                 return;
             }
-            async function syncToCloud(data) {
-                // 这里预留给你的 API 接口
-                // const response = await fetch('https://your-api.com/save', {
-                //     method: 'POST',
-                //     body: JSON.stringify(data)
-                // });
-                console.log("数据已准备好发送至后台:", data);
-            }
+
             const newItem = {
                 id: Date.now(),
-                name: name,
-                price: price,
-                reason: reason,
-                createTime: new Date().getTime(),
-                coldHours: 48 // 默认48小时冷静期
+                name: escapeHtml(name),
+                price: price.toFixed(2),
+                reason: escapeHtml(reason),
+                createTime: Date.now(),
+                coldHours: 48,
+                notified: false
             };
 
             storage.unshift(newItem);
             localStorage.setItem('cold_box_data', JSON.stringify(storage));
-            
-            showToast("已存入冷静盒，48小时后再来吧 🔒");
+            showToast("已存入冷静盒 🔒");
             renderList();
-            
-            // 清空所有输入
             ['itemName', 'itemPrice', 'itemReason'].forEach(id => clearInput(id));
         }
 
-        // 渲染列表
         function renderList() {
             const listEl = document.getElementById('itemList');
             listEl.innerHTML = '';
-            const now = new Date().getTime();
+            const now = Date.now();
 
             storage.forEach(item => {
                 const passedTime = (now - item.createTime) / (1000 * 60 * 60);
@@ -288,64 +294,98 @@
                     <h3 style="margin: 5px 0;">${item.name}</h3>
                     <p style="color:var(--apple-blue); font-weight:500">￥${item.price}</p>
                     <p style="font-size:13px; color:#6e6e73; margin-top:10px;">初衷：${item.reason || '无'}</p>
-                    ${isReady ? `<button class="btn-submit" style="margin-top:15px; background:#34c759" onclick="removeItem(${item.id})">确认仍要购买 / 已买</button>` : ''}
-                    <button class="btn-submit" style="margin-top:10px; background:#ff3b30" onclick="removeItem(${item.id})">我不需要了 (省下钱了!)</button>
+                    <div style="display:flex; gap:10px; margin-top:15px;">
+                        ${isReady ? `<button class="btn-submit" style="background:#34c759; flex:1" onclick="removeItem(${item.id}, false)">确认已买</button>` : ''}
+                        <button class="btn-submit" style="background:#ff3b30; flex:1" onclick="removeItem(${item.id}, true)">我不需要了</button>
+                    </div>
                 `;
                 listEl.appendChild(card);
             });
         }
 
-        // 新增：累计省钱总额变量（初始化从本地存储读取）
-        let savedTotal = parseFloat(localStorage.getItem('saved_total')) || 0;
-        let savedCount = parseInt(localStorage.getItem('saved_count')) || 0;
-        
-        // 修改后的删除函数：区分“买了”还是“省了”
         function removeItem(id, isSaved = false) {
             const item = storage.find(i => i.id === id);
-            if (isSaved && item) {
+            if (!item) return;
+
+            if (isSaved) {
                 savedTotal += parseFloat(item.price);
                 savedCount += 1;
+                historyData.unshift({ name: item.name, price: item.price, date: new Date().toLocaleDateString() });
+                
                 localStorage.setItem('saved_total', savedTotal);
                 localStorage.setItem('saved_count', savedCount);
-                showToast(`🎉 成功省下 ￥${item.price}！太棒了！`);
+                localStorage.setItem('history_data', JSON.stringify(historyData));
+                showToast(`🎉 成功省下 ￥${item.price}！`);
             }
             
             storage = storage.filter(i => i.id !== id);
             localStorage.setItem('cold_box_data', JSON.stringify(storage));
             renderList();
         }
-        
-        // 修改 renderList 中的按钮逻辑，确保调用 removeItem 时传参
-        // 在 renderList 的 innerHTML 模板中，将删除按钮改为：
-        // <button ... onclick="removeItem(${item.id}, true)">我不需要了 (省下钱了!)</button>
-        
-        // 生成分享卡片函数
+
         function generateShareCard() {
             document.getElementById('savedCount').innerText = savedCount;
             document.getElementById('totalSaved').innerText = savedTotal.toFixed(2);
-            
-            const messages = [
-                "省下的每一分钱，都是通往财务自由的子弹。🚀",
-                "今天的克制，是为了明天更大的自由。🌿",
-                "你的钱包感谢你的理性选择。🙏",
-                "多巴胺退去后，剩下的才是真正的财富。💎"
-            ];
+            const messages = ["理智消费的你，正在发光。✨", "省下的钱，都是未来的自由。🚀", "拒绝冲动，也是一种多巴胺。💎"];
             document.getElementById('inspireText').innerText = messages[Math.floor(Math.random() * messages.length)];
-            
             document.getElementById('shareModal').style.display = 'flex';
         }
-        function closeShare() {
-            document.getElementById('shareModal').style.display = 'none';
+
+        function toggleHistory() {
+            const section = document.getElementById('historySection');
+            const list = document.getElementById('historyList');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                list.innerHTML = historyData.length ? historyData.map(h => 
+                    `<div class="history-item"><span>${h.date}</span> | <span>${h.name}</span> <span style="float:right; color:#34c759">+￥${h.price}</span></div>`
+                ).join('') : '<p style="padding:20px; color:#999;">暂无省钱记录</p>';
+            } else {
+                section.style.display = 'none';
+            }
         }
 
-        // 复制 QQ 功能
+        function closeShare() {
+            document.getElementById('shareModal').style.display = 'none';
+            document.getElementById('historySection').style.display = 'none';
+        }
+
         function copyQQ(num) {
-            navigator.clipboard.writeText(num).then(() => {
-                showToast("QQ群号已复制到剪贴板 📋");
+            navigator.clipboard.writeText(num).then(() => showToast("QQ群号已复制 📋"));
+        }
+
+        // 推送逻辑与验证
+        function requestNoti() {
+            if (!("Notification" in window)) {
+                alert("此浏览器不支持桌面通知。如果是 iPhone，请先将网页【添加到主屏幕】后再试。");
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    new Notification("冷静购开启成功", { body: "冷静期结束时，我会准时通知你！" });
+                }
             });
         }
 
-        // 初始化加载
+        // 每分钟检查一次是否需要推送（模拟后台）
+        setInterval(() => {
+            const now = Date.now();
+            let changed = false;
+            storage.forEach(item => {
+                const passed = (now - item.createTime) / (1000 * 60 * 60);
+                if (passed >= item.coldHours && !item.notified) {
+                    if (Notification.permission === "granted") {
+                        new Notification("冷静期结束 ✅", { body: `[${item.name}] 冷静期已满，去看看还买吗？` });
+                    }
+                    item.notified = true;
+                    changed = true;
+                }
+            });
+            if (changed) {
+                localStorage.setItem('cold_box_data', JSON.stringify(storage));
+                renderList();
+            }
+        }, 60000);
+
         renderList();
     </script>
 </body>
