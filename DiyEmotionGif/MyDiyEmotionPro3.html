@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>动态表情包 Pro - 批量制作版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@900&display=swap" rel="stylesheet">
+    <style>
+        :root { --main-color: #07C160; }
+        body { font-family: -apple-system, "Noto Sans SC", sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        .vip-badge { background: linear-gradient(45deg, #f3d149, #f9a63c); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: none; margin-left: 6px; box-shadow: 0 2px 4px rgba(249, 166, 60, 0.3); }
+        .is-vip .vip-badge { display: inline-block; }
+        .preview-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; gap: 15px; }
+        .canvas-container { width: 100%; max-width: 320px; aspect-ratio: 1/1; background: #fff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); position: relative; overflow: hidden; background-image: radial-gradient(#ddd 1px, transparent 1px); background-size: 20px 20px; }
+        canvas { width: 100% !important; height: 100% !important; touch-action: none; }
+        
+        /* 批量列表样式 */
+        .emoji-list { width: 100%; max-width: 600px; display: flex; gap: 10px; overflow-x: auto; padding: 10px; scrollbar-width: none; }
+        .emoji-item { flex: 0 0 70px; height: 70px; background: #fff; border-radius: 12px; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999; cursor: pointer; position: relative; }
+        .emoji-item.active { border-color: #07C160; box-shadow: 0 4px 10px rgba(7, 193, 96, 0.2); }
+        .emoji-item .del-btn { position: absolute; -5px; right: -5px; background: #ff4d4f; color: #fff; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+
+        .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #07C160; }
+        input:checked + .slider:before { transform: translateX(18px); }
+        .color-dot { width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .controls { background: white; border-radius: 24px 24px 0 0; padding: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); max-width: 600px; margin: 0 auto; width: 100%; }
+        #drawer { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-radius: 24px 24px 0 0; padding: 20px; z-index: 1000; transform: translateY(100%); transition: transform 0.3s ease; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); }
+        #drawer.active { transform: translateY(0); }
+        #loading { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body id="appBody">
+
+    <header class="bg-white py-3 px-6 flex justify-between items-center border-b border-gray-50">
+        <div class="w-8"></div>
+        <h1 class="text-lg font-black text-gray-800 flex items-center">
+            动态表情包 Pro <span id="vipTag" class="vip-badge">VIP</span>
+        </h1>
+        <button onclick="resetPosition()" class="p-2 bg-gray-50 rounded-full active:scale-90 transition-all" title="重置位置">
+            <svg t="1710312345678" viewBox="0 0 1024 1024" width="20" height="20"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z" fill="#333"></path><path d="M512 300c-11.1 0-20 8.9-20 20v172h-172c-11.1 0-20 8.9-20 20s8.9 20 20 20h172v172c0 11.1 8.9 20 20 20s20-8.9 20-20v-172h172c11.1 0 20-8.9 20-20s-8.9-20-20-20h-172v-172c0-11.1-8.9-20-20-20z" fill="#333"></path></svg>
+        </button>
+    </header>
+
+    <main class="preview-area">
+        <div class="emoji-list" id="emojiList">
+            </div>
+
+        <div class="canvas-container">
+            <canvas id="mainCanvas"></canvas>
+        </div>
+        <p class="text-[10px] text-gray-400">双击文字编辑 · 拖动气泡找位</p>
+    </main>
+
+    <div class="controls">
+        <div class="bg-gray-50 rounded-2xl p-3 mb-4 flex items-center justify-between">
+            <div class="flex gap-2">
+                <div onclick="applyColor('#07C160')" class="color-dot" style="background: #07C160;"></div>
+                <div onclick="applyColor('#FF2D55')" class="color-dot" style="background: #FF2D55;"></div>
+                <input type="color" id="colorPicker" oninput="handleColorSelect(this.value)" class="w-6 h-6 bg-transparent">
+            </div>
+            <select id="animSelect" onchange="updateCurrentState({animType:this.value})" class="bg-white border rounded px-2 py-1 text-xs font-bold outline-none">
+                <option value="wave">波浪</option>
+                <option value="breath">呼吸</option>
+                <option value="jump">跳动</option>
+                <option value="slide">滑入</option>
+            </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <button onclick="document.getElementById('avaInp').click()" class="bg-blue-50 text-blue-600 py-3 rounded-xl text-xs font-bold">更换头像</button>
+            <button onclick="toggleShape()" class="bg-gray-50 text-gray-600 py-3 rounded-xl text-xs font-bold">切换形状 O/□</button>
+        </div>
+
+        <div class="flex gap-2">
+            <button onclick="exportGif()" class="flex-1 py-3 bg-black text-white rounded-xl font-bold text-xs">导出当前</button>
+            <button onclick="batchDownload()" class="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold text-xs">打包下载全部</button>
+        </div>
+    </div>
+
+    <div id="drawer">
+        <div class="flex justify-between items-center mb-4">
+            <span id="drawerTitle" class="font-bold">编辑</span>
+            <button onclick="closeEditor()" class="text-green-600 font-bold">完成</button>
+        </div>
+        <textarea id="textInp" class="w-full p-4 bg-gray-50 rounded-xl outline-none" rows="3"></textarea>
+    </div>
+
+    <input type="file" id="avaInp" class="hidden" accept="image/*" onchange="loadAva(event)">
+    <div id="loading">
+        <div class="w-10 h-10 border-4 border-t-green-500 rounded-full animate-spin mb-2"></div>
+        <p class="text-xs font-bold text-gray-500"><span id="loadingTxt">处理中</span> <span id="progress">0%</span></p>
+    </div>
+
+    <div id="lockModal" class="hidden fixed inset-0 bg-black/60 z-[3000] flex items-center justify-center p-6">
+        <div class="bg-white p-6 rounded-3xl w-full max-w-xs text-center">
+            <h3 class="font-bold mb-4">解锁 VIP 功​​能</h3>
+            <input type="text" id="unlockCodeInp" placeholder="输入解锁码" class="w-full border p-2 mb-4 rounded">
+            <button onclick="verifyVip()" class="w-full bg-black text-white py-2 rounded">验证</button>
+        </div>
+    </div>
+
+    <script>
+        const SECRET_KEY = "QlFXWDg1NzAyMzU3Nw=="; 
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 初始数据结构升级：支持数组
+        let emojiList = JSON.parse(localStorage.getItem('v6_emoji_list')) || [
+            { id: Date.now(), text: "先爱自己\n再爱世界", color: '#07C160', isRound: true, hasBorder: true, showBadge: false, badge: "爱自己", animType: 'wave', pos: { x: 40, y: 140 } }
+        ];
+        let currentIndex = 0;
+        let isVip = localStorage.getItem('v5_pro_ok') === 'true';
+        let currentEditTarget = 'text';
+        let globalAvatar = null; // 头像全局共用，减少存储压力
+
+        function saveAll() {
+            localStorage.setItem('v6_emoji_list', JSON.stringify(emojiList));
+            renderEmojiListUI();
+        }
+
+        function updateCurrentState(obj) {
+            emojiList[currentIndex] = { ...emojiList[currentIndex], ...obj };
+            saveAll();
+        }
+
+        function resetPosition() {
+            updateCurrentState({ pos: { x: 40, y: 140 } });
+        }
+
+        function renderEmojiListUI() {
+            const container = document.getElementById('emojiList');
+            container.innerHTML = '';
+            emojiList.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = `emoji-item ${index === currentIndex ? 'active' : ''}`;
+                div.innerHTML = `
+                    <div onclick="switchEmoji(${index})" class="text-center px-1 truncate">${item.text.split('\n')[0]}</div>
+                    ${emojiList.length > 1 ? `<div class="del-btn" onclick="deleteEmoji(${index}, event)">×</div>` : ''}
+                `;
+                container.appendChild(div);
+            });
+            // 新增按钮
+            const addBtn = document.createElement('div');
+            addBtn.className = 'emoji-item bg-gray-100 border-dashed border-2 border-gray-300';
+            addBtn.innerHTML = '<span class="text-xl">+</span>';
+            addBtn.onclick = addNewEmoji;
+            container.appendChild(addBtn);
+        }
+
+        function addNewEmoji() {
+            const newItem = { ...emojiList[currentIndex], id: Date.now(), text: "新表情" };
+            emojiList.push(newItem);
+            currentIndex = emojiList.length - 1;
+            saveAll();
+        }
+
+        function switchEmoji(index) {
+            currentIndex = index;
+            saveAll();
+        }
+
+        function deleteEmoji(index, e) {
+            e.stopPropagation();
+            emojiList.splice(index, 1);
+            currentIndex = Math.max(0, currentIndex - 1);
+            saveAll();
+        }
+
+        window.onload = () => {
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = canvas.offsetWidth * dpr;
+            canvas.height = canvas.offsetHeight * dpr;
+            ctx.scale(dpr, dpr);
+            
+            const savedAva = localStorage.getItem('v5_ava_data');
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => { globalAvatar = img; };
+            img.src = savedAva || "https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg!1";
+            
+            renderEmojiListUI();
+            initEvents();
+            requestAnimationFrame(mainLoop);
+        };
+
+        function drawFrame(tCtx, state, time, isExport = false) {
+            const size = isExport ? 400 : canvas.width / (window.devicePixelRatio || 1);
+            const scale = size / 400;
+            tCtx.clearRect(0, 0, size, size);
+            
+            const lines = state.text.split('\n').slice(0, 4);
+            tCtx.font = `italic 900 ${38 * scale}px "Noto Sans SC"`;
+            let maxW = 0; 
+            lines.forEach(l => maxW = Math.max(maxW, tCtx.measureText(l).width));
+            
+            const bW = Math.min(maxW + 200 * scale, size * 0.95);
+            const bH = Math.max(150 * scale, lines.length * (55 * scale) + 70 * scale);
+            let dx = isExport ? (400 - bW) / 2 : state.pos.x;
+            let dy = isExport ? (400 - bH) / 2 + 20 : state.pos.y;
+
+            tCtx.fillStyle = state.color;
+            tCtx.beginPath(); tCtx.roundRect(dx, dy, bW, bH, 30 * scale); tCtx.fill();
+            tCtx.beginPath(); tCtx.moveTo(dx + 50 * scale, dy + bH); tCtx.lineTo(dx + 40 * scale, dy + bH + 18 * scale); tCtx.lineTo(dx + 85 * scale, dy + bH); tCtx.fill();
+
+            tCtx.fillStyle = "white"; 
+            tCtx.textBaseline = "middle";
+            const startY = dy + (bH/2) - ((lines.length-1)*(55*scale)/2);
+            lines.forEach((l, i) => {
+                let offset = 0;
+                if(state.animType === 'wave') offset = Math.sin(time/200 + i) * 5;
+                if(state.animType === 'jump') offset = Math.abs(Math.sin(time/300 + i)) * -8;
+                tCtx.fillText(l, dx + 35 * scale, startY + (i * 55 * scale) + offset);
+            });
+
+            if(globalAvatar) {
+                const avaSize = 130 * scale;
+                const ax = dx + bW - avaSize - 15 * scale;
+                const ay = dy - 45 * scale;
+                tCtx.save();
+                tCtx.beginPath();
+                if(state.isRound) tCtx.arc(ax + avaSize/2, ay + avaSize/2, avaSize/2, 0, Math.PI*2);
+                else tCtx.roundRect(ax, ay, avaSize, avaSize, 20 * scale);
+                tCtx.clip();
+                tCtx.drawImage(globalAvatar, ax, ay, avaSize, avaSize);
+                tCtx.restore();
+                if(!isExport) state.hit = { ax, ay, as: avaSize, bx: dx, by: dy, bw: bW, bh: bH };
+            }
+        }
+
+        function mainLoop() {
+            drawFrame(ctx, emojiList[currentIndex], Date.now());
+            requestAnimationFrame(mainLoop);
+        }
+
+        // 导出核心逻辑
+        async function getGifBlob(state) {
+            return new Promise((resolve) => {
+                const gif = new GIF({ workers: 2, quality: 10, width: 400, height: 400, transparent: 0x00000000, workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js' });
+                for(let i=0; i<12; i++) {
+                    const c = document.createElement('canvas'); c.width = 400; c.height = 400;
+                    drawFrame(c.getContext('2d'), state, i * 80, true);
+                    gif.addFrame(c, {delay: 70, copy: true});
+                }
+                gif.on('finished', blob => resolve(blob));
+                gif.render();
+            });
+        }
+
+        async function exportGif() {
+            document.getElementById('loading').style.display = 'flex';
+            const blob = await getGifBlob(emojiList[currentIndex]);
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `emoji_${Date.now()}.gif`; a.click();
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        async function batchDownload() {
+            const load = document.getElementById('loading');
+            const prog = document.getElementById('progress');
+            load.style.display = 'flex';
+            const zip = new JSZip();
+            
+            for(let i=0; i<emojiList.length; i++) {
+                prog.innerText = `${i+1}/${emojiList.length}`;
+                const blob = await getGifBlob(emojiList[i]);
+                zip.file(`表情_${i+1}.gif`, blob);
+            }
+            
+            const content = await zip.generateAsync({type:"blob"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(content); a.download = `表情包全集.zip`; a.click();
+            load.style.display = 'none';
+        }
+
+        // 交互逻辑
+        function applyColor(hex) { updateCurrentState({color: hex}); }
+        function handleColorSelect(val) { if(!isVip) { document.getElementById('lockModal').classList.remove('hidden'); return; } applyColor(val); }
+        function toggleShape() { updateCurrentState({isRound: !emojiList[currentIndex].isRound}); }
+        function loadAva(e) { 
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => { globalAvatar = img; localStorage.setItem('v5_ava_data', ev.target.result); };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function initEvents() {
+            let lastClick = 0;
+            const state = () => emojiList[currentIndex];
+            const start = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const ev = e.touches ? e.touches[0] : e;
+                const dpr = (canvas.width / rect.width / (window.devicePixelRatio || 1));
+                const x = (ev.clientX - rect.left) * dpr;
+                const y = (ev.clientY - rect.top) * dpr;
+                const s = state();
+                if(s.hit && x > s.hit.bx && x < s.hit.bx + s.hit.bw && y > s.hit.by && y < s.hit.by + s.hit.bh) {
+                    s.drag = { active: true, x: x - s.pos.x, y: y - s.pos.y };
+                    if(Date.now() - lastClick < 300) openEditor();
+                    lastClick = Date.now();
+                }
+            };
+            const move = (e) => {
+                const s = state();
+                if(!s.drag?.active) return;
+                const ev = e.touches ? e.touches[0] : e;
+                const rect = canvas.getBoundingClientRect();
+                const dpr = (canvas.width / rect.width / (window.devicePixelRatio || 1));
+                s.pos.x = ((ev.clientX - rect.left) * dpr) - s.drag.x;
+                s.pos.y = ((ev.clientY - rect.top) * dpr) - s.drag.y;
+                e.preventDefault();
+            };
+            const end = () => { if(state().drag) { state().drag.active = false; saveAll(); } };
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('touchstart', start, {passive:false});
+            window.addEventListener('mousemove', move);
+            window.addEventListener('touchmove', move, {passive: false});
+            window.addEventListener('mouseup', end);
+            window.addEventListener('touchend', end);
+        }
+
+        function openEditor() { 
+            document.getElementById('drawer').classList.add('active');
+            document.getElementById('textInp').value = emojiList[currentIndex].text;
+            document.getElementById('textInp').focus();
+        }
+        function closeEditor() {
+            updateCurrentState({text: document.getElementById('textInp').value});
+            document.getElementById('drawer').classList.remove('active');
+        }
+        function verifyVip() {
+            if(btoa(document.getElementById('unlockCodeInp').value) === SECRET_KEY) {
+                isVip = true; localStorage.setItem('v5_pro_ok', 'true');
+                document.getElementById('lockModal').classList.add('hidden');
+                alert("解锁成功");
+            }
+        }
+    </script>
+</body>
+</html>
