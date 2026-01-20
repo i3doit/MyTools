@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: -apple-system, "Noto Sans SC", sans-serif; background: #f8fafc; display: flex; flex-direction: column; min-height: 100vh; }
+        body { font-family: -apple-system, "Noto Sans SC", sans-serif; background: #f8fafc; display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
         .preview-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; }
         .canvas-container { width: 300px; height: 300px; background: #fff; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.06); position: relative; overflow: hidden; background-image: radial-gradient(#e5e7eb 1.2px, transparent 1.2px); background-size: 18px 18px; }
         canvas { width: 100% !important; height: 100% !important; touch-action: none; }
@@ -17,7 +17,7 @@
         .emoji-item { flex: 0 0 75px; height: 75px; background: #fff; border-radius: 20px; border: 3px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b; cursor: pointer; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.3s; }
         .emoji-item.active { border-color: #07C160; background: #f0fdf4; }
         .emoji-item .del-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid #fff; }
-        .controls { background: white; border-radius: 32px 32px 0 0; padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.03); max-width: 600px; margin: 0 auto; width: 100%; }
+        .controls { background: white; border-radius: 32px 32px 0 0; padding: 24px 24px 10px 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.03); max-width: 600px; margin: 0 auto; width: 100%; }
         .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; inset: 0; background-color: #e2e8f0; transition: .3s; border-radius: 24px; }
@@ -27,6 +27,7 @@
         #drawer { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-radius: 32px 32px 0 0; padding: 25px; z-index: 1000; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 -20px 60px rgba(0,0,0,0.15); }
         #drawer.active { transform: translateY(0); }
         #loading { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
+        .footer-info { text-align: center; padding: 15px 0 25px 0; color: #cbd5e1; font-size: 10px; letter-spacing: 1px; }
     </style>
 </head>
 <body>
@@ -36,13 +37,13 @@
             <button onclick="toggleModal('batchModal')" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl">批量导入文案</button>
             <button onclick="toggleModal('badgeBatchModal')" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-xl">统改挂件文案</button>
         </div>
-        <h1 class="text-sm font-black">动态表情包 Pro</h1>
+        <h1 class="text-sm font-black text-slate-800">动态表情包 Pro</h1>
         <button onclick="resetPos()" class="bg-slate-100 p-2 rounded-full"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2v4m0 12v4M2 12h4m12 0h4M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /></svg></button>
     </header>
 
     <div id="batchModal" class="hidden fixed inset-0 bg-black/40 z-[4000] flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
-            <h3 class="font-bold mb-1">批量导入主文案</h3>
+            <h3 class="font-bold mb-1 text-slate-800">批量导入主文案</h3>
             <textarea id="batchInp" class="w-full h-40 bg-gray-50 rounded-2xl p-4 text-sm outline-none mb-4 mt-2" placeholder="一行一条文案..."></textarea>
             <div class="flex gap-3">
                 <button onclick="toggleModal('batchModal')" class="flex-1 py-3 text-gray-400 font-bold">取消</button>
@@ -53,11 +54,11 @@
 
     <div id="badgeBatchModal" class="hidden fixed inset-0 bg-black/40 z-[4000] flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
-            <h3 class="font-bold mb-1">批量修改挂件</h3>
-            <input id="badgeBatchInp" class="w-full bg-gray-50 rounded-2xl p-4 text-sm outline-none mb-4 mt-2" placeholder="统一所有表情包的挂件内容">
+            <h3 class="font-bold mb-1 text-slate-800">批量同步挂件文字</h3>
+            <input id="badgeBatchInp" class="w-full bg-gray-50 rounded-2xl p-4 text-sm outline-none mb-4 mt-2" placeholder="输入挂件文字">
             <div class="flex gap-3">
                 <button onclick="toggleModal('badgeBatchModal')" class="flex-1 py-3 text-gray-400 font-bold">取消</button>
-                <button onclick="processBatchBadge()" class="flex-[2] bg-blue-600 text-white py-3 rounded-2xl font-bold">确认同步</button>
+                <button onclick="processBatchBadge()" class="flex-[2] bg-blue-600 text-white py-3 rounded-2xl font-bold">同步所有</button>
             </div>
         </div>
     </div>
@@ -70,56 +71,63 @@
     <div class="controls">
         <div class="bg-gray-50 rounded-2xl p-3 mb-4 flex items-center justify-between">
             <div class="flex gap-3 items-center">
-                <div onclick="applyColor('#07C160')" class="w-6 h-6 rounded-full" style="background: #07C160;"></div>
-                <div onclick="applyColor('#FF2D55')" class="w-6 h-6 rounded-full" style="background: #FF2D55;"></div>
-                <input type="color" id="colorPicker" oninput="applyColor(this.value)" class="w-6 h-6 bg-transparent">
+                <div onclick="applyColor('#07C160')" class="w-6 h-6 rounded-full cursor-pointer shadow-sm" style="background: #07C160;"></div>
+                <div onclick="applyColor('#FF2D55')" class="w-6 h-6 rounded-full cursor-pointer shadow-sm" style="background: #FF2D55;"></div>
+                <input type="color" id="colorPicker" oninput="applyColor(this.value)" class="w-6 h-6 bg-transparent border-none cursor-pointer">
             </div>
             <select id="animSelect" onchange="updateCur({animType:this.value})" class="bg-white px-3 py-2 text-[11px] font-bold rounded-xl shadow-sm outline-none">
-                <option value="wave">波浪</option>
-                <option value="breath">呼吸</option>
-                <option value="jump">跳跃</option>
+                <option value="wave">波浪运动</option>
+                <option value="breath">呼吸缩放</option>
+                <option value="jump">向上跳跃</option>
             </select>
         </div>
 
         <div class="grid grid-cols-2 gap-3 mb-6">
-            <div class="bg-gray-50 rounded-2xl p-4 flex flex-col items-center">
-                <span class="text-[10px] font-bold text-gray-400 mb-3 uppercase">头像设置</span>
+            <div class="bg-gray-50 rounded-2xl p-4 flex flex-col items-center text-center">
+                <span class="text-[10px] font-bold text-gray-400 mb-3 uppercase">头像形状 & 边框</span>
                 <div class="flex items-center gap-2">
                     <button onclick="document.getElementById('avaInp').click()" class="bg-black text-white px-2 py-1.5 rounded-lg text-[9px]">更换</button>
-                    <label class="switch" title="圆形/方形"><input type="checkbox" id="roundSwitch" onchange="updateCur({isRound:this.checked})"><span class="slider"></span></label>
-                    <label class="switch" title="边框"><input type="checkbox" id="borderSwitch" onchange="updateCur({hasBorder:this.checked})"><span class="slider"></span></label>
+                    <label class="switch"><input type="checkbox" id="roundSwitch" onchange="updateCur({isRound:this.checked})"><span class="slider"></span></label>
+                    <label class="switch"><input type="checkbox" id="borderSwitch" onchange="updateCur({hasBorder:this.checked})"><span class="slider"></span></label>
                 </div>
-                <span class="text-[8px] mt-2 text-gray-300">左:圆角切换 | 右:边框开关</span>
             </div>
             <div class="bg-gray-50 rounded-2xl p-4 flex flex-col items-center">
-                <span class="text-[10px] font-bold text-gray-400 mb-3 uppercase">挂件设置</span>
+                <span class="text-[10px] font-bold text-gray-400 mb-3 uppercase">挂件显示 & 细边</span>
                 <div class="flex items-center gap-2">
                     <label class="switch"><input type="checkbox" id="badgeSwitch" onchange="updateCur({showBadge:this.checked});syncUI();"><span class="slider"></span></label>
-                    <button onclick="openBadgeEdit()" id="badgeEditBtn" class="bg-white border px-2 py-1.5 rounded-lg text-[10px]">文案</button>
+                    <button onclick="openBadgeEdit()" id="badgeEditBtn" class="bg-white border px-2 py-1.5 rounded-lg text-[10px] font-bold">编辑</button>
                     <label class="switch scale-75"><input type="checkbox" id="badgeBorderSwitch" onchange="updateCur({hasBadgeBorder:this.checked})"><span class="slider"></span></label>
                 </div>
-                <span class="text-[8px] mt-2 text-gray-300">挂件开启 | 细边框开关</span>
             </div>
         </div>
 
-        <div class="flex gap-3">
-            <button onclick="exportSingle()" class="flex-1 py-4 bg-gray-100 rounded-2xl font-bold text-xs">单张导出</button>
-            <button onclick="exportAll()" class="flex-[1.5] py-4 bg-emerald-600 text-white rounded-2xl font-bold text-xs shadow-lg">批量导出全部 ZIP</button>
+        <div class="flex gap-3 mb-4">
+            <button onclick="exportSingle()" class="flex-1 py-4 bg-slate-100 text-slate-800 rounded-2xl font-bold text-xs active:scale-95 transition-all">单张导出</button>
+            <button onclick="exportAll()" class="flex-[1.5] py-4 bg-emerald-600 text-white rounded-2xl font-bold text-xs shadow-lg active:scale-95 transition-all">批量导出 ZIP</button>
+        </div>
+
+        <div class="footer-info">
+            <p>© 2024 DYNAMIC EMOJI PRO · V3.5</p>
+            <p class="mt-1 opacity-60">高清透明无背景 · 动态渲染引擎</p>
         </div>
     </div>
 
     <div id="drawer">
-        <div class="flex justify-between items-center mb-4"><span id="drawerTitle" class="font-bold">编辑</span><button onclick="closeEdit()" class="bg-emerald-600 text-white px-6 py-2 rounded-full text-xs font-bold">完成</button></div>
-        <textarea id="textInp" class="w-full p-4 bg-gray-50 rounded-2xl outline-none" rows="3"></textarea>
+        <div class="flex justify-between items-center mb-4"><span id="drawerTitle" class="font-bold text-slate-800">编辑</span><button onclick="closeEdit()" class="bg-emerald-600 text-white px-6 py-2 rounded-full text-xs font-bold">完成</button></div>
+        <textarea id="textInp" class="w-full p-4 bg-gray-50 rounded-2xl outline-none text-slate-700" rows="3"></textarea>
     </div>
 
     <input type="file" id="avaInp" class="hidden" accept="image/*" onchange="loadAva(event)">
-    <div id="loading"><div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div><p class="font-bold text-sm" id="loadText">渲染中...</p><p class="text-[11px] text-gray-400 mt-1" id="prog">0%</p></div>
+    <div id="loading">
+        <div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="font-bold text-slate-800 text-sm" id="loadText">正在处理...</p>
+        <p class="text-[11px] text-gray-400 mt-1" id="prog">0%</p>
+    </div>
 
     <script>
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
-        let emojis = JSON.parse(localStorage.getItem('v11_emojis')) || [
+        let emojis = JSON.parse(localStorage.getItem('v13_emojis')) || [
             { id: 1, text: "先爱自己\n再爱世界", color: '#07C160', isRound: true, hasBorder: true, showBadge: false, hasBadgeBorder: true, badge: "爱自己", animType: 'wave', pos: { x: 30, y: 120 } }
         ];
         let curIdx = 0, globalAva = null, editTarget = 'text';
@@ -136,7 +144,7 @@
         };
 
         function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
-        function save() { localStorage.setItem('v11_emojis', JSON.stringify(emojis)); }
+        function save() { localStorage.setItem('v13_emojis', JSON.stringify(emojis)); }
 
         function processBatchText() {
             const val = document.getElementById('batchInp').value.trim();
@@ -186,7 +194,9 @@
 
         function drawFrame(tCtx, state, time, isExp = false) {
             const size = isExp ? 400 : canvas.width/(window.devicePixelRatio||1), s = size/400;
-            tCtx.clearRect(0,0,size,size);
+            // 关键：渲染透明图片前必须物理清除画布
+            tCtx.clearRect(0, 0, size, size);
+            
             const lines = state.text.split('\n').slice(0,4);
             tCtx.font = `italic 900 ${38*s}px "Noto Sans SC"`;
             let maxW = 0; lines.forEach(l => maxW = Math.max(maxW, tCtx.measureText(l).width));
@@ -233,17 +243,23 @@
 
         function render() { drawFrame(ctx, emojis[curIdx], Date.now()); requestAnimationFrame(render); }
 
-        // 下载模块核心优化：采用内联 Worker 解决 0% 问题
+        // 下载模块核心优化：透明度兼容方案
         function makeGif(state, cb) {
             const gif = new GIF({ 
-                workers: 2, quality: 10, width: 400, height: 400, 
+                workers: 2, 
+                quality: 1, // 提升至最高画质
+                width: 400, 
+                height: 400, 
+                transparent: 'rgba(0,0,0,0)', // 显式设置透明层
                 workerScript: URL.createObjectURL(new Blob([`
                     importScripts('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
                 `], {type: 'text/javascript'}))
             });
             for(let i=0; i<15; i++){
                 const c = document.createElement('canvas'); c.width=400; c.height=400;
-                drawFrame(c.getContext('2d'), state, i*80, true);
+                const tc = c.getContext('2d');
+                drawFrame(tc, state, i*80, true);
+                // 关键：GIF.js 在 addFrame 时会识别 canvas 的透明区域
                 gif.addFrame(c, {delay: 60, copy: true});
             }
             gif.on('progress', p => document.getElementById('prog').innerText = Math.round(p*100)+'%');
@@ -253,9 +269,10 @@
 
         async function exportSingle() {
             const l = document.getElementById('loading'); l.style.display='flex';
-            document.getElementById('loadText').innerText = "正在导出单张...";
+            document.getElementById('loadText').innerText = "生成透明高清 GIF...";
             makeGif(emojis[curIdx], blob => {
-                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `emoji_${Date.now()}.gif`; a.click();
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
+                a.download = `表情Pro_透明_${Date.now()}.gif`; a.click();
                 l.style.display='none';
             });
         }
@@ -264,12 +281,12 @@
             const l = document.getElementById('loading'); l.style.display='flex';
             const zip = new JSZip();
             for(let i=0; i<emojis.length; i++){
-                document.getElementById('loadText').innerText = `批量导出 (${i+1}/${emojis.length})`;
+                document.getElementById('loadText').innerText = `透明渲染 (${i+1}/${emojis.length})`;
                 const blob = await new Promise(res => makeGif(emojis[i], res));
                 zip.file(`emoji_${i+1}.gif`, blob);
             }
             const res = await zip.generateAsync({type:"blob"});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(res); a.download = "批量表情.zip"; a.click();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(res); a.download = "批量透明表情包.zip"; a.click();
             l.style.display='none';
         }
 
@@ -283,7 +300,7 @@
             fr.readAsDataURL(e.target.files[0]);
         }
 
-        function openBadgeEdit() { editTarget='badge'; document.getElementById('drawerTitle').innerText="修改当前挂件"; document.getElementById('textInp').value=emojis[curIdx].badge; document.getElementById('drawer').classList.add('active'); }
+        function openBadgeEdit() { editTarget='badge'; document.getElementById('drawerTitle').innerText="修改挂件文字"; document.getElementById('textInp').value=emojis[curIdx].badge; document.getElementById('drawer').classList.add('active'); }
         function closeEdit() {
             const v = document.getElementById('textInp').value;
             if(editTarget==='text') updateCur({text:v}); else updateCur({badge:v});
@@ -299,7 +316,7 @@
                 const s = emojis[curIdx];
                 if(s.hit && x>s.hit.x && x<s.hit.x+s.hit.w && y>s.hit.y && y<s.hit.y+s.hit.h) {
                     s.dragging = { x: x-s.pos.x, y: y-s.pos.y };
-                    if(Date.now()-last < 300) { editTarget='text'; document.getElementById('drawerTitle').innerText="修改文案"; document.getElementById('textInp').value=s.text; document.getElementById('drawer').classList.add('active'); }
+                    if(Date.now()-last < 300) { editTarget='text'; document.getElementById('drawerTitle').innerText="修改主文案"; document.getElementById('textInp').value=s.text; document.getElementById('drawer').classList.add('active'); }
                     last = Date.now();
                 }
             };
