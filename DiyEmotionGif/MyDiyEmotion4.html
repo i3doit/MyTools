@@ -3,27 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>动态表情包 Pro - 极致优化版</title>
+    <title>动态表情包 Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@900&display=swap" rel="stylesheet">
     <style>
-        :root { --main-color: #07C160; }
-        body { font-family: -apple-system, "Noto Sans SC", sans-serif; background: #f8fafc; margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
-        
-        .vip-badge { background: linear-gradient(45deg, #f3d149, #f9a63c); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: none; margin-left: 6px; }
-        .is-vip .vip-badge { display: inline-block; }
-
+        body { font-family: -apple-system, "Noto Sans SC", sans-serif; background: #f8fafc; display: flex; flex-direction: column; min-height: 100vh; }
         .preview-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; }
         .canvas-container { width: 300px; height: 300px; background: #fff; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.06); position: relative; overflow: hidden; background-image: radial-gradient(#e5e7eb 1.2px, transparent 1.2px); background-size: 18px 18px; }
         canvas { width: 100% !important; height: 100% !important; touch-action: none; }
-
         .emoji-list { width: 100%; max-width: 600px; display: flex; gap: 12px; overflow-x: auto; padding: 15px; scrollbar-width: none; }
-        .emoji-item { flex: 0 0 75px; height: 75px; background: #fff; border-radius: 20px; border: 3px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b; cursor: pointer; position: relative; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .emoji-item.active { border-color: #07C160; background: #f0fdf4; transform: translateY(-3px); }
-        .emoji-item .del-btn { position: absolute; -top: 6px; -right: 6px; background: #ef4444; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid #fff; }
-
+        .emoji-item { flex: 0 0 75px; height: 75px; background: #fff; border-radius: 20px; border: 3px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b; cursor: pointer; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.3s; }
+        .emoji-item.active { border-color: #07C160; background: #f0fdf4; }
+        .emoji-item .del-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid #fff; }
         .controls { background: white; border-radius: 32px 32px 0 0; padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.03); max-width: 600px; margin: 0 auto; width: 100%; }
         .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -31,396 +24,296 @@
         .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
         input:checked + .slider { background-color: #07C160; }
         input:checked + .slider:before { transform: translateX(18px); }
-
         #drawer { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-radius: 32px 32px 0 0; padding: 25px; z-index: 1000; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 -20px 60px rgba(0,0,0,0.15); }
         #drawer.active { transform: translateY(0); }
-        #loading { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        #loading { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
-<body id="appBody">
+<body>
 
-    <header class="bg-white py-4 px-6 flex justify-between items-center border-b border-slate-50">
-        <button onclick="toggleBatchInput()" class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl">批量导入文案</button>
-        <h1 class="text-md font-black text-slate-800">动态表情包-Pro <span class="vip-badge">VIP</span></h1>
-        <button onclick="resetCurrentPos()" class="bg-slate-50 p-2.5 rounded-full text-slate-400 active:bg-slate-200">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2v4m0 12v4M2 12h4m12 0h4M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /></svg>
-        </button>
+    <header class="bg-white py-4 px-4 flex justify-between items-center border-b">
+        <div class="flex gap-2">
+            <button onclick="toggleModal('batchModal')" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl">批量导入文案</button>
+            <button onclick="toggleModal('badgeBatchModal')" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-xl">统改挂件文案</button>
+        </div>
+        <h1 class="text-sm font-black">动态表情包 Pro</h1>
+        <button onclick="resetPos()" class="bg-slate-100 p-2 rounded-full"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2v4m0 12v4M2 12h4m12 0h4M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /></svg></button>
     </header>
 
-    <div id="batchModal" class="hidden fixed inset-0 bg-slate-900/40 z-[4000] flex items-center justify-center p-6">
+    <div id="batchModal" class="hidden fixed inset-0 bg-black/40 z-[4000] flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
-            <h3 class="font-bold text-slate-800 mb-1">批量生成文案</h3>
-            <p class="text-[11px] text-slate-400 mb-4">每一行文字将自动生成一张表情包</p>
-            <textarea id="batchInp" class="w-full h-40 bg-slate-50 border-none rounded-2xl p-4 text-sm outline-none mb-4 focus:ring-2 ring-emerald-100" placeholder="例如：&#10;早点休息&#10;记得喝水&#10;保持可爱"></textarea>
+            <h3 class="font-bold mb-1">批量导入主文案</h3>
+            <textarea id="batchInp" class="w-full h-40 bg-gray-50 rounded-2xl p-4 text-sm outline-none mb-4 mt-2" placeholder="一行一条文案..."></textarea>
             <div class="flex gap-3">
-                <button onclick="toggleBatchInput()" class="flex-1 py-3 text-slate-400 font-bold text-sm">取消</button>
-                <button onclick="processBatch()" class="flex-[2] bg-emerald-600 text-white py-3 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-100">开始生成</button>
+                <button onclick="toggleModal('batchModal')" class="flex-1 py-3 text-gray-400 font-bold">取消</button>
+                <button onclick="processBatchText()" class="flex-[2] bg-emerald-600 text-white py-3 rounded-2xl font-bold">确认导入</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="badgeBatchModal" class="hidden fixed inset-0 bg-black/40 z-[4000] flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+            <h3 class="font-bold mb-1">批量修改挂件</h3>
+            <input id="badgeBatchInp" class="w-full bg-gray-50 rounded-2xl p-4 text-sm outline-none mb-4 mt-2" placeholder="统一所有表情包的挂件内容">
+            <div class="flex gap-3">
+                <button onclick="toggleModal('badgeBatchModal')" class="flex-1 py-3 text-gray-400 font-bold">取消</button>
+                <button onclick="processBatchBadge()" class="flex-[2] bg-blue-600 text-white py-3 rounded-2xl font-bold">确认同步</button>
             </div>
         </div>
     </div>
 
     <main class="preview-area">
         <div class="emoji-list" id="emojiContainer"></div>
-        <div class="canvas-container mt-4">
-            <canvas id="mainCanvas"></canvas>
-        </div>
-        <p class="text-[10px] text-slate-400 mt-4 tracking-wider">双击文字修改 · 任意拖动位置</p>
+        <div class="canvas-container mt-2"><canvas id="mainCanvas"></canvas></div>
     </main>
 
     <div class="controls">
-        <div class="bg-slate-50 rounded-2xl p-3.5 mb-4 flex items-center justify-between">
+        <div class="bg-gray-50 rounded-2xl p-3 mb-4 flex items-center justify-between">
             <div class="flex gap-3 items-center">
-                <div onclick="applyColor('#07C160')" class="w-6 h-6 rounded-full cursor-pointer ring-2 ring-white shadow-sm" style="background: #07C160;"></div>
-                <div onclick="applyColor('#FF2D55')" class="w-6 h-6 rounded-full cursor-pointer ring-2 ring-white shadow-sm" style="background: #FF2D55;"></div>
-                <input type="color" id="colorPicker" oninput="handleColorSelect(this.value)" class="w-6 h-6 bg-transparent border-none cursor-pointer">
+                <div onclick="applyColor('#07C160')" class="w-6 h-6 rounded-full" style="background: #07C160;"></div>
+                <div onclick="applyColor('#FF2D55')" class="w-6 h-6 rounded-full" style="background: #FF2D55;"></div>
+                <input type="color" id="colorPicker" oninput="applyColor(this.value)" class="w-6 h-6 bg-transparent">
             </div>
-            <select id="animSelect" onchange="updateCurrentState({animType:this.value})" class="bg-white border-none rounded-xl px-3 py-2 text-[11px] font-bold shadow-sm outline-none">
-                <option value="wave">波浪运动</option>
-                <option value="breath">呼吸缩放</option>
-                <option value="jump">向上跳跃</option>
-                <option value="slide">水平滑行</option>
+            <select id="animSelect" onchange="updateCur({animType:this.value})" class="bg-white px-3 py-2 text-[11px] font-bold rounded-xl shadow-sm outline-none">
+                <option value="wave">波浪</option>
+                <option value="breath">呼吸</option>
+                <option value="jump">跳跃</option>
             </select>
         </div>
 
         <div class="grid grid-cols-2 gap-3 mb-6">
-            <div class="bg-slate-50 rounded-2xl p-4 flex flex-col items-center">
-                <span class="text-[10px] font-bold text-slate-400 mb-3 uppercase">头像边框</span>
-                <div class="flex items-center gap-3">
-                    <button onclick="document.getElementById('avaInp').click()" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold">更换头像</button>
-                    <label class="switch">
-                        <input type="checkbox" id="borderSwitch" onchange="updateCurrentState({hasBorder: this.checked})">
-                        <span class="slider"></span>
-                    </label>
+            <div class="bg-gray-50 rounded-2xl p-4 flex flex-col items-center">
+                <span class="text-[10px] font-bold text-gray-400 mb-3 uppercase">头像设置</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="document.getElementById('avaInp').click()" class="bg-black text-white px-2 py-1.5 rounded-lg text-[9px]">更换</button>
+                    <label class="switch" title="圆形/方形"><input type="checkbox" id="roundSwitch" onchange="updateCur({isRound:this.checked})"><span class="slider"></span></label>
+                    <label class="switch" title="边框"><input type="checkbox" id="borderSwitch" onchange="updateCur({hasBorder:this.checked})"><span class="slider"></span></label>
                 </div>
+                <span class="text-[8px] mt-2 text-gray-300">左:圆角切换 | 右:边框开关</span>
             </div>
-            <div class="bg-slate-50 rounded-2xl p-4 flex flex-col items-center">
-                <span class="text-[10px] font-bold text-slate-400 mb-3 uppercase">气泡挂件</span>
-                <div class="flex items-center gap-3">
-                    <label class="switch">
-                        <input type="checkbox" id="badgeSwitch" onchange="updateCurrentState({showBadge: this.checked}); syncUI();">
-                        <span class="slider"></span>
-                    </label>
-                    <div class="flex items-center gap-2">
-                        <button onclick="openBadgeEditor()" id="editBadgeBtn" class="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-bold">文案</button>
-                        <label class="switch scale-90" title="挂件边框">
-                            <input type="checkbox" id="badgeBorderSwitch" onchange="updateCurrentState({hasBadgeBorder: this.checked})">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
+            <div class="bg-gray-50 rounded-2xl p-4 flex flex-col items-center">
+                <span class="text-[10px] font-bold text-gray-400 mb-3 uppercase">挂件设置</span>
+                <div class="flex items-center gap-2">
+                    <label class="switch"><input type="checkbox" id="badgeSwitch" onchange="updateCur({showBadge:this.checked});syncUI();"><span class="slider"></span></label>
+                    <button onclick="openBadgeEdit()" id="badgeEditBtn" class="bg-white border px-2 py-1.5 rounded-lg text-[10px]">文案</button>
+                    <label class="switch scale-75"><input type="checkbox" id="badgeBorderSwitch" onchange="updateCur({hasBadgeBorder:this.checked})"><span class="slider"></span></label>
                 </div>
+                <span class="text-[8px] mt-2 text-gray-300">挂件开启 | 细边框开关</span>
             </div>
         </div>
 
         <div class="flex gap-3">
-            <button onclick="exportGif()" class="flex-1 py-4 bg-slate-100 text-slate-800 rounded-2xl font-bold text-xs active:scale-95 transition-all">导出当前一张</button>
-            <button onclick="batchDownloadZip()" class="flex-[1.5] py-4 bg-emerald-600 text-white rounded-2xl font-bold text-xs active:scale-95 transition-all shadow-lg shadow-emerald-100">打包下载全部 (ZIP)</button>
+            <button onclick="exportSingle()" class="flex-1 py-4 bg-gray-100 rounded-2xl font-bold text-xs">单张导出</button>
+            <button onclick="exportAll()" class="flex-[1.5] py-4 bg-emerald-600 text-white rounded-2xl font-bold text-xs shadow-lg">批量导出全部 ZIP</button>
         </div>
     </div>
 
     <div id="drawer">
-        <div class="flex justify-between items-center mb-5">
-            <span id="drawerTitle" class="font-bold text-slate-800">编辑</span>
-            <button onclick="closeEditor()" class="bg-emerald-600 text-white px-6 py-2 rounded-full text-xs font-bold">确定</button>
-        </div>
-        <textarea id="textInp" class="w-full p-4 bg-slate-50 rounded-2xl text-base outline-none border-2 border-transparent focus:border-emerald-100" rows="3"></textarea>
+        <div class="flex justify-between items-center mb-4"><span id="drawerTitle" class="font-bold">编辑</span><button onclick="closeEdit()" class="bg-emerald-600 text-white px-6 py-2 rounded-full text-xs font-bold">完成</button></div>
+        <textarea id="textInp" class="w-full p-4 bg-gray-50 rounded-2xl outline-none" rows="3"></textarea>
     </div>
 
-    <input type="file" id="avaInp" class="hidden" accept="image/*" onchange="handleAva(event)">
-    
-    <div id="loading">
-        <div class="relative w-16 h-16 mb-4">
-            <div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
-            <div id="loadingCircle" class="absolute inset-0 border-4 border-emerald-500 rounded-full border-t-transparent animate-spin"></div>
-        </div>
-        <p class="font-black text-slate-800">正在生成渲染</p>
-        <p class="text-[11px] text-slate-400 mt-1">进度：<span id="progress">0%</span></p>
-    </div>
+    <input type="file" id="avaInp" class="hidden" accept="image/*" onchange="loadAva(event)">
+    <div id="loading"><div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div><p class="font-bold text-sm" id="loadText">渲染中...</p><p class="text-[11px] text-gray-400 mt-1" id="prog">0%</p></div>
 
     <script>
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
-        const SECRET_KEY = "QlFXWDg1NzAyMzU3Nw==";
-
-        let emojis = JSON.parse(localStorage.getItem('v8_emojis')) || [
-            { id: Date.now(), text: "先爱自己\n再爱世界", color: '#07C160', hasBorder: true, showBadge: false, hasBadgeBorder: true, badge: "爱自己", animType: 'wave', pos: { x: 30, y: 120 } }
+        let emojis = JSON.parse(localStorage.getItem('v11_emojis')) || [
+            { id: 1, text: "先爱自己\n再爱世界", color: '#07C160', isRound: true, hasBorder: true, showBadge: false, hasBadgeBorder: true, badge: "爱自己", animType: 'wave', pos: { x: 30, y: 120 } }
         ];
-        let currentIndex = 0;
-        let isVip = localStorage.getItem('v5_pro_ok') === 'true';
-        let currentEditTarget = 'text';
-        let globalAvatar = null;
+        let curIdx = 0, globalAva = null, editTarget = 'text';
 
         window.onload = () => {
             const dpr = window.devicePixelRatio || 1;
-            canvas.width = canvas.offsetWidth * dpr;
-            canvas.height = canvas.offsetHeight * dpr;
+            canvas.width = canvas.offsetWidth * dpr; canvas.height = canvas.offsetHeight * dpr;
             ctx.scale(dpr, dpr);
-            
-            const savedAva = localStorage.getItem('v5_ava_data');
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.onload = () => { globalAvatar = img; };
-            img.src = savedAva || "https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg!1";
-            
-            renderEmojiList();
-            syncUI();
-            initEvents();
-            requestAnimationFrame(renderLoop);
+            const saved = localStorage.getItem('v5_ava');
+            const img = new Image(); img.crossOrigin = "anonymous";
+            img.onload = () => { globalAva = img; };
+            img.src = saved || "https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg!1";
+            renderList(); syncUI(); initEvents(); requestAnimationFrame(render);
         };
 
-        function renderEmojiList() {
-            const container = document.getElementById('emojiContainer');
-            container.innerHTML = '';
-            emojis.forEach((item, index) => {
+        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
+        function save() { localStorage.setItem('v11_emojis', JSON.stringify(emojis)); }
+
+        function processBatchText() {
+            const val = document.getElementById('batchInp').value.trim();
+            if(!val) return;
+            const added = val.split('\n').filter(l => l.trim()).map(l => {
+                let s = l.trim();
+                if(s.length > 4 && !s.includes('\n')) s = s.slice(0, Math.floor(s.length/2)) + '\n' + s.slice(Math.floor(s.length/2));
+                return { ...emojis[curIdx], id: Date.now()+Math.random(), text: s, pos: {x:30,y:120} };
+            });
+            emojis = [...emojis, ...added];
+            save(); renderList(); toggleModal('batchModal');
+        }
+
+        function processBatchBadge() {
+            const val = document.getElementById('badgeBatchInp').value.trim();
+            if(!val) return;
+            emojis.forEach(e => e.badge = val);
+            save(); syncUI(); toggleModal('badgeBatchModal');
+        }
+
+        function renderList() {
+            const container = document.getElementById('emojiContainer'); container.innerHTML = '';
+            emojis.forEach((item, i) => {
                 const div = document.createElement('div');
-                div.className = `emoji-item ${index === currentIndex ? 'active' : ''}`;
-                div.innerHTML = `
-                    <div class="truncate px-2 font-bold" onclick="switchEmoji(${index})">${item.text.split('\n')[0]}</div>
-                    ${emojis.length > 1 ? `<div class="del-btn" onclick="deleteEmoji(${index}, event)">×</div>` : ''}
-                `;
+                div.className = `emoji-item ${i === curIdx ? 'active' : ''}`;
+                div.innerHTML = `<div onclick="setCur(${i})" class="truncate px-1 font-bold">${item.text.replace('\n','')}</div>
+                ${emojis.length > 1 ? `<div class="del-btn" onclick="delItem(${i},event)">×</div>` : ''}`;
                 container.appendChild(div);
             });
         }
 
         function syncUI() {
-            const cur = emojis[currentIndex];
-            document.getElementById('borderSwitch').checked = cur.hasBorder;
-            document.getElementById('badgeSwitch').checked = cur.showBadge;
-            document.getElementById('badgeBorderSwitch').checked = cur.hasBadgeBorder || false;
-            document.getElementById('animSelect').value = cur.animType;
-            document.getElementById('colorPicker').value = cur.color;
+            const c = emojis[curIdx];
+            document.getElementById('roundSwitch').checked = c.isRound;
+            document.getElementById('borderSwitch').checked = c.hasBorder;
+            document.getElementById('badgeSwitch').checked = c.showBadge;
+            document.getElementById('badgeBorderSwitch').checked = c.hasBadgeBorder;
+            document.getElementById('animSelect').value = c.animType;
+            document.getElementById('colorPicker').value = c.color;
+            document.getElementById('badgeEditBtn').style.opacity = c.showBadge ? '1' : '0.4';
+        }
+
+        function updateCur(obj) { emojis[curIdx] = {...emojis[curIdx], ...obj}; save(); renderList(); }
+        function setCur(i) { curIdx = i; renderList(); syncUI(); }
+        function delItem(i, e) { e.stopPropagation(); emojis.splice(i,1); curIdx = 0; renderList(); syncUI(); save(); }
+        function resetPos() { updateCur({pos:{x:30,y:120}}); }
+
+        function drawFrame(tCtx, state, time, isExp = false) {
+            const size = isExp ? 400 : canvas.width/(window.devicePixelRatio||1), s = size/400;
+            tCtx.clearRect(0,0,size,size);
+            const lines = state.text.split('\n').slice(0,4);
+            tCtx.font = `italic 900 ${38*s}px "Noto Sans SC"`;
+            let maxW = 0; lines.forEach(l => maxW = Math.max(maxW, tCtx.measureText(l).width));
+            const bW = Math.min(maxW + 200*s, size*0.95), bH = Math.max(150*s, lines.length*55*s + 70*s);
+            const dx = isExp ? (400-bW)/2 : state.pos.x, dy = isExp ? (400-bH)/2 + 20 : state.pos.y;
             
-            const badgeBtn = document.getElementById('editBadgeBtn');
-            badgeBtn.style.opacity = cur.showBadge ? '1' : '0.4';
-            badgeBtn.style.pointerEvents = cur.showBadge ? 'auto' : 'none';
-        }
-
-        function updateCurrentState(obj) {
-            emojis[currentIndex] = { ...emojis[currentIndex], ...obj };
-            localStorage.setItem('v8_emojis', JSON.stringify(emojis));
-            renderEmojiList();
-        }
-
-        function switchEmoji(index) {
-            currentIndex = index;
-            renderEmojiList();
-            syncUI();
-        }
-
-        function resetCurrentPos() {
-            updateCurrentState({ pos: { x: 30, y: 120 } });
-        }
-
-        function deleteEmoji(idx, e) {
-            e.stopPropagation();
-            emojis.splice(idx, 1);
-            currentIndex = 0;
-            renderEmojiList();
-            syncUI();
-        }
-
-        function toggleBatchInput() { document.getElementById('batchModal').classList.toggle('hidden'); }
-        function processBatch() {
-            const text = document.getElementById('batchInp').value.trim();
-            if (!text) return;
-            const lines = text.split('\n').filter(l => l.trim() !== '');
-            const newItems = lines.map(line => ({
-                ...emojis[currentIndex],
-                id: Date.now() + Math.random(),
-                text: line.trim(),
-                pos: { x: 30, y: 120 }
-            }));
-            emojis = [...emojis, ...newItems];
-            toggleBatchInput();
-            renderEmojiList();
-            localStorage.setItem('v8_emojis', JSON.stringify(emojis));
-        }
-
-        function draw(tCtx, state, time, isExport = false) {
-            const size = isExport ? 400 : canvas.width / (window.devicePixelRatio || 1);
-            const scale = size / 400;
-            tCtx.clearRect(0, 0, size, size);
-            
-            const lines = state.text.split('\n').slice(0, 4);
-            tCtx.font = `italic 900 ${38 * scale}px "Noto Sans SC"`;
-            let maxW = 0; 
-            lines.forEach(l => maxW = Math.max(maxW, tCtx.measureText(l).width));
-            
-            const bW = Math.min(maxW + 200 * scale, size * 0.95);
-            const bH = Math.max(150 * scale, lines.length * (55 * scale) + 70 * scale);
-            let dx = isExport ? (400 - bW) / 2 : state.pos.x;
-            let dy = isExport ? (400 - bH) / 2 + 20 : state.pos.y;
-
             tCtx.fillStyle = state.color;
-            tCtx.beginPath(); tCtx.roundRect(dx, dy, bW, bH, 30 * scale); tCtx.fill();
-            tCtx.beginPath(); tCtx.moveTo(dx + 50 * scale, dy + bH); tCtx.lineTo(dx + 40 * scale, dy + bH + 18 * scale); tCtx.lineTo(dx + 85 * scale, dy + bH); tCtx.fill();
-
+            tCtx.beginPath(); tCtx.roundRect(dx, dy, bW, bH, 30*s); tCtx.fill();
+            tCtx.beginPath(); tCtx.moveTo(dx+50*s, dy+bH); tCtx.lineTo(dx+40*s, dy+bH+18*s); tCtx.lineTo(dx+85*s, dy+bH); tCtx.fill();
+            
             tCtx.fillStyle = "white"; tCtx.textBaseline = "middle";
-            const startY = dy + (bH/2) - ((lines.length-1)*(55*scale)/2);
-            lines.forEach((l, i) => {
+            const sy = dy + bH/2 - (lines.length-1)*55*s/2;
+            lines.forEach((l,i) => {
                 let off = 0;
-                if(state.animType === 'wave') off = Math.sin(time/200 + i) * 5;
-                if(state.animType === 'breath') off = (Math.sin(time/300) + 1) * 2;
-                if(state.animType === 'jump') off = Math.abs(Math.sin(time/300 + i)) * -10;
-                if(state.animType === 'slide') off = Math.sin(time/400) * 8;
-                tCtx.fillText(l, dx + 35 * scale, startY + (i * 55 * scale) + off);
+                if(state.animType==='wave') off = Math.sin(time/200+i)*5;
+                if(state.animType==='breath') off = (Math.sin(time/300)+1)*2;
+                if(state.animType==='jump') off = Math.abs(Math.sin(time/300+i))*-10;
+                tCtx.fillText(l, dx+35*s, sy + i*55*s + off);
             });
 
-            if(globalAvatar) {
-                const avaSize = 130 * scale;
-                const ax = dx + bW - avaSize - 15 * scale;
-                const ay = dy - 45 * scale;
-                tCtx.save();
-                tCtx.beginPath(); tCtx.arc(ax + avaSize/2, ay + avaSize/2, avaSize/2, 0, Math.PI*2); tCtx.clip();
-                tCtx.drawImage(globalAvatar, ax, ay, avaSize, avaSize);
-                tCtx.restore();
-
-                if(state.hasBorder) {
-                    tCtx.strokeStyle = "#fff"; tCtx.lineWidth = 5 * scale;
-                    tCtx.beginPath(); tCtx.arc(ax + avaSize/2, ay + avaSize/2, avaSize/2, 0, Math.PI*2); tCtx.stroke();
+            if(globalAva) {
+                const as = 130*s, ax = dx+bW-as-15*s, ay = dy-45*s;
+                tCtx.save(); tCtx.beginPath();
+                if(state.isRound) tCtx.arc(ax+as/2, ay+as/2, as/2, 0, Math.PI*2);
+                else tCtx.roundRect(ax, ay, as, as, 20*s);
+                tCtx.clip();
+                tCtx.drawImage(globalAva, ax, ay, as, as); tCtx.restore();
+                if(state.hasBorder){ 
+                    tCtx.strokeStyle="#fff"; tCtx.lineWidth=5*s; tCtx.beginPath(); 
+                    if(state.isRound) tCtx.arc(ax+as/2, ay+as/2, as/2, 0, Math.PI*2);
+                    else tCtx.roundRect(ax, ay, as, as, 20*s);
+                    tCtx.stroke(); 
                 }
-
                 if(state.showBadge) {
-                    const gx = ax + avaSize - 65 * scale, gy = ay - 12 * scale;
-                    const gw = 85 * scale, gh = 34 * scale;
-                    tCtx.fillStyle = "white"; 
-                    tCtx.beginPath(); tCtx.roundRect(gx, gy, gw, gh, 17 * scale); tCtx.fill();
-                    
-                    if(state.hasBadgeBorder) {
-                        tCtx.strokeStyle = state.color; 
-                        tCtx.lineWidth = 1.5 * scale; // 细边框优化
-                        tCtx.stroke();
-                    }
-                    
-                    tCtx.fillStyle = state.color; tCtx.font = `bold ${14 * scale}px sans-serif`; tCtx.textAlign = "center";
-                    tCtx.fillText(state.badge, gx + gw/2, gy + gh/2 + 2 * scale);
-                    tCtx.textAlign = "left";
+                    const gx = ax+as-65*s, gy = ay-12*s, gw = 85*s, gh = 34*s;
+                    tCtx.fillStyle = "white"; tCtx.beginPath(); tCtx.roundRect(gx, gy, gw, gh, 17*s); tCtx.fill();
+                    if(state.hasBadgeBorder){ tCtx.strokeStyle=state.color; tCtx.lineWidth=1.5*s; tCtx.stroke(); }
+                    tCtx.fillStyle=state.color; tCtx.font=`bold ${14*s}px sans-serif`; tCtx.textAlign="center";
+                    tCtx.fillText(state.badge, gx+gw/2, gy+gh/2+2*s); tCtx.textAlign="left";
                 }
-                if(!isExport) state.hitArea = { ax, ay, as: avaSize, bx: dx, by: dy, bw: bW, bh: bH };
+                if(!isExp) state.hit = { x:dx, y:dy, w:bW, h:bH };
             }
         }
 
-        function renderLoop() {
-            draw(ctx, emojis[currentIndex], Date.now());
-            requestAnimationFrame(renderLoop);
+        function render() { drawFrame(ctx, emojis[curIdx], Date.now()); requestAnimationFrame(render); }
+
+        // 下载模块核心优化：采用内联 Worker 解决 0% 问题
+        function makeGif(state, cb) {
+            const gif = new GIF({ 
+                workers: 2, quality: 10, width: 400, height: 400, 
+                workerScript: URL.createObjectURL(new Blob([`
+                    importScripts('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+                `], {type: 'text/javascript'}))
+            });
+            for(let i=0; i<15; i++){
+                const c = document.createElement('canvas'); c.width=400; c.height=400;
+                drawFrame(c.getContext('2d'), state, i*80, true);
+                gif.addFrame(c, {delay: 60, copy: true});
+            }
+            gif.on('progress', p => document.getElementById('prog').innerText = Math.round(p*100)+'%');
+            gif.on('finished', blob => cb(blob));
+            gif.render();
         }
 
-        async function createGif(state, onProgress) {
-            return new Promise((resolve) => {
-                const gif = new GIF({ 
-                    workers: 4, 
-                    quality: 10, 
-                    width: 400, 
-                    height: 400, 
-                    transparent: 0x00, 
-                    workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js' 
-                });
-                
-                for(let i=0; i<15; i++) {
-                    const c = document.createElement('canvas'); c.width = 400; c.height = 400;
-                    draw(c.getContext('2d'), state, i * 80, true);
-                    gif.addFrame(c, {delay: 60, copy: true});
-                }
-                
-                gif.on('progress', p => onProgress(Math.round(p * 100)));
-                gif.on('finished', blob => resolve(blob));
-                gif.render();
+        async function exportSingle() {
+            const l = document.getElementById('loading'); l.style.display='flex';
+            document.getElementById('loadText').innerText = "正在导出单张...";
+            makeGif(emojis[curIdx], blob => {
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `emoji_${Date.now()}.gif`; a.click();
+                l.style.display='none';
             });
         }
 
-        async function exportGif() {
-            const load = document.getElementById('loading');
-            const prog = document.getElementById('progress');
-            load.style.display = 'flex';
-            prog.innerText = '0%';
-            
-            const blob = await createGif(emojis[currentIndex], p => prog.innerText = p + '%');
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `emoji.gif`; a.click();
-            
-            setTimeout(() => { load.style.display = 'none'; URL.revokeObjectURL(url); }, 500);
-        }
-
-        async function batchDownloadZip() {
-            const load = document.getElementById('loading');
-            const prog = document.getElementById('progress');
-            load.style.display = 'flex';
+        async function exportAll() {
+            const l = document.getElementById('loading'); l.style.display='flex';
             const zip = new JSZip();
-            
-            for(let i=0; i<emojis.length; i++) {
-                const blob = await createGif(emojis[i], p => {
-                    prog.innerText = `[${i+1}/${emojis.length}] ${p}%`;
-                });
+            for(let i=0; i<emojis.length; i++){
+                document.getElementById('loadText').innerText = `批量导出 (${i+1}/${emojis.length})`;
+                const blob = await new Promise(res => makeGif(emojis[i], res));
                 zip.file(`emoji_${i+1}.gif`, blob);
             }
-            
-            const content = await zip.generateAsync({type:"blob"});
-            const url = URL.createObjectURL(content);
-            const a = document.createElement('a'); a.href = url; a.download = "批量表情包.zip"; a.click();
-            
-            setTimeout(() => { load.style.display = 'none'; URL.revokeObjectURL(url); }, 500);
+            const res = await zip.generateAsync({type:"blob"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(res); a.download = "批量表情.zip"; a.click();
+            l.style.display='none';
         }
 
-        function applyColor(hex) { updateCurrentState({color: hex}); syncUI(); }
-        function handleColorSelect(val) { updateCurrentState({color: val}); syncUI(); }
-        function handleAva(e) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const img = new Image();
-                img.onload = () => { globalAvatar = img; localStorage.setItem('v5_ava_data', ev.target.result); };
+        function applyColor(c) { updateCur({color:c}); syncUI(); }
+        function loadAva(e) {
+            const fr = new FileReader();
+            fr.onload = (ev) => {
+                const img = new Image(); img.onload = () => { globalAva = img; localStorage.setItem('v5_ava', ev.target.result); };
                 img.src = ev.target.result;
             };
-            reader.readAsDataURL(e.target.files[0]);
+            fr.readAsDataURL(e.target.files[0]);
         }
 
-        function openBadgeEditor() { 
-            currentEditTarget = 'badge'; 
-            document.getElementById('drawerTitle').innerText = "修改挂件"; 
-            document.getElementById('drawer').classList.add('active'); 
-            document.getElementById('textInp').value = emojis[currentIndex].badge; 
-        }
-        function closeEditor() {
-            const val = document.getElementById('textInp').value;
-            if(currentEditTarget === 'text') updateCurrentState({text: val || "文案"});
-            else updateCurrentState({badge: val || "挂件"});
+        function openBadgeEdit() { editTarget='badge'; document.getElementById('drawerTitle').innerText="修改当前挂件"; document.getElementById('textInp').value=emojis[curIdx].badge; document.getElementById('drawer').classList.add('active'); }
+        function closeEdit() {
+            const v = document.getElementById('textInp').value;
+            if(editTarget==='text') updateCur({text:v}); else updateCur({badge:v});
             document.getElementById('drawer').classList.remove('active');
         }
 
         function initEvents() {
-            let lastClick = 0;
+            let last = 0;
             const start = (e) => {
-                const rect = canvas.getBoundingClientRect();
-                const ev = e.touches ? e.touches[0] : e;
-                const dpr = (canvas.width / rect.width / (window.devicePixelRatio || 1));
-                const x = (ev.clientX - rect.left) * dpr, y = (ev.clientY - rect.top) * dpr;
-                const s = emojis[currentIndex];
-                if(s.hitArea && x > s.hitArea.bx && x < s.hitArea.bx + s.hitArea.bw && y > s.hitArea.by && y < s.hitArea.by + s.hitArea.bh) {
-                    s.drag = { active: true, x: x - s.pos.x, y: y - s.pos.y };
-                    if(Date.now() - lastClick < 300) { 
-                        currentEditTarget = 'text'; 
-                        document.getElementById('drawerTitle').innerText = "修改主文案"; 
-                        document.getElementById('drawer').classList.add('active'); 
-                        document.getElementById('textInp').value = s.text; 
-                    }
-                    lastClick = Date.now();
+                const r = canvas.getBoundingClientRect(), ev = e.touches?e.touches[0]:e;
+                const d = (canvas.width/r.width/(window.devicePixelRatio||1));
+                const x = (ev.clientX-r.left)*d, y=(ev.clientY-r.top)*d;
+                const s = emojis[curIdx];
+                if(s.hit && x>s.hit.x && x<s.hit.x+s.hit.w && y>s.hit.y && y<s.hit.y+s.hit.h) {
+                    s.dragging = { x: x-s.pos.x, y: y-s.pos.y };
+                    if(Date.now()-last < 300) { editTarget='text'; document.getElementById('drawerTitle').innerText="修改文案"; document.getElementById('textInp').value=s.text; document.getElementById('drawer').classList.add('active'); }
+                    last = Date.now();
                 }
             };
             const move = (e) => {
-                const s = emojis[currentIndex];
-                if(!s.drag?.active) return;
-                const ev = e.touches ? e.touches[0] : e;
-                const rect = canvas.getBoundingClientRect();
-                const dpr = (canvas.width / rect.width / (window.devicePixelRatio || 1));
-                s.pos.x = ((ev.clientX - rect.left) * dpr) - s.drag.x;
-                s.pos.y = ((ev.clientY - rect.top) * dpr) - s.drag.y;
+                const s = emojis[curIdx]; if(!s.dragging) return;
+                const ev = e.touches?e.touches[0]:e, r = canvas.getBoundingClientRect();
+                const d = (canvas.width/r.width/(window.devicePixelRatio||1));
+                s.pos.x = (ev.clientX-r.left)*d - s.dragging.x; s.pos.y = (ev.clientY-r.top)*d - s.dragging.y;
                 e.preventDefault();
             };
-            const end = () => { if(emojis[currentIndex].drag) { emojis[currentIndex].drag.active = false; localStorage.setItem('v8_emojis', JSON.stringify(emojis)); } };
-            canvas.addEventListener('mousedown', start);
-            canvas.addEventListener('touchstart', start, {passive:false});
-            window.addEventListener('mousemove', move);
-            window.addEventListener('touchmove', move, {passive: false});
-            window.addEventListener('mouseup', end);
-            window.addEventListener('touchend', end);
+            const end = () => { if(emojis[curIdx]) emojis[curIdx].dragging = null; save(); };
+            canvas.addEventListener('mousedown', start); canvas.addEventListener('touchstart', start, {passive:false});
+            window.addEventListener('mousemove', move); window.addEventListener('touchmove', move, {passive:false});
+            window.addEventListener('mouseup', end); window.addEventListener('touchend', end);
         }
     </script>
 </body>
