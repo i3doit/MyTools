@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>动态表情包 Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: -apple-system, "Noto Sans SC", sans-serif; background: #f8fafc; display: flex; flex-direction: column; min-height: 100vh; margin: 0; overflow-x: hidden; }
+        .preview-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; }
+        .canvas-container { width: 300px; height: 300px; background: #fff; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.06); position: relative; overflow: hidden; background-image: radial-gradient(#e5e7eb 1.2px, transparent 1.2px); background-size: 18px 18px; }
+        canvas { width: 100% !important; height: 100% !important; touch-action: none; }
+        
+        /* 表情包左右滑动列表优化 */
+        .emoji-scroll-wrapper { width: 100%; max-width: 600px; overflow-x: auto; padding: 15px 5px; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; }
+        .emoji-list { display: flex; gap: 12px; width: max-content; padding: 0 10px; }
+        .emoji-item { 
+            flex: 0 0 85px; height: 85px; background: #fff; border-radius: 18px; 
+            border: 2px solid transparent; display: flex; align-items: center; 
+            justify-content: center; font-size: 11px; color: #64748b; cursor: pointer; 
+            position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.04); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); scroll-snap-align: center;
+        }
+        .emoji-item.active { border-color: #07C160; background: #f0fdf4; transform: scale(1.05); box-shadow: 0 8px 16px rgba(7, 193, 96, 0.15); color: #07C160; }
+        .emoji-item .del-btn { 
+            position: absolute; top: -6px; right: -6px; background: #ff4d4f; color: white; 
+            width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; 
+            justify-content: center; font-size: 14px; border: 2px solid #fff; z-index: 10;
+        }
+
+        .controls { background: white; border-radius: 32px 32px 0 0; padding: 20px 20px 10px 20px; box-shadow: 0 -10px 40px rgba(0,0,0,0.03); max-width: 600px; margin: 0 auto; width: 100%; }
+        .switch { position: relative; display: inline-block; width: 38px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #e2e8f0; transition: .3s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: #07C160; }
+        input:checked + .slider:before { transform: translateX(18px); }
+        
+        #drawer { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-radius: 32px 32px 0 0; padding: 25px; z-index: 1000; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 -20px 60px rgba(0,0,0,0.15); }
+        #drawer.active { transform: translateY(0); }
+        #loading { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
+        .footer-info { text-align: center; padding: 10px 0 20px 0; color: #cbd5e1; font-size: 10px; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+    <header class="bg-white py-4 px-4 flex justify-between items-center border-b sticky top-0 z-50">
+        <div class="flex gap-2">
+            <button onclick="toggleModal('batchModal')" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl">批量导入</button>
+            <button onclick="toggleModal('badgeBatchModal')" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-xl">同步挂件</button>
+        </div>
+        <h1 class="text-sm font-black text-slate-800">动态表情包 Pro</h1>
+        <button onclick="resetPos()" class="bg-slate-100 p-2 rounded-full"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2v4m0 12v4M2 12h4m12 0h4M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /></svg></button>
+    </header>
+
+    <div id="batchModal" class="hidden fixed inset-0 bg-black/40 z-[4000] flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+            <h3 class="font-bold mb-1 text-slate-800">批量导入文案</h3>
+            <p class="text-[10px] text-gray-400 mb-2">导入后将清空当前列表并置顶最新文案</p>
+            <textarea id="batchInp" class="w-full h-40 bg-gray-50 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="一行一条文案..."></textarea>
+            <div class="flex gap-3">
+                <button onclick="toggleModal('batchModal')" class="flex-1 py-3 text-gray-400 font-bold">取消</button>
+                <button onclick="processBatchText()" class="flex-[2] bg-emerald-600 text-white py-3 rounded-2xl font-bold">确认生成</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="badgeBatchModal" class="hidden fixed inset-0 bg-black/40 z-[4000] flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+            <h3 class="font-bold mb-1 text-slate-800">同步挂件文字</h3>
+            <input id="badgeBatchInp" class="w-full bg-gray-50 rounded-2xl p-4 text-sm outline-none mb-4 mt-2" placeholder="输入挂件文字">
+            <div class="flex gap-3">
+                <button onclick="toggleModal('badgeBatchModal')" class="flex-1 py-3 text-gray-400 font-bold">取消</button>
+                <button onclick="processBatchBadge()" class="flex-[2] bg-blue-600 text-white py-3 rounded-2xl font-bold">全员同步</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="preview-area">
+        <div class="emoji-scroll-wrapper">
+            <div class="emoji-list" id="emojiContainer"></div>
+        </div>
+        <div class="canvas-container mt-2"><canvas id="mainCanvas"></canvas></div>
+    </main>
+
+    <div class="controls">
+        <div class="bg-gray-50 rounded-2xl p-3 mb-4 flex items-center justify-between">
+            <div class="flex gap-3 items-center">
+                <div onclick="applyColor('#07C160')" class="w-6 h-6 rounded-full cursor-pointer shadow-sm" style="background: #07C160;"></div>
+                <div onclick="applyColor('#FF2D55')" class="w-6 h-6 rounded-full cursor-pointer shadow-sm" style="background: #FF2D55;"></div>
+                <input type="color" id="colorPicker" oninput="applyColor(this.value)" class="w-6 h-6 bg-transparent border-none cursor-pointer">
+            </div>
+            <select id="animSelect" onchange="updateCur({animType:this.value})" class="bg-white px-3 py-2 text-[11px] font-bold rounded-xl shadow-sm outline-none">
+                <option value="wave">波浪运动</option>
+                <option value="breath">呼吸缩放</option>
+                <option value="jump">向上跳跃</option>
+            </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="bg-gray-50 rounded-2xl p-4 flex flex-col items-center">
+                <span class="text-[10px] font-bold text-gray-400 mb-2 uppercase">头像属性</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="document.getElementById('avaInp').click()" class="bg-black text-white px-2 py-1.5 rounded-lg text-[9px]">更换</button>
+                    <label class="switch" title="圆方切换"><input type="checkbox" id="roundSwitch" onchange="updateCur({isRound:this.checked})"><span class="slider"></span></label>
+                    <label class="switch" title="白边"><input type="checkbox" id="borderSwitch" onchange="updateCur({hasBorder:this.checked})"><span class="slider"></span></label>
+                </div>
+            </div>
+            <div class="bg-gray-50 rounded-2xl p-4 flex flex-col items-center">
+                <span class="text-[10px] font-bold text-gray-400 mb-2 uppercase">挂件属性</span>
+                <div class="flex items-center gap-2">
+                    <label class="switch"><input type="checkbox" id="badgeSwitch" onchange="updateCur({showBadge:this.checked});syncUI();"><span class="slider"></span></label>
+                    <button onclick="openBadgeEdit()" id="badgeEditBtn" class="bg-white border px-2 py-1.5 rounded-lg text-[10px] font-bold">编辑</button>
+                    <label class="switch scale-75"><input type="checkbox" id="badgeBorderSwitch" onchange="updateCur({hasBadgeBorder:this.checked})"><span class="slider"></span></label>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-3 mb-4">
+            <button onclick="exportSingle()" class="flex-1 py-4 bg-slate-100 text-slate-800 rounded-2xl font-bold text-xs">导出单张</button>
+            <button onclick="exportAll()" class="flex-[1.5] py-4 bg-emerald-600 text-white rounded-2xl font-bold text-xs shadow-lg">打包 ZIP</button>
+        </div>
+
+        <div class="footer-info">
+            <p>© 2024 DYNAMIC EMOJI PRO · V4.0</p>
+            <p class="mt-1 opacity-60">滑动管理 · 历史记录可编辑</p>
+        </div>
+    </div>
+
+    <div id="drawer">
+        <div class="flex justify-between items-center mb-4"><span id="drawerTitle" class="font-bold">编辑文案</span><button onclick="closeEdit()" class="bg-emerald-600 text-white px-6 py-2 rounded-full text-xs font-bold">完成</button></div>
+        <textarea id="textInp" class="w-full p-4 bg-gray-50 rounded-2xl outline-none" rows="3"></textarea>
+    </div>
+
+    <input type="file" id="avaInp" class="hidden" accept="image/*" onchange="loadAva(event)">
+    <div id="loading">
+        <div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="font-bold text-sm" id="loadText">高清渲染中...</p>
+        <p class="text-[11px] text-gray-400 mt-1" id="prog">0%</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        // 初始示例标记
+        const DEFAULT_ID = "default_welcome";
+        let emojis = JSON.parse(localStorage.getItem('v14_emojis')) || [
+            { id: DEFAULT_ID, text: "先爱自己\n再爱世界", color: '#07C160', isRound: true, hasBorder: true, showBadge: false, hasBadgeBorder: true, badge: "爱自己", animType: 'wave', pos: { x: 30, y: 120 } }
+        ];
+        let curIdx = 0, globalAva = null, editTarget = 'text';
+
+        window.onload = () => {
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = canvas.offsetWidth * dpr; canvas.height = canvas.offsetHeight * dpr;
+            ctx.scale(dpr, dpr);
+            const saved = localStorage.getItem('v5_ava');
+            const img = new Image(); img.crossOrigin = "anonymous";
+            img.onload = () => { globalAva = img; };
+            img.src = saved || "https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg!1";
+            renderList(); syncUI(); initEvents(); requestAnimationFrame(render);
+        };
+
+        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
+        function save() { localStorage.setItem('v14_emojis', JSON.stringify(emojis)); }
+
+        // 批量处理逻辑改进
+        function processBatchText() {
+            const val = document.getElementById('batchInp').value.trim();
+            if(!val) return;
+            
+            // 自动清空示例：如果列表中只有默认示例，则清空
+            if(emojis.length === 1 && emojis[0].id === DEFAULT_ID) {
+                emojis = [];
+            }
+
+            const lines = val.split('\n').filter(l => l.trim());
+            // 逆序插入，确保最后一行在数组最后，第一行在数组最前（显示在最左侧）
+            lines.reverse().forEach(l => {
+                let s = l.trim();
+                if(s.length > 4 && !s.includes('\n')) s = s.slice(0, Math.floor(s.length/2)) + '\n' + s.slice(Math.floor(s.length/2));
+                emojis.unshift({ 
+                    ...emojis[0] || { color: '#07C160', isRound: true, hasBorder: true, showBadge: false, hasBadgeBorder: true, badge: "Hi", animType: 'wave' }, 
+                    id: Date.now()+Math.random(), 
+                    text: s, 
+                    pos: {x:30,y:120} 
+                });
+            });
+            
+            curIdx = 0; // 自动选中最左侧最新的
+            save(); renderList(); toggleModal('batchModal');
+            document.getElementById('emojiContainer').parentElement.scrollLeft = 0;
+        }
+
+        function processBatchBadge() {
+            const val = document.getElementById('badgeBatchInp').value.trim();
+            if(!val) return;
+            emojis.forEach(e => e.badge = val);
+            save(); syncUI(); toggleModal('badgeBatchModal');
+        }
+
+        function renderList() {
+            const container = document.getElementById('emojiContainer'); container.innerHTML = '';
+            emojis.forEach((item, i) => {
+                const div = document.createElement('div');
+                div.className = `emoji-item ${i === curIdx ? 'active' : ''}`;
+                // 仅显示前两行文字预览
+                const previewText = item.text.replace(/\n/g, '<br>');
+                div.innerHTML = `
+                    <div onclick="setCur(${i})" class="text-center px-2 leading-tight overflow-hidden pointer-events-auto">${previewText}</div>
+                    <div class="del-btn shadow-md" onclick="delItem(${i},event)">×</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function syncUI() {
+            if(!emojis[curIdx]) return;
+            const c = emojis[curIdx];
+            document.getElementById('roundSwitch').checked = c.isRound;
+            document.getElementById('borderSwitch').checked = c.hasBorder;
+            document.getElementById('badgeSwitch').checked = c.showBadge;
+            document.getElementById('badgeBorderSwitch').checked = c.hasBadgeBorder;
+            document.getElementById('animSelect').value = c.animType;
+            document.getElementById('colorPicker').value = c.color;
+            document.getElementById('badgeEditBtn').style.opacity = c.showBadge ? '1' : '0.4';
+        }
+
+        function updateCur(obj) { if(!emojis[curIdx]) return; emojis[curIdx] = {...emojis[curIdx], ...obj}; save(); renderList(); }
+        function setCur(i) { curIdx = i; renderList(); syncUI(); }
+        function delItem(i, e) { 
+            e.stopPropagation(); 
+            emojis.splice(i,1); 
+            if(emojis.length === 0) {
+                emojis = [{ id: DEFAULT_ID, text: "点击批量导入\n开始制作", color: '#07C160', isRound: true, hasBorder: true, showBadge: false, hasBadgeBorder: true, badge: "Tips", animType: 'wave', pos: { x: 30, y: 120 } }];
+            }
+            curIdx = 0; renderList(); syncUI(); save(); 
+        }
+        function resetPos() { updateCur({pos:{x:30,y:120}}); }
+
+        function drawFrame(tCtx, state, time, isExp = false) {
+            const size = isExp ? 400 : canvas.width/(window.devicePixelRatio||1), s = size/400;
+            tCtx.clearRect(0, 0, size, size);
+            if(!state) return;
+
+            const lines = state.text.split('\n').slice(0,4);
+            tCtx.font = `italic 900 ${38*s}px "Noto Sans SC"`;
+            let maxW = 0; lines.forEach(l => maxW = Math.max(maxW, tCtx.measureText(l).width));
+            const bW = Math.min(maxW + 200*s, size*0.95), bH = Math.max(150*s, lines.length*55*s + 70*s);
+            const dx = isExp ? (400-bW)/2 : state.pos.x, dy = isExp ? (400-bH)/2 + 20 : state.pos.y;
+            
+            tCtx.fillStyle = state.color;
+            tCtx.beginPath(); tCtx.roundRect(dx, dy, bW, bH, 30*s); tCtx.fill();
+            tCtx.beginPath(); tCtx.moveTo(dx+50*s, dy+bH); tCtx.lineTo(dx+40*s, dy+bH+18*s); tCtx.lineTo(dx+85*s, dy+bH); tCtx.fill();
+            
+            tCtx.fillStyle = "white"; tCtx.textBaseline = "middle";
+            const sy = dy + bH/2 - (lines.length-1)*55*s/2;
+            lines.forEach((l,i) => {
+                let off = 0;
+                if(state.animType==='wave') off = Math.sin(time/200+i)*5;
+                if(state.animType==='breath') off = (Math.sin(time/300)+1)*2;
+                if(state.animType==='jump') off = Math.abs(Math.sin(time/300+i))*-10;
+                tCtx.fillText(l, dx+35*s, sy + i*55*s + off);
+            });
+
+            if(globalAva) {
+                const as = 130*s, ax = dx+bW-as-15*s, ay = dy-45*s;
+                tCtx.save(); tCtx.beginPath();
+                if(state.isRound) tCtx.arc(ax+as/2, ay+as/2, as/2, 0, Math.PI*2);
+                else tCtx.roundRect(ax, ay, as, as, 20*s);
+                tCtx.clip();
+                tCtx.drawImage(globalAva, ax, ay, as, as); tCtx.restore();
+                if(state.hasBorder){ 
+                    tCtx.strokeStyle="#fff"; tCtx.lineWidth=5*s; tCtx.beginPath(); 
+                    if(state.isRound) tCtx.arc(ax+as/2, ay+as/2, as/2, 0, Math.PI*2);
+                    else tCtx.roundRect(ax, ay, as, as, 20*s);
+                    tCtx.stroke(); 
+                }
+                if(state.showBadge) {
+                    const gx = ax+as-65*s, gy = ay-12*s, gw = 85*s, gh = 34*s;
+                    tCtx.fillStyle = "white"; tCtx.beginPath(); tCtx.roundRect(gx, gy, gw, gh, 17*s); tCtx.fill();
+                    if(state.hasBadgeBorder){ tCtx.strokeStyle=state.color; tCtx.lineWidth=1.5*s; tCtx.stroke(); }
+                    tCtx.fillStyle=state.color; tCtx.font=`bold ${14*s}px sans-serif`; tCtx.textAlign="center";
+                    tCtx.fillText(state.badge, gx+gw/2, gy+gh/2+2*s); tCtx.textAlign="left";
+                }
+                if(!isExp) state.hit = { x:dx, y:dy, w:bW, h:bH };
+            }
+        }
+
+        function render() { drawFrame(ctx, emojis[curIdx], Date.now()); requestAnimationFrame(render); }
+
+        function makeGif(state, cb) {
+            const gif = new GIF({ 
+                workers: 2, quality: 1, width: 400, height: 400, 
+                transparent: 'rgba(0,0,0,0)',
+                workerScript: URL.createObjectURL(new Blob([`importScripts('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');`], {type: 'text/javascript'}))
+            });
+            for(let i=0; i<15; i++){
+                const c = document.createElement('canvas'); c.width=400; c.height=400;
+                drawFrame(c.getContext('2d'), state, i*80, true);
+                gif.addFrame(c, {delay: 60, copy: true});
+            }
+            gif.on('progress', p => document.getElementById('prog').innerText = Math.round(p*100)+'%');
+            gif.on('finished', blob => cb(blob));
+            gif.render();
+        }
+
+        async function exportSingle() {
+            const l = document.getElementById('loading'); l.style.display='flex';
+            makeGif(emojis[curIdx], blob => {
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
+                a.download = `表情Pro_${Date.now()}.gif`; a.click();
+                l.style.display='none';
+            });
+        }
+
+        async function exportAll() {
+            const l = document.getElementById('loading'); l.style.display='flex';
+            const zip = new JSZip();
+            for(let i=0; i<emojis.length; i++){
+                document.getElementById('loadText').innerText = `打包中 (${i+1}/${emojis.length})`;
+                const blob = await new Promise(res => makeGif(emojis[i], res));
+                zip.file(`emoji_${i+1}.gif`, blob);
+            }
+            const res = await zip.generateAsync({type:"blob"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(res); a.download = "批量透明表情包.zip"; a.click();
+            l.style.display='none';
+        }
+
+        function applyColor(c) { updateCur({color:c}); syncUI(); }
+        function loadAva(e) {
+            const fr = new FileReader();
+            fr.onload = (ev) => {
+                const img = new Image(); img.onload = () => { globalAva = img; localStorage.setItem('v5_ava', ev.target.result); };
+                img.src = ev.target.result;
+            };
+            fr.readAsDataURL(e.target.files[0]);
+        }
+
+        function openBadgeEdit() { editTarget='badge'; document.getElementById('drawerTitle').innerText="修改挂件文字"; document.getElementById('textInp').value=emojis[curIdx].badge; document.getElementById('drawer').classList.add('active'); }
+        function closeEdit() {
+            const v = document.getElementById('textInp').value;
+            if(editTarget==='text') updateCur({text:v}); else updateCur({badge:v});
+            document.getElementById('drawer').classList.remove('active');
+        }
+
+        function initEvents() {
+            let last = 0;
+            const start = (e) => {
+                if(!emojis[curIdx]) return;
+                const r = canvas.getBoundingClientRect(), ev = e.touches?e.touches[0]:e;
+                const d = (canvas.width/r.width/(window.devicePixelRatio||1));
+                const x = (ev.clientX-r.left)*d, y=(ev.clientY-r.top)*d;
+                const s = emojis[curIdx];
+                if(s.hit && x>s.hit.x && x<s.hit.x+s.hit.w && y>s.hit.y && y<s.hit.y+s.hit.h) {
+                    s.dragging = { x: x-s.pos.x, y: y-s.pos.y };
+                    if(Date.now()-last < 300) { editTarget='text'; document.getElementById('drawerTitle').innerText="修改主文案"; document.getElementById('textInp').value=s.text; document.getElementById('drawer').classList.add('active'); }
+                    last = Date.now();
+                }
+            };
+            const move = (e) => {
+                const s = emojis[curIdx]; if(!s || !s.dragging) return;
+                const ev = e.touches?e.touches[0]:e, r = canvas.getBoundingClientRect();
+                const d = (canvas.width/r.width/(window.devicePixelRatio||1));
+                s.pos.x = (ev.clientX-r.left)*d - s.dragging.x; s.pos.y = (ev.clientY-r.top)*d - s.dragging.y;
+                e.preventDefault();
+            };
+            const end = () => { if(emojis[curIdx]) emojis[curIdx].dragging = null; save(); };
+            canvas.addEventListener('mousedown', start); canvas.addEventListener('touchstart', start, {passive:false});
+            window.addEventListener('mousemove', move); window.addEventListener('touchmove', move, {passive:false});
+            window.addEventListener('mouseup', end); window.addEventListener('touchend', end);
+        }
+    </script>
+</body>
+</html>
