@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI海报大师 Pro - 安全增强版</title>
+    <title>AI海报大师 Pro - 2026 安全增强版</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
@@ -19,6 +19,7 @@
 
         #toast { position: fixed; top: 15%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 24px; border-radius: 20px; font-size: 13px; z-index: 10000; display: none; }
 
+        /* 控制面板 */
         .controls { width: 90%; max-width: 380px; background: #fff; padding: 15px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         .input-group { position: relative; display: flex; align-items: center; margin-bottom: 12px; }
         .input-group input, .input-group select { width: 100%; padding: 10px 10px; border: 1px solid #DDD; border-radius: 8px; font-size: 14px; outline: none; }
@@ -27,6 +28,7 @@
         .color-row { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
         .c-btn { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 0 1px #DDD; }
 
+        /* 海报容器 */
         .poster-box {
             width: 360px; height: 640px; background: var(--bg-current);
             position: relative; display: flex; flex-direction: column;
@@ -80,11 +82,11 @@
 
 <div id="unlock-modal" class="modal">
     <div class="modal-content">
-        <h3 id="modal-title">功能已加锁</h3>
-        <p id="modal-desc">关注公众号<span class="link-text" onclick="copyAndJumpMP()">「AI 程序员小艾」</span>输入关键词获取解锁暗号。</p>
-        <input type="text" id="unlock-input" placeholder="输入 AI 开头的暗号">
+        <h3 id="modal-title">功能已锁定</h3>
+        <p id="modal-desc">关注公众号<span class="link-text" onclick="copyAndJumpMP()">「AI 程序员小艾」</span>回复<span class="link-text" onclick="copyUnlockKey()">「解锁码 008」</span>获取暗号。</p>
+        <input type="text" id="unlock-input" placeholder="请输入解锁暗号">
         <button class="btn btn-blue" style="width: 100%;" onclick="checkUnlockCode()">立即解锁</button>
-        <button class="btn btn-white" style="width: 100%; margin-top:10px; border:none; color:#999;" onclick="document.getElementById('unlock-modal').style.display='none'">返回</button>
+        <button class="btn btn-white" style="width: 100%; margin-top:10px; border:none; color:#999;" onclick="document.getElementById('unlock-modal').style.display='none'">稍后再说</button>
     </div>
 </div>
 
@@ -157,19 +159,19 @@
 
 <script>
     let qr;
-    const STORAGE_KEY = "POSTER_PRO_DATA_V2";
-    const UNLOCK_KEY = "POSTER_UNLOCK_STATUS";
-    const UPLOAD_COUNT_KEY = "POSTER_UPLOAD_COUNT";
-    
-    // 这里设定为你指定的暗号
-    const CORRECT_CODE = "AI666-857"; 
-    
-    const FREE_UPLOAD_LIMIT = 5;
+    const STORAGE_KEY = "POSTER_PRO_V2_FINAL";
+    const UNLOCK_KEY = "P_SAFE_S";
+    const UPLOAD_COUNT_KEY = "P_UP_C";
     const DEFAULT_URL = "https://mp.weixin.qq.com/s/j5QtScWVX99Sp9sTd6iYrQ";
 
-    // 头像双在线备份
-    const AVATAR_URL_1 = "https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg";
-    const AVATAR_URL_2 = "https://dkfile.net/uploads/avatars/avatar_1037_2b899c87.jpeg";
+    // 密码安全拆分：密码为 AI666-857
+    const _k1 = "AI";
+    const _k2 = "666-";
+    const _k3 = "857";
+
+    // 头像配置
+    const AVATAR_1 = "https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg";
+    const AVATAR_2 = "https://dkfile.net/uploads/avatars/avatar_1037_2b899c87.jpeg";
 
     window.onload = () => {
         qr = new QRCode(document.getElementById("qrcode-view"), {
@@ -183,61 +185,58 @@
         updateUploadDisplay();
     };
 
+    // 头像容错处理
     function handleAvatarError(img) {
-        if (img.src === AVATAR_URL_1) {
-            img.src = AVATAR_URL_2;
-        } else if (img.src === AVATAR_URL_2) {
+        if (img.src === AVATAR_1) {
+            img.src = AVATAR_2;
+        } else if (img.src === AVATAR_2) {
             img.src = "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix";
         }
     }
 
-    // Logo 上传强制锁定
+    // 安全检查逻辑
+    function checkUnlockCode() {
+        const input = document.getElementById('unlock-input').value.trim();
+        if (input === (_k1 + _k2 + _k3)) {
+            localStorage.setItem(UNLOCK_KEY, 'true');
+            toast("解锁成功！已获得无限权限");
+            document.getElementById('unlock-modal').style.display = 'none';
+        } else {
+            toast("暗号错误，请检查大小写及连字符");
+        }
+    }
+
+    // 上传图片按钮逻辑
+    function handleImgUploadClick() {
+        const isUnlocked = localStorage.getItem(UNLOCK_KEY) === 'true';
+        const count = parseInt(localStorage.getItem(UPLOAD_COUNT_KEY) || "0");
+        if (isUnlocked || count < 5) {
+            triggerFile('file-main');
+        } else {
+            document.getElementById('modal-title').innerText = "次数已用尽";
+            document.getElementById('unlock-modal').style.display = 'flex';
+        }
+    }
+
+    // Logo上传强制锁定
     function handleLogoUploadClick() {
         if (localStorage.getItem(UNLOCK_KEY) === 'true') {
             triggerFile('file-logo');
         } else {
             document.getElementById('modal-title').innerText = "Logo 功能已锁定";
-            document.getElementById('modal-desc').innerHTML = `上传中心 Logo 属于专业版功能。关注公众号<span class="link-text" onclick="copyAndJumpMP()">「AI 程序员小艾」</span>输入<span class="link-text" onclick="copyUnlockCodeTip()">「解锁码 008」</span>获取暗号。`;
             document.getElementById('unlock-modal').style.display = 'flex';
         }
     }
 
-    // 主图上传前 5 次免费
-    function handleImgUploadClick() {
-        const isUnlocked = localStorage.getItem(UNLOCK_KEY) === 'true';
-        const count = parseInt(localStorage.getItem(UPLOAD_COUNT_KEY) || "0");
-
-        if (isUnlocked || count < FREE_UPLOAD_LIMIT) {
-            triggerFile('file-main');
-        } else {
-            document.getElementById('modal-title').innerText = "上传次数已用尽";
-            document.getElementById('modal-desc').innerHTML = `免费上传额度已用完。关注公众号<span class="link-text" onclick="copyAndJumpMP()">「AI 程序员小艾」</span>输入暗号永久解锁。`;
-            document.getElementById('unlock-modal').style.display = 'flex';
-        }
-    }
-
-    function checkUnlockCode() {
-        const inputVal = document.getElementById('unlock-input').value.trim(); // .trim() 去除首尾空格
-        if (inputVal === CORRECT_CODE) {
-            localStorage.setItem(UNLOCK_KEY, 'true');
-            toast("验证通过！所有功能已解锁");
-            document.getElementById('unlock-modal').style.display = 'none';
-        } else {
-            toast("暗号不匹配，请重新输入");
-        }
-    }
-
+    // 预览与计数
     function previewFile(e, tid) {
         const file = e.target.files[0];
         if(!file) return;
-        
         if(tid === 'display-img') {
             let count = parseInt(localStorage.getItem(UPLOAD_COUNT_KEY) || "0");
-            count++;
-            localStorage.setItem(UPLOAD_COUNT_KEY, count);
+            localStorage.setItem(UPLOAD_COUNT_KEY, ++count);
             updateUploadDisplay();
         }
-
         const reader = new FileReader();
         reader.onload = (ev) => {
             const img = document.getElementById(tid);
@@ -248,9 +247,78 @@
         reader.readAsDataURL(file);
     }
 
-    function updateUploadDisplay() {
-        const count = parseInt(localStorage.getItem(UPLOAD_COUNT_KEY) || "0");
-        document.getElementById('count-num').innerText = count;
+    // 二维码与链接逻辑
+    function updateQR() {
+        const url = document.getElementById('url-input').value || " ";
+        qr.clear();
+        qr.makeCode(url);
+        saveAll();
+    }
+
+    async function handleUrlFocus() {
+        const input = document.getElementById('url-input');
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text && text.startsWith('http')) {
+                input.value = text;
+                updateQR();
+                toast("已自动粘贴");
+            }
+        } catch (e) {}
+    }
+
+    function clearUrl() {
+        document.getElementById('url-input').value = "";
+        updateQR();
+    }
+
+    // 背景与拖拽
+    function setBg(color) {
+        document.documentElement.style.setProperty('--bg-current', color);
+        document.getElementById('color-picker').value = color;
+        saveAll();
+    }
+
+    function initDraggable(el) {
+        let sx = 0, sy = 0, dx = 0, dy = 0;
+        const container = document.getElementById('capture-area');
+        const start = (e) => {
+            const p = e.type.includes('touch') ? e.touches[0] : e;
+            sx = p.clientX; sy = p.clientY;
+            dx = el.offsetLeft; dy = el.offsetTop;
+            document.onmousemove = move; document.onmouseup = end;
+            document.ontouchmove = move; document.ontouchend = end;
+        };
+        const move = (e) => {
+            const p = e.type.includes('touch') ? e.touches[0] : e;
+            let nx = dx + (p.clientX - sx);
+            let ny = dy + (p.clientY - sy);
+            nx = Math.max(0, Math.min(nx, container.offsetWidth - el.offsetWidth));
+            ny = Math.max(0, Math.min(ny, container.offsetHeight - el.offsetHeight));
+            el.style.left = nx + 'px'; el.style.top = ny + 'px';
+        };
+        const end = () => { 
+            document.onmousemove = null; document.onmouseup = null; 
+            document.ontouchmove = null; document.ontouchend = null;
+            saveAll();
+        };
+        el.onmousedown = start; el.ontouchstart = start;
+    }
+
+    // 存储与加载
+    function saveAll() {
+        const data = {
+            url: document.getElementById('url-input').value,
+            nick: document.getElementById('view-nick').value,
+            title: document.getElementById('view-title').innerText,
+            bg: getComputedStyle(document.documentElement).getPropertyValue('--bg-current'),
+            expiry: document.getElementById('expiry-select').value,
+            qrPos: {
+                left: document.getElementById('qr-drag-node').style.left,
+                top: document.getElementById('qr-drag-node').style.top
+            }
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
 
     function loadAll() {
@@ -272,83 +340,34 @@
         updateQR();
     }
 
-    // --- 核心逻辑支撑 ---
+    // 辅助工具
     function toast(msg) {
         const t = document.getElementById('toast');
         t.innerText = msg; t.style.display = 'block';
         setTimeout(() => t.style.display = 'none', 2500);
     }
+    function updateUploadDisplay() {
+        document.getElementById('count-num').innerText = localStorage.getItem(UPLOAD_COUNT_KEY) || "0";
+    }
     function updateExpiryDate() {
         const days = parseInt(document.getElementById('expiry-select').value);
         const display = document.getElementById('expiry-display');
-        if (days > 30000) display.innerText = "永久有效";
-        else {
-            const date = new Date();
-            date.setDate(date.getDate() + days);
-            display.innerText = "有效期至：" + date.toISOString().split('T')[0];
-        }
+        const date = new Date();
+        date.setDate(date.getDate() + days);
+        display.innerText = days > 30000 ? "永久有效" : "有效期至：" + date.toISOString().split('T')[0];
         saveAll();
-    }
-    function handleUrlFocus() {
-        navigator.clipboard.readText().then(text => {
-            if (text && text.startsWith('http')) {
-                document.getElementById('url-input').value = text;
-                updateQR();
-                toast("已自动填充");
-            }
-        }).catch(()=>{});
-    }
-    function updateQR() {
-        const url = document.getElementById('url-input').value || " ";
-        qr.clear(); qr.makeCode(url); saveAll();
-    }
-    function clearUrl() { document.getElementById('url-input').value = ""; updateQR(); }
-    function setBg(color) {
-        document.documentElement.style.setProperty('--bg-current', color);
-        document.getElementById('color-picker').value = color;
-        saveAll();
-    }
-    function saveAll() {
-        const data = {
-            url: document.getElementById('url-input').value,
-            nick: document.getElementById('view-nick').value,
-            title: document.getElementById('view-title').innerText,
-            bg: getComputedStyle(document.documentElement).getPropertyValue('--bg-current'),
-            expiry: document.getElementById('expiry-select').value,
-            qrPos: {
-                left: document.getElementById('qr-drag-node').style.left,
-                top: document.getElementById('qr-drag-node').style.top
-            }
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
     function triggerFile(id) { document.getElementById(id).click(); }
     function initYear() { document.getElementById('year-text').innerText = new Date().getFullYear(); }
     function copyWX(num) { navigator.clipboard.writeText(num); toast("微信号已复制"); }
-    function copyUnlockCodeTip() { navigator.clipboard.writeText("解锁码 008"); toast("关键词已复制"); }
+    function copyUnlockKey() { navigator.clipboard.writeText("解锁码 008"); toast("关键词已复制"); }
     function copyAndJumpMP() {
         navigator.clipboard.writeText("AI 程序员小艾");
         toast("名称已复制，正在跳转...");
-        setTimeout(() => window.location.href = "https://mp.weixin.qq.com/s/8C62f0ayY4HjO8VUqwBdig", 800);
+        setTimeout(() => window.location.href = "https://mp.weixin.qq.com/s/8C62f0ayY4HjO8VUqwBdig", 1000);
     }
     function goStar() { window.location.href = "https://t.zsxq.com/XNHXs"; }
     function goMP() { window.location.href = "https://mp.weixin.qq.com/s/5LNiXmYNWlsfBUp0kaiAtQ"; }
-    function initDraggable(el) {
-        let sx = 0, sy = 0, dx = 0, dy = 0;
-        const start = (e) => {
-            const p = e.type.includes('touch') ? e.touches[0] : e;
-            sx = p.clientX; sy = p.clientY; dx = el.offsetLeft; dy = el.offsetTop;
-            document.onmousemove = move; document.onmouseup = end;
-            document.ontouchmove = move; document.ontouchend = end;
-        };
-        const move = (e) => {
-            const p = e.type.includes('touch') ? e.touches[0] : e;
-            el.style.left = (dx + p.clientX - sx) + 'px';
-            el.style.top = (dy + p.clientY - sy) + 'px';
-        };
-        const end = () => { document.onmousemove = null; document.onmouseup = null; document.ontouchmove = null; document.ontouchend = null; saveAll(); };
-        el.onmousedown = start; el.ontouchstart = start;
-    }
     async function downloadPoster() {
         toast("正在生成海报...");
         const canvas = await html2canvas(document.getElementById('capture-area'), { scale: 3, useCORS: true });
