@@ -137,7 +137,7 @@
     <div class="p-footer">
         技术支持：<span class="f-link" onclick="goStar()">艾兜兜儿</span> | 
         微信号：<span style="cursor:pointer; border-bottom:1px dotted;" onclick="copyWX('857023577')">857023577</span><br>
-        © <span id="year-text"></span> <span class="f-link" onclick="goMP()">AI 程序员小艾</span> 版权所有
+        © <span id="year-text"></span> <span class="f-link" onclick="goMP()">AI 程序员小艾</span> 版权所有 | 欢迎加入：<span class="f-link" onclick="goDeepSeek()"> 欢迎进入 DeepSeek 社区</span>
     </div>
 
     <div id="qr-drag-node">
@@ -366,8 +366,9 @@
         toast("名称已复制，正在跳转...");
         setTimeout(() => window.location.href = "https://mp.weixin.qq.com/s/8C62f0ayY4HjO8VUqwBdig", 1000);
     }
-    function goStar() { window.location.href = "https://t.zsxq.com/XNHXs"; }
+    function goStar() { window.location.href = "https://t.zsxq.com/FhQcu"; }
     function goMP() { window.location.href = "https://mp.weixin.qq.com/s/5LNiXmYNWlsfBUp0kaiAtQ"; }
+    function goDeepSeek() { window.location.href = "https://t.zsxq.com/XNHXs"; }
     async function downloadPoster() {
         toast("正在生成海报...");
         const canvas = await html2canvas(document.getElementById('capture-area'), { scale: 3, useCORS: true });
