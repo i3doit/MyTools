@@ -327,7 +327,7 @@
             const data = JSON.parse(saved);
             document.getElementById('url-input').value = data.url || DEFAULT_URL;
             document.getElementById('view-nick').value = data.nick || "AI 程序员小艾";
-            document.getElementById('view-title').innerText = data.title || "邀你扫码体验更多工具";
+            document.getElementById('view-title').innerText = data.title || "请输入分享卡片的标题";
             document.getElementById('expiry-select').value = data.expiry || "30";
             if (data.bg) setBg(data.bg.trim());
             if (data.qrPos && data.qrPos.left) {
