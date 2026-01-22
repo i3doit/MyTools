@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>深度专注 - AI 提效工具</title>
+    <style>
+        :root {
+            --apple-blue: #007AFF;
+            --eye-care-bg: #f5f5f7;
+            --glass-bg: rgba(255, 255, 255, 0.72);
+            --text-main: #1d1d1f;
+            --text-sec: #86868b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, "SF Pro SC", "SF Pro Display", "PingFang SC", "Helvetica Neue", sans-serif;
+            background: linear-gradient(125deg, #e3e3e8 0%, #f5f5f7 100%);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* 顶部用户栏 */
+        .user-bar {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 18px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+        }
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+        }
+        .user-info { margin-left: 12px; }
+        .user-name { font-weight: 600; font-size: 16px; }
+
+        /* 主体卡片 */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 28px;
+            padding: 40px 24px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+            text-align: center;
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        h2 { font-size: 24px; font-weight: 600; margin-bottom: 20px; letter-spacing: -0.5px; }
+
+        #task-display { 
+            font-size: 18px; color: var(--apple-blue); font-weight: 500; 
+            min-height: 28px; margin-bottom: 10px; word-break: break-all;
+        }
+
+        /* 输入框容器 */
+        .input-wrapper { position: relative; width: 100%; margin-bottom: 20px; }
+        textarea {
+            width: 100%; padding: 16px; border: none; border-radius: 16px;
+            background: rgba(0,0,0,0.05); font-size: 16px; outline: none;
+            resize: none; transition: all 0.2s; line-height: 1.5;
+        }
+        .clear-btn {
+            position: absolute; right: 10px; top: 10px;
+            background: #999; color: white; border-radius: 50%;
+            width: 20px; height: 20px; line-height: 18px; font-size: 14px;
+            cursor: pointer; display: none;
+        }
+
+        #timer-display {
+            font-size: 72px; font-weight: 200; color: var(--text-main);
+            font-variant-numeric: tabular-nums; margin: 30px 0;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .btn-group { display: flex; gap: 12px; }
+        button {
+            flex: 1; padding: 16px; border: none; border-radius: 16px;
+            font-size: 17px; font-weight: 600; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .btn-start { background: var(--apple-blue); color: white; }
+        .btn-reset { background: #ff3b30; color: white; display: none; }
+        .btn-share { background: #34c759; color: white; margin-top: 12px; width: 100%; }
+        button:active { transform: scale(0.96); opacity: 0.9; }
+
+        /* Toast 样式 */
+        #toast {
+            position: fixed; top: 10%; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 12px 24px;
+            border-radius: 25px; z-index: 9999; display: none;
+            font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        /* 页脚版权 */
+        footer {
+            margin-top: auto; padding: 40px 20px; text-align: center;
+            font-size: 13px; color: var(--text-sec); width: 100%;
+        }
+        .footer-links { margin: 15px 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .footer-links a { color: var(--apple-blue); text-decoration: none; }
+        .copy-tag { background: #eee; padding: 2px 8px; border-radius: 4px; cursor: pointer; }
+
+        /* 动画 */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .glass-card { animation: fadeIn 0.8s ease-out; }
+    </style>
+</head>
+<body>
+
+<div id="toast">提示信息</div>
+
+<div class="user-bar">
+    <img src="https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg!1" class="avatar" alt="头像">
+    <div class="user-info">
+        <div class="user-name">艾兜兜儿</div>
+        <div style="font-size: 12px; color: var(--text-sec);">正在构建专注力...</div>
+    </div>
+</div>
+
+<div class="glass-card">
+    <h2 id="greeting">现在打开手机要干嘛？</h2>
+    <div id="task-display"></div>
+    
+    <div class="input-wrapper">
+        <textarea id="task-input" rows="2" placeholder="输入目标（支持 Emoji ✨）" oninput="handleInput(this)"></textarea>
+        <div id="clear-btn" class="clear-btn" onclick="clearInput()">×</div>
+    </div>
+    
+    <div id="timer-display">25:00</div>
+    
+    <div class="btn-group">
+        <button id="main-btn" class="btn-start" onclick="toggleTimer()">开启深度专注</button>
+        <button id="reset-btn" class="btn-reset" onclick="resetTimer()">放弃本次</button>
+    </div>
+    
+    <button class="btn-share" onclick="shareCard()">分享专注成就</button>
+
+    <p style="margin-top: 25px; font-size: 13px; color: var(--text-sec); line-height: 1.6;">
+        "专注是所有天才的共同特征。"
+    </p>
+</div>
+
+<footer>
+    <div id="pv-count">正在统计浏览量...</div>
+    <div class="footer-links">
+        <a href="https://t.zsxq.com/7tSuP" target="_blank">技术支持：艾兜兜儿</a>
+        <span class="copy-tag" onclick="copyQQ()">QQ群: 857023577 (点击复制)</span>
+        <a href="https://t.zsxq.com/XNHXs" target="_blank">DeepSeek实战</a>
+        <a href="https://t.zsxq.com/uqG2N" target="_blank">AI编程做产品</a>
+        <a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" target="_blank">更多工具</a>
+    </div>
+    <div id="copyright">© <span id="year"></span> 艾兜兜儿 版权所有</div>
+</footer>
+
+<script>
+    // 基础状态
+    let timeLeft = 25 * 60;
+    let timerId = null;
+    let isRunning = false;
+
+    // 元素获取
+    const toast = document.getElementById('toast');
+    const taskInput = document.getElementById('task-input');
+    const clearBtn = document.getElementById('clear-btn');
+    const taskDisplay = document.getElementById('task-display');
+    const mainBtn = document.getElementById('main-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    // 1. 初始化功能
+    window.onload = function() {
+        updateYear();
+        loadHistory();
+        initTracking();
+    };
+
+    // 2. Toast 提示逻辑
+    function showToast(msg, duration = 2000) {
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, duration);
+    }
+
+    // 3. 输入校验与快捷清空
+    function handleInput(el) {
+        clearBtn.style.display = el.value.length > 0 ? 'block' : 'none';
+        // 安全校验：过滤潜在脚本标签（基础版）
+        el.value = el.value.replace(/<script.*?>.*?<\/script>/ig, '');
+    }
+
+    function clearInput() {
+        taskInput.value = '';
+        clearBtn.style.display = 'none';
+        taskInput.focus();
+    }
+
+    // 4. 定时器核心逻辑
+    function toggleTimer() {
+        if (!isRunning) {
+            const task = taskInput.value.trim();
+            if (!task) {
+                showToast("⚠️ 请输入您的专注目标");
+                return;
+            }
+            saveToLocal(task);
+            startTimer(task);
+        }
+    }
+
+    function startTimer(task) {
+        isRunning = true;
+        taskDisplay.textContent = "🎯 任务中：" + task;
+        taskInput.parentElement.style.display = "none";
+        resetBtn.style.display = "block";
+        mainBtn.textContent = "保持专注中...";
+        mainBtn.disabled = true;
+        mainBtn.style.background = "#8e8e93";
+
+        timerId = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay();
+            if (timeLeft <= 0) {
+                clearInterval(timerId);
+                showToast("🎉 太棒了！任务完成！", 5000);
+                resetTimer();
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        document.getElementById('timer-display').textContent = 
+            `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function resetTimer() {
+        clearInterval(timerId);
+        isRunning = false;
+        timeLeft = 25 * 60;
+        updateTimerDisplay();
+        taskInput.parentElement.style.display = "block";
+        taskDisplay.textContent = "";
+        resetBtn.style.display = "none";
+        mainBtn.textContent = "开启深度专注";
+        mainBtn.disabled = false;
+        mainBtn.style.background = "var(--apple-blue)";
+    }
+
+    // 5. 数据存储
+    function saveToLocal(task) {
+        try {
+            let history = JSON.parse(localStorage.getItem('focus_history') || '[]');
+            history.unshift({time: new Date().toLocaleString(), task: task});
+            
+            // 数据过量提醒 (模拟 2MB 限制)
+            if (JSON.stringify(history).length > 2000000) {
+                showToast("存储空间将满，已清理旧数据");
+                history = history.slice(0, 100);
+            }
+            localStorage.setItem('focus_history', JSON.stringify(history));
+        } catch (e) {
+            console.error("存储失败");
+        }
+    }
+
+    function loadHistory() {
+        const history = JSON.parse(localStorage.getItem('focus_history') || '[]');
+        if (history.length > 0) {
+            console.log("欢迎回来，上次任务：", history[0].task);
+        }
+    }
+
+    // 6. 分享功能 (调用原生 Web Share API)
+    async function shareCard() {
+        const task = taskInput.value || "保持专注";
+        const shareData = {
+            title: '我的深度专注时间',
+            text: `我正在使用“深度专注”工具进行任务：${task}。快来一起高效办公！`,
+            url: window.location.href
+        };
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                showToast("复制链接成功，快去分享吧！");
+            }
+        } catch (err) {
+            showToast("分享已取消");
+        }
+    }
+
+    // 7. 版权与统计
+    function updateYear() {
+        const currentYear = new Date().getFullYear();
+        document.getElementById('year').textContent = currentYear > 2026 ? `2026-${currentYear}` : "2026";
+    }
+
+    function copyQQ() {
+        const qq = "857023577";
+        navigator.clipboard.writeText(qq).then(() => {
+            showToast("✅ QQ群号已复制：" + qq);
+        });
+    }
+
+    // 8. 埋点统计模拟 (实际建议接入 LeanCloud 或百度统计)
+    function initTracking() {
+        let views = localStorage.getItem('site_views') || 0;
+        views = parseInt(views) + 1;
+        localStorage.setItem('site_views', views);
+        document.getElementById('pv-count').textContent = `本页总访问量：${views} (基于IP统计模拟)`;
+    }
+</script>
+
+</body>
+</html>
