@@ -1,1 +1,160 @@
-0
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>深度專注</title>
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --bg-color: #F2F2F7;
+        }
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 30px;
+            width: 85%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        h2 { color: #1c1c1e; font-weight: 600; margin-bottom: 5px; }
+        #task-display { font-size: 1.2rem; color: var(--primary-color); font-weight: bold; min-height: 1.5rem; margin-bottom: 20px; }
+        
+        #timer-display {
+            font-size: 5rem;
+            font-weight: 200;
+            color: #1c1c1e;
+            font-variant-numeric: tabular-nums;
+            margin: 20px 0;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: #e5e5ea;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .btn-group { display: flex; gap: 10px; }
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-start { background: var(--primary-color); color: white; }
+        .btn-reset { background: #ff3b30; color: white; display: none; }
+        
+        button:active { transform: scale(0.95); opacity: 0.8; }
+
+        /* 底部激勵語 */
+        .quote { margin-top: 30px; font-size: 0.85rem; color: #8e8e93; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+<div class="glass-card">
+    <h2 id="greeting">現在要做什麼？</h2>
+    <div id="task-display"></div>
+    
+    <input type="text" id="task-input" placeholder="輸入你的目標（如：查資料）">
+    
+    <div id="timer-display">25:00</div>
+    
+    <div class="btn-group">
+        <button id="main-btn" class="btn-start" onclick="toggleTimer()">開始專注</button>
+        <button id="reset-btn" class="btn-reset" onclick="resetTimer()">放棄</button>
+    </div>
+
+    <p class="quote">"拿起手機前，先問問大腦。"<br>專注完成後再打開社交軟體。</p>
+</div>
+
+<script>
+    let timeLeft = 25 * 60;
+    let timerId = null;
+    let isRunning = false;
+
+    const display = document.getElementById('timer-display');
+    const taskInput = document.getElementById('task-input');
+    const taskDisplay = document.getElementById('task-display');
+    const mainBtn = document.getElementById('main-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    function updateDisplay() {
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        display.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function toggleTimer() {
+        if (!isRunning) {
+            const task = taskInput.value.trim();
+            if (!task) {
+                alert("請先輸入你接下來要完成的任務！");
+                return;
+            }
+            startTimer(task);
+        }
+    }
+
+    function startTimer(task) {
+        isRunning = true;
+        taskDisplay.textContent = "任務中： " + task;
+        taskInput.style.display = "none";
+        resetBtn.style.display = "block";
+        mainBtn.textContent = "保持專注...";
+        mainBtn.disabled = true;
+        mainBtn.style.opacity = "0.5";
+
+        timerId = setInterval(() => {
+            timeLeft--;
+            updateDisplay();
+            if (timeLeft <= 0) {
+                clearInterval(timerId);
+                alert("恭喜！專注任務完成！現在可以放鬆一下了。");
+                resetTimer();
+            }
+        }, 1000);
+    }
+
+    function resetTimer() {
+        clearInterval(timerId);
+        isRunning = false;
+        timeLeft = 25 * 60;
+        updateDisplay();
+        taskInput.value = "";
+        taskInput.style.display = "block";
+        taskDisplay.textContent = "";
+        resetBtn.style.display = "none";
+        mainBtn.textContent = "開始專注";
+        mainBtn.disabled = false;
+        mainBtn.style.opacity = "1";
+    }
+</script>
+
+</body>
+</html>
