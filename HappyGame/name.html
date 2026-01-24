@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>姓名五格笔画测试（娱乐版）</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #4a6da7;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 18px;
+            margin: 15px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #4a6da7;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #3a5688;
+        }
+        button:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 30px;
+            line-height: 1.8;
+        }
+        .grid {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .comment {
+            font-size: 18px;
+            font-weight: bold;
+            color: #e67e22;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>姓名五格笔画测试（纯娱乐版）</h1>
+        <p>请输入你的姓名（2-4个汉字），支持复姓，如“欧阳娜娜”。常见字自动识别，不认识的会弹窗让你手动输入笔画～</p>
+        
+        <input type="text" id="nameInput" placeholder="例如：张伟、李娜娜、欧阳娜娜" maxlength="4">
+        <br><br>
+        <button id="calcBtn" onclick="calculate()">开始测试</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // 内置康熙笔画字典（扩展了一些常见字）
+        const strokesDict = {
+            // 常见姓（含复姓相关）
+            '赵':14, '钱':10, '孙':10, '李':7, '周':8, '吴':7, '郑':19, '王':4, '冯':5, '陈':16,
+            '褚':16, '卫':11, '蒋':17, '沈':8, '韩':17, '杨':13, '朱':8, '秦':10, '尤':4, '许':6,
+            '何':7, '吕':7, '施':9, '张':11, '孔':4, '曹':11, '严':9, '华':14, '金':8, '魏':17,
+            '陶':16, '姜':16, '戚':15, '谢':17, '邹':13, '喻':12, '柏':9, '窦':13, '章':11, '云':4,
+            '苏':22, '潘':15, '葛':14, '范':15, '彭':12, '郎':10, '鲁':15, '韦':9, '昌':8, '马':10,
+            '苗':11, '凤':14, '方':4, '俞':9, '任':6, '袁':10, '柳':9, '鲍':13, '史':5, '唐':10,
+            '费':11, '薛':19, '雷':13, '贺':12, '倪':10, '汤':12, '殷':10, '罗':20, '毕':10, '郝':10,
+            '安':6, '常':11, '乐':15, '于':3, '时':10, '傅':12, '皮':9, '齐':14, '康':11, '伍':7,
+            '余':8, '元':4, '顾':21, '孟':8, '平':5, '黄':12, '穆':16, '萧':18, '尹':4, 
+            '欧':15, '阳':17, '司':5, '徒':14, '上官':10, '夏侯':13, // 复姓常用字
+            // 常见名用字（保持原样）
+            '伟':11, '芳':10, '娜':10, '敏':11, '静':16, '丽':19, '强':12, '磊':15, '军':9, '洋':10,
+            '勇':9, '艳':24, '杰':12, '娟':10, '涛':18, '超':12, '明':8, '霞':17, '秀':7, '英':11,
+            '浩':11, '宇':6, '欣':8, '婷':12, '鑫':24, '博':12, '瑞':14, '琪':13, '雪':11, '佳':8,
+            '雨':8, '阳':17, '龙':16, '凤':14, '丹':4, '文':4, '斌':17, '辉':15, '颖':16, '熙':13,
+            '一':1, '二':2, '三':3, '四':5, '五':4, '六':6, '七':2, '八':2, '九':2, '十':2,
+        };
+
+        // 吉凶简表（同前）
+        const luckMeaning = {
+            1: "大吉：万象更新，领导运强",   2: "凶：孤立无援，分离运",
+            3: "大吉：权威显达，进取运",     4: "凶：身心过劳，不详运",
+            5: "大吉：福禄长寿，繁荣运",     6: "大吉：富贵荣华，安稳运",
+            7: "吉：刚毅果断，独立运",       8: "吉：坚韧不拔，勤勉运",
+            9: "凶：不测之祸，动荡运",       10: "凶：终结之数，沉浮运",
+            11: "大吉：旱苗逢雨，稳健运",    13: "大吉：智略超群，才艺运",
+            15: "大吉：福寿圆满，慈祥运",    16: "大吉：厚重载德，领导运",
+            17: "吉：刚强不屈，突破运",      18: "吉：权威显达，有志运",
+            21: "大吉：明月中天，首领运",    23: "大吉：壮丽果敢，兴隆运",
+            24: "大吉：家门隆昌，掘藏运",    25: "吉：荣俊英敏，资性英敏",
+            29: "吉：智谋卓越，财运运",      31: "大吉：智勇双全，繁荣运",
+            32: "大吉：宝马金鞍，贵人运",    33: "大吉：旭日升天，功名运",
+            35: "吉：温和贤淑，艺术运",      37: "吉：权威显达，猛虎运",
+            39: "吉：富贵荣华，突破运",      41: "大吉：德望高大，有德运",
+            45: "吉：顺风扬帆，稳健运",      47: "吉：点石成金，罗网运",
+            48: "吉：美善运，温和运",        52: "吉：达眼识人，先见运",
+            61: "吉：名利双收，富贵运",      63: "大吉：万宝集门，昌隆运",
+            65: "吉：健壮长寿，兴家运",      67: "吉：刚毅木立，权威运",
+            68: "吉：德望高隆，智慧运",      81: "吉：终吉有德，温和运",
+        };
+
+        function getLuck(n) {
+            return luckMeaning[n] || "半吉：平稳发展，中庸运";
+        }
+
+        // 随机趣味点评
+        const funComments = [
+            "哇，这个名字超级有范儿！简直天生主角命～",
+            "名字很不错哦，建议多微笑，运气会更好！",
+            "五格平衡，人生大概率顺风顺水！",
+            "有点小波折，但越挫越勇才是王道！",
+            "名字能量满满，适合创业当老板！",
+            "温柔大气型名字，桃花运少不了～",
+            "稳重可靠，家人朋友都喜欢你！",
+            "这个名字自带光环，未来可期！",
+        ];
+
+        function calculate() {
+            const btn = document.getElementById('calcBtn');
+            btn.disabled = true; // 防止重复点击
+            btn.textContent = '计算中...';
+
+            const name = document.getElementById('nameInput').value.trim();
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+
+            if (!name || name.length < 2 || name.length > 4) {
+                resultDiv.innerHTML = '<p style="color:red;">请填写2-4个汉字的姓名哦～</p>';
+                resetBtn();
+                return;
+            }
+
+            const words = name.split('');
+            const strokesList = [];
+
+            // 逐字获取笔画
+            for (let word of words) {
+                if (strokesDict[word] !== undefined) {
+                    strokesList.push(strokesDict[word]);
+                } else {
+                    const input = prompt(`请输入“${word}”的康熙笔画数（标准字典）：`);
+                    if (input === null || isNaN(input) || input <= 0) {
+                        resultDiv.innerHTML = '<p style="color:red;">输入无效，请重新开始～</p>';
+                        resetBtn();
+                        return;
+                    }
+                    strokesList.push(parseInt(input));
+                }
+            }
+
+            // 计算五格（根据字数不同规则）
+            let tiange, renge, dige, waige, zongge;
+            if (words.length === 2) { // 单姓单名
+                const [s, f] = strokesList;
+                tiange = s + 1;
+                renge = s + f;
+                dige = f + 1;
+                waige = 2;
+                zongge = s + f;
+            } else if (words.length === 3) { // 单姓双名
+                const [s, f, l] = strokesList;
+                tiange = s + 1;
+                renge = s + f;
+                dige = f + l;
+                waige = (s + l > 1) ? s + l : 2;
+                zongge = s + f + l;
+            } else { // 4字：复姓双名
+                const [s1, s2, f, l] = strokesList;
+                tiange = s1 + s2 + 1;
+                renge = s2 + f;
+                dige = f + l;
+                waige = (s1 + l > 1) ? s1 + l : 2;
+                zongge = s1 + s2 + f + l;
+            }
+
+            // 显示笔画详情
+            let strokeInfo = '<p><strong>笔画识别结果：</strong><br>';
+            words.forEach((w, i) => {
+                const source = strokesDict[w] !== undefined ? '（自动）' : '（手动）';
+                strokeInfo += `${w}：${strokesList[i]}画 ${source}<br>`;
+            });
+            strokeInfo += '</p>';
+            resultDiv.innerHTML += strokeInfo;
+
+            // 五格结果
+            resultDiv.innerHTML += '<div class="grid"><strong>【五格数理】</strong><br>' +
+                `天格 ${tiange}：${getLuck(tiange)}<br>` +
+                `人格 ${renge}：${getLuck(renge)}<br>` +
+                `地格 ${dige}：${getLuck(dige)}<br>` +
+                `外格 ${waige}：${getLuck(waige)}<br>` +
+                `总格 ${zongge}：${getLuck(zongge)}</div>';
+
+            // 统计大吉数量
+            const scores = [tiange, renge, dige, waige, zongge];
+            const greatLuck = scores.filter(x => getLuck(x).includes('大吉')).length;
+
+            let overall = '';
+            if (greatLuck >= 4) overall = '神级名字！五格全优，天生旺运！';
+            else if (greatLuck >= 3) overall = '极品好名！大部分大吉，未来光明！';
+            else if (greatLuck >= 2) overall = '不错的好名字！运势整体向上！';
+            else overall = '名字中规中矩，多努力一样精彩！';
+
+            resultDiv.innerHTML += `<div class="grid"><strong>【整体评价】</strong><br>${overall}</div>`;
+            resultDiv.innerHTML += `<p class="comment">随机趣味点评：<br>${funComments[Math.floor(Math.random() * funComments.length)]}</p>`;
+            resultDiv.innerHTML += '<p style="text-align:center; color:#888;">测试完成！纯娱乐哦～想再测就改名字重新点按钮～</p>';
+
+            resetBtn();
+
+            function resetBtn() {
+                btn.disabled = false;
+                btn.textContent = '开始测试';
+            }
+        }
+    </script>
+</body>
+</html>
