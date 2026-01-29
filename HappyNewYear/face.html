@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新年头像合成工具</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f4f4f4; padding: 20px; }
+        .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
+        canvas { border: 1px solid #ddd; background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%), linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%); background-size: 20px 20px; background-position: 0 0, 10px 10px; max-width: 100%; height: auto; margin-top: 15px; }
+        .controls { margin-top: 20px; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+        button, input[type="file"] { padding: 10px; cursor: pointer; }
+        .slider-group { grid-column: span 2; display: flex; align-items: center; gap: 10px; }
+        .slider-group label { min-width: 60px; }
+        input[type="range"] { flex-grow: 1; }
+        .template-select { grid-column: span 2; margin-bottom: 10px; }
+        .btn-download { grid-column: span 2; background: #e74c3c; color: white; border: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🧧 新年头像制作器</h2>
+    
+    <div class="template-select">
+        <label>选择模板：</label>
+        <select id="templateLoader">
+            <option value="template1.png">模板 1 (带帽子)</option>
+            <option value="template2.png">模板 2 (带烟花)</option>
+        </select>
+    </div>
+
+    <input type="file" id="upload" accept="image/*">
+    
+    <canvas id="editor" width="800" height="800"></canvas>
+
+    <div class="controls">
+        <div class="slider-group">
+            <label>缩放</label>
+            <input type="range" id="scale" min="0.1" max="3" step="0.01" value="1">
+        </div>
+        <div class="slider-group">
+            <label>水平位移</label>
+            <input type="range" id="posX" min="-400" max="400" value="0">
+        </div>
+        <div class="slider-group">
+            <label>垂直位移</label>
+            <input type="range" id="posY" min="-400" max="400" value="0">
+        </div>
+        <button onclick="resetPosition()">一键重置位置</button>
+        <button class="btn-download" onclick="downloadImage()">保存高清透明头像</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('editor');
+    const ctx = canvas.getContext('2d');
+    const upload = document.getElementById('upload');
+    const templateLoader = document.getElementById('templateLoader');
+
+    let userImg = new Image();
+    let templateImg = new Image();
+    let isLoaded = false;
+
+    // 参数设置
+    let config = {
+        x: 400,
+        y: 450, // 默认脸部中心位置
+        scale: 1,
+        offsetX: 0,
+        offsetY: 0
+    };
+
+    // 初始化加载
+    templateImg.src = templateLoader.value;
+    templateImg.onload = draw;
+
+    templateLoader.onchange = () => {
+        templateImg.src = templateLoader.value;
+    };
+
+    upload.onchange = (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            userImg.src = event.target.result;
+            userImg.onload = () => {
+                isLoaded = true;
+                resetPosition();
+                draw();
+            };
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // 监听滑动条
+    document.querySelectorAll('input[type="range"]').forEach(input => {
+        input.oninput = (e) => {
+            if(e.target.id === 'scale') config.scale = parseFloat(e.target.value);
+            if(e.target.id === 'posX') config.offsetX = parseInt(e.target.value);
+            if(e.target.id === 'posY') config.offsetY = parseInt(e.target.value);
+            draw();
+        };
+    });
+
+    function resetPosition() {
+        config.scale = 1;
+        config.offsetX = 0;
+        config.offsetY = 0;
+        document.getElementById('scale').value = 1;
+        document.getElementById('posX').value = 0;
+        document.getElementById('posY').value = 0;
+        draw();
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (isLoaded) {
+            ctx.save();
+            // 默认脸部区域中心点约 (400, 430)
+            const centerX = 400 + config.offsetX;
+            const centerY = 430 + config.offsetY;
+            const radius = 160 * config.scale; // 默认面部大小
+
+            // 1. 绘制圆形裁剪区域
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
+
+            // 2. 绘制用户图片
+            const aspect = userImg.width / userImg.height;
+            let drawW = radius * 2 * (aspect > 1 ? aspect : 1);
+            let drawH = radius * 2 / (aspect < 1 ? aspect : 1);
+            ctx.drawImage(userImg, centerX - drawW/2, centerY - drawH/2, drawW, drawH);
+            ctx.restore();
+        }
+
+        // 3. 覆盖透明模板
+        ctx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
+    }
+
+    function downloadImage() {
+        const link = document.createElement('a');
+        link.download = 'new_year_avatar.png';
+        link.href = canvas.toDataURL('image/png', 1.0);
+        link.click();
+    }
+</script>
+
+</body>
+</html>
