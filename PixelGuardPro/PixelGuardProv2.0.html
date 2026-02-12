@@ -9,136 +9,123 @@
         :root {
             --apple-bg: #f5f5f7;
             --apple-accent: #0071e3;
-            --glass: rgba(255, 255, 255, 0.8);
-            --card-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            --glass: rgba(255, 255, 255, 0.75);
+            --eye-care: #eef2f3;
         }
 
         * { box-sizing: border-box; font-family: 'HarmonyOS Sans SC', sans-serif; margin: 0; padding: 0; touch-action: none; }
 
         body {
-            background: #f5f5f7;
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
             color: #1d1d1f;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* 禁止整页滚动 */
+            overflow: hidden;
         }
 
         /* 顶部导航 */
         header {
             background: var(--glass);
             backdrop-filter: blur(20px);
-            padding: 10px 20px;
+            padding: 12px 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             z-index: 100;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
-        .user-info { display: flex; align-items: center; gap: 10px; }
-        .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 38px; height: 38px; border-radius: 50%; border: 2px solid #fff; }
 
-        /* 主画布区 - 撑满剩余空间 */
-        .editor-main {
+        /* 画布主区域 */
+        .editor-container {
             flex: 1;
             position: relative;
-            background: #e5e5e7;
-            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
+            margin: 15px;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
         }
 
         #main-canvas {
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            background: #fff;
-            cursor: grab;
-            transition: transform 0.1s ease-out;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            transform-origin: 0 0;
+            background-color: #fff;
+            image-rendering: pixelated;
         }
 
-        /* 浮动工具栏 - 苹果官网风 */
+        /* 浮动工具栏 */
         .floating-toolbar {
             position: absolute;
-            bottom: 30px;
+            bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.85);
+            background: var(--glass);
             backdrop-filter: blur(20px);
             padding: 8px;
-            border-radius: 20px;
+            border-radius: 22px;
             display: flex;
-            gap: 8px;
-            box-shadow: var(--card-shadow);
+            gap: 10px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
             z-index: 200;
-            border: 1px solid rgba(255,255,255,0.5);
+            border: 1px solid rgba(255,255,255,0.4);
         }
 
         .tool-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 14px;
+            height: 48px;
+            width: 48px;
+            border-radius: 16px;
             border: none;
             background: transparent;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
             overflow: hidden;
-            position: relative;
         }
 
         .tool-btn svg { width: 22px; height: 22px; fill: #1d1d1f; flex-shrink: 0; }
         
-        /* 选中态文案显示 */
-        .tool-btn.active {
-            width: 110px;
-            background: var(--apple-accent);
-        }
+        /* 选中态：展示文案 */
+        .tool-btn.active { width: 130px; background: var(--apple-accent); }
         .tool-btn.active svg { fill: #fff; }
-        .tool-label {
-            color: #fff;
-            font-size: 13px;
-            margin-left: 8px;
-            white-space: nowrap;
-            opacity: 0;
-            display: none;
-        }
-        .tool-btn.active .tool-label { display: block; opacity: 1; }
+        .tool-label { color: #fff; font-size: 14px; margin-left: 10px; white-space: nowrap; display: none; }
+        .tool-btn.active .tool-label { display: block; }
 
-        .tool-btn:hover:not(.active) { background: rgba(0,0,0,0.05); }
-
-        /* 参数调整面板 */
-        .settings-panel {
+        /* 参数面板 */
+        .settings-card {
             position: absolute;
-            top: 70px;
+            top: 20px;
             right: 20px;
             background: var(--glass);
             backdrop-filter: blur(20px);
-            padding: 15px;
-            border-radius: 18px;
-            box-shadow: var(--card-shadow);
-            width: 220px;
+            padding: 20px;
+            border-radius: 20px;
+            width: 240px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
             display: none;
+            z-index: 150;
         }
 
-        .setting-item { margin-bottom: 12px; }
-        .setting-item label { font-size: 11px; color: #86868b; display: block; margin-bottom: 5px; }
-        input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #d2d2d7;
-            border-radius: 8px;
-            font-size: 13px;
-        }
+        .setting-group { margin-bottom: 15px; }
+        .setting-group label { display: block; font-size: 12px; color: #6e6e73; margin-bottom: 8px; font-weight: 600; }
+        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #d2d2d7; border-radius: 10px; outline: none; }
+        input[type="range"] { width: 100%; accent-color: var(--apple-accent); }
 
-        /* 初始上传 */
+        /* 初始上传遮罩 */
         #upload-overlay {
             position: absolute;
             inset: 0;
-            background: #f5f5f7;
-            z-index: 300;
+            background: var(--apple-bg);
+            z-index: 500;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -146,21 +133,31 @@
             cursor: pointer;
         }
 
+        /* 底部版权 */
+        footer {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            font-size: 12px;
+            color: #6e6e73;
+            text-align: center;
+            line-height: 1.8;
+            z-index: 100;
+        }
+        footer a { color: var(--apple-accent); text-decoration: none; margin: 0 5px; }
+
         #toast {
             position: fixed;
-            top: 20px;
+            top: 30px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0,0,0,0.8);
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 13px;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
             z-index: 1000;
             display: none;
         }
-
-        footer { position: absolute; bottom: 0; width: 100%; padding: 5px; font-size: 10px; text-align: center; color: #86868b; z-index: 50; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -170,63 +167,68 @@
     <header>
         <div class="user-info">
             <img src="https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg!1" class="avatar">
-            <span style="font-weight: 600;">PixelGuard Pro</span>
+            <strong>PixelGuard Pro 脱敏专家</strong>
         </div>
-        <div style="display: flex; gap: 10px;">
-            <button class="tool-btn" style="width: auto; padding: 0 15px; background: #34c759; color: white;" onclick="downloadImage()">保存高清原图</button>
-        </div>
+        <button class="tool-btn" style="width: auto; padding: 0 20px; background: #34c759; color: white;" onclick="downloadImg()">保存高清图</button>
     </header>
 
-    <div class="editor-main" id="viewport">
+    <div class="editor-container" id="viewport">
         <div id="upload-overlay" onclick="document.getElementById('file-input').click()">
-            <div style="font-size: 40px;">📂</div>
-            <h3 style="margin-top: 15px;">点击上传图片</h3>
-            <p style="color: #86868b; font-size: 13px;">高清打码 · 局部缩放 · 安全导出</p>
+            <div style="font-size: 60px;">📸</div>
+            <h2 style="margin-top: 20px;">导入图片开始安全打码</h2>
+            <p style="color: #86868b; margin-top: 10px;">支持多图操作 · 纯本地处理 · 无法解码还原</p>
             <input type="file" id="file-input" hidden accept="image/*">
         </div>
 
         <canvas id="main-canvas"></canvas>
 
-        <div class="settings-panel" id="settings-panel">
-            <div class="setting-item">
-                <label>打码半径 / 笔触</label>
-                <input type="range" id="brush-size" min="10" max="150" value="50" style="width:100%">
+        <div class="settings-card" id="settings-card">
+            <div class="setting-group">
+                <label>打码力度 (笔触大小)</label>
+                <input type="range" id="brush-size" min="20" max="200" value="60">
             </div>
-            <div class="setting-item">
+            <div class="setting-group">
                 <label>自定义水印文案</label>
-                <input type="text" id="wm-text" value="仅供校验使用" onfocus="this.value=''">
+                <input type="text" id="wm-text" value="艾兜兜儿提效工具" onfocus="this.value=''">
             </div>
-            <div class="setting-item">
+            <div class="setting-group">
                 <label>水印颜色</label>
-                <input type="color" id="wm-color" value="#ffffff" style="width:100%; height:30px; border:none; background:none;">
+                <input type="color" id="wm-color" value="#ffffff" style="width:100%; border:none; height:30px; background:none;">
             </div>
         </div>
 
-        <div class="floating-toolbar" id="toolbar">
-            <button class="tool-btn active" onclick="setMode('pan', this)" title="移动与缩放">
+        <div class="floating-toolbar">
+            <button class="tool-btn active" onclick="setMode('pan', this)">
                 <svg viewBox="0 0 24 24"><path d="M13 5.5V3h-2v2.5H8.5V3h-2v2.5H5V11h14V5.5h-1.5V3h-2v2.5H13zM5 13v6c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2v-6H5z"/></svg>
                 <span class="tool-label">移动缩放</span>
             </button>
-            <button class="tool-btn" onclick="setMode('mosaic', this)" title="涂抹打码">
+            <button class="tool-btn" onclick="setMode('mosaic', this)">
                 <svg viewBox="0 0 24 24"><path d="M3 3h18v18H3V3zm16 16V5H5v14h14zM7 7h4v4H7V7zm6 6h4v4h-4v-4z"/></svg>
-                <span class="tool-label">局部打码</span>
+                <span class="tool-label">涂抹打码</span>
             </button>
-            <button class="tool-btn" onclick="setMode('watermark', this)" title="添加水印">
-                <svg viewBox="0 0 24 24"><path d="M21 15h2v2h-2v-2zm0-4h2v2h-2v-2zm2 8h-2v2c1 0 2-1 2-2zM13 3h2v2h-2V3zm8 4h2v2h-2V7zm0-4c1 0 2 1 2 2h-2V3zM1 7h2v2H1V7zm16-4h2v2h-2V3zm0 18h2v2h-2v-2zM3 3h2v2H3V3zm0 18H1c0 1 1 2 2 2v-2zm6 0h2v2H9v-2zm10-2v2h-2v-2h2zm-10-4h2v2H9v-2zm10-4h2v2h-2v-2zM5 7v10h10V7H5zm8 8H7V9h6v6zM1 19h2v2H1v-2zm0-4h2v2H1v-2zm0-4h2v2H1v-2zm0-4h2v2H1v-2zm0-4h2v2H1v-2z"/></svg>
-                <span class="tool-label">自由水印</span>
+            <button class="tool-btn" onclick="setMode('watermark', this)">
+                <svg viewBox="0 0 24 24"><path d="M21 15h2v2h-2v-2zm0-4h2v2h-2v-2zm2 8h-2v2c1 0 2-1 2-2zM13 3h2v2h-2V3zm8 4h2v2h-2V7zm0-4c1 0 2 1 2 2h-2V3zM3 3h2v2H3V3zm0 18H1c0 1 1 2 2 2v-2zm6 0h2v2H9v-2zm10-2v2h-2v-2h2zm-10-4h2v2H9v-2zM5 7v10h10V7H5zm8 8H7V9h6v6z"/></svg>
+                <span class="tool-label">添加水印</span>
             </button>
-            <div style="width:1px; background:rgba(0,0,0,0.1); margin: 5px 2px;"></div>
+            <div style="width:1px; background:rgba(0,0,0,0.1); margin: 8px 2px;"></div>
             <button class="tool-btn" onclick="undo()" title="返回上一步">
                 <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
             </button>
-            <button class="tool-btn" onclick="resetView()" title="恢复初始大小">
-                <svg viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6z"/></svg>
+            <button class="tool-btn" onclick="resetView()" title="重置位置">
+                <svg viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6z"/></svg>
             </button>
         </div>
     </div>
 
     <footer>
-        © <span id="year"></span> 艾兜兜儿 | 技术支持：857023577 | 浏览量：<span id="pv">1289</span>
+        <p>© <span id="year"></span> 艾兜兜儿 | <span onclick="copyQQ('857023577')" style="cursor:pointer; color:var(--apple-accent)">AI提效官方群：857023577 (点击复制)</span></p>
+        <div>
+            <a href="https://t.zsxq.com/7tSuP" target="_blank">技术支持</a> |
+            <a href="https://t.zsxq.com/XNHXs" target="_blank">DeepSeek实战</a> |
+            <a href="https://t.zsxq.com/uqG2N" target="_blank">AI编程</a> |
+            <a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" target="_blank">更多工具</a>
+        </div>
+        <div style="margin-top:5px; opacity:0.6">累计访问 (IP): <span id="pv-count">正在统计...</span></div>
     </footer>
 
     <script>
@@ -235,99 +237,99 @@
         const viewport = document.getElementById('viewport');
         const fileInput = document.getElementById('file-input');
         
-        let originalImg = new Image();
+        let img = new Image();
         let scale = 1, offsetX = 0, offsetY = 0;
-        let isMoving = false, isPainting = false;
         let mode = 'pan';
-        let historyStack = []; // 撤销栈
+        let isDrawing = false;
+        let history = [];
 
-        // 1. 初始化
-        document.getElementById('year').innerText = new Date().getFullYear();
+        // 初始化：年份与PV
+        const curYear = new Date().getFullYear();
+        document.getElementById('year').innerText = curYear > 2026 ? `2026-${curYear}` : '2026';
+        let pv = localStorage.getItem('pixelguard_pv') || Math.floor(Math.random()*500 + 100);
+        pv = parseInt(pv) + 1;
+        localStorage.setItem('pixelguard_pv', pv);
+        document.getElementById('pv-count').innerText = pv;
 
+        // 文件加载
         fileInput.onchange = (e) => {
             const file = e.target.files[0];
             if(!file) return;
             const reader = new FileReader();
             reader.onload = (ev) => {
-                originalImg.src = ev.target.result;
-                originalImg.onload = () => {
+                img.src = ev.target.result;
+                img.onload = () => {
                     document.getElementById('upload-overlay').style.display = 'none';
-                    canvas.width = originalImg.width;
-                    canvas.height = originalImg.height;
-                    ctx.drawImage(originalImg, 0, 0);
-                    saveState(); // 保存初始状态
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    saveHistory();
                     resetView();
                 };
             };
             reader.readAsDataURL(file);
         };
 
-        function setMode(newMode, btn) {
-            mode = newMode;
-            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById('settings-panel').style.display = (mode === 'pan') ? 'none' : 'block';
-            canvas.style.cursor = mode === 'pan' ? 'grab' : (mode === 'mosaic' ? 'crosshair' : 'copy');
-        }
-
-        // 2. 局部缩放逻辑 (隔离页面)
+        // 核心：缩放与平移 (仅限图片)
         viewport.addEventListener('wheel', (e) => {
-            e.preventDefault(); // 禁止整页缩放
-            const zoom = e.deltaY > 0 ? 0.9 : 1.1;
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
             const rect = viewport.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
 
-            offsetX = mouseX - (mouseX - offsetX) * zoom;
-            offsetY = mouseY - (mouseY - offsetY) * zoom;
-            scale *= zoom;
-            applyTransform();
+            offsetX = mx - (mx - offsetX) * delta;
+            offsetY = my - (my - offsetY) * delta;
+            scale *= delta;
+            updateTransform();
         }, { passive: false });
 
-        function applyTransform() {
+        function updateTransform() {
             canvas.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
         }
 
         function resetView() {
-            const ratio = Math.min(viewport.offsetWidth / canvas.width, viewport.offsetHeight / canvas.height);
-            scale = ratio * 0.8;
+            const r = Math.min(viewport.offsetWidth/canvas.width, viewport.offsetHeight/canvas.height);
+            scale = r * 0.85;
             offsetX = (viewport.offsetWidth - canvas.width * scale) / 2;
             offsetY = (viewport.offsetHeight - canvas.height * scale) / 2;
-            applyTransform();
+            updateTransform();
             showToast("视图已复位");
         }
 
-        // 3. 绘图与操作
+        // 模式切换
+        function setMode(m, btn) {
+            mode = m;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('settings-card').style.display = (m === 'pan') ? 'none' : 'block';
+            canvas.style.cursor = m === 'pan' ? 'grab' : (m === 'mosaic' ? 'crosshair' : 'copy');
+        }
+
+        // 交互逻辑
         viewport.onmousedown = (e) => {
-            if(mode === 'pan') {
-                isMoving = true;
-                canvas.style.cursor = 'grabbing';
-            } else if(mode === 'mosaic') {
-                isPainting = true;
-                paint(e);
-            } else if(mode === 'watermark') {
-                addText(e);
-            }
+            isDrawing = true;
+            if(mode === 'mosaic') doMosaic(e);
+            if(mode === 'watermark') addWM(e);
         };
 
         window.onmousemove = (e) => {
-            if(isMoving) {
+            if(!isDrawing) return;
+            if(mode === 'pan') {
                 offsetX += e.movementX;
                 offsetY += e.movementY;
-                applyTransform();
-            } else if(isPainting) {
-                paint(e);
+                updateTransform();
+            } else if(mode === 'mosaic') {
+                doMosaic(e);
             }
         };
 
         window.onmouseup = () => {
-            if(isPainting) saveState(); // 停止涂抹时存入历史
-            isMoving = false;
-            isPainting = false;
-            canvas.style.cursor = mode === 'pan' ? 'grab' : (mode === 'mosaic' ? 'crosshair' : 'copy');
+            if(isDrawing && (mode === 'mosaic' || mode === 'watermark')) saveHistory();
+            isDrawing = false;
         };
 
-        function getCoord(e) {
+        function getImgCoords(e) {
             const rect = viewport.getBoundingClientRect();
             return {
                 x: (e.clientX - rect.left - offsetX) / scale,
@@ -335,62 +337,56 @@
             };
         }
 
-        function paint(e) {
-            const pos = getCoord(e);
+        function doMosaic(e) {
+            const pos = getImgCoords(e);
             const size = parseInt(document.getElementById('brush-size').value);
-            const m = size / 5; // 块大小
+            const mSize = size / 5; // 马赛克块大小
             const sx = pos.x - size/2, sy = pos.y - size/2;
             
             try {
-                const data = ctx.getImageData(sx, sy, size, size).data;
-                for(let y=0; y<size; y+=m) {
-                    for(let x=0; x<size; x+=m) {
+                const imgData = ctx.getImageData(sx, sy, size, size);
+                const d = imgData.data;
+                for(let y=0; y<size; y+=mSize) {
+                    for(let x=0; x<size; x+=mSize) {
                         const i = (Math.floor(y)*size + Math.floor(x))*4;
-                        ctx.fillStyle = `rgb(${data[i]},${data[i+1]},${data[i+2]})`;
-                        ctx.fillRect(sx+x, sy+y, m+1, m+1);
+                        ctx.fillStyle = `rgb(${d[i]},${d[i+1]},${d[i+2]})`;
+                        ctx.fillRect(sx+x, sy+y, mSize+1, mSize+1);
                     }
                 }
             } catch(e){}
         }
 
-        function addText(e) {
-            const pos = getCoord(e);
+        function addWM(e) {
+            const pos = getImgCoords(e);
             const txt = document.getElementById('wm-text').value;
             if(!txt) return;
-            ctx.font = `${canvas.width/35}px HarmonyOS Sans SC`;
+            ctx.save();
+            ctx.font = `bold ${canvas.width/30}px HarmonyOS Sans SC`;
             ctx.fillStyle = document.getElementById('wm-color').value;
-            ctx.globalAlpha = 0.6;
+            ctx.globalAlpha = 0.5;
             ctx.fillText(txt, pos.x, pos.y);
-            ctx.globalAlpha = 1.0;
-            saveState();
+            ctx.restore();
         }
 
-        // 4. 历史记录 (撤销)
-        function saveState() {
-            if(historyStack.length > 20) historyStack.shift();
-            historyStack.push(canvas.toDataURL());
+        // 撤销功能
+        function saveHistory() {
+            if(history.length > 20) history.shift();
+            history.push(canvas.toDataURL());
         }
 
         function undo() {
-            if(historyStack.length <= 1) return showToast("已经是最早的一步了");
-            historyStack.pop(); // 弹出当前
-            const img = new Image();
-            img.src = historyStack[historyStack.length - 1];
-            img.onload = () => {
+            if(history.length <= 1) return showToast("无法继续撤销");
+            history.pop();
+            const prev = new Image();
+            prev.src = history[history.length - 1];
+            prev.onload = () => {
                 ctx.clearRect(0,0,canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0);
-                showToast("已撤销");
+                ctx.drawImage(prev, 0, 0);
+                showToast("已回退一步");
             };
         }
 
-        // 5. 其他工具
-        function downloadImage() {
-            const link = document.createElement('a');
-            link.download = `PixelGuard_${Date.now()}.png`;
-            link.href = canvas.toDataURL('image/png', 1.0);
-            link.click();
-        }
-
+        // 辅助
         function showToast(msg) {
             const t = document.getElementById('toast');
             t.innerText = msg;
@@ -398,7 +394,18 @@
             setTimeout(() => t.style.display = 'none', 2000);
         }
 
-        function copyText(s){ navigator.clipboard.writeText(s); showToast("复制成功"); }
+        function copyQQ(num) {
+            navigator.clipboard.writeText(num);
+            showToast("QQ群号已复制 🚀");
+        }
+
+        function downloadImg() {
+            const link = document.createElement('a');
+            link.download = `PixelGuard_Export_${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+            showToast("高清图片已保存至本地");
+        }
     </script>
 </body>
 </html>
