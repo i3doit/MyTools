@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>红包口令工具 - 艾兜兜儿</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-down { animation: fadeInDown 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div id="app" class="max-w-4xl mx-auto px-4 py-8">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">🧧 红包口令助力工具</h1>
+            <p class="mt-2 text-gray-500">同步助力口令，大家一起领福利</p>
+        </header>
+
+        <!-- 提交表单 -->
+        <section class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 mb-8">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <span class="text-xl">✍️</span> 发布新口令
+            </h2>
+            <div class="space-y-4">
+                <textarea id="content" placeholder="粘贴红包口令内容..." class="w-full h-32 p-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-blue-500 transition-all resize-none text-gray-700" required></textarea>
+                <div class="flex flex-col md:flex-row gap-4">
+                    <input id="creator" type="text" placeholder="你的昵称" value="艾兜兜儿" class="flex-1 p-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-blue-500 transition-all">
+                    <button id="submitBtn" onclick="submitPacket()" class="px-8 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-200 disabled:opacity-50">
+                        发布助力
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 搜索和筛选 -->
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+            <div class="relative w-full md:w-64">
+                <input id="search" oninput="handleSearch()" type="text" placeholder="搜索内容或发布者..." class="w-full pl-10 pr-4 py-2 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
+            </div>
+            <div class="flex bg-white rounded-xl p-1 border border-gray-100 shadow-sm">
+                <button onclick="setFilter('active')" id="filter-active" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all bg-blue-600 text-white">助手中</button>
+                <button onclick="setFilter('all')" id="filter-all" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:bg-gray-50">全部</button>
+            </div>
+        </div>
+
+        <!-- 口令列表 -->
+        <div id="packetList" class="grid gap-4 md:grid-cols-2">
+            <div class="col-span-full py-12 text-center text-gray-400">正在加载口令...</div>
+        </div>
+
+        <footer class="mt-12 py-8 border-t border-gray-200 text-center text-sm text-gray-500">
+            <p>© 2026 艾兜兜儿 版权所有 · AI365</p>
+            <p class="mt-2 flex justify-center gap-4">
+                <a href="index-export.html" class="hover:text-blue-600">返回主页</a>
+                <span>|</span>
+                <a href="#" onclick="copyQQ()" class="hover:text-blue-600">官方QQ群: 857023577</a>
+            </p>
+        </footer>
+    </div>
+
+    <div id="toast" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div id="toastContent" class="bg-black/75 text-white px-6 py-3 rounded-2xl shadow-lg backdrop-blur-md text-sm font-medium animate-fade-in-down"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://bmmtcrqvikvunvpsjjcx.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbXRjcnF2aWt2dW52cHNqamN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NDY4ODUsImV4cCI6MjA4MzUyMjg4NX0.RkaxCuNYHFtS7uDCsIpbZrQ2mheShQNkAHfXyxQGxK0';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let packets = [];
+        let filter = 'active';
+        let searchTerm = '';
+
+        async function fetchPackets() {
+            const listEl = document.getElementById('packetList');
+            let query = _supabase.from('red_packets').select('*').order('created_at', { ascending: false });
+            
+            if (filter === 'active') {
+                query = query.gt('remaining_copies', 0);
+            }
+
+            const { data, error } = await query;
+            if (error) {
+                console.error('Fetch error:', error);
+                return;
+            }
+            packets = data;
+            renderPackets();
+        }
+
+        function renderPackets() {
+            const listEl = document.getElementById('packetList');
+            const filtered = packets.filter(p => 
+                p.content.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                p.creator_name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = '<div class="col-span-full py-12 text-center text-gray-400">暂无相关口令</div>';
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(p => `
+                <div class="group bg-white rounded-2xl p-5 border border-gray-100 hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="${p.creator_avatar || 'https://api.dicebear.com/7.x/identicon/svg?seed=' + p.creator_name}" class="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 object-cover">
+                        <div>
+                            <div class="font-semibold text-gray-900 text-sm">${p.creator_name}</div>
+                            <div class="text-[10px] text-gray-400">${new Date(p.created_at).toLocaleString()}</div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-3 text-gray-700 text-sm break-all font-mono mb-4 leading-relaxed line-clamp-4">
+                        ${p.content}
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded-lg text-amber-700 text-[11px] font-medium border border-amber-100">
+                            <span>🔥</span> 剩余 ${p.remaining_copies} 次
+                        </div>
+                        <button onclick="copyPacket('${p.id}', '${p.content.replace(/'/g, "\\'")}')" class="px-4 py-1.5 bg-gray-900 text-white text-xs rounded-lg hover:bg-black transition-colors">
+                            复制口令
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function submitPacket() {
+            const content = document.getElementById('content').value.trim();
+            const creator = document.getElementById('creator').value.trim();
+            const btn = document.getElementById('submitBtn');
+
+            if (!content || !creator) {
+                showToast('请填写内容和昵称');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = '发布中...';
+
+            const { error } = await _supabase.from('red_packets').insert([
+                { 
+                    content, 
+                    creator_name: creator, 
+                    creator_avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=' + creator,
+                    remaining_copies: 3
+                }
+            ]);
+
+            if (error) {
+                showToast('发布失败: ' + error.message);
+            } else {
+                showToast('🎉 发布成功！');
+                document.getElementById('content').value = '';
+                fetchPackets();
+            }
+
+            btn.disabled = false;
+            btn.innerText = '发布助力';
+        }
+
+        async function copyPacket(id, content) {
+            try {
+                await navigator.clipboard.writeText(content);
+                showToast('✅ 口令已复制，快去助力吧');
+                
+                // 减少次数
+                await _supabase.rpc('decrement_packet_copies', { packet_id: id });
+                fetchPackets();
+            } catch (err) {
+                showToast('复制失败，请手动选择复制');
+            }
+        }
+
+        function handleSearch() {
+            searchTerm = document.getElementById('search').value;
+            renderPackets();
+        }
+
+        function setFilter(f) {
+            filter = f;
+            document.getElementById('filter-active').className = f === 'active' ? 'px-4 py-1.5 rounded-lg text-sm font-medium transition-all bg-blue-600 text-white' : 'px-4 py-1.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:bg-gray-50';
+            document.getElementById('filter-all').className = f === 'all' ? 'px-4 py-1.5 rounded-lg text-sm font-medium transition-all bg-blue-600 text-white' : 'px-4 py-1.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:bg-gray-50';
+            fetchPackets();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const content = document.getElementById('toastContent');
+            content.innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2000);
+        }
+
+        function copyQQ() {
+            navigator.clipboard.writeText('857023577');
+            showToast('QQ群号已复制');
+        }
+
+        // 初始化
+        fetchPackets();
+    </script>
+</body>
+</html>
