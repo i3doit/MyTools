@@ -159,7 +159,21 @@
     <script>
         const SUPABASE_URL = 'https://bmmtcrqvikvunvpsjjcx.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbXRjcnF2aWt2dW52cHNqamN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NDY4ODUsImV4cCI6MjA4MzUyMjg4NX0.RkaxCuNYHFtS7uDCsIpbZrQ2mheShQNkAHfXyxQGxK0';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'api' } });
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { 
+            db: { schema: 'api' },
+            global: { headers: { 'x-client-info': 'red-packet-tool' } }
+        });
+
+        // 尝试通过 OPTIONS 请求触发刷新 (部分 PostgREST 版本特性)
+        async function forceRefreshSchema() {
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/red_packets`, {
+                    method: 'OPTIONS',
+                    headers: { 'apikey': SUPABASE_KEY }
+                });
+            } catch (e) {}
+        }
+        forceRefreshSchema();
 
         // 刷新缓存提醒：如果遇到 PGRST204 错误（找不到 client_id 列），
         // 是因为数据库 Schema 变更后缓存未同步。
@@ -352,7 +366,7 @@
                     total_copies: copies,
                     client_id: clientId,
                     status: 'active'
-                }]);
+                }]).select(); // 使用 select() 强制返回新插入的数据，有时能绕过过时的缓存映射
 
                 if (error) {
                     console.error('Supabase Error:', error);
