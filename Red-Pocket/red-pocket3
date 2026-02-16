@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>红包口令工具 - 艾兜兜儿</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .animate-slide-in { animation: slideIn 0.3s ease-out; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* 移动端优化 */
+        @media (max-width: 640px) {
+            .packet-card { padding: 1rem; }
+            .action-btn { padding: 0.5rem; }
+            .action-text { font-size: 0.65rem; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50/50 min-h-screen font-sans text-gray-900">
+    <!-- Floating Actions -->
+    <div class="fixed right-4 bottom-24 flex flex-col gap-3 z-40">
+        <button onclick="toggleUsage()" class="w-12 h-12 bg-white/90 backdrop-blur border border-gray-100 rounded-full shadow-lg flex items-center justify-center text-xl hover:bg-gray-50 active:scale-95 transition-all" title="使用说明">📖</button>
+        <button onclick="toggleFeedback()" class="w-12 h-12 bg-white/90 backdrop-blur border border-gray-100 rounded-full shadow-lg flex items-center justify-center text-xl hover:bg-gray-50 active:scale-95 transition-all" title="提交反馈">💬</button>
+    </div>
+
+    <!-- Usage Modal -->
+    <div id="usageModal" class="fixed inset-0 z-50 flex items-center justify-center hidden p-4">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleUsage()"></div>
+        <div class="relative bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl animate-fade-in">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900">使用说明 📖</h3>
+                <button onclick="toggleUsage()" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div class="space-y-4 text-sm text-gray-600 leading-relaxed">
+                <div class="p-4 bg-orange-50 rounded-2xl border border-orange-100">
+                    <p class="font-bold text-orange-800 mb-2">如何发布？</p>
+                    <p>填写昵称、设置助力次数（默认3次），粘贴你的红包口令或链接点击“发布分享”即可。</p>
+                </div>
+                <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                    <p class="font-bold text-blue-800 mb-2">如何互助？</p>
+                    <p>点击他人卡片的“复制口令”，去对应的 App 使用。复制成功后，对方的助力次数会减1。</p>
+                </div>
+                <div class="p-4 bg-green-50 rounded-2xl border border-green-100">
+                    <p class="font-bold text-green-800 mb-2">温馨提示</p>
+                    <ul class="list-disc ml-4 space-y-1">
+                        <li>仅展示当天的口令，过期自动失效。</li>
+                        <li>自己点击自己发布的口令不扣减次数。</li>
+                        <li>点击用户头像可以进入该用户的主页查看更多。</li>
+                    </ul>
+                </div>
+            </div>
+            <button onclick="toggleUsage()" class="w-full mt-6 py-3 bg-gray-900 text-white rounded-xl font-medium">我知道了</button>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="fixed inset-0 z-50 flex items-center justify-center hidden p-4">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleFeedback()"></div>
+        <div class="relative bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl animate-fade-in">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900">问题反馈 💬</h3>
+                <button onclick="toggleFeedback()" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div class="space-y-4">
+                <p class="text-sm text-gray-500">您的反馈是我们进步的动力，请详细描述您遇到的问题。</p>
+                <textarea id="feedbackContent" class="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm text-gray-900 h-32 focus:ring-2 focus:ring-blue-500/20 resize-none" placeholder="请在此输入您的反馈内容..."></textarea>
+                <input id="feedbackContact" type="text" class="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500/20" placeholder="联系方式（QQ/微信/邮箱，选填）">
+                <button id="feedbackSubmitBtn" onclick="submitFeedback()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-medium shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all">提交反馈</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app" class="max-w-2xl mx-auto px-4 py-8">
+        <!-- User Page Header -->
+        <div id="userHeader" class="hidden mb-6 flex items-center justify-between bg-white/80 backdrop-blur p-4 rounded-2xl border border-gray-100 shadow-sm animate-slide-in">
+            <div class="flex items-center gap-3">
+                <button onclick="handleBackFromUser()" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                    <span class="text-xl">←</span>
+                </button>
+                <div>
+                    <h2 id="userPageTitle" class="font-bold text-gray-900">的用户主页</h2>
+                    <p class="text-xs text-gray-400">显示该用户提交的所有口令</p>
+                </div>
+            </div>
+            <button onclick="handleBackFromUser()" class="text-sm text-blue-500 font-medium">返回列表</button>
+        </div>
+
+        <!-- Header -->
+        <header id="mainHeader" class="text-center mb-10">
+            <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-orange-500 mb-2">
+                红包口令/链接分享
+            </h1>
+            <p class="text-gray-500 text-sm">分享你的福利，传递好运</p>
+        </header>
+
+        <!-- Create Card -->
+        <section id="createCard" class="bg-white rounded-3xl shadow-lg shadow-gray-100/50 border border-white/50 backdrop-blur-xl p-6 mb-8 transition-transform hover:scale-[1.01] duration-300">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1 ml-1">你的昵称</label>
+                        <div class="relative">
+                            <input id="creatorName" type="text" value="艾兜兜儿" onclick="this.value=''" onblur="if(!this.value)this.value='艾兜兜儿'" class="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-red-500/20 focus:bg-white transition-all" placeholder="艾兜兜儿">
+                            <button onclick="document.getElementById('creatorName').value=''; document.getElementById('creatorName').focus();" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">✕</button>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-600 mb-1 ml-1 flex justify-between">
+                            <span>助力次数</span>
+                            <span class="text-xs text-gray-400 font-normal">高效领红包，可填助力次数</span>
+                        </label>
+                        <div class="relative">
+                            <input id="totalCopies" type="number" value="3" min="1" max="100" 
+                                   onclick="this.value=''" 
+                                   onblur="if(!this.value || this.value<1)this.value='3'"
+                                   class="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-red-500/20 focus:bg-white transition-all">
+                            <button onclick="document.getElementById('totalCopies').value='3'; document.getElementById('totalCopies').focus();" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1 ml-1">头像链接（可选）</label>
+                    <div class="relative">
+                        <input id="avatarUrl" type="text" onclick="this.value=''" class="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-red-500/20 focus:bg-white transition-all" placeholder="粘贴URL或使用默认">
+                        <button onclick="document.getElementById('avatarUrl').value=''; document.getElementById('avatarUrl').focus();" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">✕</button>
+                    </div>
+                    <div class="mt-3 flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar" id="avatarList">
+                        <!-- Avatars will be injected here -->
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1 ml-1">口令或链接</label>
+                    <div class="relative">
+                        <textarea id="newContent" onclick="this.value=''" onfocus="handleAutoPaste(this)" class="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-red-500/20 focus:bg-white transition-all resize-none h-32" placeholder="粘贴你的红包口令或链接..."></textarea>
+                        <button onclick="document.getElementById('newContent').value=''; document.getElementById('newContent').focus();" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600">✕</button>
+                    </div>
+                </div>
+
+                <button onclick="handleCreate()" id="submitBtn" class="w-full bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 active:scale-[0.98] transition-all duration-200">
+                    发布分享
+                </button>
+            </div>
+        </section>
+
+        <!-- Filters -->
+        <div class="sticky top-0 z-20 bg-white/70 backdrop-blur border-b border-gray-100 -mx-4 px-4 py-3 mb-6">
+            <div class="relative mb-3">
+                <input id="searchTerm" oninput="handleSearch()" type="text" class="w-full bg-white/80 border border-gray-200 rounded-2xl px-5 py-3 pl-11 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm" placeholder="搜索昵称或口令...">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                <button onclick="document.getElementById('searchTerm').value=''; handleSearch();" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div class="flex items-center gap-2 bg-white/70 border border-gray-200 rounded-xl p-1 w-fit">
+                <button onclick="setFilter('all')" id="btn-all" class="px-3 py-1.5 text-xs rounded-lg text-gray-700 hover:bg-white transition-all">全部</button>
+                <button onclick="setFilter('active')" id="btn-active" class="px-3 py-1.5 text-xs rounded-lg bg-gray-900 text-white transition-all">进行中</button>
+                <button onclick="setFilter('completed')" id="btn-completed" class="px-3 py-1.5 text-xs rounded-lg text-gray-700 hover:bg-white transition-all">已完成</button>
+                <button onclick="setFilter('expired')" id="btn-expired" class="px-3 py-1.5 text-xs rounded-lg text-gray-700 hover:bg-white transition-all">已过期</button>
+            </div>
+        </div>
+
+        <!-- List -->
+        <div id="packetList" class="space-y-4 min-h-[300px]">
+            <div class="text-center py-10 text-gray-400">加载中...</div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 py-10 border-t border-gray-100 text-center space-y-6">
+            <div class="flex flex-col items-center gap-4">
+                <div class="flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm font-medium">
+                    <a href="https://mp.weixin.qq.com/s/EpghdXSl4NqOD5mwu3DWXQ" target="_blank" class="text-blue-600 hover:text-blue-700 transition-colors">技术支持：艾兜兜儿</a>
+                    <a href="https://t.zsxq.com/XNHXs" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">DeepSeek 实战提效赚小钱</a>
+                    <a href="https://t.zsxq.com/uqG2N" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">AI 编程做产品</a>
+                    <a href="https://t.zsxq.com/FhQcu" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">更多工具</a>
+                </div>
+                
+                <button onclick="navigator.clipboard.writeText('857023577'); showToast('QQ群号已复制：857023577')" 
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold hover:bg-blue-100 transition-all border border-blue-100">
+                    <span>💬 AI 提效工具官方 QQ 群：857023577</span>
+                    <span class="text-[10px] bg-blue-200/50 px-1.5 py-0.5 rounded">点击复制</span>
+                </button>
+            </div>
+
+            <div class="text-[11px] text-gray-400 space-y-1">
+                <p id="copyrightText"></p>
+                <div class="flex justify-center gap-3 opacity-60">
+                    <a href="https://dkfile.com" target="_blank" class="hover:underline">DKFile.com</a>
+                    <a href="https://dkfile.xyz" target="_blank" class="hover:underline">DKFile.xyz</a>
+                    <a href="https://dkfile.istester.com" target="_blank" class="hover:underline">DKFile.istester.com</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal for Records -->
+    <div id="recordsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden animate-fade-in">
+        <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <h3 class="font-bold text-gray-900 flex items-center gap-2">
+                    <span class="text-xl">🤝</span> 助力记录
+                </h3>
+                <button onclick="closeRecords()" class="p-2 hover:bg-gray-200 rounded-full transition-colors">✕</button>
+            </div>
+            <div id="recordsList" class="max-h-[60vh] overflow-y-auto p-4 space-y-3">
+                <!-- Records will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-300">
+        <div id="toastMsg" class="bg-black/75 text-white px-6 py-3 rounded-2xl shadow-lg backdrop-blur-md text-sm font-medium"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://bmmtcrqvikvunvpsjjcx.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbXRjcnF2aWt2dW52cHNqamN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NDY4ODUsImV4cCI6MjA4MzUyMjg4NX0.RkaxCuNYHFtS7uDCsIpbZrQ2mheShQNkAHfXyxQGxK0';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { 
+            db: { schema: 'api' },
+            global: { headers: { 'x-client-info': 'red-packet-tool' } }
+        });
+
+        // 尝试通过 OPTIONS 请求触发刷新 (部分 PostgREST 版本特性)
+        async function forceRefreshSchema() {
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/red_packets`, {
+                    method: 'OPTIONS',
+                    headers: { 'apikey': SUPABASE_KEY }
+                });
+            } catch (e) {}
+        }
+        forceRefreshSchema();
+
+        // 刷新缓存提醒：如果遇到 PGRST204 错误（找不到 client_id 列），
+        // 是因为数据库 Schema 变更后缓存未同步。
+        // 请在 Supabase SQL Editor 中运行以下命令刷新：
+        // NOTIFY pgrst, 'reload schema';
+
+        const DEFAULT_AVATARS = [
+            'https://dkfile.net/uploads/avatars/avatar_1037_2b899c87.jpeg',
+            'https://profile-avatar.csdnimg.cn/22f8b0128b694047beb93057ddc0d7cc_kq8819.jpg!1',
+            'https://api.dicebear.com/7.x/identicon/svg?seed=Felix',
+            'https://api.dicebear.com/7.x/identicon/svg?seed=Aneka',
+            'https://api.dicebear.com/7.x/identicon/svg?seed=Zoe'
+        ];
+
+        let packets = [];
+        let filterStatus = 'active';
+        let searchTerm = '';
+        let userClientId = null;
+        const clientId = localStorage.getItem('rp_client_id') || Math.random().toString(36).slice(2, 12);
+        localStorage.setItem('rp_client_id', clientId);
+
+        function initCopyright() {
+            const year = new Date().getFullYear();
+            const yearStr = year > 2026 ? `2026-${year}` : '2026';
+            document.getElementById('copyrightText').innerText = `© ${yearStr} 艾兜兜儿 版权所有 · AI365`;
+        }
+
+        function initAvatars() {
+            const list = document.getElementById('avatarList');
+            list.innerHTML = DEFAULT_AVATARS.map(url => `
+                <button type="button" onclick="setAvatar('${url}')" class="flex-shrink-0 w-10 h-10 rounded-full border border-gray-200 overflow-hidden hover:ring-2 hover:ring-red-500 transition-all">
+                    <img src="${url}" class="w-full h-full object-cover">
+                </button>
+            `).join('');
+        }
+
+        function setAvatar(url) {
+            document.getElementById('avatarUrl').value = url;
+            showToast('已选择头像');
+        }
+
+        async function fetchPackets() {
+            const listEl = document.getElementById('packetList');
+            try {
+                let query = _supabase.from('red_packets').select('*').order('created_at', { ascending: false });
+
+                const now = new Date();
+                const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
+
+                if (userClientId) {
+                    query = query.eq('client_id', userClientId);
+                } else {
+                    const now = new Date();
+                    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
+                    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
+
+                    if (filterStatus === 'active') {
+                        // 优先显示当天的进行中数据
+                        const { data: todayData } = await _supabase.from('red_packets')
+                            .select('id')
+                            .eq('status', 'active')
+                            .gt('remaining_copies', 0)
+                            .gte('created_at', start)
+                            .lte('created_at', end)
+                            .limit(1);
+                        
+                        if (todayData && todayData.length > 0) {
+                            query = query.eq('status', 'active').gt('remaining_copies', 0).gte('created_at', start).lte('created_at', end);
+                        } else {
+                            // 若当天无数据，展示最后一天有进行中数据的日期
+                            const { data: lastPacket } = await _supabase.from('red_packets')
+                                .select('created_at')
+                                .eq('status', 'active')
+                                .gt('remaining_copies', 0)
+                                .order('created_at', { ascending: false })
+                                .limit(1);
+                            
+                            if (lastPacket?.[0]) {
+                                const lastDate = new Date(lastPacket[0].created_at);
+                                const lStart = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate(), 0, 0, 0, 0).toISOString();
+                                const lEnd = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate(), 23, 59, 59, 999).toISOString();
+                                query = query.eq('status', 'active').gt('remaining_copies', 0).gte('created_at', lStart).lte('created_at', lEnd);
+                            } else {
+                                query = query.eq('status', 'active').gt('remaining_copies', 0);
+                            }
+                        }
+                    } else if (filterStatus === 'completed') {
+                        query = query.eq('remaining_copies', 0);
+                    } else if (filterStatus === 'expired') {
+                        query = query.gt('remaining_copies', 0).lt('created_at', start);
+                    }
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+                packets = data || [];
+                renderPackets();
+            } catch (err) {
+                console.error(err);
+                listEl.innerHTML = '<div class="text-center py-10 text-red-400">加载失败</div>';
+            }
+        }
+
+        function renderPackets() {
+            const listEl = document.getElementById('packetList');
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+
+            const filtered = packets.filter(p => 
+                p.content.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                p.creator_name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = '<div class="text-center py-12 bg-white rounded-3xl border border-dashed border-gray-200 text-gray-400">暂无数据</div>';
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(p => {
+                const isExpired = p.remaining_copies > 0 && new Date(p.created_at) < todayStart;
+                const isCompleted = p.remaining_copies === 0;
+                const isDisabled = isExpired || isCompleted;
+                const statusClass = isExpired ? 'opacity-50 grayscale' : (isCompleted ? 'opacity-60 grayscale-[0.5]' : '');
+                
+                return `
+                <div class="group relative bg-white rounded-2xl p-5 shadow-sm border border-gray-100 transition-all hover:shadow-md ${statusClass}">
+                    <div class="flex items-start gap-4">
+                        <img src="${p.creator_avatar || DEFAULT_AVATARS[0]}" onclick="handleUserClick('${p.client_id}', '${p.creator_name}')" class="w-10 h-10 rounded-full object-cover border border-gray-100 cursor-pointer hover:ring-2 hover:ring-red-500 transition-all">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start">
+                                <div onclick="handleUserClick('${p.client_id}', '${p.creator_name}')" class="cursor-pointer">
+                                    <h3 class="text-sm font-semibold text-gray-900 group-hover:text-red-500">${p.creator_name}</h3>
+                                    <p class="text-[10px] text-gray-400 mt-0.5">${new Date(p.created_at).toLocaleString()}</p>
+                                </div>
+                                <div class="flex flex-col items-end gap-1">
+                                    <div class="px-2 py-1 rounded-lg text-[10px] font-medium ${isExpired ? 'bg-gray-100 text-gray-400' : (p.remaining_copies > 0 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500')}">
+                                        ${isExpired ? '已过期' : (p.remaining_copies > 0 ? '剩余 ' + p.remaining_copies + ' 次' : '已完成')}
+                                    </div>
+                                    ${p.client_id === clientId ? `<button onclick="showRecords('${p.id}')" class="text-[10px] text-blue-500 hover:underline">查看助力记录</button>` : ''}
+                                </div>
+                            </div>
+                            <div class="mt-3 bg-gray-50 rounded-xl p-3 text-gray-700 text-sm break-all font-mono leading-relaxed">
+                                ${p.content.replace(/</g, '&lt;')}
+                            </div>
+                            <div class="mt-4 flex justify-around gap-2 pt-4 border-t border-gray-50">
+                                <button onclick="${isDisabled ? `showToast('该口令${isExpired ? '已过期' : '已领完'}，请使用今天最新的口令吧')` : `handleCopy('${p.id}', '${p.client_id}', '${p.creator_name.replace(/'/g, "\\'")}', '${(p.creator_avatar || '').replace(/'/g, "\\'")}', \`${p.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)`}" 
+                                        class="action-btn flex flex-col items-center gap-1 group/btn ${isDisabled ? 'cursor-not-allowed' : ''}">
+                                    <div class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 rounded-full ${isDisabled ? 'grayscale opacity-50' : 'group-hover/btn:bg-blue-600 group-hover/btn:text-white'} transition-all shadow-sm">
+                                        <span class="text-lg">📋</span>
+                                    </div>
+                                    <span class="action-text text-[10px] text-gray-500 font-medium">复制口令</span>
+                                </button>
+                                <button onclick="${isDisabled ? `showToast('该口令${isExpired ? '已过期' : '已领完'}，请使用今天最新的口令吧')` : `handleShare('${p.id}', '${p.creator_name}', '${p.remaining_copies}', \`${p.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)`}" 
+                                        class="action-btn flex flex-col items-center gap-1 group/btn ${isDisabled ? 'cursor-not-allowed' : ''}">
+                                    <div class="w-10 h-10 flex items-center justify-center bg-pink-50 text-pink-600 rounded-full ${isDisabled ? 'grayscale opacity-50' : 'group-hover/btn:bg-pink-600 group-hover/btn:text-white'} transition-all shadow-sm">
+                                        <span class="text-lg">🔗</span>
+                                    </div>
+                                    <span class="action-text text-[10px] text-gray-500 font-medium">助力分享</span>
+                                </button>
+                                <button onclick="handleDownload('${p.id}', '${p.creator_name}')" class="action-btn flex flex-col items-center gap-1 group/btn">
+                                    <div class="w-10 h-10 flex items-center justify-center bg-green-50 text-green-600 rounded-full group-hover/btn:bg-green-600 group-hover/btn:text-white transition-all shadow-sm">
+                                        <span class="text-lg">⬇️</span>
+                                    </div>
+                                    <span class="action-text text-[10px] text-gray-500 font-medium">下载卡片</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        async function handleCreate(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            const content = document.getElementById('newContent').value.trim();
+            const creator = document.getElementById('creatorName').value.trim();
+            const avatar = document.getElementById('avatarUrl').value.trim();
+            const copies = parseInt(document.getElementById('totalCopies').value) || 0;
+
+            if (!content) return showToast('请输入口令或链接');
+            if (!creator) return showToast('请输入昵称');
+            if (copies < 1) return showToast('助力次数必须大于0');
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerText = '发布中...';
+
+            try {
+                const finalAvatar = avatar || DEFAULT_AVATARS[0];
+                const { error } = await _supabase.from('red_packets').insert([{
+                    content: content,
+                    creator_name: creator,
+                    creator_avatar: finalAvatar,
+                    remaining_copies: copies,
+                    total_copies: copies,
+                    client_id: clientId,
+                    status: 'active'
+                }]).select(); // 使用 select() 强制返回新插入的数据，有时能绕过过时的缓存映射
+
+                if (error) {
+                    console.error('Supabase Error:', error);
+                    if (error.code === 'PGRST204') {
+                        showToast('数据库缓存未同步，请联系管理员运行：NOTIFY pgrst, \'reload schema\';');
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    showToast('发布成功！');
+                    document.getElementById('newContent').value = '';
+                    if (filterStatus === 'completed' || filterStatus === 'expired') {
+                        setFilter('active');
+                    } else {
+                        fetchPackets();
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('发布失败：' + (err.message || '网络异常'));
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '发布分享';
+            }
+        }
+
+        async function handleCopy(id, creatorId, creatorName, creatorAvatar, content) {
+            try {
+                const isOwner = creatorId === clientId;
+
+                if (!isOwner) {
+                    const { data: existed, error: checkError } = await _supabase
+                        .from('copy_records')
+                        .select('id')
+                        .eq('copier_client_id', clientId)
+                        .eq('creator_client_id', creatorId)
+                        .limit(1);
+
+                    if (!checkError && existed && existed.length > 0) {
+                        showToast('同一个用户多个口令只需选一个，你已帮TA助力，去选择其他人助力领红包吧');
+                        return;
+                    }
+                }
+
+                await navigator.clipboard.writeText(content);
+
+                const copiedKey = `copied_packets`;
+                const copiedList = JSON.parse(localStorage.getItem(copiedKey) || '[]');
+
+                if (!isOwner && copiedList.includes(id)) {
+                    showToast('您已领取过该红包，留给其他人吧！');
+                    return;
+                }
+
+                const { data: packet } = await _supabase
+                    .from('red_packets')
+                    .select('remaining_copies, creator_name, creator_avatar, client_id')
+                    .eq('id', id)
+                    .single();
+
+                const finalCreatorName = (packet && packet.creator_name) || creatorName || '匿名用户';
+                const finalCreatorAvatar = (packet && packet.creator_avatar) || creatorAvatar || DEFAULT_AVATARS[0];
+
+                const selfClick = isOwner;
+                let newCount = packet ? packet.remaining_copies : 0;
+
+                if (!selfClick && packet && packet.remaining_copies > 0) {
+                    newCount = packet.remaining_copies - 1;
+                    await _supabase.from('red_packets').update({ 
+                        remaining_copies: newCount,
+                        status: newCount === 0 ? 'completed' : 'active'
+                    }).eq('id', id);
+                }
+                
+                await _supabase.from('copy_records').insert([{
+                    red_packet_id: id,
+                    copier_name: document.getElementById('creatorName').value || '匿名用户',
+                    copier_client_id: clientId,
+                    copier_avatar: document.getElementById('avatarUrl').value || DEFAULT_AVATARS[0],
+                    creator_client_id: creatorId,
+                    creator_name: finalCreatorName,
+                    creator_avatar: finalCreatorAvatar,
+                    is_self: selfClick
+                }]);
+
+                if (!selfClick && packet && packet.remaining_copies > 0) {
+                    copiedList.push(id);
+                    localStorage.setItem(copiedKey, JSON.stringify(copiedList));
+                    fetchPackets();
+                }
+
+                if (selfClick) {
+                    showToast('复制成功，自己提交的次数不减，去助力其他小伙伴吧');
+                } else if (packet && packet.remaining_copies > 0) {
+                    showToast('复制成功');
+                } else {
+                    showToast('该红包已被领完');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('复制失败');
+            }
+        }
+
+        async function handleShare(id, name, remaining, content) {
+            const url = window.location.href.split('?')[0] + '?id=' + id;
+            const shareData = {
+                title: '助力领红包',
+                text: `来自【${name}】的福利分享：\n${content}\n剩余助力次数：${remaining}\n快来一起助力领福利吧！`,
+                url: url
+            };
+
+            try {
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                } else {
+                    // 回退方案：复制分享文案
+                    await navigator.clipboard.writeText(`${shareData.text}\n链接：${shareData.url}`);
+                    showToast('您的浏览器不支持原生分享，已自动复制分享文案');
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    showToast('分享失败');
+                }
+            }
+        }
+
+        async function handleAutoPaste(el) {
+            try {
+                // 尝试从剪贴板获取内容
+                const text = await navigator.clipboard.readText();
+                if (text && text.trim() && !el.value) {
+                    el.value = text.trim();
+                    showToast('已自动从剪贴板粘贴内容');
+                }
+            } catch (err) {
+                // 忽略权限拒绝的情况
+            }
+        }
+
+        function handleDownload(id, name) {
+            const url = window.location.href.split('?')[0] + '?id=' + id;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+            window.open(qrUrl, '_blank');
+            showToast('已跳转到二维码页面');
+        }
+
+        function handleUserClick(cid, name) {
+            userClientId = cid;
+            document.getElementById('userPageTitle').innerText = name + ' 的主页';
+            document.getElementById('userHeader').classList.remove('hidden');
+            document.getElementById('mainHeader').classList.add('hidden');
+            document.getElementById('createCard').classList.add('hidden');
+            fetchPackets();
+        }
+
+        function handleBackFromUser() {
+            userClientId = null;
+            document.getElementById('userHeader').classList.add('hidden');
+            document.getElementById('mainHeader').classList.remove('hidden');
+            document.getElementById('createCard').classList.remove('hidden');
+            fetchPackets();
+        }
+
+        async function showRecords(id) {
+            const modal = document.getElementById('recordsModal');
+            const list = document.getElementById('recordsList');
+            modal.classList.remove('hidden');
+            list.innerHTML = '<div class="text-center py-8 text-gray-400">加载中...</div>';
+
+            try {
+                const { data, error } = await _supabase.from('copy_records').select('*').eq('red_packet_id', id).order('created_at', { ascending: false });
+                if (error) throw error;
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<div class="text-center py-8 text-gray-400 text-sm">暂无助力记录</div>';
+                } else {
+                    list.innerHTML = data.map(rec => `
+                        <div onclick="closeRecords(); handleUserClick('${rec.copier_client_id}', '${rec.copier_name}')" class="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 cursor-pointer transition-colors border border-transparent hover:border-gray-100">
+                            <img src="${rec.copier_avatar || DEFAULT_AVATARS[0]}" class="w-10 h-10 rounded-full border border-gray-100 w-10 h-10 object-cover">
+                            <div class="flex-1">
+                                <div class="font-semibold text-sm text-gray-900">
+                                    ${rec.copier_name}
+                                    ${rec.copier_client_id === clientId ? '<span class="ml-1 px-1.5 py-0.5 text-[10px] rounded bg-blue-50 text-blue-600 align-middle">我</span>' : ''}
+                                </div>
+                                <div class="text-[10px] text-gray-400">${new Date(rec.created_at).toLocaleString()}</div>
+                            </div>
+                            <div class="text-xs text-blue-500 font-medium">查看 Ta</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                list.innerHTML = '<div class="text-center py-8 text-red-400">加载失败</div>';
+            }
+        }
+
+        // Feedback Logic
+        function toggleFeedback() {
+            const modal = document.getElementById('feedbackModal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('feedbackContent').focus();
+            }
+        }
+
+        async function submitFeedback() {
+            const content = document.getElementById('feedbackContent').value.trim();
+            const contact = document.getElementById('feedbackContact').value.trim();
+            const btn = document.getElementById('feedbackSubmitBtn');
+
+            if (!content) return showToast('请输入反馈内容');
+
+            btn.disabled = true;
+            btn.innerText = '提交中...';
+
+            try {
+                const { error } = await _supabase.from('feedbacks').insert([{
+                    content,
+                    contact,
+                    client_id: clientId,
+                    page_url: window.location.href,
+                    module_name: '红包口令'
+                }]);
+
+                if (error) throw error;
+
+                showToast('感谢您的反馈！');
+                document.getElementById('feedbackContent').value = '';
+                document.getElementById('feedbackContact').value = '';
+                toggleFeedback();
+            } catch (err) {
+                console.error(err);
+                showToast('提交失败，请稍后重试');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '提交反馈';
+            }
+        }
+
+        // Usage Logic
+        function toggleUsage() {
+            document.getElementById('usageModal').classList.toggle('hidden');
+        }
+
+        function closeRecords() {
+            document.getElementById('recordsModal').classList.add('hidden');
+        }
+
+        function handleSearch() {
+            searchTerm = document.getElementById('searchTerm').value;
+            renderPackets();
+        }
+
+        function setFilter(s) {
+            filterStatus = s;
+            ['active', 'all', 'completed', 'expired'].forEach(id => {
+                const btn = document.getElementById('btn-' + id);
+                if (id === s) {
+                    btn.className = 'px-3 py-1.5 text-xs rounded-lg bg-gray-900 text-white transition-all';
+                } else {
+                    btn.className = 'px-3 py-1.5 text-xs rounded-lg text-gray-700 hover:bg-white transition-all';
+                }
+            });
+            fetchPackets();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => toast.style.opacity = '0', 2000);
+        }
+
+        // Deep Link
+        const params = new URLSearchParams(window.location.search);
+        const targetId = params.get('id');
+        if (targetId) {
+            // Highlight or filter by targetId if needed
+        }
+
+        initCopyright();
+        initAvatars();
+        fetchPackets();
+    </script>
+</body>
+</html>
