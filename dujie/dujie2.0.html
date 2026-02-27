@@ -1,1 +1,193 @@
-你好
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本命年渡劫修仙传 - 个人版</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --primary: #d32f2f;
+            --level1: #ffcdd2; --level2: #ef9a9a; --level3: #e57373; --level4: #f44336; --level5: #b71c1c;
+        }
+        body { font-family: 'Segoe UI', system-ui; background: var(--bg); color: #333; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { width: 100%; max-width: 800px; }
+        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        /* 登录与表单 */
+        .auth-box { text-align: center; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        .secondary-btn { background: #666; margin-top: 10px; }
+
+        /* 热力图 */
+        .heatmap-grid { 
+            display: grid; grid-template-columns: repeat(20, 1fr); gap: 4px; margin: 20px 0; 
+            overflow-x: auto; padding-bottom: 10px;
+        }
+        .square { width: 100%; aspect-ratio: 1; background: #eee; border-radius: 3px; cursor: pointer; transition: 0.2s; }
+        .square:hover { border: 1px solid #333; }
+        
+        /* 历史记录列表 */
+        .history-list { max-height: 300px; overflow-y: auto; border-top: 1px solid #eee; margin-top: 15px; }
+        .history-item { padding: 10px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; display: flex; justify-content: space-between; }
+        .history-date { color: #888; font-size: 0.8rem; }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="authSection" class="card auth-box">
+        <h2>🦊 身份确认</h2>
+        <p>记录属于你一个人的倒霉时刻</p>
+        <input type="email" id="email" placeholder="邮箱地址">
+        <input type="password" id="password" placeholder="密码">
+        <button onclick="handleSignUp()">注册并登录</button>
+        <button class="secondary-btn" onclick="handleLogin()">已有账号直接登录</button>
+    </div>
+
+    <div id="mainSection" class="hidden">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="welcomeMsg">渡劫者，你好</h3>
+                <button onclick="handleLogout()" style="width: auto; padding: 5px 10px; font-size: 0.7rem;">退出</button>
+            </div>
+            <input type="text" id="eventInput" placeholder="输入倒霉事件，按回车提交..." onkeypress="if(event.key==='Enter') logEvent()">
+            
+            <div id="stats" style="margin-top:15px; font-weight: bold; color: var(--primary);"></div>
+            
+            <div class="heatmap-grid" id="heatmap"></div>
+            
+            <div style="font-size: 0.7rem; color: #999;">颜色越深，说明那天越“水逆”</div>
+        </div>
+
+        <div class="card">
+            <h4>📜 倒霉忏悔录（历史记录）</h4>
+            <div id="historyList" class="history-list"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://bmmtcrqvikvunvpsjjcx.supabase.co';
+    const SUPABASE_KEY = 'YOUR_ANON_KEY'; 
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentUser = null;
+
+    // --- 认证功能 ---
+    async function handleSignUp() {
+        const { data, error } = await supabase.auth.signUp({
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+        });
+        if (error) alert(error.message);
+        else alert("注册成功，请检查邮箱验证或直接尝试登录");
+    }
+
+    async function handleLogin() {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+        });
+        if (error) alert(error.message);
+        else checkUser();
+    }
+
+    async function handleLogout() {
+        await supabase.auth.signOut();
+        location.reload();
+    }
+
+    // --- 核心逻辑 ---
+    async function checkUser() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            currentUser = user;
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('mainSection').classList.remove('hidden');
+            document.getElementById('welcomeMsg').innerText = `渡劫者: ${user.email}`;
+            refreshUI();
+        }
+    }
+
+    async function logEvent() {
+        const desc = document.getElementById('eventInput').value;
+        if (!desc) return;
+
+        const { error } = await supabase.from('unlucky_events').insert([{ 
+            event_description: desc,
+            user_id: currentUser.id 
+        }]);
+
+        if (!error) {
+            document.getElementById('eventInput').value = '';
+            refreshUI();
+        }
+    }
+
+    async function refreshUI() {
+        const { data: events, error } = await supabase
+            .from('unlucky_events')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) return console.error(error);
+
+        // 1. 更新统计
+        document.getElementById('stats').innerText = `累计渡劫：${events.length} 次`;
+
+        // 2. 渲染历史记录
+        const listEl = document.getElementById('historyList');
+        listEl.innerHTML = events.map(e => `
+            <div class="history-item">
+                <span>${e.event_description}</span>
+                <span class="history-date">${new Date(e.created_at).toLocaleDateString()}</span>
+            </div>
+        `).join('');
+
+        // 3. 渲染热力图 (统计每天次数)
+        const dateCounts = {};
+        events.forEach(e => {
+            const d = new Date(e.created_at).toDateString();
+            dateCounts[d] = (dateCounts[d] || 0) + 1;
+        });
+
+        renderHeatmap(dateCounts);
+    }
+
+    function renderHeatmap(counts) {
+        const grid = document.getElementById('heatmap');
+        grid.innerHTML = '';
+        
+        // 渲染最近 100 天
+        for (let i = 99; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const count = counts[d.toDateString()] || 0;
+            
+            const square = document.createElement('div');
+            square.className = 'square';
+            square.title = `${d.toLocaleDateString()}: ${count} 次`;
+            
+            // 颜色阶梯逻辑
+            if (count > 0) {
+                if (count === 1) square.style.backgroundColor = 'var(--level1)';
+                else if (count === 2) square.style.backgroundColor = 'var(--level2)';
+                else if (count === 3) square.style.backgroundColor = 'var(--level3)';
+                else if (count === 4) square.style.backgroundColor = 'var(--level4)';
+                else square.style.backgroundColor = 'var(--level5)';
+            }
+            grid.appendChild(square);
+        }
+    }
+
+    // 初始化检查登录状态
+    checkUser();
+</script>
+</body>
+</html>
