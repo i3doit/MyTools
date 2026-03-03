@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>测试专用-国际银行卡数据生成器</title>
+    <style>
+        :root { --primary: #007bff; --bg: #f8f9fa; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .container { 
+            background: white; padding: 20px; border-radius: 16px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            width: 100%; max-width: 900px; 
+            display: flex; flex-direction: row; gap: 20px; box-sizing: border-box; 
+        }
+        
+        /* 预览区 */
+        .preview-area { flex: 1.2; display: flex; flex-direction: column; align-items: center; background: #eee; padding: 15px; border-radius: 12px; }
+        .canvas-container { width: 100%; max-width: 450px; }
+        #cardCanvas { width: 100%; height: auto; border-radius: 14px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
+
+        /* 控制区 */
+        .controls { flex: 1; display: flex; flex-direction: column; gap: 12px; width: 100%; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; position: relative; }
+        label { font-size: 13px; color: #555; font-weight: 600; }
+        
+        .input-wrapper { display: flex; gap: 8px; }
+        input, select { 
+            flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; 
+            font-size: 15px; outline: none; transition: 0.2s;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,123,255,0.1); }
+        
+        /* 随机生成按钮 */
+        .btn-random { 
+            background: #f0f0f0; border: 1px solid #ccc; border-radius: 8px;
+            padding: 0 12px; cursor: pointer; font-size: 18px; display: flex; align-items: center;
+        }
+        .btn-random:hover { background: #e0e0e0; }
+
+        .color-presets { display: flex; gap: 12px; margin: 5px 0; }
+        .color-dot { width: 34px; height: 34px; border-radius: 50%; cursor: pointer; border: 3px solid #fff; box-shadow: 0 0 0 1px #ddd; }
+        .color-dot.active { box-shadow: 0 0 0 2px var(--primary); }
+
+        .btn-main { 
+            background: var(--primary); color: white; border: none; padding: 15px; 
+            border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+            .preview-area { order: -1; }
+        }
+    </style>
+</head>
+<body>
+
+    <h2 style="margin-bottom: 5px;">💳 国际卡 CRUD 测试生成器</h2>
+    <p style="font-size: 13px; color: #888; margin-bottom: 15px;">符合国际标准的测试卡面模拟 (BIN/CVC/EXP)</p>
+
+    <div class="container">
+        <div class="preview-area">
+            <div class="canvas-container">
+                <canvas id="cardCanvas" width="500" height="315"></canvas>
+            </div>
+            <p style="font-size: 12px; color: #999; margin-top: 15px;">支持 Visa/Master 样式模拟</p>
+        </div>
+
+        <div class="controls">
+            <div class="form-group">
+                <label>区域与银行 (Region & Bank)</label>
+                <div class="input-wrapper">
+                    <select id="bankSelect" onchange="syncBankName()">
+                        <option value="Global Digital Bank" data-region="United States">🇺🇸 Global Digital Bank</option>
+                        <option value="Europe Union Trust" data-region="United Kingdom">🇬🇧 Europe Union Trust</option>
+                        <option value="Asia Pacific Finance" data-region="Hong Kong">🇭🇰 Asia Pacific Finance</option>
+                        <option value="Lion City Capital" data-region="Singapore">🇸🇬 Lion City Capital</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>卡号 (16位国际标准)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="cardNumber" value="4532 8888 1234 5678">
+                    <button class="btn-random" onclick="genRand('card')">🎲</button>
+                </div>
+            </div>
+
+            <div class="form-group" style="flex-direction: row; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>有效期 (MM/YY)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="expiry" value="12/28">
+                        <button class="btn-random" onclick="genRand('date')">🎲</button>
+                    </div>
+                </div>
+                <div style="flex: 0.6;">
+                    <label>CVC</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="cvc" value="888">
+                        <button class="btn-random" onclick="genRand('cvc')">🎲</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>持卡人姓名 (Name)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="holderName" value="JACK TESTER">
+                    <button class="btn-random" onclick="genRand('name')">🎲</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>卡面主题</label>
+                <div class="color-presets">
+                    <div class="color-dot active" style="background: linear-gradient(135deg, #1e3c72, #2a5298);" data-c1="#1e3c72" data-c2="#2a5298"></div>
+                    <div class="color-dot" style="background: linear-gradient(135deg, #232526, #414345);" data-c1="#232526" data-c2="#414345"></div>
+                    <div class="color-dot" style="background: linear-gradient(135deg, #7028e4, #e5e5be);" data-c1="#7028e4" data-c2="#4e085f"></div>
+                    <div class="color-dot" style="background: linear-gradient(135deg, #093028, #237a57);" data-c1="#093028" data-c2="#237a57"></div>
+                </div>
+            </div>
+
+            <button class="btn-main" onclick="downloadCard()">保存图片用于测试</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('cardCanvas');
+        const ctx = canvas.getContext('2d');
+        let currentGradient = { c1: '#1e3c72', c2: '#2a5298' };
+
+        // 随机逻辑库
+        const randomData = {
+            names: ["ALEX WANG", "SOFIA SMITH", "DAVID MILLER", "YUKI TANAKA", "EMMA WILSON", "LIAM GARCIA"],
+            bins: ["4532", "4111", "5243", "5412", "4916"], // Visa & Master
+            regions: ["USA", "UK", "HK", "SG"]
+        };
+
+        function genRand(type) {
+            if (type === 'name') {
+                document.getElementById('holderName').value = randomData.names[Math.floor(Math.random() * randomData.names.length)];
+            } else if (type === 'card') {
+                const bin = randomData.bins[Math.floor(Math.random() * randomData.bins.length)];
+                const rest = Math.random().toString().slice(2, 14);
+                const full = bin + rest;
+                document.getElementById('cardNumber').value = full.match(/.{1,4}/g).join(' ');
+            } else if (type === 'date') {
+                const mm = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
+                const yy = Math.floor(Math.random() * 5) + 25;
+                document.getElementById('expiry').value = `${mm}/${yy}`;
+            } else if (type === 'cvc') {
+                document.getElementById('cvc').value = Math.floor(Math.random() * 899 + 100);
+            }
+            drawCard();
+        }
+
+        // 背景选择器
+        document.querySelectorAll('.color-dot').forEach(dot => {
+            dot.addEventListener('click', () => {
+                currentGradient.c1 = dot.dataset.c1;
+                currentGradient.c2 = dot.dataset.c2;
+                document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                dot.classList.add('active');
+                drawCard();
+            });
+        });
+
+        function syncBankName() { drawCard(); }
+
+        function drawCard() {
+            const bankName = document.getElementById('bankSelect').value;
+            const region = document.getElementById('bankSelect').selectedOptions[0].dataset.region;
+            const cardNo = document.getElementById('cardNumber').value;
+            const name = document.getElementById('holderName').value;
+            const exp = document.getElementById('expiry').value;
+            const cvc = document.getElementById('cvc').value;
+
+            ctx.clearRect(0, 0, 500, 315);
+            
+            // 1. 绘制主体背景
+            const grad = ctx.createLinearGradient(0, 0, 500, 315);
+            grad.addColorStop(0, currentGradient.c1);
+            grad.addColorStop(1, currentGradient.c2);
+            ctx.fillStyle = grad;
+            drawRoundRect(ctx, 0, 0, 500, 315, 20, true);
+
+            // 2. 增加装饰纹理 (网格感)
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            for(let i=0; i<500; i+=10){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,315); ctx.stroke(); }
+
+            // 3. 银行名称 & 地区
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 22px Helvetica';
+            ctx.fillText(bankName, 30, 45);
+            ctx.font = '12px Helvetica';
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillText(region, 30, 65);
+
+            // 4. 模拟芯片
+            const chipGrad = ctx.createLinearGradient(30, 90, 85, 135);
+            chipGrad.addColorStop(0, '#eec34c');
+            chipGrad.addColorStop(1, '#a37a1a');
+            ctx.fillStyle = chipGrad;
+            drawRoundRect(ctx, 35, 95, 60, 45, 8, true);
+
+            // 5. 卡号 (带阴影特效)
+            ctx.fillStyle = '#fff';
+            ctx.font = '30px "Courier New", monospace';
+            ctx.shadowBlur = 4; ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.fillText(cardNo, 35, 190);
+            ctx.shadowBlur = 0;
+
+            // 6. 详情字段
+            ctx.font = '11px Arial'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.fillText('VALID THRU', 35, 230);
+            ctx.fillText('CVC', 150, 230);
+            ctx.fillText('CARD HOLDER', 35, 265);
+
+            ctx.font = 'bold 18px Helvetica'; ctx.fillStyle = '#fff';
+            ctx.fillText(exp, 35, 250);
+            ctx.fillText(cvc, 150, 250);
+            ctx.fillText(name.toUpperCase(), 35, 285);
+
+            // 7. 品牌 Logo (简单模拟)
+            const firstChar = cardNo.charAt(0);
+            if(firstChar === '4') {
+                ctx.fillStyle = '#fff'; ctx.font = 'italic bold 28px "Times New Roman"';
+                ctx.fillText('VISA', 400, 285);
+            } else {
+                ctx.fillStyle = 'rgba(255,100,0,0.8)'; ctx.beginPath(); ctx.arc(415, 275, 22, 0, 7); ctx.fill();
+                ctx.fillStyle = 'rgba(255,200,0,0.8)'; ctx.beginPath(); ctx.arc(445, 275, 22, 0, 7); ctx.fill();
+            }
+        }
+
+        function drawRoundRect(ctx, x, y, w, h, r, fill) {
+            ctx.beginPath(); ctx.moveTo(x+r, y);
+            ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r);
+            ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r);
+            if(fill) ctx.fill();
+        }
+
+        function downloadCard() {
+            const link = document.createElement('a');
+            link.download = `test-card-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // 监听所有普通输入框实时更新
+        document.querySelectorAll('input').forEach(el => el.addEventListener('input', drawCard));
+        
+        window.onload = drawCard;
+    </script>
+</body>
+</html>
