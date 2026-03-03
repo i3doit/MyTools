@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>金融测试Pro-V7修复版</title>
+    <style>
+        :root { --primary: #007bff; --bg: #f5f7fa; --card-shadow: rgba(0,0,0,0.15); }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        
+        .main-container { 
+            background: white; padding: 20px; border-radius: 20px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08); 
+            width: 100%; max-width: 1000px; 
+            display: flex; flex-direction: row; gap: 24px; box-sizing: border-box; 
+        }
+
+        /* 预览区优化：确保不溢出 */
+        .preview-area { flex: 1.2; display: flex; flex-direction: column; align-items: center; min-width: 320px; max-width: 100%; }
+        .canvas-container { width: 100%; position: sticky; top: 10px; }
+        canvas { 
+            width: 100% !important; height: auto !important; 
+            border-radius: 18px; display: block; 
+            box-shadow: 0 15px 35px var(--card-shadow); 
+        }
+
+        /* 右侧控制区 */
+        .controls { flex: 1; display: flex; flex-direction: column; gap: 14px; width: 100%; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; width: 100%; }
+        label { font-size: 11px; color: #666; font-weight: bold; }
+        
+        .input-wrapper { display: flex; gap: 8px; align-items: center; width: 100%; }
+        input, select { 
+            flex: 1; padding: 12px; border: 1.5px solid #ddd; border-radius: 10px; 
+            font-size: 14px; outline: none; background: #fafafa; transition: 0.2s;
+            min-width: 0; /* 防止flex容器溢出 */
+        }
+        /* 编辑激活态效果 */
+        input:not([readonly]) { border: 2px solid var(--primary); background: #fff; box-shadow: 0 0 8px rgba(0,123,255,0.1); }
+
+        /* 有效期和CVC小宽度控制 */
+        .small-input-group { flex: 0 0 140px !important; }
+
+        .btn-dice { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 8px 12px; cursor: pointer; font-size: 18px; }
+        .btn-action { padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.3s; color: white; width: 100%; }
+        .btn-download { background: #2d3436; margin-top: 10px; }
+        .btn-statement { background: var(--primary); margin-top: 10px; }
+
+        #toast { position: fixed; top: 30px; background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 50px; font-size: 13px; opacity: 0; transition: 0.4s; z-index: 9999; }
+
+        @media (max-width: 900px) {
+            .main-container { flex-direction: column; }
+            .preview-area { order: 2; width: 100%; }
+            .small-input-group { flex: 1 !important; } /* 移动端并排显示 */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast">已复制到剪贴板</div>
+
+    <div class="main-container">
+        <div class="preview-area">
+            <div class="canvas-container">
+                <canvas id="cardCanvas"></canvas>
+            </div>
+            <div id="stmtBox" style="display:none; width: 100%; margin-top: 20px;">
+                <canvas id="stmtCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="form-group">
+                <label>发行地区</label>
+                <select id="region" onchange="updateView()">
+                    <option value="HK" data-n="香港">🇭🇰 香港 (HK)</option>
+                    <option value="MO" data-n="澳门" selected>🇲🇴 澳门 (MO)</option>
+                    <option value="CN" data-n="中国">🇨🇳 中国 (CN)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>银行名称 (点击编辑)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="bankName" value="BANK OF MACAU" readonly onclick="handleInteraction(this)">
+                    <button class="btn-dice" onclick="roll('bank')">🎲</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>银行卡号 (点击编辑)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="cardNo" value="4507 7412 1212 1884" readonly onclick="handleInteraction(this)">
+                    <button class="btn-dice" onclick="roll('card')">🎲</button>
+                </div>
+            </div>
+
+            <div class="form-group" style="flex-direction: row; gap: 15px; flex-wrap: wrap;">
+                <div class="form-group small-input-group">
+                    <label>有效期 (EXP)</label>
+                    <input type="text" id="expDate" value="12/29" readonly onclick="handleInteraction(this)">
+                </div>
+                <div class="form-group small-input-group">
+                    <label>CVC (安全码)</label>
+                    <input type="text" id="cvcCode" value="668" readonly onclick="handleInteraction(this)">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>持卡人 (HOLDER)</label>
+                <input type="text" id="holder" value="HOLDER NAME" readonly onclick="handleInteraction(this)">
+            </div>
+
+            <button class="btn-action btn-download" onclick="exportImg('card')">📥 下载高清卡片图</button>
+            <button class="btn-action btn-statement" onclick="drawStatement()">📑 生成银行账单</button>
+        </div>
+    </div>
+
+    <script>
+        const cardCanvas = document.getElementById('cardCanvas');
+        const stmtCanvas = document.getElementById('stmtCanvas');
+        const ratio = 2;
+
+        function setupCanvas(canvas, w, h) {
+            canvas.width = w * ratio;
+            canvas.height = h * ratio;
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+            const ctx = canvas.getContext('2d');
+            ctx.scale(ratio, ratio);
+            return ctx;
+        }
+
+        // 核心修复：处理交互逻辑 (单击复制并进入编辑模式)
+        function handleInteraction(el) {
+            if (el.readOnly) {
+                // 执行复制
+                navigator.clipboard.writeText(el.value);
+                const t = document.getElementById('toast');
+                t.style.opacity = '1';
+                setTimeout(() => t.style.opacity = '0', 1500);
+
+                // 激活编辑
+                el.readOnly = false;
+                el.focus();
+                el.setSelectionRange(0, el.value.length); // 选中全部文字方便修改
+                
+                el.onblur = () => {
+                    el.readOnly = true;
+                    updateView(); // 关键：失去焦点时触发重绘
+                };
+                
+                el.onkeydown = (e) => { if(e.key === 'Enter') el.blur(); };
+            }
+        }
+
+        function roll(type) {
+            if(type==='bank') document.getElementById('bankName').value = "HSBC GLOBAL";
+            if(type==='card') document.getElementById('cardNo').value = "4507 " + Math.random().toString().slice(2,6) + " 8888 9999";
+            updateView();
+        }
+
+        function updateView() {
+            const ctx = setupCanvas(cardCanvas, 500, 315);
+            const d = {
+                bank: document.getElementById('bankName').value,
+                no: document.getElementById('cardNo').value,
+                exp: document.getElementById('expDate').value,
+                cvc: document.getElementById('cvcCode').value,
+                holder: document.getElementById('holder').value,
+                reg: document.getElementById('region').selectedOptions[0].dataset.n
+            };
+
+            // 绘制背景
+            const grad = ctx.createLinearGradient(0,0,500,315);
+            grad.addColorStop(0, '#2c3e50'); grad.addColorStop(1, '#4ca1af');
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.roundRect(0, 0, 500, 315, 20); ctx.fill();
+
+            // 仿真芯片
+            ctx.fillStyle = '#f1c40f';
+            ctx.beginPath(); ctx.roundRect(40, 90, 60, 45, 8); ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.strokeRect(55, 90, 1, 45); ctx.strokeRect(40, 112, 60, 1);
+
+            // 银行名
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 22px Arial'; ctx.textBaseline = 'top';
+            ctx.fillText(d.bank, 40, 40);
+            ctx.font = '12px Arial'; ctx.globalAlpha = 0.6; ctx.fillText(d.reg, 40, 68); ctx.globalAlpha = 1;
+
+            // 卡号立体效果
+            ctx.font = '32px "Courier New", monospace';
+            ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillText(d.no, 42, 182);
+            ctx.fillStyle = '#f0f0f0'; ctx.fillText(d.no, 40, 180);
+
+            // 底部信息
+            ctx.font = '10px Arial'; ctx.globalAlpha = 0.7;
+            ctx.fillText('EXP', 40, 235); ctx.fillText('CVC', 40, 275);
+            ctx.font = 'bold 16px Arial'; ctx.globalAlpha = 1;
+            ctx.fillText(d.exp, 40, 250); ctx.fillText(d.cvc, 40, 290);
+            
+            ctx.textAlign = 'right'; ctx.font = 'italic bold 28px Arial';
+            ctx.fillText('VISA', 460, 280);
+        }
+
+        function drawStatement() {
+            document.getElementById('stmtBox').style.display = 'block';
+            const ctx = setupCanvas(stmtCanvas, 600, 400);
+            ctx.fillStyle = '#fff'; ctx.fillRect(0,0,600,400);
+            ctx.fillStyle = '#333'; ctx.font = 'bold 20px Arial'; ctx.textBaseline = 'top';
+            ctx.fillText(document.getElementById('bankName').value + ' STATEMENT', 40, 40);
+            ctx.font = '14px Arial'; ctx.fillText('Holder: ' + document.getElementById('holder').value, 40, 80);
+            ctx.fillText('Card: ' + document.getElementById('cardNo').value, 40, 105);
+            ctx.fillRect(40, 140, 520, 2);
+            ctx.fillText('MAR 01  INITIAL DEPOSIT      + $5,000.00', 40, 160);
+            stmtCanvas.scrollIntoView({behavior:'smooth'});
+        }
+
+        function exportImg(type) {
+            const canvas = type === 'card' ? cardCanvas : stmtCanvas;
+            const link = document.createElement('a');
+            link.download = `finance_${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+        }
+
+        window.onload = updateView;
+    </script>
+</body>
+</html>
