@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>金融测试Pro-仿真高清版</title>
+    <style>
+        :root { --primary: #007bff; --bg: #f5f7fa; --card-shadow: rgba(0,0,0,0.15); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        
+        /* 容器布局 */
+        .main-container { 
+            background: white; padding: 20px; border-radius: 20px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08); 
+            width: 100%; max-width: 1100px; 
+            display: flex; flex-direction: row; gap: 24px; box-sizing: border-box; 
+        }
+
+        /* 左侧预览区：固定宽度防止挤压 */
+        .preview-area { flex: 1.2; display: flex; flex-direction: column; align-items: center; min-width: 320px; }
+        .canvas-container { 
+            width: 100%; position: sticky; top: 20px; 
+            perspective: 1000px; /* 立体效果 */
+        }
+        canvas { 
+            width: 100% !important; height: auto !important; 
+            border-radius: 18px; display: block; 
+            box-shadow: 0 15px 35px var(--card-shadow); 
+            background: #fff; transition: transform 0.3s;
+        }
+        #stmtCanvas { border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-top: 20px; }
+
+        /* 右侧控制区 */
+        .controls { flex: 1; display: flex; flex-direction: column; gap: 14px; width: 100%; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 12px; color: #666; font-weight: bold; text-transform: uppercase; }
+        
+        .input-wrapper { display: flex; gap: 8px; align-items: center; }
+        input, select { 
+            flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 10px; 
+            font-size: 14px; outline: none; background: #fafafa; transition: all 0.2s;
+        }
+        input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+        input:not([readonly]) { border: 2px solid var(--primary); background: #fff; }
+
+        .btn-dice { 
+            background: #fff; border: 1px solid #ddd; border-radius: 10px; 
+            padding: 8px 12px; cursor: pointer; font-size: 18px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.2s;
+        }
+        .btn-dice:hover { background: #f0f0f0; transform: rotate(15deg); }
+        
+        .action-group { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 10px; }
+        .btn-action { 
+            padding: 16px; border: none; border-radius: 12px; font-weight: bold; 
+            cursor: pointer; font-size: 14px; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-download { background: #2d3436; color: white; }
+        .btn-statement { background: var(--primary); color: white; }
+        .btn-success { background: #00b894; color: white; display: none; }
+
+        #toast { 
+            position: fixed; top: 30px; background: rgba(0,0,0,0.8); color: white; 
+            padding: 12px 24px; border-radius: 50px; font-size: 14px; opacity: 0; 
+            transition: 0.4s; z-index: 9999; pointer-events: none;
+        }
+
+        @media (max-width: 900px) {
+            .main-container { flex-direction: column; }
+            .preview-area { order: 2; }
+            canvas { max-width: 450px; margin: 0 auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast">已复制到剪贴板</div>
+
+    <header style="text-align: center; margin-bottom: 25px; width: 100%;">
+        <h2 style="margin: 0; color: #2d3436;">💳 国际银行卡/SWIFT 高清仿真工具</h2>
+        <p style="font-size: 13px; color: #636e72; margin-top: 8px;">双击字段编辑数据 | 单击快速复制 | 支持 2x 冲压效果导出</p>
+    </header>
+
+    <div class="main-container">
+        <div class="preview-area">
+            <div class="canvas-container">
+                <canvas id="cardCanvas"></canvas>
+            </div>
+            <div id="stmtBox" style="display:none; width: 100%;">
+                <canvas id="stmtCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="form-group">
+                <label>发行地区 (ISO 3166)</label>
+                <select id="region" onchange="updateView()">
+                    <option value="HK" data-n="香港">🇭🇰 香港 (Hong Kong)</option>
+                    <option value="MO" data-n="澳门" selected>🇲🇴 澳门 (Macau)</option>
+                    <option value="CN" data-n="中国">🇨🇳 中国 (Mainland China)</option>
+                    <option value="TW" data-n="台湾">🇹🇼 台湾 (Taiwan)</option>
+                    <option value="US" data-n="美国">🇺🇸 美国 (United States)</option>
+                    <option value="SG" data-n="新加坡">🇸🇬 新加坡 (Singapore)</option>
+                    <option value="GB" data-n="英国">🇬🇧 英国 (United Kingdom)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>银行名称 (Bank Name)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="bankName" value="BANK OF MACAU" readonly onclick="handleCopy(this)" ondblclick="handleEdit(this)">
+                    <button class="btn-dice" onclick="roll('bank')">🎲</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>SWIFT / BIC 代码 (8或11位)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="swift" value="MACBMOXXXXX" readonly onclick="handleCopy(this)" ondblclick="handleEdit(this)">
+                    <button class="btn-dice" onclick="roll('swift')">🎲</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>银行卡号 (Card Number)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="cardNo" value="4507 7412 1212 1884" readonly onclick="handleCopy(this)" ondblclick="handleEdit(this)">
+                    <button class="btn-dice" onclick="roll('card')">🎲</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>持卡人姓名 (Cardholder)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="holder" value="HOLDER NAME" readonly onclick="handleCopy(this)" ondblclick="handleEdit(this)">
+                    <button class="btn-dice" onclick="roll('name')">🎲</button>
+                </div>
+            </div>
+
+            <div class="form-group" style="flex-direction: row; gap: 15px;">
+                <div style="flex:1">
+                    <label>有效期 (EXP)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="expDate" value="12/29" readonly onclick="handleCopy(this)" ondblclick="handleEdit(this)">
+                        <button class="btn-dice" onclick="roll('date')">🎲</button>
+                    </div>
+                </div>
+                <div style="flex:1">
+                    <label>CVC (换行显示)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="cvcCode" value="668" readonly onclick="handleCopy(this)" ondblclick="handleEdit(this)">
+                        <button class="btn-dice" onclick="roll('cvc')">🎲</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-group">
+                <button class="btn-action btn-download" onclick="exportImg('card')">📥 下载高清仿真卡片</button>
+                <button class="btn-action btn-statement" onclick="drawStatement()">📑 生成银行月结单</button>
+                <button id="btnDlStmt" class="btn-action btn-success" onclick="exportImg('stmt')">✅ 下载高清月结单</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const cardCanvas = document.getElementById('cardCanvas');
+        const stmtCanvas = document.getElementById('stmtCanvas');
+        const ratio = 2; // 2倍高清
+
+        // 初始化高清画布
+        function setupCanvas(canvas, w, h) {
+            canvas.width = w * ratio;
+            canvas.height = h * ratio;
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+            const ctx = canvas.getContext('2d');
+            ctx.scale(ratio, ratio);
+            ctx.textBaseline = 'top';
+            return ctx;
+        }
+
+        // 交互逻辑
+        function handleCopy(el) {
+            if(!el.readOnly) return;
+            navigator.clipboard.writeText(el.value);
+            const t = document.getElementById('toast');
+            t.style.opacity = '1';
+            setTimeout(() => t.style.opacity = '0', 1500);
+        }
+
+        function handleEdit(el) {
+            el.readOnly = false;
+            el.focus();
+            el.onblur = () => { el.readOnly = true; updateView(); };
+        }
+
+        function roll(type) {
+            const r = document.getElementById('region').value;
+            if(type==='bank'){
+                const banks = ["HSBC BANK", "BANK OF AMERICA", "CHASE BANK", "DBS BANK", "STANDARD CHARTERED", "BANK OF CHINA"];
+                document.getElementById('bankName').value = banks[Math.floor(Math.random()*banks.length)];
+            } else if(type==='swift'){
+                const b = document.getElementById('bankName').value.substring(0,4).toUpperCase();
+                document.getElementById('swift').value = b + r + "HK" + (Math.random()>0.5?"XXX":"B11");
+            } else if(type==='card'){
+                const p = ["4507","5412","6222","3566"];
+                document.getElementById('cardNo').value = (p[Math.floor(Math.random()*4)] + Math.random().toString().slice(2,14)).match(/.{1,4}/g).join(' ');
+            } else if(type==='name'){
+                const ns = ["LI XIAO LONG", "JANE DOE", "MITSUI KEN", "WONG KA KI", "CHEN WEI"];
+                document.getElementById('holder').value = ns[Math.floor(Math.random()*ns.length)];
+            } else if(type==='date'){
+                document.getElementById('expDate').value = "0" + (Math.floor(Math.random()*9)+1) + "/" + (Math.floor(Math.random()*5)+25);
+            } else if(type==='cvc'){
+                document.getElementById('cvcCode').value = Math.floor(Math.random()*899+100);
+            }
+            updateView();
+        }
+
+        // 绘制逻辑
+        function drawCard() {
+            const ctx = setupCanvas(cardCanvas, 500, 315);
+            const d = {
+                bank: document.getElementById('bankName').value,
+                swift: document.getElementById('swift').value,
+                reg: document.getElementById('region').selectedOptions[0].dataset.n,
+                no: document.getElementById('cardNo').value,
+                holder: document.getElementById('holder').value,
+                exp: document.getElementById('expDate').value,
+                cvc: document.getElementById('cvcCode').value
+            };
+
+            // 1. 卡片背景与立体渐变
+            const grad = ctx.createLinearGradient(0,0,500,315);
+            grad.addColorStop(0, '#a5c8d6'); 
+            grad.addColorStop(1, '#7ea6b9');
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.roundRect(0, 0, 500, 315, 20); ctx.fill();
+
+            // 装饰底纹
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<600; i+=30){
+                ctx.beginPath(); ctx.moveTo(i, -50); ctx.bezierCurveTo(i-100, 150, i+100, 150, i, 350); ctx.stroke();
+            }
+
+            // 2. 仿真芯片 (逼真效果优化)
+            const chipX=45, chipY=90, chipW=65, chipH=48;
+            const cGrad = ctx.createLinearGradient(chipX, chipY, chipX+chipW, chipY+chipH);
+            cGrad.addColorStop(0, '#f1c40f'); cGrad.addColorStop(0.5, '#d4ac0d'); cGrad.addColorStop(1, '#f1c40f');
+            ctx.fillStyle = cGrad;
+            ctx.beginPath(); ctx.roundRect(chipX, chipY, chipW, chipH, 8); ctx.fill();
+            // 芯片内部触点
+            ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth=1;
+            ctx.strokeRect(chipX+15, chipY, 1, chipH); ctx.strokeRect(chipX+35, chipY, 1, chipH);
+            ctx.strokeRect(chipX, chipY+24, chipW, 1);
+            ctx.beginPath(); ctx.roundRect(chipX+20, chipY+10, 25, 28, 5); ctx.stroke();
+
+            // 3. 文本与换行处理
+            ctx.fillStyle = '#1c252c';
+            
+            // 银行名称 (自动换行)
+            ctx.font = 'bold 24px Arial';
+            wrapText(ctx, d.bank, 460, 40, 420, 28);
+
+            // 地区与SWIFT
+            ctx.font = '12px Arial'; ctx.globalAlpha=0.7;
+            ctx.fillText(`${d.reg} | SWIFT: ${d.swift}`, 460 - ctx.measureText(`${d.reg} | SWIFT: ${d.swift}`).width, 70);
+            ctx.globalAlpha=1;
+
+            // 4. 卡号立体效果 (阴影叠加)
+            ctx.font = '34px "Courier New", monospace';
+            ctx.fillStyle = 'rgba(0,0,0,0.3)'; // 投影
+            ctx.fillText(d.no, 42, 182);
+            ctx.fillStyle = '#f0f0f0'; // 钢印亮色
+            ctx.fillText(d.no, 40, 180);
+
+            // 5. 底部标签与换行
+            ctx.font = '10px Arial'; ctx.fillStyle='#1c252c'; ctx.globalAlpha=0.6;
+            ctx.fillText('VALID THRU', 40, 230);
+            ctx.fillText('CVC CODE', 40, 270);
+            ctx.fillText('CARDHOLDER', 180, 270);
+            
+            ctx.font = 'bold 18px Arial'; ctx.globalAlpha=0.9;
+            ctx.fillText(d.exp, 40, 245);
+            ctx.fillText(d.cvc, 40, 285);
+            wrapText(ctx, d.holder.toUpperCase(), 180, 285, 200, 20);
+
+            // 品牌图标
+            ctx.textAlign = 'right'; ctx.font = 'italic bold 28px Arial';
+            ctx.fillText(d.no.startsWith('4')?'VISA':d.no.startsWith('5')?'MasterCard':'UnionPay', 460, 285);
+            ctx.textAlign = 'left';
+        }
+
+        // 文本换行辅助工具
+        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+            let words = text.split(' ');
+            let line = '';
+            for(let n = 0; n < words.length; n++) {
+                let testLine = line + words[n] + ' ';
+                if (ctx.measureText(testLine).width > maxWidth && n > 0) {
+                    ctx.fillText(line, x === 460 ? x - ctx.measureText(line).width : x, y);
+                    line = words[n] + ' ';
+                    y += lineHeight;
+                } else { line = testLine; }
+            }
+            ctx.fillText(line, x === 460 ? x - ctx.measureText(line).width : x, y);
+        }
+
+        // 绘制账单
+        function drawStatement() {
+            document.getElementById('stmtBox').style.display = 'block';
+            document.getElementById('btnDlStmt').style.display = 'flex';
+            const ctx = setupCanvas(stmtCanvas, 600, 850);
+            const b = document.getElementById('bankName').value;
+            const s = document.getElementById('swift').value;
+
+            ctx.fillStyle = '#fff'; ctx.fillRect(0,0,600,850);
+            ctx.fillStyle = '#222'; ctx.font = 'bold 22px Arial'; ctx.fillText(b, 40, 50);
+            ctx.font = '13px Arial'; ctx.fillStyle='#888'; ctx.fillText('BIC/SWIFT: ' + s, 40, 80);
+            ctx.strokeStyle='#eee'; ctx.strokeRect(40, 110, 520, 1);
+
+            ctx.fillStyle='#444'; ctx.font='14px Arial';
+            ctx.fillText('Statement Date: MAR 2026', 40, 140);
+            ctx.fillText('Account Holder: ' + document.getElementById('holder').value.toUpperCase(), 40, 165);
+            ctx.fillText('Account Number: **** **** ' + document.getElementById('cardNo').value.slice(-4), 40, 190);
+
+            ctx.fillStyle='#f9f9f9'; ctx.fillRect(40, 240, 520, 35);
+            ctx.fillStyle='#333'; ctx.font='bold 12px Arial';
+            ctx.fillText('DATE', 50, 252); ctx.fillText('DESCRIPTION', 160, 252); ctx.fillText('AMOUNT', 480, 252);
+
+            const tx = [{d:'Mar 01', s:'PAYMENT RECEIVED', a:'+ 2,500.00'}, {d:'Mar 05', s:'AMAZON RETAIL', a:'- 142.50'}, {d:'Mar 12', s:'APPLE STORE', a:'- 89.00'}];
+            let y = 300;
+            tx.forEach(t => {
+                ctx.font='13px Arial'; ctx.fillStyle='#555';
+                ctx.fillText(t.d, 50, y); ctx.fillText(t.s, 160, y);
+                ctx.textAlign='right'; ctx.fillText(t.a, 550, y); ctx.textAlign='left';
+                y+=45;
+            });
+
+            ctx.fillStyle='#2d3436'; ctx.font='bold 18px Arial';
+            ctx.fillText('TOTAL BALANCE: $ 2,268.50', 300, 600);
+            stmtCanvas.scrollIntoView({behavior: 'smooth'});
+        }
+
+        function exportImg(type) {
+            const canvas = type === 'card' ? cardCanvas : stmtCanvas;
+            const link = document.createElement('a');
+            link.download = `${type}_${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+        }
+
+        function updateView() { drawCard(); }
+        window.onload = updateView;
+    </script>
+</body>
+</html>
