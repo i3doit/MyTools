@@ -5,91 +5,94 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>金融测试全能工具-标准增强版</title>
     <style>
-        :root { --primary: #007bff; --bg: #f0f2f5; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        :root { --primary: #007bff; --bg: #f0f2f5; --text: #333; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; color: var(--text); }
         
         .container { 
             background: white; padding: 20px; border-radius: 16px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
-            width: 100%; max-width: 1100px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+            width: 100%; max-width: 1000px; 
             display: flex; flex-direction: row; gap: 20px; box-sizing: border-box; 
         }
         
-        .preview-area { flex: 1.2; display: flex; flex-direction: column; align-items: center; gap: 20px; }
-        .canvas-card-box { width: 100%; max-width: 500px; }
-        .canvas-stmt-box { width: 100%; max-width: 600px; margin-top: 20px; border-top: 2px dashed #ddd; padding-top: 20px; }
+        .preview-area { flex: 1.2; display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%; }
+        .canvas-card-box, .canvas-stmt-box { width: 100%; display: flex; justify-content: center; }
         
-        canvas { width: 100%; height: auto; border-radius: 15px; display: block; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        /* 响应式画布容器 */
+        canvas { 
+            max-width: 100%; 
+            height: auto !important; 
+            border-radius: 12px; 
+            background: #fff; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+        }
 
         .controls { flex: 1; display: flex; flex-direction: column; gap: 12px; width: 100%; }
-        .form-group { display: flex; flex-direction: column; gap: 4px; }
-        label { font-size: 11px; color: #888; font-weight: bold; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase; }
         
         .input-row { display: flex; gap: 8px; align-items: center; }
         input, select { 
-            flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; 
-            font-size: 14px; outline: none; background: #fafafa;
+            flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 10px; 
+            font-size: 16px; /* iOS 16px+ 防止缩放 */
+            outline: none; background: #fdfdfd; -webkit-appearance: none;
         }
-        input:not([readonly]) { border: 1.5px solid var(--primary); background: #fff; }
+        /* 激活状态样式 */
+        input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
 
-        .btn-rand { background: #eee; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 16px; }
+        .btn-rand { background: #f0f0f0; border: none; border-radius: 10px; width: 45px; height: 45px; cursor: pointer; font-size: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         
         .action-btns { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
-        .btn-main { padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; color: white; transition: 0.2s; }
-        .btn-dl-card { background: #4a90e2; }
-        .btn-gen-stmt { background: #333; }
+        .btn-main { padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 15px; color: white; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
+        .btn-dl-card { background: #007bff; }
+        .btn-gen-stmt { background: #1a1a1a; }
         .btn-dl-stmt { background: #28a745; display: none; }
 
         #toast { 
-            position: fixed; top: 20px; background: rgba(0,0,0,0.8); color: white; 
-            padding: 10px 20px; border-radius: 20px; font-size: 14px; opacity: 0; transition: 0.3s; z-index: 999;
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: white; 
+            padding: 12px 24px; border-radius: 25px; font-size: 14px; opacity: 0; transition: 0.3s; z-index: 9999; pointer-events: none;
         }
 
         @media (max-width: 850px) {
             .container { flex-direction: column; }
-            .preview-area { order: 2; }
+            .preview-area { order: -1; } /* 移动端预览图在上 */
         }
     </style>
 </head>
 <body>
 
-    <div id="toast">复制成功</div>
+    <div id="toast">已复制到剪贴板</div>
 
-    <div style="text-align: center; margin-bottom: 15px;">
-        <h2 style="margin: 0;">💳 国际银行卡/SWIFT 联调工具</h2>
-        <p style="font-size: 13px; color: #666;">支持 SWIFT BIC 标准 | 高清 2x 导出</p>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <h2 style="margin: 0; font-size: 1.4rem;">💳 金融标准联调工具</h2>
+        <p style="font-size: 13px; color: #888;">高清 2x 渲染 | 兼容 iOS/Android 系统</p>
     </div>
 
     <div class="container">
         <div class="controls">
             <div class="form-group">
-                <label>发行地区 (ISO 3166 标准)</label>
+                <label>发行地区</label>
                 <select id="regionSelect" onchange="updateAll()">
                     <option value="HK" data-n="香港">🇭🇰 香港 (HK)</option>
                     <option value="CN" data-n="中国">🇨🇳 中国 (CN)</option>
-                    <option value="MO" data-n="澳门">🇲🇴 澳门 (MO)</option>
-                    <option value="TW" data-n="台湾">🇹🇼 台湾 (TW)</option>
                     <option value="US" data-n="美国">🇺🇸 美国 (US)</option>
                     <option value="SG" data-n="新加坡">🇸🇬 新加坡 (SG)</option>
-                    <option value="JP" data-n="日本">🇯🇵 日本 (JP)</option>
-                    <option value="AU" data-n="澳大利亚">🇦🇺 澳大利亚 (AU)</option>
-                    <option value="CA" data-n="加拿大">🇨🇦 加拿大 (CA)</option>
-                    <option value="KR" data-n="韩国">🇰🇷 韩国 (KR)</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label>银行名称 (BANK NAME - 双击编辑)</label>
+                <label>银行名称 (点击编辑)</label>
                 <div class="input-row">
-                    <input type="text" id="bankName" value="HSBC GLOBAL" readonly onclick="copyText(this)" ondblclick="edit(this)">
+                    <input type="text" id="bankName" value="HSBC GLOBAL" onchange="updateAll()">
                     <button class="btn-rand" onclick="gen('bank')">🎲</button>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>SWIFT / BIC (8或11位 - 双击编辑)</label>
+                <label>SWIFT / BIC</label>
                 <div class="input-row">
-                    <input type="text" id="swiftCode" value="HSBCHKHHXXX" readonly onclick="copyText(this)" ondblclick="edit(this)">
+                    <input type="text" id="swiftCode" value="HSBCHKHHXXX" onchange="updateAll()">
                     <button class="btn-rand" onclick="gen('swift')">🎲</button>
                 </div>
             </div>
@@ -97,7 +100,7 @@
             <div class="form-group">
                 <label>卡号 (CARD NUMBER)</label>
                 <div class="input-row">
-                    <input type="text" id="cardNumber" value="4532 8888 1234 5678" readonly onclick="copyText(this)" ondblclick="edit(this)">
+                    <input type="text" id="cardNumber" value="4532 8888 1234 5678" inputmode="numeric" onchange="updateAll()">
                     <button class="btn-rand" onclick="gen('card')">🎲</button>
                 </div>
             </div>
@@ -105,32 +108,26 @@
             <div class="form-group">
                 <label>持卡人 (HOLDER)</label>
                 <div class="input-row">
-                    <input type="text" id="holderName" value="MARK TESTER" readonly onclick="copyText(this)" ondblclick="edit(this)">
+                    <input type="text" id="holderName" value="MARK TESTER" onchange="updateAll()">
                     <button class="btn-rand" onclick="gen('name')">🎲</button>
                 </div>
             </div>
 
             <div class="form-group" style="flex-direction: row; gap: 10px;">
                 <div style="flex:1">
-                    <label>有效期 (EXP)</label>
-                    <div class="input-row">
-                        <input type="text" id="expiry" value="12/28" readonly onclick="copyText(this)" ondblclick="edit(this)">
-                        <button class="btn-rand" onclick="gen('date')">🎲</button>
-                    </div>
+                    <label>有效期</label>
+                    <input type="text" id="expiry" value="12/28" onchange="updateAll()">
                 </div>
                 <div style="flex:1">
-                    <label>CVC (换行显示)</label>
-                    <div class="input-row">
-                        <input type="text" id="cvc" value="888" readonly onclick="copyText(this)" ondblclick="edit(this)">
-                        <button class="btn-rand" onclick="gen('cvc')">🎲</button>
-                    </div>
+                    <label>CVC</label>
+                    <input type="text" id="cvc" value="888" inputmode="numeric" onchange="updateAll()">
                 </div>
             </div>
 
             <div class="action-btns">
-                <button class="btn-main btn-dl-card" onclick="downloadImg('card')">📥 下载高清卡片图</button>
-                <button class="btn-main btn-gen-stmt" onclick="generateStatement()">📑 生成月结单 (滚动查看)</button>
-                <button id="dlStmtBtn" class="btn-main btn-dl-stmt" onclick="downloadImg('stmt')">✅ 下载高清账单图</button>
+                <button class="btn-main btn-dl-card" onclick="downloadImg('card')">📥 下载高清卡片</button>
+                <button class="btn-main btn-gen-stmt" onclick="generateStatement()">📑 生成月结单</button>
+                <button id="dlStmtBtn" class="btn-main btn-dl-stmt" onclick="downloadImg('stmt')">✅ 下载账单图</button>
             </div>
         </div>
 
@@ -138,8 +135,10 @@
             <div class="canvas-card-box">
                 <canvas id="cardCanvas"></canvas>
             </div>
-            <div class="canvas-stmt-box" id="stmtWrapper" style="display:none;">
-                <canvas id="stmtCanvas"></canvas>
+            <div id="stmtWrapper" style="display:none; width: 100%;">
+                <div class="canvas-stmt-box">
+                    <canvas id="stmtCanvas"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -148,8 +147,9 @@
         const cardCanvas = document.getElementById('cardCanvas');
         const stmtCanvas = document.getElementById('stmtCanvas');
         
-        function initHDCanvas(canvas, w, h) {
-            const ratio = 2;
+        // 增强版 HD 渲染，自动适配屏幕像素比
+        function getCtx(canvas, w, h) {
+            const ratio = window.devicePixelRatio || 2;
             canvas.width = w * ratio;
             canvas.height = h * ratio;
             canvas.style.width = w + 'px';
@@ -159,47 +159,41 @@
             return ctx;
         }
 
-        function copyText(el) {
-            if(!el.readOnly) return;
-            navigator.clipboard.writeText(el.value);
+        function showToast(msg) {
             const t = document.getElementById('toast');
+            t.innerText = msg;
             t.style.opacity = '1';
-            setTimeout(() => t.style.opacity = '0', 1500);
-        }
-
-        function edit(el) {
-            el.readOnly = false; el.focus();
-            el.onblur = () => { el.readOnly = true; updateAll(); };
+            setTimeout(() => t.style.opacity = '0', 2000);
         }
 
         function gen(type) {
             const region = document.getElementById('regionSelect').value;
             if(type==='bank') {
-                const banks = ["JPM CHASE", "BANK OF AMERICA", "CITI BANK", "STANDARD CHARTERED", "BARCLAYS", "DBS"];
+                const banks = ["JPM CHASE", "BANK OF AMERICA", "CITI BANK", "STANDARD CHARTERED", "DBS"];
                 document.getElementById('bankName').value = banks[Math.floor(Math.random()*banks.length)];
             } else if(type==='swift') {
-                const bankCode = (document.getElementById('bankName').value.substring(0,4).toUpperCase() + "XXXX").substring(0,4);
-                const loc = "HK"; 
-                const branch = Math.random() > 0.5 ? "XXX" : "HK1";
-                document.getElementById('swiftCode').value = bankCode + region + loc + branch;
+                const b = document.getElementById('bankName').value.substring(0,4).toUpperCase();
+                document.getElementById('swiftCode').value = b + region + "22XXX";
             } else if(type==='card'){
-                const prefixes = ["4532","5412","6222","3566"];
-                document.getElementById('cardNumber').value = (prefixes[Math.floor(Math.random()*4)] + Math.random().toString().slice(2,14)).match(/.{1,4}/g).join(' ');
+                const prefixes = ["4539","5412","6222"];
+                const num = (prefixes[Math.floor(Math.random()*3)] + Math.random().toString().slice(2,14)).match(/.{1,4}/g).join(' ');
+                document.getElementById('cardNumber').value = num;
             } else if(type==='name'){
-                const names = ["ALEX WONG","SOPHIA LI","MICHAEL CHEN","EMMA WILSON"];
+                const names = ["JAMES SMITH","LIN CHAO","WONG KA HO","EMMA WATSON"];
                 document.getElementById('holderName').value = names[Math.floor(Math.random()*names.length)];
-            } else if(type==='date'){
-                document.getElementById('expiry').value = "10/" + (Math.floor(Math.random()*5)+25);
-            } else if(type==='cvc'){
-                document.getElementById('cvc').value = Math.floor(Math.random()*899+100);
             }
             updateAll();
         }
 
-        function updateAll() { drawCard(); if(stmtCanvas.offsetParent) generateStatement(); }
+        function updateAll() { 
+            drawCard(); 
+            if(document.getElementById('stmtWrapper').style.display !== 'none') {
+                generateStatement();
+            }
+        }
 
         function drawCard() {
-            const ctx = initHDCanvas(cardCanvas, 500, 315);
+            const ctx = getCtx(cardCanvas, 350, 220); // 调整基础尺寸以更好适配手机
             const data = {
                 bank: document.getElementById('bankName').value,
                 swift: document.getElementById('swiftCode').value,
@@ -210,86 +204,95 @@
                 cvc: document.getElementById('cvc').value
             };
 
-            const g = ctx.createLinearGradient(0,0,500,315);
-            g.addColorStop(0, '#1e3c72'); g.addColorStop(1, '#2a5298');
+            // 背景渐变
+            const g = ctx.createLinearGradient(0,0,350,220);
+            g.addColorStop(0, '#0f2027'); g.addColorStop(0.5, '#203a43'); g.addColorStop(1, '#2c5364');
             ctx.fillStyle = g;
-            ctx.beginPath(); ctx.roundRect(0, 0, 500, 315, 20); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(0, 0, 350, 220, 15); ctx.fill();
 
+            // 装饰线条
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<350; i+=10){ ctx.moveTo(i,0); ctx.lineTo(i,220); } ctx.stroke();
+
+            // 文字绘制
             ctx.fillStyle = '#fff';
-            ctx.font = 'bold 22px Arial'; ctx.fillText(data.bank, 30, 45);
-            ctx.font = '12px Arial'; ctx.globalAlpha=0.6; ctx.fillText(data.reg + " | SWIFT: " + data.swift, 30, 65); ctx.globalAlpha=1;
+            ctx.font = 'bold 16px Arial'; ctx.fillText(data.bank, 25, 35);
+            ctx.font = '10px Arial'; ctx.globalAlpha=0.5; ctx.fillText(data.reg + " | " + data.swift, 25, 50); ctx.globalAlpha=1;
 
-            ctx.fillStyle = 'rgba(238,195,76,0.9)'; ctx.beginPath(); ctx.roundRect(35, 90, 60, 45, 8); ctx.fill();
+            // 芯片
+            ctx.fillStyle = 'linear-gradient(135deg, #eec34c, #b8860b)';
+            ctx.beginPath(); ctx.roundRect(25, 75, 40, 30, 5); 
+            ctx.fillStyle = '#f1c40f'; ctx.fill();
 
-            ctx.font = '32px "Courier New", monospace';
-            ctx.fillStyle = '#fff'; ctx.shadowBlur = 4; ctx.shadowColor = 'black';
-            ctx.fillText(data.no, 30, 185); ctx.shadowBlur = 0;
+            // 卡号
+            ctx.font = '20px "Courier New", monospace';
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 2; ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.fillText(data.no, 25, 135); ctx.shadowBlur = 0;
 
-            ctx.font = '10px Arial'; ctx.globalAlpha=0.6;
-            ctx.fillText('VALID THRU', 30, 225);
-            ctx.fillText('CVC CODE', 30, 265);
+            // 详情
+            ctx.font = '8px Arial'; ctx.globalAlpha=0.6;
+            ctx.fillText('VALID THRU', 25, 165);
+            ctx.fillText('HOLDER NAME', 100, 165);
             
-            ctx.font = 'bold 18px Arial'; ctx.globalAlpha=1;
-            ctx.fillText(data.exp, 30, 245);
-            ctx.fillText(data.cvc, 30, 285);
-            
-            ctx.font = '11px Arial'; ctx.globalAlpha=0.6; ctx.fillText('CARD HOLDER', 180, 265);
-            ctx.font = 'bold 18px Arial'; ctx.globalAlpha=1; ctx.fillText(data.name, 180, 285);
+            ctx.font = 'bold 13px Arial'; ctx.globalAlpha=1;
+            ctx.fillText(data.exp, 25, 182);
+            ctx.fillText(data.name, 100, 182);
 
+            // Logo
             ctx.textAlign = 'right';
-            ctx.font = 'italic bold 28px "Times New Roman"';
-            let brand = data.no.startsWith('4') ? "VISA" : data.no.startsWith('5') ? "MasterCard" : "UnionPay";
-            ctx.fillText(brand, 470, 285);
+            ctx.font = 'italic bold 20px Arial';
+            ctx.fillText(data.no.startsWith('4')?'VISA':'Master', 325, 190);
             ctx.textAlign = 'left';
         }
 
         function generateStatement() {
             document.getElementById('stmtWrapper').style.display = 'block';
             document.getElementById('dlStmtBtn').style.display = 'block';
-            const ctx = initHDCanvas(stmtCanvas, 600, 850);
+            const ctx = getCtx(stmtCanvas, 400, 550);
             
-            const bank = document.getElementById('bankName').value;
-            const swift = document.getElementById('swiftCode').value;
-            const holder = document.getElementById('holderName').value;
-            const cardNo = document.getElementById('cardNumber').value;
+            ctx.fillStyle = '#fff'; ctx.fillRect(0,0,400,550);
+            ctx.fillStyle = '#222'; ctx.font = 'bold 18px Arial'; ctx.fillText(document.getElementById('bankName').value, 30, 50);
+            ctx.font = '12px Arial'; ctx.fillStyle = '#666'; ctx.fillText('Transaction Statement - Mar 2026', 30, 70);
+            
+            ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(30,90); ctx.lineTo(370,90); ctx.stroke();
 
-            ctx.fillStyle = '#fff'; ctx.fillRect(0,0,600,850);
-            ctx.fillStyle = '#333'; ctx.font = 'bold 24px Arial'; ctx.fillText(bank, 40, 60);
-            ctx.font = '14px Arial'; ctx.fillStyle = '#888'; ctx.fillText('SWIFT/BIC: ' + swift, 40, 85);
-            ctx.strokeStyle = '#eee'; ctx.strokeRect(40, 110, 520, 1);
+            // 表格头部
+            ctx.fillStyle = '#f9f9f9'; ctx.fillRect(30, 110, 340, 30);
+            ctx.fillStyle = '#333'; ctx.font = 'bold 11px Arial';
+            ctx.fillText('DATE', 40, 130); ctx.fillText('DESCRIPTION', 100, 130); ctx.fillText('AMOUNT', 320, 130);
 
-            ctx.font = '13px Arial'; ctx.fillStyle = '#444';
-            ctx.fillText('HOLDER:', 40, 150); ctx.fillText(holder, 150, 150);
-            ctx.fillText('CARD:', 40, 175); ctx.fillText('**** **** **** ' + cardNo.slice(-4), 150, 175);
-            ctx.fillText('DATE:', 40, 200); ctx.fillText('MAR 2026', 150, 200);
-
-            ctx.fillStyle = '#f8f9fa'; ctx.fillRect(40, 240, 520, 35);
-            ctx.fillStyle = '#333'; ctx.font = 'bold 12px Arial';
-            ctx.fillText('DATE', 50, 263); ctx.fillText('DESCRIPTION', 160, 263); ctx.fillText('AMOUNT', 480, 263);
-
-            const txs = [{d:'Mar 01', s:'INITIAL DEPOSIT', a:'+ 1,000.00'}, {d:'Mar 12', s:'ONLINE PURCHASE', a:'- 85.00'}, {d:'Mar 20', s:'SERVICE FEE', a:'- 5.00'}];
-            let y = 310;
+            // 模拟数据
+            const txs = [{d:'03/01', s:'ATM Deposit', a:'+500.00'}, {d:'03/02', s:'Starbucks Coffee', a:'-12.50'}, {d:'03/04', s:'Apple Store', a:'-99.00'}];
+            let y = 165;
             txs.forEach(t => {
-                ctx.font = '13px Arial'; ctx.fillStyle = '#444';
-                ctx.fillText(t.d, 50, y); ctx.fillText(t.s, 160, y);
-                ctx.textAlign = 'right'; ctx.fillText(t.a, 550, y); ctx.textAlign = 'left';
-                y += 45;
+                ctx.font = '12px Arial'; ctx.fillStyle = '#444';
+                ctx.fillText(t.d, 40, y); ctx.fillText(t.s, 100, y);
+                ctx.textAlign = 'right'; ctx.fillText(t.a, 370, y); ctx.textAlign = 'left';
+                y += 35;
             });
 
-            ctx.fillStyle = '#333'; ctx.font = 'bold 16px Arial';
-            ctx.fillText('BALANCE:', 380, 600);
-            ctx.font = '24px Arial'; ctx.fillText('$ 910.00', 380, 640);
-            stmtCanvas.scrollIntoView({behavior: 'smooth'});
+            ctx.font = 'bold 14px Arial'; ctx.fillText('Current Balance: $ 388.50', 30, 500);
         }
 
         function downloadImg(type) {
             const canvas = type === 'card' ? cardCanvas : stmtCanvas;
-            const link = document.createElement('a');
-            link.download = `${type}_hd_${Date.now()}.png`;
-            link.href = canvas.toDataURL('image/png', 1.0);
-            link.click();
+            try {
+                const url = canvas.toDataURL('image/png', 1.0);
+                const link = document.createElement('a');
+                link.download = `${type}_${Date.now()}.png`;
+                link.href = url;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast("高清图片已保存");
+            } catch(e) {
+                showToast("保存失败，请长按图片保存");
+            }
         }
 
+        // 初始化
         window.onload = drawCard;
     </script>
 </body>
