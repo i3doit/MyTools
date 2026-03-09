@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>金融 App 测试工具 Pro - 高级仿真版</title>
+    <style>
+        :root { --primary: #c62828; --bg: #f8f9fa; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        
+        .main-container { 
+            background: white; padding: 20px; border-radius: 20px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1); 
+            width: 100%; max-width: 1000px; 
+            display: flex; flex-direction: row; gap: 20px; box-sizing: border-box; 
+        }
+
+        .preview-area { flex: 1.2; display: flex; flex-direction: column; align-items: center; min-width: 320px; }
+        .canvas-wrap { width: 100%; position: sticky; top: 10px; }
+        canvas { 
+            width: 100% !important; height: auto !important; 
+            border-radius: 16px; display: block; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2); 
+            margin-bottom: 20px;
+        }
+
+        .controls { flex: 1; display: flex; flex-direction: column; gap: 15px; width: 100%; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 11px; color: #666; font-weight: bold; text-transform: uppercase; }
+        
+        .input-wrapper { display: flex; gap: 8px; align-items: center; }
+        input, select { 
+            flex: 1; padding: 12px; border: 1.5px solid #ddd; border-radius: 10px; 
+            font-size: 14px; outline: none; background: #fff; transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(198,40,40,0.1); }
+        input[readonly] { cursor: pointer; background: #fafafa; }
+
+        .row-group { display: flex; gap: 10px; }
+        .btn-dice { 
+            background: #fff; border: 1.5px solid #ddd; border-radius: 10px; 
+            padding: 8px 12px; cursor: pointer; font-size: 18px; transition: 0.2s;
+        }
+        .btn-dice:active { transform: rotate(30deg); background: #eee; }
+        
+        .btn-main { 
+            padding: 16px; border: none; border-radius: 12px; font-weight: bold; 
+            cursor: pointer; font-size: 14px; transition: 0.3s; color: white;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-black { background: #222; }
+        .btn-red { background: var(--primary); }
+        .btn-green { background: #2e7d32; }
+
+        #toast { 
+            position: fixed; top: 20px; background: rgba(0,0,0,0.8); color: white; 
+            padding: 10px 20px; border-radius: 30px; font-size: 13px; opacity: 0; 
+            transition: 0.3s; z-index: 999; pointer-events: none; 
+        }
+
+        @media (max-width: 850px) { .main-container { flex-direction: column; } }
+    </style>
+</head>
+<body>
+
+    <div id="toast">已复制并唤起键盘</div>
+
+    <div class="main-container">
+        <div class="preview-area">
+            <div class="canvas-wrap">
+                <canvas id="cardCanvas"></canvas>
+            </div>
+            <div id="stmtBox" style="display:none; width: 100%;">
+                <canvas id="stmtCanvas"></canvas>
+                <button class="btn-main btn-green" style="margin-top:10px; width:100%" onclick="saveCanvas('stmt')">✅ 下载高清测试月结单</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="form-group">
+                <label>发行机构</label>
+                <div class="input-wrapper">
+                    <select id="bankTag" onchange="draw()">
+                        <option value="BOC">中国银行 (BOC)</option>
+                        <option value="ICBC">工商银行 (ICBC)</option>
+                        <option value="CCB">建设银行 (CCB)</option>
+                        <option value="JCB">永丰银行 (JCB Style)</option>
+                    </select>
+                    <button class="btn-dice" onclick="roll('bank')">🎲</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>卡片名称 (单击编辑)</label>
+                <input type="text" id="bankName" value="中国银行长城卡" readonly onclick="smartAction(this)">
+            </div>
+
+            <div class="form-group">
+                <label>卡号 (16-19位)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="cardNo" value="6222 0000 1234 5678" inputmode="numeric" readonly onclick="smartAction(this)">
+                    <button class="btn-dice" onclick="roll('card')">🎲</button>
+                </div>
+            </div>
+
+            <div class="row-group">
+                <div class="form-group" style="flex:1">
+                    <label>有效期 (MM/YY)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="exp" value="08/28" inputmode="numeric" readonly onclick="smartAction(this)">
+                        <button class="btn-dice" onclick="roll('exp')">🎲</button>
+                    </div>
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>安全码 (CVC)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="cvc" value="123" inputmode="numeric" readonly onclick="smartAction(this)">
+                        <button class="btn-dice" onclick="roll('cvc')">🎲</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>持卡人拼音 (自动永久保存)</label>
+                <input type="text" id="holder" value="ZHANG SAN" readonly onclick="smartAction(this)">
+            </div>
+
+            <button class="btn-main btn-black" onclick="saveCanvas('card')">📥 下载测试卡片图片</button>
+            <button class="btn-main btn-red" onclick="genStmt()">📑 生成 App 验证账单</button>
+        </div>
+    </div>
+
+    <script>
+        const cardCvs = document.getElementById('cardCanvas');
+        const stmtCvs = document.getElementById('stmtCanvas');
+        const ratio = 2;
+
+        // 初始化加载保存的持卡人
+        window.onload = () => {
+            const savedHolder = localStorage.getItem('test_card_holder');
+            if (savedHolder) {
+                document.getElementById('holder').value = savedHolder;
+            }
+            draw();
+        };
+
+        function getCtx(cvs, w, h) {
+            cvs.width = w * ratio; cvs.height = h * ratio;
+            cvs.style.width = w + 'px'; cvs.style.height = h + 'px';
+            const ctx = cvs.getContext('2d');
+            ctx.scale(ratio, ratio);
+            return ctx;
+        }
+
+        function smartAction(el) {
+            if (el.readOnly) {
+                navigator.clipboard.writeText(el.value);
+                showToast("已复制并唤起键盘");
+                el.readOnly = false;
+                el.focus();
+                setTimeout(() => el.setSelectionRange(0, el.value.length), 50);
+
+                el.onblur = () => { 
+                    el.readOnly = true; 
+                    // 如果是持卡人，执行永久保存
+                    if (el.id === 'holder') {
+                        localStorage.setItem('test_card_holder', el.value.toUpperCase());
+                    }
+                    draw(); 
+                };
+                el.onkeydown = (e) => { if(e.key==='Enter') el.blur(); };
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.opacity = 1; setTimeout(()=>t.style.opacity=0, 1500);
+        }
+
+        function roll(type) {
+            if(type==='bank') {
+                const names = ["中国银行长城卡", "工商银行牡丹卡", "建设银行龙卡", "永丰银行测试卡"];
+                document.getElementById('bankName').value = names[Math.floor(Math.random()*names.length)];
+            }
+            if(type==='card') {
+                const prefix = Math.random() > 0.5 ? "6222" : "4532";
+                document.getElementById('cardNo').value = prefix + Array.from({length:12}, () => Math.floor(Math.random()*10)).join('').replace(/(.{4})/g, ' $1');
+            }
+            if(type==='exp') {
+                const mm = String(Math.floor(Math.random()*12)+1).padStart(2, '0');
+                const yy = Math.floor(Math.random()*6)+24;
+                document.getElementById('exp').value = `${mm}/${yy}`;
+            }
+            if(type==='cvc') {
+                document.getElementById('cvc').value = Math.floor(Math.random()*900)+100;
+            }
+            draw();
+        }
+
+        function draw() {
+            const ctx = getCtx(cardCvs, 500, 315);
+            const d = {
+                tag: document.getElementById('bankTag').value,
+                name: document.getElementById('bankName').value,
+                no: document.getElementById('cardNo').value,
+                exp: document.getElementById('exp').value,
+                cvc: document.getElementById('cvc').value,
+                holder: document.getElementById('holder').value
+            };
+
+            // 背景绘制 (根据银行标签变换颜色)
+            const g = ctx.createLinearGradient(0,0,500,315);
+            if(d.tag === 'JCB') {
+                g.addColorStop(0, '#434343'); g.addColorStop(1, '#000000'); // 永丰黑金风格
+            } else {
+                g.addColorStop(0, '#d32f2f'); g.addColorStop(1, '#b71c1c'); // 中行红风格
+            }
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.roundRect(0,0,500,315,18); ctx.fill();
+
+            // 装饰纹理
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<10; i++) {
+                ctx.beginPath(); ctx.arc(450, 150, 50 + i*30, 0, Math.PI*2); ctx.stroke();
+            }
+
+            // 仿真芯片
+            const cg = ctx.createLinearGradient(45, 95, 110, 145);
+            cg.addColorStop(0, '#ffd700'); cg.addColorStop(1, '#e6b800');
+            ctx.fillStyle = cg;
+            ctx.beginPath(); ctx.roundRect(45, 95, 65, 50, 8); ctx.fill();
+
+            // 文本信息
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'left';
+            ctx.font = 'bold 20px "Microsoft YaHei", sans-serif';
+            ctx.fillText(d.name, 45, 45);
+            
+            ctx.font = '34px "Courier New", monospace';
+            ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
+            ctx.fillText(d.no, 45, 200);
+            ctx.shadowBlur = 0;
+
+            ctx.font = '10px Arial'; ctx.globalAlpha = 0.6;
+            ctx.fillText('VALID THRU', 45, 240);
+            ctx.fillText('HOLDER', 45, 275);
+            ctx.globalAlpha = 1;
+            
+            ctx.font = 'bold 18px Arial';
+            ctx.fillText(d.exp, 45, 258);
+            ctx.fillText(d.holder.toUpperCase(), 45, 292);
+
+            // 右下角 Logo 逻辑
+            ctx.textAlign = 'right';
+            if(d.tag === 'JCB') {
+                ctx.font = 'italic bold 24px Arial';
+                ctx.fillText('JCB', 460, 292);
+            } else if(d.no.startsWith('6')) {
+                ctx.font = 'bold 20px sans-serif';
+                ctx.fillText('UnionPay 银联', 460, 292);
+            } else {
+                ctx.font = 'italic bold 26px Arial';
+                ctx.fillText('VISA', 460, 292);
+            }
+        }
+
+        function genStmt() {
+            document.getElementById('stmtBox').style.display = 'block';
+            const ctx = getCtx(stmtCvs, 600, 450);
+            ctx.fillStyle = '#fff'; ctx.fillRect(0,0,600,450);
+            ctx.fillStyle = '#222'; ctx.font = 'bold 20px sans-serif';
+            ctx.fillText('测试银行对账单 (App Testing Only)', 40, 50);
+            ctx.font = '14px sans-serif'; ctx.fillStyle = '#666';
+            ctx.fillText('测试卡号: ' + document.getElementById('cardNo').value, 40, 90);
+            ctx.strokeStyle = '#eee'; ctx.strokeRect(40, 140, 520, 1);
+            ctx.fillStyle = '#333';
+            ctx.fillText('2026-03-09  系统自动存入 (测试)     +￥10,000.00', 40, 180);
+            ctx.fillText('2026-03-09  App 接口调用扣费       -￥1.00', 40, 220);
+            ctx.font = 'bold 16px sans-serif'; ctx.fillStyle = '#c62828';
+            ctx.fillText('可用测试余额: ￥9,999.00', 40, 380);
+            stmtCvs.scrollIntoView({behavior: 'smooth'});
+        }
+
+        function saveCanvas(type) {
+            const cvs = type === 'card' ? cardCvs : stmtCvs;
+            const link = document.createElement('a');
+            link.download = `test_${type}_${Date.now()}.png`;
+            link.href = cvs.toDataURL('image/png', 1.0);
+            link.click();
+        }
+    </script>
+</body>
+</html>
