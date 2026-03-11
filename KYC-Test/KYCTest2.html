@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KYC 自动化测试数据生成工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        .id-card-canvas {
+            width: 400px;
+            height: 250px;
+            background: linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%);
+            border-radius: 15px;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid #d1d5db;
+        }
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 40px;
+            color: rgba(0,0,0,0.05);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-8">
+
+<div id="app" class="max-w-5xl mx-auto">
+    <header class="mb-8 text-center">
+        <h1 class="text-3xl font-extrabold text-slate-800">KYC 仿真测试系统</h1>
+        <p class="text-slate-500 mt-2">仅用于软件开发与合规性 UI 测试</p>
+    </header>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+        <div class="flex-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">参数配置</h2>
+                <button @click="generateRandomAll" class="text-sm bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full hover:bg-indigo-100 transition">
+                    🎲 随机生成全部
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600">国家/区域选择</label>
+                    <select v-model="currentRegion" @change="onRegionChange" class="w-full mt-1 border-slate-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 border">
+                        <option v-for="(cfg, key) in regionConfigs" :key="key" :value="key">{{ cfg.name }}</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-600">姓名 (Name)</label>
+                        <input type="text" v-model="formData.name" class="w-full mt-1 border p-2 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-600">性别</label>
+                        <select v-model="formData.gender" class="w-full mt-1 border p-2 rounded-lg text-sm">
+                            <option>Male</option>
+                            <option>Female</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600">证件号码 (ID Number)</label>
+                    <div class="flex gap-2">
+                        <input type="text" v-model="formData.idNumber" class="flex-1 mt-1 border p-2 rounded-lg font-mono text-sm">
+                        <button @click="randomID" class="mt-1 bg-gray-100 px-3 rounded-lg text-xs">随机</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600">头像上传 (点击预览图头像亦可)</label>
+                    <input type="file" @change="uploadAvatar" class="mt-1 block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col items-center">
+            <div id="capture-node" class="id-card-canvas p-6 flex flex-col justify-between">
+                <div class="watermark uppercase font-black">Test Environment</div>
+                
+                <div class="flex justify-between">
+                    <div class="z-10">
+                        <h3 class="text-indigo-900 font-bold text-lg tracking-wider">{{ regionConfigs[currentRegion].idName }}</h3>
+                        <p class="text-[9px] text-indigo-700 opacity-70">REPUBLIC OF {{ currentRegion.toUpperCase() }}</p>
+                        
+                        <div class="mt-6 space-y-3">
+                            <div>
+                                <p class="text-[8px] uppercase text-slate-400 leading-none">Full Name</p>
+                                <p class="text-sm font-semibold text-slate-800 uppercase">{{ formData.name }}</p>
+                            </div>
+                            <div>
+                                <p class="text-[8px] uppercase text-slate-400 leading-none">Identification No.</p>
+                                <p class="text-sm font-mono font-bold text-slate-700">{{ formData.idNumber }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div @click="triggerUpload" class="relative group cursor-pointer">
+                        <div class="w-24 h-32 bg-slate-200 rounded-lg border-2 border-white shadow-md overflow-hidden transition group-hover:opacity-80">
+                            <img :src="formData.avatar" class="w-full h-full object-cover">
+                        </div>
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/20 rounded-lg transition">
+                            <span class="text-[10px] text-white font-bold">更换照片</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-end z-10">
+                    <div class="text-[8px] text-slate-400 font-mono">
+                        EXPIRY: 2030 / 12 / 31<br>
+                        DOB: 1990 / 01 / 01
+                    </div>
+                    <div class="w-16 h-8 bg-slate-300/50 rounded flex items-center justify-center">
+                        <div class="w-12 h-1 bg-slate-400 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 flex gap-4 w-full">
+                <button @click="downloadImage" class="flex-1 bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-slate-800 active:scale-95 transition">
+                    下载高清测试图片 (.PNG)
+                </button>
+            </div>
+            <p class="mt-4 text-xs text-slate-400 italic text-center">
+                * 提示：生成的图片分辨率已针对移动端 OCR 识别进行优化 (2x Upscale)。
+            </p>
+        </div>
+    </div>
+    
+    <input type="file" ref="fileInput" @change="uploadAvatar" class="hidden" accept="image/*">
+</div>
+
+<script>
+const { createApp, ref, onMounted } = Vue;
+
+createApp({
+    setup() {
+        const fileInput = ref(null);
+        const currentRegion = ref('China');
+        
+        const regionConfigs = {
+            'China': { name: '中国 (Mainland)', idName: '居民身份证', idFormat: '11010119900101XXXX' },
+            'HongKong': { name: '香港 (HK)', idName: 'HK Identity Card', idFormat: 'A123456(7)' },
+            'Macau': { name: '澳门 (Macau)', idName: 'Resident Identity Card', idFormat: '1234567(8)' },
+            'Taiwan': { name: '台湾 (Taiwan)', idName: '国民身分证', idFormat: 'A123456789' },
+            'Singapore': { name: '新加坡 (Singapore)', idName: 'National ID', idFormat: 'S1234567A' },
+            'Vietnam': { name: '越南 (Vietnam)', idName: 'Citizen Identity Card', idFormat: '037090000123' },
+            'Malaysia': { name: '马来西亚 (Malaysia)', idName: 'MyKad', idFormat: '900101-10-5001' },
+            'Thailand': { name: '泰国 (Thailand)', idName: 'Thai National ID', idFormat: '1 2345 67890 12 3' },
+            'Passport': { name: '其他 (E-Passport)', idName: 'E-Passport', idFormat: 'E12345678' }
+        };
+
+        const formData = ref({
+            name: 'TEST USER',
+            gender: 'Male',
+            idNumber: '11010119900101001X',
+            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix' // 使用免费商用头像占位
+        });
+
+        // 随机逻辑
+        const randomID = () => {
+            const chars = 'ABC1234567890';
+            let result = '';
+            for (let i = 0; i < 12; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            formData.value.idNumber = result;
+        };
+
+        const generateRandomAll = () => {
+            const names = ['Liam Smith', 'Chen Wei', 'Sato Kenji', 'Maria Garcia', 'Wong Kar Wai', 'Ananda'];
+            formData.value.name = names[Math.floor(Math.random() * names.length)];
+            randomID();
+            formData.value.avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random()}`;
+        };
+
+        const onRegionChange = () => {
+            formData.value.idNumber = regionConfigs[currentRegion.value].idFormat;
+        };
+
+        const triggerUpload = () => fileInput.value.click();
+
+        const uploadAvatar = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => formData.value.avatar = ev.target.result;
+                reader.readAsDataURL(file);
+            }
+        };
+
+        const downloadImage = () => {
+            const element = document.getElementById('capture-node');
+            html2canvas(element, {
+                scale: 2, // 2倍采样提高 OCR 识别率
+                useCORS: true,
+                backgroundColor: null,
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `KYC_Test_${currentRegion.value}_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        };
+
+        return {
+            currentRegion, regionConfigs, formData, fileInput,
+            randomID, generateRandomAll, onRegionChange, 
+            triggerUpload, uploadAvatar, downloadImage
+        };
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
