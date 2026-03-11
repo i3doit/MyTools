@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KYC 仿真认证测试系统 v2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        .id-card-wrap {
+            width: 380px;
+            height: 240px;
+            perspective: 1000px;
+        }
+        #id-card-body {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 16px;
+            border: 1px solid #cbd5e1;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .chip {
+            width: 45px;
+            height: 35px;
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        [v-cloak] { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans">
+
+<div id="app" v-cloak class="max-w-5xl mx-auto py-8 px-4">
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-black text-indigo-600 tracking-tight">KYC SIMULATION TOOL</h1>
+        <p class="text-gray-500 text-sm mt-2">专为软件测试人员设计的 OCR/KYC 仿真数据生成系统</p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-10 items-start">
+        
+        <div class="bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">数据配置</h2>
+                <button @click="randomize" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition font-bold">
+                    🎲 随机生成数据
+                </button>
+            </div>
+
+            <div class="space-y-5">
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase">国家/区域</label>
+                    <select v-model="selectedKey" @change="handleRegionChange" class="w-full mt-1 border-2 border-gray-100 p-3 rounded-xl focus:border-indigo-500 outline-none transition">
+                        <option v-for="(v, k) in regionData" :key="k" :value="k">{{ v.label }}</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase">姓名</label>
+                        <input v-model="formData.name" type="text" class="w-full mt-1 border-2 border-gray-100 p-3 rounded-xl">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase">证件号</label>
+                        <input v-model="formData.idNumber" type="text" class="w-full mt-1 border-2 border-gray-100 p-3 rounded-xl font-mono text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase">有效期至</label>
+                        <input v-model="formData.expiry" type="text" class="w-full mt-1 border-2 border-gray-100 p-3 rounded-xl">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 uppercase">生日</label>
+                        <input v-model="formData.dob" type="text" class="w-full mt-1 border-2 border-gray-100 p-3 rounded-xl">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase leading-loose">手动更换头像</label>
+                    <input type="file" ref="fileRef" @change="onFileChange" accept="image/*" class="text-sm block w-full text-gray-400">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center">
+            <div class="id-card-wrap mb-8">
+                <div id="id-card-body" class="p-6 flex flex-col justify-between">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/5 rounded-full"></div>
+                    
+                    <div class="flex justify-between relative z-10">
+                        <div>
+                            <div class="chip"></div>
+                            <h3 class="text-lg font-black text-indigo-900 tracking-widest uppercase">{{ regionData[selectedKey].title }}</h3>
+                            <p class="text-[9px] text-gray-500 font-bold -mt-1 tracking-tighter">{{ selectedKey.toUpperCase() }} IDENTIFICATION CARD</p>
+                        </div>
+                        <div @click="$refs.fileRef.click()" class="cursor-pointer group relative">
+                            <div class="w-24 h-32 bg-gray-200 rounded-lg border-2 border-white shadow-md overflow-hidden bg-center bg-cover"
+                                 :style="{ backgroundImage: `url(${formData.avatar})` }">
+                            </div>
+                            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 rounded-lg transition">
+                                <span class="text-[10px] text-white font-bold text-center">点击<br>上传</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 space-y-2 relative z-10">
+                        <div>
+                            <p class="text-[8px] text-gray-400 leading-none">NAME</p>
+                            <p class="text-sm font-bold text-gray-800 tracking-wide uppercase">{{ formData.name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[8px] text-gray-400 leading-none">ID NUMBER</p>
+                            <p class="text-sm font-mono font-bold text-indigo-900">{{ formData.idNumber }}</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <div>
+                                <p class="text-[8px] text-gray-400 leading-none">DOB</p>
+                                <p class="text-[10px] font-bold">{{ formData.dob }}</p>
+                            </div>
+                            <div>
+                                <p class="text-[8px] text-gray-400 leading-none">EXPIRY</p>
+                                <p class="text-[10px] font-bold">{{ formData.expiry }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-full flex gap-3">
+                <button @click="download" class="flex-1 bg-gray-900 text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition">
+                    下载高清测试图片 (.PNG)
+                </button>
+            </div>
+            <p class="text-xs text-gray-400 mt-4 px-10 text-center leading-relaxed">
+                温馨提示：图片将以 2.0x 采样率导出，完美兼容移动端 App 压力测试及主流 OCR 识别算法。
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+const { createApp, ref, onMounted } = Vue;
+
+createApp({
+    setup() {
+        const selectedKey = ref('China');
+        const fileRef = ref(null);
+
+        // 默认及各地区配置数据
+        const regionData = {
+            'China': { label: '中国 (Mainland)', title: '居民身份证', idPrefix: '110101', name: '王小明 (WANG XIAOMING)' },
+            'HongKong': { label: '香港 (HongKong)', title: 'HK Identity Card', idPrefix: 'A', name: 'CHAN TAI MAN' },
+            'Macau': { label: '澳门 (Macau)', title: 'Resident Identity Card', idPrefix: '1', name: 'LEI SIU MING' },
+            'Taiwan': { label: '台湾 (Taiwan)', title: '国民身分证', idPrefix: 'A', name: '林志豪 (LIN CHI HAO)' },
+            'Singapore': { label: '新加坡 (Singapore)', title: 'National Identity', idPrefix: 'S', name: 'TAN AH KOW' },
+            'Vietnam': { label: '越南 (Vietnam)', title: 'Citizen Identity', idPrefix: '037', name: 'NGUYEN VAN A' },
+            'Malaysia': { label: '马来西亚 (Malaysia)', title: 'MYKAD Card', idPrefix: '92', name: 'MOHD BIN ISMAIL' },
+            'Thailand': { label: '泰国 (Thailand)', title: 'Thai National ID', idPrefix: '1', name: 'SOMCHAI' },
+            'Passport': { label: '其他 (Passport)', title: 'e-Passport', idPrefix: 'E', name: 'GLOBAL TRAVELER' }
+        };
+
+        const formData = ref({
+            name: '',
+            idNumber: '',
+            expiry: '2032 / 10 / 24',
+            dob: '1995 / 05 / 12',
+            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix' // 默认占位头像
+        });
+
+        // 随机数据逻辑
+        const generateID = (prefix) => {
+            const suffix = Math.random().toString().slice(2, 12);
+            return (prefix + suffix).slice(0, 18).toUpperCase();
+        };
+
+        const randomize = () => {
+            const current = regionData[selectedKey.value];
+            formData.value.name = current.name;
+            formData.value.idNumber = generateID(current.idPrefix);
+            formData.value.avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random()}`;
+            // 随机日期
+            const year = Math.floor(Math.random() * (2000 - 1970) + 1970);
+            formData.value.dob = `${year} / 01 / 01`;
+        };
+
+        const handleRegionChange = () => {
+            randomize();
+        };
+
+        const onFileChange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    formData.value.avatar = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        const download = () => {
+            const card = document.getElementById('id-card-body');
+            html2canvas(card, {
+                scale: 2, // 确保下载高清
+                useCORS: true,
+                logging: false,
+                backgroundColor: null
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `KYC_TEST_${selectedKey.value}_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                alert('下载失败，请尝试在电脑端浏览器操作');
+            });
+        };
+
+        // 初始化默认数据
+        onMounted(() => {
+            randomize();
+        });
+
+        return {
+            selectedKey, regionData, formData, fileRef,
+            handleRegionChange, randomize, onFileChange, download
+        };
+    }
+}).mount('#app');
+</script>
+
+</body>
+</html>
