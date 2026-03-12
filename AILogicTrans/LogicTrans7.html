@@ -302,7 +302,7 @@
         }
         function addL(id) { activeList.push(id); localStorage.setItem('lt_v64_langs', JSON.stringify(activeList)); renderActive(); document.getElementById('dropBox').classList.add('hidden'); document.getElementById('langSearch').value=''; }
         function removeL(id) { activeList = activeList.filter(x => x !== id); localStorage.setItem('lt_v64_langs', JSON.stringify(activeList)); renderActive(); }
-        function resetLangs() { activeList = ['en', 'ja', 'ko']; localStorage.setItem('lt_v64_langs', JSON.stringify(activeList)); renderActive(); }
+        function resetLangs() { activeList = ['en', 'zh-TW']; localStorage.setItem('lt_v64_langs', JSON.stringify(activeList)); renderActive(); }
         function copyRes(btn) { navigator.clipboard.writeText(btn.parentElement.nextElementSibling.innerText); showToast('翻译内容已复制'); }
         function showToast(m) { const e=document.getElementById('toast'); e.innerText=m; e.style.display='block'; setTimeout(()=>e.style.display='none', 2000); }
         function copyWechat() { navigator.clipboard.writeText('857023577'); showToast('微信 ID 已复制'); }
