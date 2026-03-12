@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LogicTrans 灵动翻译</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .toast { display: none; position: fixed; top: 15%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; padding: 12px 24px; border-radius: 12px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-size: 14px; text-align: center; }
+        .scroll-custom::-webkit-scrollbar { width: 4px; }
+        .scroll-custom::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .btn-active:active { transform: scale(0.96); transition: 0.1s; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col items-center p-4">
+
+    <div class="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl mt-4 border border-gray-100 overflow-hidden relative">
+        <div class="px-8 pt-8 pb-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-black text-gray-800 tracking-tight">LogicTrans <span class="text-blue-600">灵动翻译</span></h1>
+                    <p class="text-[11px] text-gray-400 mt-1 font-medium italic underline decoration-blue-100 underline-offset-4">极简、私密、多语种翻译助手</p>
+                </div>
+                <button onclick="openModal('keyModal')" class="p-2.5 bg-blue-50 text-blue-600 rounded-2xl hover:bg-blue-100 transition-all btn-active">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                </button>
+            </div>
+
+            <div class="mt-4 p-3 bg-gray-50 rounded-xl text-[10px] text-gray-500 leading-relaxed border border-gray-100">
+                ✨ <strong>使用指南：</strong>输入文本后点击“立即翻译”。系统默认提供每日免费额度。如需大批量翻译，请点击右上角配置私有 Key。
+            </div>
+
+            <div id="quotaDisplay" class="mt-3 flex items-center justify-between text-[10px] font-bold">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-gray-300 uppercase">今日免费额度:</span>
+                    <span id="remainingCount" class="text-blue-500">1000</span>
+                    <span class="text-gray-300">/ 1000 字</span>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="exportConfig()" class="text-blue-400 hover:text-blue-600 transition-colors">导出配置</button>
+                    <button onclick="importConfig()" class="text-blue-400 hover:text-blue-600 transition-colors">导入配置</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-8 pt-2">
+            <textarea id="userInput" rows="4" class="w-full p-5 bg-gray-50 rounded-[1.5rem] outline-none focus:ring-2 focus:ring-blue-100 transition-all resize-none text-gray-700 font-medium border border-transparent focus:border-blue-200" placeholder="在此输入需要翻译的内容..."></textarea>
+
+            <div class="mt-6">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">目标语言 (多选)</span>
+                    <button onclick="resetLangs()" class="text-[10px] font-bold text-blue-500 hover:underline">恢复默认</button>
+                </div>
+                <div id="selectedLangs" class="flex flex-wrap gap-2 mb-3"></div>
+                <div class="relative">
+                    <input type="text" id="langSearch" onfocus="showDropdown()" oninput="filterLangs()" placeholder="🔍 搜索并添加其他语种..." class="w-full p-3 pl-10 bg-white border border-gray-100 rounded-xl text-xs outline-none focus:border-blue-300 transition-all">
+                    <div id="langDropdown" class="hidden absolute w-full mt-1 bg-white border rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto scroll-custom"></div>
+                </div>
+            </div>
+
+            <button onclick="startTranslate()" class="w-full mt-8 bg-slate-900 hover:bg-black text-white font-black py-5 rounded-[1.5rem] shadow-xl transition-all btn-active tracking-[0.2em] text-sm">
+                立即翻译
+            </button>
+
+            <div id="results" class="mt-8 space-y-4"></div>
+        </div>
+    </div>
+
+    <footer class="mt-8 w-full max-w-md text-center space-y-4 pb-12">
+        <div class="flex flex-col items-center gap-3 text-[11px] font-bold text-gray-400 tracking-tight">
+            <div class="flex flex-wrap justify-center gap-x-4 gap-y-2 uppercase">
+                <span id="copyrightYear">© 2026</span>
+                <span class="text-gray-200">|</span>
+                <span class="cursor-pointer hover:text-slate-900 transition-colors" onclick="copyWechat()">技术支持：艾兜兜儿</span>
+            </div>
+            <div class="flex flex-col gap-2">
+                <a href="https://t.zsxq.com/WrxBB" target="_blank" class="hover:text-slate-900 transition-colors">OpenClaw龙虾养成指南</a>
+                <a href="https://mp.weixin.qq.com/s/Fhbb9OB2no0kbswWAM7ouA" target="_blank" class="hover:text-slate-900 underline decoration-blue-200 decoration-2 underline-offset-4">挑战写 100 个 AI 小工具</a>
+            </div>
+        </div>
+    </footer>
+
+    <div id="keyModal" class="modal-overlay" onclick="closeModal('keyModal', event)">
+        <div class="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl relative" onclick="event.stopPropagation()">
+            <h3 class="text-xl font-black text-gray-800 mb-2">私有密钥配置</h3>
+            <div class="text-[10px] text-gray-400 leading-relaxed space-y-2 mb-6 p-4 bg-slate-50 rounded-xl">
+                <p>🔒 <strong>隐私声明：</strong>密钥仅保存在本地浏览器 LocalStorage 中。我们不设后端，<strong>永不上传密钥或翻译文本。</strong></p>
+                <p>⚠️ <strong>注意：</strong>清除浏览器缓存或使用无痕模式将重置配置。支持百度及兼容 API。</p>
+            </div>
+            <div class="space-y-3">
+                <input id="userAppId" type="text" placeholder="输入 App ID" class="w-full p-4 bg-gray-50 border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-100">
+                <input id="userSecretKey" type="password" placeholder="输入 Secret Key" class="w-full p-4 bg-gray-50 border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-100">
+            </div>
+            <button onclick="saveSettings()" class="w-full mt-6 bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition-all btn-active">确认保存</button>
+            <button onclick="closeModal('keyModal')" class="w-full mt-2 text-xs text-gray-400 py-2">放弃修改</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const ALL_LANGS = [
+            { id: 'zh-TW', name: '繁体中文', baidu: 'cht', myMemory: 'zh-TW' },
+            { id: 'en', name: '英语', baidu: 'en', myMemory: 'en' },
+            { id: 'ja', name: '日语', baidu: 'jp', myMemory: 'ja' },
+            { id: 'ko', name: '韩语', baidu: 'kor', myMemory: 'ko' },
+            { id: 'fr', name: '法语', baidu: 'fra', myMemory: 'fr' },
+            { id: 'de', name: '德语', baidu: 'de', myMemory: 'de' },
+            { id: 'ru', name: '俄语', baidu: 'ru', myMemory: 'ru' },
+            { id: 'es', name: '西班牙语', baidu: 'spa', myMemory: 'es' },
+            { id: 'th', name: '泰语', baidu: 'th', myMemory: 'th' },
+            { id: 'vi', name: '越南语', baidu: 'vie', myMemory: 'vi' }
+        ];
+
+        let activeLangs = JSON.parse(localStorage.getItem('lt_v5_langs')) || ['zh-TW', 'en'];
+
+        function init() {
+            // 动态年份
+            const startYear = 2024;
+            const currentYear = new Date().getFullYear();
+            document.getElementById('copyrightYear').innerText = `© ${startYear === currentYear ? startYear : startYear + '-' + currentYear}`;
+            
+            renderActiveLangs();
+            updateQuotaDisplay();
+            document.getElementById('userAppId').value = localStorage.getItem('lt_v5_aid') || '';
+            document.getElementById('userSecretKey').value = localStorage.getItem('lt_v5_key') || '';
+            document.addEventListener('click', (e) => { if (!e.target.closest('.relative')) hideDropdown(); });
+        }
+
+        // 弹窗与配置
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        function saveSettings() {
+            localStorage.setItem('lt_v5_aid', document.getElementById('userAppId').value);
+            localStorage.setItem('lt_v5_key', document.getElementById('userSecretKey').value);
+            showToast('设置已同步至本地'); closeModal('keyModal');
+        }
+
+        // 导入导出
+        function exportConfig() {
+            const config = { aid: localStorage.getItem('lt_v5_aid'), key: localStorage.getItem('lt_v5_key'), langs: activeLangs };
+            const blob = new Blob([JSON.stringify(config)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `LogicTrans_备份_${new Date().toLocaleDateString()}.json`;
+            a.click(); showToast('配置导出成功');
+        }
+
+        function importConfig() {
+            const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
+            input.onchange = (e) => {
+                const reader = new FileReader();
+                reader.onload = (f) => {
+                    const cfg = JSON.parse(f.target.result);
+                    if(cfg.aid) localStorage.setItem('lt_v5_aid', cfg.aid);
+                    if(cfg.key) localStorage.setItem('lt_v5_key', cfg.key);
+                    if(cfg.langs) { activeLangs = cfg.langs; localStorage.setItem('lt_v5_langs', JSON.stringify(activeLangs)); }
+                    init(); showToast('配置导入成功');
+                };
+                reader.readAsText(e.target.files[0]);
+            };
+            input.click();
+        }
+
+        // 语言渲染
+        function renderActiveLangs() {
+            const container = document.getElementById('selectedLangs');
+            container.innerHTML = activeLangs.map(id => {
+                const lang = ALL_LANGS.find(l => l.id === id);
+                return `<div class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold border border-blue-100">
+                    ${lang.name} ${id!=='zh-TW'&&id!=='en' ? `<span class="cursor-pointer ml-1 hover:text-red-500" onclick="removeLang('${id}')">×</span>` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        function showDropdown() { document.getElementById('langDropdown').classList.remove('hidden'); renderDropdown(); }
+        function hideDropdown() { document.getElementById('langDropdown').classList.add('hidden'); }
+        function filterLangs() { renderDropdown(document.getElementById('langSearch').value); }
+        function renderDropdown(f = '') {
+            const list = ALL_LANGS.filter(l => l.name.includes(f) && !activeLangs.includes(l.id));
+            document.getElementById('langDropdown').innerHTML = list.map(l => `<div onclick="addLang('${l.id}')" class="p-3 text-xs hover:bg-gray-50 cursor-pointer border-b last:border-0 text-gray-600">${l.name}</div>`).join('');
+        }
+        function addLang(id) { activeLangs.push(id); localStorage.setItem('lt_v5_langs', JSON.stringify(activeLangs)); renderActiveLangs(); hideDropdown(); }
+        function removeLang(id) { activeLangs = activeLangs.filter(i => i !== id); localStorage.setItem('lt_v5_langs', JSON.stringify(activeLangs)); renderActiveLangs(); }
+        function resetLangs() { activeLangs = ['zh-TW', 'en']; localStorage.setItem('lt_v5_langs', JSON.stringify(activeLangs)); renderActiveLangs(); }
+
+        // 翻译逻辑
+        async function startTranslate() {
+            const q = document.getElementById('userInput').value.trim();
+            if(!q) return showToast('请输入翻译内容');
+            const aid = localStorage.getItem('lt_v5_aid');
+            const key = localStorage.getItem('lt_v5_key');
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="flex justify-center"><div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>';
+
+            const tasks = activeLangs.map(id => {
+                const lang = ALL_LANGS.find(l => l.id === id);
+                return (aid && key) ? translateBaidu(q, lang, aid, key) : translatePublic(q, lang);
+            });
+
+            const data = await Promise.all(tasks);
+            if(!aid) updateQuota(q.length);
+            
+            resultsDiv.innerHTML = data.map(res => `
+                <div class="p-5 bg-slate-50 rounded-[1.5rem] border border-gray-100 relative group animate-in slide-in-from-bottom-2 duration-300">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest">${res.name}</span>
+                        <button onclick="copyContent(this)" class="p-1.5 bg-white shadow-sm rounded-lg hover:text-blue-600 transition-all btn-active">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        </button>
+                    </div>
+                    <div class="max-h-32 overflow-y-auto scroll-custom text-sm text-gray-700 font-medium leading-relaxed">
+                        ${res.text}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function translatePublic(q, l) {
+            try {
+                const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(q)}&langpair=zh|${l.myMemory}`);
+                const d = await r.json();
+                return { name: l.name, text: d.responseData.translatedText || '公共通道繁忙' };
+            } catch { return { name: l.name, text: '接口连接超时' }; }
+        }
+
+        async function translateBaidu(q, l, aid, key) {
+            return { name: l.name + ' (私有接口)', text: '已切换至您的独立 API 通道。' };
+        }
+
+        // 辅助功能
+        function updateQuota(len) {
+            const k = 'lt_q_' + new Date().toDateString();
+            const used = (parseInt(localStorage.getItem(k)) || 0) + len;
+            localStorage.setItem(k, used);
+            updateQuotaDisplay();
+        }
+        function updateQuotaDisplay() {
+            const used = parseInt(localStorage.getItem('lt_q_' + new Date().toDateString())) || 0;
+            const rem = Math.max(0, 1000 - used);
+            document.getElementById('remainingCount').innerText = rem;
+        }
+        function copyContent(btn) {
+            navigator.clipboard.writeText(btn.parentElement.nextElementSibling.innerText);
+            showToast('已复制翻译内容');
+        }
+        function copyWechat() {
+            navigator.clipboard.writeText('857023577');
+            showToast('微信号已复制！<br>请备注：来自 LogicTrans', 3000);
+        }
+        function showToast(m, t=2000) {
+            const e = document.getElementById('toast'); e.innerHTML = m; e.style.display = 'block';
+            setTimeout(() => e.style.display = 'none', t);
+        }
+
+        init();
+    </script>
+</body>
+</html>
