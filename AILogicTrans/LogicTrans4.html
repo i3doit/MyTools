@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogicTrans - 灵动翻译</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .toast { display: none; position: fixed; top: 15%; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 12px; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-size: 14px; }
+        .dropdown-content { max-height: 250px; overflow-y: auto; display: none; position: absolute; width: 100%; top: 100%; left: 0; background: white; border: 1px solid #e5e7eb; border-radius: 1rem; z-index: 50; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .dropdown-content.show { display: block; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col items-center p-4">
+
+    <div class="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl mt-4 border border-gray-100 overflow-hidden relative">
+        <div class="px-8 pt-8 pb-2">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-black text-gray-800 tracking-tight">LogicTrans</h1>
+                <button onclick="toggleSettings()" class="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                </button>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 font-medium">💡 用法：输入文字 -> 选语言 -> 点击翻译。配置 Key 后无限额度。</p>
+            <div id="quotaDisplay" class="mt-2 flex items-center gap-1.5 text-[10px] font-bold">
+                <span class="text-gray-300 uppercase">今日免费额度:</span>
+                <span id="remainingCount" class="text-blue-500">1000</span>
+                <span class="text-gray-300">/ 1000 字</span>
+            </div>
+        </div>
+
+        <div id="settingsPanel" class="hidden mx-6 my-4 p-6 bg-slate-900 rounded-[1.5rem] text-white">
+            <h3 class="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest">百度翻译开发者配置</h3>
+            <input id="userAppId" type="text" placeholder="App ID" class="w-full p-3 mb-2 bg-slate-800 border-none rounded-xl text-sm text-white placeholder-slate-500 outline-none">
+            <input id="userSecretKey" type="password" placeholder="Secret Key" class="w-full p-3 mb-4 bg-slate-800 border-none rounded-xl text-sm text-white placeholder-slate-500 outline-none">
+            <button onclick="saveSettings()" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl text-sm font-bold transition-all">保存设置</button>
+        </div>
+
+        <div class="p-8">
+            <textarea id="userInput" rows="4" class="w-full p-5 bg-gray-50 rounded-[1.5rem] outline-none focus:ring-2 focus:ring-blue-100 transition-all resize-none text-gray-700 font-medium" placeholder="在此键入内容..."></textarea>
+
+            <div class="mt-8">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-black text-gray-400 uppercase tracking-widest">目标语言</span>
+                    <button onclick="resetLangs()" class="text-[10px] font-bold text-blue-500">重置</button>
+                </div>
+                
+                <div id="selectedLangs" class="flex flex-wrap gap-2 mb-4">
+                    </div>
+
+                <div class="relative">
+                    <div class="relative">
+                        <input type="text" id="langSearch" onfocus="showDropdown()" oninput="filterLangs()" placeholder="🔍 搜索并添加更多语言..." class="w-full p-3 pl-10 bg-white border border-gray-100 rounded-xl text-xs outline-none focus:border-blue-300 transition-all">
+                        <svg class="w-4 h-4 text-gray-300 absolute left-4 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    </div>
+                    <div id="langDropdown" class="dropdown-content">
+                        </div>
+                </div>
+            </div>
+
+            <button onclick="startTranslate()" class="w-full mt-8 bg-slate-900 hover:bg-black text-white font-black py-5 rounded-[1.5rem] shadow-xl active:scale-[0.97] transition-all tracking-widest uppercase text-sm">
+                Translate Now
+            </button>
+
+            <div id="results" class="mt-10 space-y-5"></div>
+        </div>
+    </div>
+
+    <footer class="mt-10 w-full max-w-md text-center space-y-5 pb-12">
+        <div class="flex flex-wrap justify-center gap-x-6 gap-y-3 text-[11px] font-bold text-gray-400 uppercase tracking-tight">
+            <span class="cursor-pointer hover:text-slate-900 transition-colors" onclick="copyWechat()">Support: 艾兜兜儿</span>
+            <a href="https://t.zsxq.com/WrxBB" target="_blank" class="hover:text-slate-900 transition-colors">OpenClaw指南</a>
+            <a href="https://mp.weixin.qq.com/s/Fhbb9OB2no0kbswWAM7ouA" target="_blank" class="hover:text-slate-900 transition-colors underline decoration-2 decoration-blue-200">Challenge 100</a>
+        </div>
+        <div class="text-[9px] text-gray-300 font-mono tracking-tighter uppercase">Power by LogicTrans // Build 4.0.0</div>
+    </footer>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // 目标语言全量数组
+        const ALL_LANGUAGES = [
+            { id: 'zh-TW', name: '繁体中文', baidu: 'cht', myMemory: 'zh-TW' },
+            { id: 'en', name: '英语', baidu: 'en', myMemory: 'en' },
+            { id: 'ja', name: '日语', baidu: 'jp', myMemory: 'ja' },
+            { id: 'ko', name: '韩语', baidu: 'kor', myMemory: 'ko' },
+            { id: 'fr', name: '法语', baidu: 'fra', myMemory: 'fr' },
+            { id: 'de', name: '德语', baidu: 'de', myMemory: 'de' },
+            { id: 'ru', name: '俄语', baidu: 'ru', myMemory: 'ru' },
+            { id: 'es', name: '西班牙语', baidu: 'spa', myMemory: 'es' },
+            { id: 'it', name: '意大利语', baidu: 'it', myMemory: 'it' },
+            { id: 'pt', name: '葡萄牙语', baidu: 'pt', myMemory: 'pt' },
+            { id: 'th', name: '泰语', baidu: 'th', myMemory: 'th' },
+            { id: 'vi', name: '越南语', baidu: 'vie', myMemory: 'vi' }
+        ];
+
+        const DAILY_LIMIT = 1000;
+        let activeLangs = JSON.parse(localStorage.getItem('lt_active_v4')) || ['zh-TW', 'en'];
+
+        function init() {
+            renderActiveLangs();
+            renderDropdown();
+            updateQuotaDisplay();
+            document.getElementById('userAppId').value = localStorage.getItem('lt_aid') || '';
+            document.getElementById('userSecretKey').value = localStorage.getItem('lt_key') || '';
+            
+            // 点击外部关闭下拉框
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.relative')) hideDropdown();
+            });
+        }
+
+        // 渲染已选标签
+        function renderActiveLangs() {
+            const container = document.getElementById('selectedLangs');
+            container.innerHTML = activeLangs.map(id => {
+                const lang = ALL_LANGUAGES.find(l => l.id === id);
+                const isDefault = (id === 'zh-TW' || id === 'en');
+                return `
+                    <div class="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-xl">
+                        <span class="text-[11px] font-bold text-blue-600">${lang.name}</span>
+                        ${!isDefault ? `<button onclick="removeLang('${id}')" class="text-blue-300 hover:text-blue-600">×</button>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 渲染下拉选项
+        function renderDropdown(filter = '') {
+            const container = document.getElementById('langDropdown');
+            const list = ALL_LANGUAGES.filter(l => 
+                l.name.includes(filter) && !activeLangs.includes(l.id)
+            );
+            
+            container.innerHTML = list.length ? list.map(l => `
+                <div onclick="addLang('${l.id}')" class="px-5 py-3 text-xs hover:bg-gray-50 cursor-pointer text-gray-600 border-b border-gray-50 last:border-0">
+                    ${l.name}
+                </div>
+            `).join('') : '<div class="px-5 py-3 text-xs text-gray-400">未找到相关语言</div>';
+        }
+
+        function showDropdown() { document.getElementById('langDropdown').classList.add('show'); renderDropdown(); }
+        function hideDropdown() { document.getElementById('langDropdown').classList.remove('show'); }
+        function filterLangs() { renderDropdown(document.getElementById('langSearch').value); }
+
+        function addLang(id) {
+            activeLangs.push(id);
+            localStorage.setItem('lt_active_v4', JSON.stringify(activeLangs));
+            document.getElementById('langSearch').value = '';
+            renderActiveLangs();
+            hideDropdown();
+        }
+
+        function removeLang(id) {
+            activeLangs = activeLangs.filter(i => i !== id);
+            localStorage.setItem('lt_active_v4', JSON.stringify(activeLangs));
+            renderActiveLangs();
+        }
+
+        function resetLangs() {
+            activeLangs = ['zh-TW', 'en'];
+            localStorage.setItem('lt_active_v4', JSON.stringify(activeLangs));
+            renderActiveLangs();
+            showToast('已恢复默认语言');
+        }
+
+        // --- 核心翻译与额度逻辑（沿用V3并优化） ---
+        function getTodayKey() { return 'lt_quota_' + new Date().toDateString(); }
+        function getUsedQuota() { return parseInt(localStorage.getItem(getTodayKey())) || 0; }
+        function updateQuotaDisplay() {
+            const remaining = Math.max(0, DAILY_LIMIT - getUsedQuota());
+            const el = document.getElementById('remainingCount');
+            el.innerText = remaining;
+            el.parentElement.style.color = remaining < 200 ? '#ef4444' : '#3b82f6';
+        }
+
+        function toggleSettings() { document.getElementById('settingsPanel').classList.toggle('hidden'); }
+        function saveSettings() {
+            localStorage.setItem('lt_aid', document.getElementById('userAppId').value);
+            localStorage.setItem('lt_key', document.getElementById('userSecretKey').value);
+            showToast('配置成功'); toggleSettings();
+        }
+
+        async function startTranslate() {
+            const text = document.getElementById('userInput').value.trim();
+            if (!text) return showToast('请输入内容');
+            const aid = localStorage.getItem('lt_aid');
+            const key = localStorage.getItem('lt_key');
+            
+            if (!aid && (getUsedQuota() + text.length > DAILY_LIMIT)) return showToast('额度不足，请配置Key');
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="flex justify-center py-4"><div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>';
+
+            const tasks = activeLangs.map(id => {
+                const lang = ALL_LANGUAGES.find(l => l.id === id);
+                return (aid && key) ? translateBaidu(text, lang, aid, key) : translatePublic(text, lang);
+            });
+
+            const resData = await Promise.all(tasks);
+            if (!aid) localStorage.setItem(getTodayKey(), getUsedQuota() + text.length);
+            updateQuotaDisplay();
+
+            resultsDiv.innerHTML = resData.map(res => `
+                <div class="p-6 bg-slate-50 rounded-[1.5rem] border border-gray-100 relative group animate-in fade-in duration-300">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-black text-blue-500 uppercase tracking-widest">${res.name}</span>
+                        <button onclick="copy(this)" class="text-[10px] font-bold text-gray-400 hover:text-slate-900 transition-colors uppercase">Copy</button>
+                    </div>
+                    <p class="text-sm text-gray-700 leading-relaxed font-medium">${res.text}</p>
+                </div>
+            `).join('');
+        }
+
+        async function translatePublic(text, lang) {
+            try {
+                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=zh|${lang.myMemory}`);
+                const data = await res.json();
+                return { name: lang.name, text: data.responseData.translatedText || '接口限流' };
+            } catch { return { name: lang.name, text: '翻译服务暂不可用' }; }
+        }
+
+        async function translateBaidu(text, lang, aid, key) {
+            // 前端演示：私有Key需要CORS代理或后端转发
+            return { name: lang.name + ' (Private)', text: '已切换至私有接口。' };
+        }
+
+        function copy(btn) {
+            navigator.clipboard.writeText(btn.parentElement.nextElementSibling.innerText);
+            showToast('已复制');
+        }
+
+        function copyWechat() {
+            navigator.clipboard.writeText('857023577');
+            showToast('微信号已复制！<br>备注：LogicTrans', 3000);
+        }
+
+        function showToast(msg, time = 2000) {
+            const t = document.getElementById('toast');
+            t.innerHTML = msg; t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', time);
+        }
+
+        init();
+    </script>
+</body>
+</html>
