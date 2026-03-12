@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>LogicTrans 灵动翻译</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root { --safe-bottom: env(safe-area-inset-bottom); --bg-soft: #f4f7f5; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif; background: var(--bg-soft); color: #2c3e50; }
+        .scroll-hide::-webkit-scrollbar { display: none; }
+        
+        /* 弹窗样式 */
+        .toast { 
+            display: none; position: fixed; top: 15%; left: 50%; transform: translateX(-50%); 
+            background: rgba(44, 62, 80, 0.98); color: white; padding: 16px 28px; 
+            border-radius: 20px; z-index: 9999; font-size: 14px; text-align: center;
+            backdrop-filter: blur(10px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+        }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(6px); z-index: 1000; align-items: flex-end; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #fdfdfd; width: 100%; max-width: 500px; border-radius: 2.5rem 2.5rem 0 0; padding: 2rem; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); padding-bottom: calc(1.5rem + var(--safe-bottom)); }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .btn-press:active { transform: scale(0.95); transition: 0.1s; }
+        
+        /* 钥匙按钮动画 */
+        .settings-btn svg { transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .settings-btn:hover svg { transform: rotate(-15deg) scale(1.1); }
+        .pulse-hint { position: relative; }
+        .pulse-hint::after {
+            content: ''; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px;
+            background: #10b981; border-radius: 50%; border: 2px solid #fff; animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* 语种展示区折叠 */
+        #activeLangs { max-height: 84px; overflow: hidden; transition: max-height 0.3s ease; }
+        #activeLangs.expanded { max-height: 500px; }
+        
+        @keyframes fadeInScale { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .animate-result { animation: fadeInScale 0.4s ease-out forwards; }
+    </style>
+</head>
+<body class="flex justify-center">
+
+    <div class="w-full max-w-lg min-h-screen sm:min-h-0 sm:my-8 sm:rounded-[3rem] flex flex-col relative overflow-hidden shadow-sm">
+        
+        <header class="px-8 pt-10 pb-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-black text-slate-800 tracking-tighter italic">LogicTrans</h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md uppercase tracking-wider">智能翻译版 v3.0</span>
+                    </div>
+                </div>
+                <button onclick="openModal('keyModal')" class="settings-btn group p-3 bg-white text-slate-500 rounded-2xl btn-press border border-slate-100 hover:text-emerald-600 hover:shadow-lg transition-all shadow-sm">
+                    <div id="keyStatusHint" class="pulse-hint">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                        </svg>
+                    </div>
+                </button>
+            </div>
+            
+            <div class="mt-8 flex items-center gap-4">
+                <div class="flex-1 h-1.5 bg-slate-200/50 rounded-full overflow-hidden">
+                    <div id="quotaBar" class="h-full bg-emerald-600 transition-all duration-1000" style="width: 100%"></div>
+                </div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Daily Quota: <span id="quotaCount" class="text-emerald-700 font-black">1000</span></span>
+            </div>
+        </header>
+
+        <main class="px-6 flex-1">
+            <div class="relative group">
+                <textarea id="userInput" rows="5" maxlength="2000"
+                    class="w-full p-6 bg-white/50 border border-slate-200/50 rounded-[2rem] outline-none text-slate-700 font-medium text-lg transition-all placeholder-slate-300 resize-none focus:bg-white focus:shadow-xl focus:shadow-emerald-900/5"
+                    placeholder="输入或粘贴内容...&#10;系统将自动为您在简体、繁体与英文间转换"></textarea>
+                
+                <button onclick="clearInput()" id="clearBtn" class="hidden absolute top-4 right-6 p-2 bg-slate-100 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-all btn-press">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+
+                <div class="absolute bottom-4 left-6 flex gap-2">
+                    <button onclick="copyCurrentURL()" title="复制网页链接" class="p-2 bg-slate-100 text-slate-400 rounded-full hover:bg-emerald-50 hover:text-emerald-600 transition-all btn-press">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    </button>
+                    <button onclick="showQRCode()" title="保存工具二维码" class="p-2 bg-slate-100 text-slate-400 rounded-full hover:bg-emerald-50 hover:text-emerald-600 transition-all btn-press">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                    </button>
+                </div>
+                <div id="charCounter" class="absolute bottom-4 right-6 text-[10px] font-bold text-slate-300 tracking-widest">0 / 2000</div>
+            </div>
+
+            <div class="mt-8 px-2">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> 目标语种选择
+                    </h2>
+                    <div class="flex gap-4">
+                        <button onclick="toggleExpandLangs()" id="expandBtn" class="hidden text-[11px] font-bold text-emerald-700/60 hover:text-emerald-700">展开全部</button>
+                        <button onclick="resetLangs()" class="text-[11px] font-bold text-emerald-700/60 hover:text-emerald-700">清空并智能识别</button>
+                    </div>
+                </div>
+                <div id="activeLangs" class="flex flex-wrap gap-2 mb-4"></div>
+                
+                <div class="relative group">
+                    <input type="text" id="langSearch" onfocus="showDrop()" oninput="filterLangs()"
+                        class="w-full p-4 pl-12 pr-10 bg-white/40 border border-slate-200/50 rounded-2xl text-xs font-bold outline-none focus:bg-white transition-all shadow-sm"
+                        placeholder="搜索并添加更多语言（如：法语、德语、俄语...）">
+                    <svg class="w-4 h-4 text-slate-300 absolute left-5 top-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2.5"></path></svg>
+                    <div id="dropBox" class="hidden absolute w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto scroll-hide"></div>
+                </div>
+            </div>
+
+            <button onclick="startTranslate()" class="w-full mt-8 bg-slate-800 text-white font-bold py-5 rounded-[1.8rem] shadow-xl shadow-slate-200 transition-all btn-press tracking-[0.4em] text-sm hover:bg-slate-900">
+                立即开始翻译
+            </button>
+
+            <div id="results" class="mt-8 space-y-4 pb-12">
+                <div class="py-16 text-center opacity-40">
+                    <div class="mb-4 flex justify-center text-slate-300">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path></svg>
+                    </div>
+                    <p class="text-xs font-bold tracking-widest text-slate-500 uppercase">等待内容输入</p>
+                </div>
+            </div>
+
+            <div class="mt-4 p-5 bg-white/30 rounded-3xl border border-white/50">
+                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">免责声明 Disclaimer</h4>
+                <p class="text-[9px] text-slate-400 leading-relaxed font-medium">
+                    1. 本工具翻译结果均由第三方接口实时生成，不代表本站立场，请在参考时注意核对准确性。<br>
+                    2. 本程序严格遵守隐私保护，您的输入内容及配置信息（如 API Key）均存储在浏览器本地，不会上传至服务器。<br>
+                    3. 使用本工具产生的任何直接或间接损失，作者不承担法律责任。
+                </p>
+            </div>
+        </main>
+
+        <footer class="px-8 py-10 flex flex-col items-center gap-4">
+            <div class="flex flex-wrap justify-center items-center gap-x-3 gap-y-2 text-[10px] font-bold text-slate-400 uppercase">
+                <span id="copyYear">© 2026 LOGICTRANS</span>
+                <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
+                <span class="cursor-pointer hover:text-emerald-600 transition-colors" onclick="copyWechat()">技术支持：艾兜兜儿</span>
+            </div>
+            <div class="flex flex-wrap justify-center items-center gap-x-4 gap-y-2">
+                <a href="https://t.zsxq.com/WrxBB" target="_blank" class="text-[10px] font-bold text-slate-500 hover:text-emerald-700 transition-colors">OpenClaw 龙虾养成指南</a>
+                <span class="text-slate-200 text-[8px]">|</span>
+                <a href="https://mp.weixin.qq.com/s/Fhbb9OB2no0kbswWAM7ouA" target="_blank" class="text-[10px] font-bold text-slate-500 hover:text-emerald-700 transition-colors">挑战写 100 个 AI 小工具</a>
+            </div>
+        </footer>
+    </div>
+
+    <div id="keyModal" class="modal-overlay" onclick="closeModal('keyModal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-8"></div>
+            <h3 class="text-xl font-black text-slate-800 mb-2">私钥与隐私设置</h3>
+            <p class="text-[10px] text-slate-400 font-medium mb-6 leading-relaxed">
+                如果您拥有自己的 API 密钥，可以在下方配置以解除每日 1000 字符限制。配置仅保存在您的当前浏览器中。
+            </p>
+            <div class="space-y-3">
+                <input id="appId" type="text" placeholder="API User ID / App ID" class="w-full p-4 bg-slate-100 rounded-xl text-sm outline-none border-2 border-transparent focus:border-emerald-100 focus:bg-white font-medium">
+                <input id="appKey" type="password" placeholder="Secret Key / API Key" class="w-full p-4 bg-slate-100 rounded-xl text-sm outline-none border-2 border-transparent focus:border-emerald-100 focus:bg-white font-medium">
+            </div>
+            <button onclick="saveKey()" class="w-full mt-6 bg-emerald-700 text-white font-bold py-4 rounded-xl btn-press shadow-md">保存并启用</button>
+        </div>
+    </div>
+
+    <div id="qrModal" class="modal-overlay" onclick="closeModal('qrModal')">
+        <div class="modal-content flex flex-col items-center !bg-slate-50" onclick="event.stopPropagation()">
+            <div class="w-10 h-1 bg-slate-200 rounded-full mb-8"></div>
+            <div id="shareCard" class="bg-white p-6 rounded-3xl shadow-2xl mb-8 flex flex-col items-center">
+                <div class="w-full flex justify-between items-start mb-6">
+                    <div class="text-left">
+                        <h2 class="text-xl font-black text-slate-800 italic">LogicTrans</h2>
+                        <p class="text-[9px] font-bold text-emerald-600 tracking-widest uppercase">灵动翻译工具</p>
+                    </div>
+                </div>
+                <div id="qrcode" class="p-3 bg-white border-4 border-emerald-50 rounded-2xl mb-6"></div>
+                <p class="text-sm font-bold text-slate-700">扫描二维码立即使用</p>
+            </div>
+            <button onclick="downloadShareCard()" class="w-full bg-emerald-700 text-white font-bold py-4 rounded-xl btn-press shadow-lg mb-4">保存分享图片</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const LIMIT = 1000;
+        const LANGS = [
+            { id: 'zh-CN', name: '简体中文', code: 'zh-CN' },
+            { id: 'zh-TW', name: '繁体中文', code: 'zh-TW' },
+            { id: 'en', name: '英语 English', code: 'en' },
+            { id: 'ja', name: '日语 日本語', code: 'ja' },
+            { id: 'ko', name: '韩语 한국어', code: 'ko' },
+            { id: 'fr', name: '法语 Français', code: 'fr' },
+            { id: 'de', name: '德语 Deutsch', code: 'de' },
+            { id: 'ru', name: '俄语 Русский', code: 'ru' },
+            { id: 'es', name: '西班牙语 Español', code: 'es' },
+            { id: 'it', name: '意大利语 Italiano', code: 'it' },
+            { id: 'pt', name: '葡萄牙语 Português', code: 'pt' },
+            { id: 'vi', name: '越南语 Tiếng Việt', code: 'vi' },
+            { id: 'th', name: '泰语 ไทย', code: 'th' },
+            { id: 'ar', name: '阿拉伯语 العربية', code: 'ar' }
+        ];
+
+        const TRAD_CHARS = /[體發後裏範邊馬鳥龍麵慶寫幾擊機漢氣]/;
+        let activeList = JSON.parse(localStorage.getItem('lt_v64_langs')) || [];
+
+        function init() {
+            const input = document.getElementById('userInput');
+            
+            // 输入监听
+            input.addEventListener('input', e => {
+                const val = e.target.value;
+                document.getElementById('charCounter').innerText = `${val.length} / 2000`;
+                document.getElementById('clearBtn').style.display = val.length > 0 ? 'block' : 'none';
+            });
+
+            // 自动粘贴
+            input.addEventListener('focus', async () => {
+                if (input.value.trim() === "") {
+                    try {
+                        const text = await navigator.clipboard.readText();
+                        if (text) {
+                            input.value = text;
+                            input.dispatchEvent(new Event('input'));
+                            showToast("📋 已自动识别并粘贴剪贴板内容");
+                        }
+                    } catch (err) {}
+                }
+            });
+
+            checkKeyStatus();
+            renderActive();
+            refreshQuota();
+            new QRCode(document.getElementById("qrcode"), { text: window.location.href, width: 160, height: 160 });
+        }
+
+        function checkKeyStatus() {
+            const hasKey = localStorage.getItem('lt_v64_key');
+            document.getElementById('keyStatusHint').className = hasKey ? "" : "pulse-hint";
+        }
+
+        function clearInput() {
+            const input = document.getElementById('userInput');
+            input.value = "";
+            input.dispatchEvent(new Event('input'));
+            input.focus();
+        }
+
+        function toggleExpandLangs() {
+            const container = document.getElementById('activeLangs');
+            const btn = document.getElementById('expandBtn');
+            container.classList.toggle('expanded');
+            btn.innerText = container.classList.contains('expanded') ? '收起' : '展开全部';
+        }
+
+        function renderActive() {
+            const div = document.getElementById('activeLangs');
+            const expandBtn = document.getElementById('expandBtn');
+            if (activeList.length === 0) {
+                div.innerHTML = '<div class="text-[10px] font-bold text-slate-400 italic py-2 leading-relaxed">当前模式：输入简体转繁体/英文，输入繁体转简体/英文</div>';
+                expandBtn.classList.add('hidden');
+                return;
+            }
+            div.innerHTML = activeList.map(id => {
+                const l = LANGS.find(x => x.id === id);
+                return `<div class="px-3 py-1.5 bg-slate-800 text-white rounded-xl text-[10px] font-bold flex items-center gap-2 animate-result">
+                    ${l.name} <span class="cursor-pointer text-slate-400 hover:text-red-300" onclick="removeL('${id}')">✕</span>
+                </div>`;
+            }).join('');
+            setTimeout(() => { expandBtn.classList.toggle('hidden', div.scrollHeight <= 84); }, 100);
+        }
+
+        async function startTranslate() {
+            const text = document.getElementById('userInput').value.trim();
+            if(!text) return showToast("请输入需要转换的内容");
+            
+            const sourceLang = detectLanguage(text);
+            let targets = activeList.length > 0 ? [...activeList] : ['zh-CN', 'zh-TW', 'en'];
+            const resDiv = document.getElementById('results');
+            resDiv.innerHTML = '<div class="py-12 text-center text-[10px] font-bold text-slate-400 animate-pulse tracking-widest uppercase">转换中...</div>';
+
+            try {
+                const tasks = targets.map(async id => {
+                    const l = LANGS.find(x => x.id === id);
+                    if (sourceLang === id) return { name: l.name, text: text, isDirect: true };
+                    try {
+                        const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLang}|${l.code}`);
+                        const d = await r.json();
+                        return { name: l.name, text: d.responseData.translatedText, isDirect: false };
+                    } catch { return { name: l.name, text: '转换超时', isDirect: false }; }
+                });
+
+                const data = await Promise.all(tasks);
+                resDiv.innerHTML = data.map((i, index) => `
+                    <div class="p-6 bg-white/80 rounded-[2rem] border border-white shadow-sm animate-result">
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="text-[9px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded uppercase">${i.name}</span>
+                            <button onclick="copyResult(${index})" class="copy-btn-node w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-400 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition-all btn-press">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </button>
+                        </div>
+                        <p id="res-text-${index}" class="text-sm text-slate-700 font-medium leading-relaxed break-words">${i.text}</p>
+                    </div>
+                `).join('');
+
+                localStorage.setItem('lt_q_' + new Date().toDateString(), (parseInt(localStorage.getItem('lt_q_' + new Date().toDateString())) || 0) + text.length);
+                refreshQuota();
+            } catch (err) { resDiv.innerHTML = '<p class="text-center text-red-400 text-xs italic">服务遇到障碍，请重试</p>'; }
+        }
+
+        function copyResult(idx) {
+            const text = document.getElementById(`res-text-${idx}`).innerText;
+            navigator.clipboard.writeText(text).then(() => showToast('✅ 复制成功'));
+        }
+
+        function copyCurrentURL() {
+            navigator.clipboard.writeText(window.location.href).then(() => showToast("✅ 链接已复制<br><span style='font-size:12px;opacity:0.8;'>快去分享吧</span>"));
+        }
+
+        function copyWechat() {
+            const id = '857023577';
+            navigator.clipboard.writeText(id).then(() => showToast(`✅ 微信号已复制：${id}<br><span style="font-size:12px; opacity:0.8;">请备注“来自灵动翻译”</span>`));
+        }
+
+        function detectLanguage(t) { return /[\u4e00-\u9fa5]/.test(t) ? (TRAD_CHARS.test(t) ? 'zh-TW' : 'zh-CN') : 'en'; }
+        function showToast(h) { const e = document.getElementById('toast'); e.innerHTML = h; e.style.display = 'block'; setTimeout(() => e.style.display = 'none', 3000); }
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        function showQRCode() { openModal('qrModal'); }
+        function showDrop() { document.getElementById('dropBox').classList.remove('hidden'); renderDrop(); }
+        function filterLangs() { renderDrop(document.getElementById('langSearch').value); }
+        function renderDrop(f='') {
+            const list = LANGS.filter(x => x.name.toLowerCase().includes(f.toLowerCase()) && !activeList.includes(x.id));
+            document.getElementById('dropBox').innerHTML = list.map(x => `<div onclick="addL('${x.id}')" class="p-4 text-xs font-bold hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0">${x.name}</div>`).join('') || '<div class="p-4 text-center text-slate-300 text-[10px]">未找到语种</div>';
+        }
+        function addL(id) { activeList.push(id); localStorage.setItem('lt_v64_langs', JSON.stringify(activeList)); renderActive(); document.getElementById('dropBox').classList.add('hidden'); document.getElementById('langSearch').value=''; }
+        function removeL(id) { activeList = activeList.filter(x => x !== id); localStorage.setItem('lt_v64_langs', JSON.stringify(activeList)); renderActive(); }
+        function resetLangs() { activeList = []; localStorage.setItem('lt_v64_langs', JSON.stringify(activeList)); renderActive(); }
+        function refreshQuota() {
+            const used = parseInt(localStorage.getItem('lt_q_' + new Date().toDateString())) || 0;
+            const rem = Math.max(0, LIMIT - used);
+            document.getElementById('quotaCount').innerText = rem;
+            document.getElementById('quotaBar').style.width = (rem / LIMIT * 100) + '%';
+        }
+        function saveKey() {
+            localStorage.setItem('lt_v64_aid', document.getElementById('appId').value.trim());
+            localStorage.setItem('lt_v64_key', document.getElementById('appKey').value.trim());
+            checkKeyStatus(); showToast('✅ 配置已同步'); closeModal('keyModal');
+        }
+
+        window.onload = init;
+        document.addEventListener('click', e => { if(!e.target.closest('.group')) document.getElementById('dropBox').classList.add('hidden'); });
+    </script>
+</body>
+</html>
