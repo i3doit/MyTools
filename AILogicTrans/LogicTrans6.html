@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>LogicTrans 灵动翻译</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+    <style>
+        :root { --safe-top: env(safe-area-inset-top); --safe-bottom: env(safe-area-inset-bottom); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; background: #f8fafc; }
+        
+        /* 气泡提示 */
+        .toast { display: none; position: fixed; top: 12%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 20px; z-index: 9999; font-size: 14px; backdrop-filter: blur(10px); }
+
+        /* iPhone 适配弹窗：底部抽屉 */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1000; align-items: flex-end; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { 
+            background: white; width: 100%; max-width: 500px; 
+            border-radius: 2.5rem 2.5rem 0 0; padding: 2rem;
+            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding-bottom: calc(2rem + var(--safe-bottom));
+        }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+
+        /* PC端弹窗兼容 */
+        @media (min-width: 640px) {
+            .modal-overlay { align-items: center; }
+            .modal-content { border-radius: 2.5rem; transform: scale(0.9); padding-bottom: 2rem; }
+            .modal-overlay.active .modal-content { transform: scale(1); }
+        }
+
+        .scroll-hide::-webkit-scrollbar { display: none; }
+        .btn-press:active { transform: scale(0.96); transition: 0.1s; }
+    </style>
+</head>
+<body class="flex flex-col items-center">
+
+    <div class="w-full max-w-lg bg-white min-h-screen sm:min-h-[90vh] sm:my-8 sm:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden border border-slate-100">
+        
+        <div class="px-8 pt-12 pb-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-3xl font-black text-slate-900 tracking-tighter">LogicTrans</h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-widest">V6.1 Smart</span>
+                        <span id="langIndicator" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">智能识别已就绪</span>
+                    </div>
+                </div>
+                <button onclick="openModal()" class="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-blue-600 transition-all btn-press">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                </button>
+            </div>
+
+            <div class="mt-8 p-4 bg-slate-900 rounded-2xl text-white shadow-lg shadow-slate-200">
+                <div class="flex justify-between items-end mb-2">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">今日免费额度</span>
+                    <span id="quotaText" class="text-xl font-black font-mono">1000</span>
+                </div>
+                <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div id="quotaBar" class="h-full bg-blue-500 transition-all duration-500" style="width: 100%"></div>
+                </div>
+                <p class="text-[9px] text-slate-500 mt-2 tracking-tight">※ 每日 00:00 重置，配置私有 Key 后可解锁限制</p>
+            </div>
+        </div>
+
+        <div class="px-8 flex-1">
+            <div class="relative">
+                <textarea id="userInput" rows="5" maxlength="2000"
+                    class="w-full p-6 bg-slate-50 rounded-[2rem] outline-none text-slate-700 font-medium placeholder-slate-300 border-2 border-transparent focus:border-blue-100 transition-all"
+                    placeholder="输入中文翻英文，输入英文翻中文..."></textarea>
+                <div id="charCounter" class="absolute bottom-4 right-6 text-[9px] font-black text-slate-300 uppercase">0 / 2000</div>
+            </div>
+
+            <div class="mt-6">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">目标语言 (自动追加)</span>
+                    <button onclick="resetLangs()" class="text-[10px] font-bold text-blue-500">重置</button>
+                </div>
+                <div id="activeLangs" class="flex flex-wrap gap-2 mb-4"></div>
+                <div class="relative">
+                    <input type="text" id="langSearch" onfocus="showDrop()" oninput="filterLangs()"
+                        class="w-full p-4 pl-12 bg-white border border-slate-100 rounded-2xl text-xs font-bold outline-none focus:border-blue-200 transition-all shadow-sm"
+                        placeholder="搜索并添加更多语言...">
+                    <svg class="w-4 h-4 text-slate-300 absolute left-5 top-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="3"></path></svg>
+                    <div id="dropBox" class="hidden absolute w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 max-h-40 overflow-y-auto scroll-hide"></div>
+                </div>
+            </div>
+
+            <button onclick="startTranslate()" class="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-3xl shadow-xl shadow-blue-100 transition-all btn-press tracking-[0.3em] text-sm">
+                立即翻译
+            </button>
+
+            <div id="results" class="mt-8 space-y-4 pb-10"></div>
+        </div>
+
+        <footer class="px-8 py-10 bg-slate-50/50 flex flex-col items-center gap-6 text-center border-t border-slate-50">
+            <div class="flex gap-6 text-[11px] font-black text-slate-400 uppercase">
+                <span id="copyYear">© 2026</span>
+                <span class="cursor-pointer hover:text-blue-500" onclick="copyWechat()"> 技术支持: 艾兜兜儿</span>
+            </div>
+            <div class="flex flex-col gap-2 w-full max-w-[280px]">
+                <a href="https://t.zsxq.com/WrxBB" target="_blank" class="text-[10px] font-bold text-slate-500 bg-white py-2.5 rounded-xl border border-slate-100 shadow-sm">OpenClaw 龙虾养成指南</a>
+                <a href="https://mp.weixin.qq.com/s/Fhbb9OB2no0kbswWAM7ouA" target="_blank" class="text-[10px] font-bold text-slate-500 bg-white py-2.5 rounded-xl border border-slate-100 shadow-sm underline underline-offset-4 decoration-blue-200">挑战写 100 个 AI 小工具</a>
+            </div>
+        </footer>
+    </div>
+
+    <div id="keyModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8"></div>
+            <h3 class="text-2xl font-black text-slate-900 mb-2">密钥配置</h3>
+            <p class="text-[11px] text-slate-400 leading-relaxed mb-8">
+                设置将保存在 iPhone 的本地存储中，不上传服务器。建议频繁使用用户配置百度或腾讯翻译 API。
+            </p>
+            <div class="space-y-4">
+                <input id="appId" type="text" placeholder="APP ID" class="w-full p-5 bg-slate-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-100 font-bold">
+                <input id="appKey" type="password" placeholder="SECRET KEY" class="w-full p-5 bg-slate-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-100 font-bold">
+            </div>
+            <div class="flex gap-4 mt-8">
+                <button onclick="exportCfg()" class="flex-1 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl text-xs btn-press">导出配置</button>
+                <button onclick="importCfg()" class="flex-1 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl text-xs btn-press">导入配置</button>
+            </div>
+            <button onclick="saveKey()" class="w-full mt-4 bg-slate-900 text-white font-black py-5 rounded-2xl btn-press">保存设置</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const DAILY_LIMIT = 1000;
+        const ALL_LANGS = [
+            { id: 'zh-CN', name: '简体中文', my: 'zh-CN' },
+            { id: 'zh-TW', name: '繁体中文', my: 'zh-TW' },
+            { id: 'en', name: '英语', my: 'en' },
+            { id: 'ja', name: '日语', my: 'ja' },
+            { id: 'ko', name: '韩语', my: 'ko' },
+            { id: 'fr', name: '法语', my: 'fr' },
+            { id: 'de', name: '德语', my: 'de' }
+        ];
+
+        let activeLangs = JSON.parse(localStorage.getItem('lt_v6_langs')) || ['zh-TW', 'en'];
+
+        function init() {
+            const year = new Date().getFullYear();
+            document.getElementById('copyYear').innerText = `© ${year === 2026 ? '2026' : '2026 - ' + year}`;
+            
+            document.getElementById('userInput').oninput = e => {
+                document.getElementById('charCounter').innerText = `${e.target.value.length} / 2000`;
+            };
+
+            renderLangs();
+            updateQuota();
+            document.getElementById('appId').value = localStorage.getItem('lt_v6_aid') || '';
+            document.getElementById('appKey').value = localStorage.getItem('lt_v6_key') || '';
+        }
+
+        function updateQuota() {
+            const used = parseInt(localStorage.getItem('lt_q_' + new Date().toDateString())) || 0;
+            const remain = Math.max(0, DAILY_LIMIT - used);
+            const percent = (remain / DAILY_LIMIT) * 100;
+            document.getElementById('quotaText').innerText = remain;
+            document.getElementById('quotaBar').style.width = percent + '%';
+        }
+
+        function renderLangs() {
+            const div = document.getElementById('activeLangs');
+            div.innerHTML = activeLangs.map(id => {
+                const l = ALL_LANGS.find(x => x.id === id);
+                return `<div class="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black border border-blue-100">
+                    ${l.name} ${id!=='zh-TW'&&id!=='en' ? `<span class="ml-1 cursor-pointer" onclick="removeLang('${id}')">×</span>`:''}
+                </div>`;
+            }).join('');
+        }
+
+        async function startTranslate() {
+            const text = document.getElementById('userInput').value.trim();
+            if(!text) return showToast('请输入内容');
+            
+            const aid = localStorage.getItem('lt_v6_aid');
+            const key = localStorage.getItem('lt_v6_key');
+            if(!aid && (parseInt(localStorage.getItem('lt_q_' + new Date().toDateString())) || 0) + text.length > DAILY_LIMIT) {
+                return showToast('今日额度已用完，请配置 Key');
+            }
+
+            const isCN = /[\u4e00-\u9fa5]/.test(text);
+            let targets = [...activeLangs];
+            if(!isCN && !targets.includes('zh-CN')) targets.unshift('zh-CN');
+            if(isCN) targets = targets.filter(x => x !== 'zh-CN');
+
+            const resDiv = document.getElementById('results');
+            resDiv.innerHTML = '<div class="py-10 text-center text-[10px] font-black text-slate-300 animate-pulse tracking-widest uppercase">Translating...</div>';
+
+            const tasks = targets.map(async id => {
+                const l = ALL_LANGS.find(x => x.id === id);
+                try {
+                    const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|${l.my}`);
+                    const d = await r.json();
+                    return { name: l.name, text: d.responseData.translatedText };
+                } catch { return { name: l.name, text: '翻译失败，请检查网络' }; }
+            });
+
+            const data = await Promise.all(tasks);
+            if(!aid) {
+                const k = 'lt_q_' + new Date().toDateString();
+                localStorage.setItem(k, (parseInt(localStorage.getItem(k)) || 0) + text.length);
+                updateQuota();
+            }
+
+            resDiv.innerHTML = data.map(item => `
+                <div class="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[9px] font-black text-blue-500 uppercase tracking-widest">${item.name}</span>
+                        <button onclick="copy(this)" class="p-2 bg-white rounded-xl text-slate-300 hover:text-blue-500 shadow-sm transition-all btn-press">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        </button>
+                    </div>
+                    <p class="text-sm text-slate-700 font-bold leading-relaxed max-h-32 overflow-y-auto scroll-hide">${item.text}</p>
+                </div>
+            `).join('');
+        }
+
+        // UI 系统
+        function openModal() { document.getElementById('keyModal').classList.add('active'); }
+        function closeModal() { document.getElementById('keyModal').classList.remove('active'); }
+        function saveKey() {
+            localStorage.setItem('lt_v6_aid', document.getElementById('appId').value.trim());
+            localStorage.setItem('lt_v6_key', document.getElementById('appKey').value.trim());
+            showToast('设置已保存'); closeModal();
+        }
+        function copy(btn) {
+            navigator.clipboard.writeText(btn.parentElement.nextElementSibling.innerText);
+            showToast('已复制');
+        }
+        function showDrop() { document.getElementById('dropBox').classList.remove('hidden'); renderDrop(); }
+        function filterLangs() { renderDrop(document.getElementById('langSearch').value); }
+        function renderDrop(f='') {
+            const list = ALL_LANGS.filter(x => x.name.includes(f) && !activeLangs.includes(x.id));
+            document.getElementById('dropBox').innerHTML = list.map(x => `<div onclick="addLang('${x.id}')" class="p-4 text-xs font-bold hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0">${x.name}</div>`).join('');
+        }
+        function addLang(id) { activeLangs.push(id); localStorage.setItem('lt_v6_langs', JSON.stringify(activeLangs)); renderLangs(); document.getElementById('dropBox').classList.add('hidden'); }
+        function removeLang(id) { activeLangs = activeLangs.filter(x => x !== id); localStorage.setItem('lt_v6_langs', JSON.stringify(activeLangs)); renderLangs(); }
+        function resetLangs() { activeLangs = ['zh-TW', 'en']; localStorage.setItem('lt_v6_langs', JSON.stringify(activeLangs)); renderLangs(); }
+        function showToast(m, t=2000) { const e=document.getElementById('toast'); e.innerText=m; e.style.display='block'; setTimeout(()=>e.style.display='none', t); }
+        function copyWechat() { navigator.clipboard.writeText('857023577'); showToast('微信号已复制，加好友备注：LogicTrans', 3000); }
+        
+        init();
+        // 点击外部关闭下拉
+        window.onclick = e => { if(!e.target.closest('.relative')) document.getElementById('dropBox').classList.add('hidden'); }
+    </script>
+</body>
+</html>
