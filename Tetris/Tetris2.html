@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>极简俄罗斯方块 - 交互版</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --accent-color: #ffb300; /* 默认琥珀色 */
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 主题颜色预设 */
+        body.theme-amber { --bg-color: #121212; --accent-color: #ffb300; }
+        body.theme-green { --bg-color: #0a1a0f; --accent-color: #4ade80; }
+        body.theme-blue  { --bg-color: #051622; --accent-color: #38bdf8; }
+        body.theme-dark  { --bg-color: #000000; --accent-color: #f8fafc; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'SF Pro Display', 'Noto Sans SC', sans-serif;
+            background-color: var(--bg-color);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background 0.5s ease;
+            overflow-x: hidden;
+        }
+
+        /* 顶部导航与主题切换 */
+        .header {
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 500px;
+        }
+
+        .theme-dots { display: flex; gap: 10px; }
+        .dot { width: 16px; height: 16px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(255,255,255,0.2); }
+
+        /* 主容器 */
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 32px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+            margin-bottom: 20px;
+        }
+
+        .game-layout { display: flex; gap: 20px; }
+
+        canvas {
+            background: #000;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 200px; /* 响应式调整 */
+            height: 400px;
+        }
+
+        /* 右侧侧边栏：预览和分数 */
+        .side-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100px;
+        }
+
+        .side-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .side-title { font-size: 10px; color: #888; margin-bottom: 8px; }
+        #next-canvas { background: transparent; width: 80px; height: 80px; border: none; }
+
+        /* 操控盘按钮 */
+        .controls-grid {
+            display: grid;
+            grid-template-areas: 
+                ". up ."
+                "left rotate right"
+                ". down .";
+            gap: 12px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .ctrl-btn {
+            width: 55px;
+            height: 55px;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .ctrl-btn svg { width: 24px; height: 24px; stroke: var(--accent-color); fill: none; stroke-width: 2; }
+        .ctrl-btn:active { background: var(--accent-color); }
+        .ctrl-btn:active svg { stroke: #000; }
+
+        /* 功能键 */
+        .action-row { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .icon-btn { 
+            padding: 8px 16px; 
+            border-radius: 12px; 
+            background: var(--glass); 
+            border: 1px solid var(--border);
+            color: #ccc;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        #toast {
+            position: fixed; top: 30px; background: #fff; color: #000;
+            padding: 10px 20px; border-radius: 20px; font-size: 14px;
+            display: none; z-index: 1000; animation: fadeIn 0.3s;
+        }
+
+        footer { font-size: 11px; color: #555; text-align: center; padding: 20px; line-height: 2; }
+        footer a { color: #777; text-decoration: none; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="theme-amber">
+
+<div id="toast">提示信息</div>
+
+<div class="header">
+    <div style="font-weight: 700; font-size: 18px;">Tetris <span style="font-weight: 300; opacity: 0.6;">Lab</span></div>
+    <div class="theme-dots">
+        <div class="dot" style="background: #ffb300;" onclick="changeTheme('amber')"></div>
+        <div class="dot" style="background: #4ade80;" onclick="changeTheme('green')"></div>
+        <div class="dot" style="background: #38bdf8;" onclick="changeTheme('blue')"></div>
+        <div class="dot" style="background: #f8fafc;" onclick="changeTheme('dark')"></div>
+    </div>
+</div>
+
+<div class="glass-card" id="capture-area">
+    <div class="game-layout">
+        <canvas id="game" width="200" height="400"></canvas>
+        
+        <div class="side-bar">
+            <div class="side-box">
+                <div class="side-title">NEXT</div>
+                <canvas id="next-canvas" width="80" height="80"></canvas>
+            </div>
+            <div class="side-box">
+                <div class="side-title">SCORE</div>
+                <div id="score" style="font-weight: 700; color: var(--accent-color);">0</div>
+            </div>
+            <div class="side-box">
+                <div class="side-title">HIGH</div>
+                <div id="high-score">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls-grid">
+        <div class="ctrl-btn" style="grid-area: up;" onclick="rotate()">
+            <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        </div>
+        <div class="ctrl-btn" style="grid-area: left;" onclick="moveLeft()">
+            <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        </div>
+        <div class="ctrl-btn" style="grid-area: down;" onclick="moveDown()">
+            <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+        <div class="ctrl-btn" style="grid-area: right;" onclick="moveRight()">
+            <svg viewBox="0 0 24 24"><path d="m9 18 6-6-9-6"/></svg>
+        </div>
+        <div class="ctrl-btn" style="grid-area: rotate;" onclick="randomizePiece()" title="随机变换">
+            <svg viewBox="0 0 24 24"><path d="M2 18h2.82a1 1 0 0 0 .71-.29l13.38-13.42a1 1 0 0 1 .71-.29H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h2.82a1 1 0 0 1 .71.29l13.38 13.42a1 1 0 0 0 .71.29H22"/><path d="m18 22 4-4-4-4"/></svg>
+        </div>
+    </div>
+
+    <div class="action-row">
+        <div class="icon-btn" onclick="togglePause()">暂停/开始</div>
+        <div class="icon-btn" onclick="downloadGameImage()">下载截图</div>
+        <div class="icon-btn" onclick="copyShareURL()">分享</div>
+    </div>
+</div>
+
+<footer>
+    <p id="copyright-text"></p>
+    <p onclick="copyText('857023577')" style="cursor:pointer">AI 提效工具官方 QQ 群：<span style="color:var(--accent-color)">857023577</span></p>
+    <div style="margin-top:10px; opacity: 0.6;">
+        <a href="https://t.zsxq.com/7tSuP">艾兜兜儿</a> | <a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A">更多工具</a>
+    </div>
+</footer>
+
+<script>
+    /** 游戏逻辑核心 **/
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const nextCanvas = document.getElementById('next-canvas');
+    const nctx = nextCanvas.getContext('2d');
+
+    const ROW = 20, COL = 10, SQ = 20;
+    let score = 0, gamePaused = true, board = [];
+
+    // 初始化画板
+    for(let r=0; r<ROW; r++) board[r] = Array(COL).fill(null);
+
+    const PIECES = [
+        [[1,1,1,1]], [[1,1],[1,1]], [[0,1,1],[1,1,0]], 
+        [[1,1,0],[0,1,1]], [[1,1,1],[0,1,0]], [[1,1,1],[1,0,0]], [[1,1,1],[0,0,1]]
+    ];
+
+    let currentPiece, nextPieceData;
+
+    function createPiece(data) {
+        return {
+            data: data,
+            x: 3, y: -2,
+            color: getComputedStyle(document.body).getPropertyValue('--accent-color').trim()
+        };
+    }
+
+    function drawSquare(x, y, color, targetCtx = ctx, size = SQ) {
+        targetCtx.fillStyle = color;
+        targetCtx.fillRect(x*size, y*size, size, size);
+        targetCtx.strokeStyle = "rgba(0,0,0,0.5)";
+        targetCtx.strokeRect(x*size, y*size, size, size);
+    }
+
+    function drawBoard() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        board.forEach((row, r) => row.forEach((col, c) => {
+            if(col) drawSquare(c, r, col);
+        }));
+    }
+
+    function drawNext() {
+        nctx.clearRect(0,0,80,80);
+        nextPieceData.forEach((row, r) => row.forEach((cell, c) => {
+            if(cell) drawSquare(c + 1, r + 1, getComputedStyle(document.body).getPropertyValue('--accent-color'), nctx, 15);
+        }));
+    }
+
+    // 核心碰撞检测
+    function collision(nx, ny, ndata) {
+        for(let r=0; r<ndata.length; r++) {
+            for(let c=0; c<ndata[r].length; c++) {
+                if(!ndata[r][c]) continue;
+                let x = nx + c, y = ny + r;
+                if(x < 0 || x >= COL || y >= ROW) return true;
+                if(y >= 0 && board[y][x]) return true;
+            }
+        }
+        return false;
+    }
+
+    function resetPiece() {
+        if(!nextPieceData) nextPieceData = PIECES[Math.floor(Math.random()*PIECES.length)];
+        currentPiece = createPiece(nextPieceData);
+        nextPieceData = PIECES[Math.floor(Math.random()*PIECES.length)];
+        drawNext();
+        if(collision(currentPiece.x, currentPiece.y, currentPiece.data)) {
+            showToast("游戏结束！");
+            gamePaused = true;
+        }
+    }
+
+    function moveDown() {
+        if(gamePaused) return;
+        if(!collision(currentPiece.x, currentPiece.y + 1, currentPiece.data)) {
+            currentPiece.y++;
+        } else {
+            lockPiece();
+            resetPiece();
+        }
+        render();
+    }
+
+    function lockPiece() {
+        currentPiece.data.forEach((row, r) => row.forEach((cell, c) => {
+            if(cell && currentPiece.y + r >= 0) {
+                board[currentPiece.y + r][currentPiece.x + c] = currentPiece.color;
+            }
+        }));
+        // 消行
+        for(let r=ROW-1; r>=0; r--) {
+            if(board[r].every(c => c !== null)) {
+                board.splice(r, 1);
+                board.unshift(Array(COL).fill(null));
+                score += 10;
+                document.getElementById('score').innerText = score;
+            }
+        }
+    }
+
+    function moveLeft() { if(!collision(currentPiece.x-1, currentPiece.y, currentPiece.data)) currentPiece.x--; render(); }
+    function moveRight() { if(!collision(currentPiece.x+1, currentPiece.y, currentPiece.data)) currentPiece.x++; render(); }
+    
+    function rotate() {
+        let newData = currentPiece.data[0].map((_, i) => currentPiece.data.map(row => row[i]).reverse());
+        if(!collision(currentPiece.x, currentPiece.y, newData)) currentPiece.data = newData;
+        render();
+    }
+
+    // 随机切换当前方块
+    function randomizePiece() {
+        let newData = PIECES[Math.floor(Math.random()*PIECES.length)];
+        if(!collision(currentPiece.x, currentPiece.y, newData)) currentPiece.data = newData;
+        showToast("随机变换！");
+        render();
+    }
+
+    function render() {
+        drawBoard();
+        currentPiece.data.forEach((row, r) => row.forEach((cell, c) => {
+            if(cell) drawSquare(currentPiece.x + c, currentPiece.y + r, currentPiece.color);
+        }));
+    }
+
+    function togglePause() { 
+        gamePaused = !gamePaused; 
+        if(!gamePaused) tick();
+    }
+
+    function tick() {
+        if(!gamePaused) {
+            moveDown();
+            setTimeout(tick, 800);
+        }
+    }
+
+    /** 辅助功能 **/
+    function changeTheme(t) {
+        document.body.className = 'theme-' + t;
+        if(currentPiece) currentPiece.color = getComputedStyle(document.body).getPropertyValue('--accent-color').trim();
+        drawNext();
+        render();
+    }
+
+    function showToast(m) {
+        const t = document.getElementById('toast');
+        t.innerText = m; t.style.display = 'block';
+        setTimeout(() => t.style.display='none', 2500);
+    }
+
+    function copyText(txt) {
+        navigator.clipboard.writeText(txt);
+        showToast("已复制: " + txt);
+    }
+
+    function downloadGameImage() {
+        html2canvas(document.getElementById('capture-area'), {backgroundColor: '#000'}).then(canvas => {
+            const a = document.createElement('a');
+            a.href = canvas.toDataURL();
+            a.download = 'Tetris_艾兜兜儿.png';
+            a.click();
+            showToast("图片已生成");
+        });
+    }
+
+    // 初始化
+    const yr = new Date().getFullYear();
+    document.getElementById('copyright-text').innerText = `© ${yr > 2026 ? '2026-'+yr : yr} 艾兜兜儿-857023577`;
+    resetPiece();
+    render();
+</script>
+</body>
+</html>
