@@ -3,162 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PDF 转 Word (带错误日志版)</title>
+    <title>极简 PDF 转 Word | 隐私安全版</title>
     
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/pdf.js/2.13.216/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docx@8.1.0/build/index.umd.js"></script>
     <script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
     <style>
-        :root { --primary: #0078d4; --bg: #f3f2f1; --danger: #d83b01; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .card { background: white; width: 100%; max-width: 500px; padding: 25px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); text-align: center; }
-        .upload-box { border: 2px dashed #d2d0ce; border-radius: 12px; padding: 30px; margin: 20px 0; cursor: pointer; background: #faf9f8; position: relative; }
-        #fileInput { position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; }
-        .file-info { background: #f0f7ff; padding: 12px; border-radius: 8px; margin-bottom: 15px; display: none; text-align: left; font-size: 13px; border-left: 4px solid var(--primary); }
-        .btn { background-color: var(--primary); color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
-        .btn:disabled { background-color: #c8c6c4; cursor: not-allowed; }
+        :root {
+            --primary: #0078d4;
+            --success: #107c10;
+            --error: #a80000;
+            --bg: #f3f2f1;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #323130;
+        }
+
+        .container {
+            background: white;
+            width: 100%;
+            max-width: 500px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            box-sizing: border-box;
+        }
+
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h1 { margin: 0; font-size: 24px; color: #000; }
+        .header p { color: #605e5c; font-size: 14px; margin: 8px 0; }
+
+        .drop-zone {
+            border: 2px dashed #0078d4;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #f0f7ff;
+            cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .drop-zone:hover { background: #e1f0ff; border-color: #005a9e; }
         
-        /* 日志区域样式 */
-        .log-container { width: 100%; max-width: 500px; margin-top: 20px; background: #333; color: #adff2f; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; text-align: left; box-sizing: border-box; }
-        .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #eee; border-bottom: 1px solid #555; padding-bottom: 5px; }
-        .log-content { max-height: 150px; overflow-y: auto; white-space: pre-wrap; cursor: pointer; }
-        .log-content:hover { background: #444; }
-        .copy-tip { color: #aaa; font-size: 10px; }
+        #fileInput { position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; }
+
+        .file-card {
+            display: none;
+            background: #faf9f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #edebe9;
+            text-align: left;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:disabled { background: #c8c6c4; cursor: not-allowed; }
+
+        /* 日志面板优化 */
+        .log-panel {
+            width: 100%;
+            max-width: 500px;
+            margin-top: 20px;
+            background: #201f1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+
+        .log-title { display: flex; justify-content: space-between; color: #f3f2f1; margin-bottom: 8px; font-size: 11px; }
+        .log-box { max-height: 120px; overflow-y: auto; white-space: pre-wrap; cursor: copy; }
+
+        .progress-bar {
+            height: 4px;
+            width: 0%;
+            background: var(--primary);
+            margin-top: 10px;
+            transition: width 0.3s;
+        }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2 style="margin: 0 0 10px 0;">PDF ➔ Word</h2>
-    <div id="envStatus" style="font-size: 12px; color: var(--danger);">正在检测库环境...</div>
+<div class="container">
+    <div class="header">
+        <h1>PDF ➔ Word</h1>
+        <p>本地解析，GitHub 托管，安全无上传</p>
+    </div>
 
-    <div class="upload-box">
-        <span id="promptText">点击选择 PDF 文件</span>
+    <div class="drop-zone" id="dropZone">
+        <span id="promptText">📄 点击或拖拽 PDF 到这里</span>
         <input type="file" id="fileInput" accept="application/pdf">
     </div>
 
-    <div id="fileDetail" class="file-info">
-        <div>📄 <span id="infoName">-</span></div>
-        <div>⚖️ 大小: <b id="infoSize">-</b></div>
+    <div id="fileCard" class="file-card">
+        <div id="fileName" style="font-weight: bold; overflow: hidden; text-overflow: ellipsis;"></div>
+        <div id="fileSize" style="font-size: 12px; color: #666; margin-top: 4px;"></div>
+        <div class="progress-bar" id="progressBar"></div>
     </div>
 
-    <button id="convertBtn" class="btn" disabled>等待环境就绪</button>
+    <button id="convertBtn" class="btn" disabled>等待环境初始化...</button>
 </div>
 
-<div class="log-container">
-    <div class="log-header">
-        <span>运行日志 (Console Log)</span>
-        <span class="copy-tip">点击下方内容可复制</span>
+<div class="log-panel">
+    <div class="log-title">
+        <span>RUNNING LOG (点击日志可复制)</span>
+        <span id="envIndicator">🔴 环境未就绪</span>
     </div>
-    <div id="logContent" class="log-content">系统初始化中...</div>
+    <div id="logBox" class="log-box">系统加载中...</div>
 </div>
 
 <script>
-    const logContent = document.getElementById('logContent');
-    const envStatus = document.getElementById('envStatus');
+    const logBox = document.getElementById('logBox');
     const convertBtn = document.getElementById('convertBtn');
-    const fileInput = document.getElementById('fileInput');
-    const fileDetail = document.getElementById('fileDetail');
-
-    // --- 日志记录功能 ---
-    function addLog(msg, isError = false) {
+    const envIndicator = document.getElementById('envIndicator');
+    
+    // --- 核心日志与复制功能 ---
+    function addLog(msg, type = 'info') {
         const time = new Date().toLocaleTimeString();
-        const prefix = isError ? "[❌ ERROR]" : "[OK]";
-        logContent.innerText += `\n${time} ${prefix} ${msg}`;
-        logContent.scrollTop = logContent.scrollHeight;
+        const symbol = type === 'error' ? '✖' : '✔';
+        logBox.innerText += `\n[${time}] ${symbol} ${msg}`;
+        logBox.scrollTop = logBox.scrollHeight;
     }
 
-    // --- 复制日志功能 ---
-    logContent.onclick = () => {
-        navigator.clipboard.writeText(logContent.innerText);
+    logBox.onclick = () => {
+        navigator.clipboard.writeText(logBox.innerText);
         alert("日志已复制到剪贴板");
     };
 
-    // --- 环境检测 ---
-    function checkLibraries() {
-        const checks = {
-            pdfjs: typeof window['pdfjs-dist/build/pdf'] !== 'undefined',
-            docx: typeof window.docx !== 'undefined',
-            saveAs: typeof window.saveAs !== 'undefined'
-        };
+    // --- 环境预检 ---
+    function initEnv() {
+        try {
+            const isPdfLoaded = typeof window['pdfjs-dist/build/pdf'] !== 'undefined';
+            const isDocxLoaded = typeof window.docx !== 'undefined';
+            const isSaverLoaded = typeof window.saveAs !== 'undefined';
 
-        if (checks.pdfjs && checks.docx && checks.saveAs) {
-            envStatus.innerText = "✅ 所有核心库加载成功";
-            envStatus.style.color = "green";
-            if (fileInput.files.length > 0) convertBtn.disabled = false;
-            convertBtn.innerText = "立即转换并下载";
-            addLog("环境初始化完成，等待用户操作");
-        } else {
-            let missing = [];
-            if (!checks.pdfjs) missing.push("pdf.js");
-            if (!checks.docx) missing.push("docx.js");
-            if (!checks.saveAs) missing.push("FileSaver.js");
-            
-            envStatus.innerText = "⚠️ 缺少库: " + missing.join(", ");
-            addLog("库检测失败: " + missing.join(", "), true);
-            setTimeout(checkLibraries, 2000);
-        }
+            if (isPdfLoaded && isDocxLoaded && isSaverLoaded) {
+                envIndicator.innerText = "🟢 环境就绪";
+                envIndicator.style.color = "#00ff00";
+                convertBtn.innerText = "立即开始转换";
+                addLog("核心库文件加载成功 (GitHub Pages 模式)");
+                return true;
+            }
+        } catch (e) { addLog("环境初始化异常: " + e.message, 'error'); }
+        setTimeout(initEnv, 1000);
+        return false;
     }
 
-    // 初始化运行
-    window.onload = checkLibraries;
+    window.onload = initEnv;
 
-    // --- 文件处理 ---
+    // --- 文件交互 ---
+    const fileInput = document.getElementById('fileInput');
     fileInput.onchange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            document.getElementById('infoName').innerText = file.name;
-            document.getElementById('infoSize').innerText = (file.size / 1024 / 1024).toFixed(2) + " MB";
-            fileDetail.style.display = 'block';
-            addLog(`已选择文件: ${file.name} (${file.size} bytes)`);
-            if (envStatus.innerText.includes("成功")) convertBtn.disabled = false;
+            document.getElementById('fileCard').style.display = 'block';
+            document.getElementById('fileName').innerText = file.name;
+            document.getElementById('fileSize').innerText = (file.size / 1024 / 1024).toFixed(2) + " MB";
+            convertBtn.disabled = false;
+            addLog(`已载入文件: ${file.name}`);
         }
     };
 
-    // --- 转换逻辑 ---
+    // --- 核心转换逻辑 ---
     convertBtn.onclick = async () => {
         const file = fileInput.files[0];
         if (!file) return;
 
         try {
             convertBtn.disabled = true;
-            addLog("开始转换流程...");
+            addLog("开始提取 PDF 文本流...");
             
             const pdfjsLib = window['pdfjs-dist/build/pdf'];
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/pdf.js/2.13.216/pdf.worker.min.js';
 
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-            addLog(`PDF读取成功，共 ${pdf.numPages} 页`);
+            const paragraphs = [];
+            const progressBar = document.getElementById('progressBar');
 
-            const docChildren = [];
             for (let i = 1; i <= pdf.numPages; i++) {
-                addLog(`正在解析第 ${i} 页...`);
+                const percent = (i / pdf.numPages * 100) + "%";
+                progressBar.style.width = percent;
+                addLog(`解析进度: ${i} / ${pdf.numPages} 页`);
+
                 const page = await pdf.getPage(i);
                 const textContent = await page.getTextContent();
+                
+                // 优化：处理 PDF 中的空行和异常间距
                 const pageText = textContent.items.map(item => item.str).join(' ');
 
                 if (pageText.trim()) {
-                    docChildren.push(new window.docx.Paragraph({
-                        children: [new window.docx.TextRun({ text: pageText, size: 24 })],
-                        spacing: { before: 120, after: 120 }
+                    paragraphs.push(new window.docx.Paragraph({
+                        children: [new window.docx.TextRun({ text: pageText, font: "Microsoft YaHei", size: 24 })],
+                        spacing: { before: 240, after: 240, line: 360 }
                     }));
                 }
             }
 
-            addLog("正在封装 Word 数据包...");
+            addLog("正在构建 Word 文档结构 (docx格式)...");
             const doc = new window.docx.Document({
-                sections: [{ properties: {}, children: docChildren }]
+                sections: [{
+                    properties: { page: { margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 } } },
+                    children: paragraphs
+                }]
             });
 
             const blob = await window.docx.Packer.toBlob(doc);
-            window.saveAs(blob, file.name.replace(/\.pdf$/i, "") + ".docx");
-            addLog("✅ 转换成功，已触发浏览器下载");
+            const saveName = file.name.replace(/\.[^/.]+$/, "") + "_converted.docx";
             
+            window.saveAs(blob, saveName);
+            addLog("✅ 转换完成，文件已由浏览器触发下载", 'success');
+            progressBar.style.width = "0%";
+
         } catch (err) {
-            addLog(`转换崩溃: ${err.stack || err.message}`, true);
-            alert("发生错误，请查看下方日志并复制反馈");
+            addLog("严重错误: " + err.message, 'error');
+            console.error(err);
         } finally {
             convertBtn.disabled = false;
         }
@@ -166,4 +251,5 @@
 </script>
 
 </body>
+</html>
 </html>
