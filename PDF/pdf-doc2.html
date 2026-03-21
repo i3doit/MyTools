@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PDF ➔ Word Pro (GitHub版)</title>
+    
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/pdf.js/2.13.216/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@8.1.0/build/index.umd.js"></script>
+    <script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        :root { --primary: #0078d4; --bg: #f3f2f1; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { background: white; width: 100%; max-width: 550px; padding: 30px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+        .drop-zone { border: 2px dashed var(--primary); border-radius: 12px; padding: 40px; text-align: center; background: #f0f7ff; cursor: pointer; position: relative; transition: 0.3s; }
+        .drop-zone:hover { background: #e1f0ff; }
+        #fileInput { position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; cursor: pointer; }
+        .btn { background: var(--primary); color: white; border: none; padding: 16px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .log-panel { width: 100%; max-width: 550px; margin-top: 15px; background: #201f1e; color: #00ff00; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; }
+        .log-box { max-height: 200px; overflow-y: auto; white-space: pre-wrap; cursor: copy; }
+        #progressBar { height: 5px; background: var(--primary); width: 0%; transition: 0.3s; margin-top: 10px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="text-align:center; margin-bottom:20px;">
+        <h2 style="margin:0">PDF ➔ Word Pro</h2>
+        <p style="font-size:12px; color:#666;">支持文字 + 图片自动提取</p>
+    </div>
+
+    <div class="drop-zone">
+        <span id="promptText">📄 点击或拖拽 PDF 文件</span>
+        <input type="file" id="fileInput" accept="application/pdf">
+    </div>
+
+    <div id="fileInfo" style="display:none; margin-top:15px; font-size:13px; text-align:left; padding:10px; background:#f9f9f9; border-radius:5px;">
+        <div id="fileName" style="font-weight:bold;"></div>
+        <div id="fileSize" style="color:#666;"></div>
+        <div id="progressBar"></div>
+    </div>
+
+    <button id="convertBtn" class="btn" disabled>环境检查中...</button>
+</div>
+
+<div class="log-panel">
+    <div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #444; padding-bottom:3px;">
+        <span>运行日志 (点击复制)</span>
+        <span id="statusIcon">⏳</span>
+    </div>
+    <div id="logBox" class="log-box">初始化系统...</div>
+</div>
+
+<script>
+    let pdfLibInstance = null;
+    const logBox = document.getElementById('logBox');
+    const convertBtn = document.getElementById('convertBtn');
+
+    function addLog(msg, isErr = false) {
+        logBox.innerText += `\n${new Date().toLocaleTimeString()} ${isErr ? '✖' : '▶'} ${msg}`;
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    logBox.onclick = () => {
+        navigator.clipboard.writeText(logBox.innerText);
+        alert("日志已复制到剪贴板");
+    };
+
+    // --- 稳健的环境初始化 ---
+    function initApp() {
+        // 尝试多种可能的挂载路径
+        pdfLibInstance = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+        
+        const isDocxLoaded = typeof window.docx !== 'undefined';
+        const isSaverLoaded = typeof window.saveAs !== 'undefined';
+
+        if (pdfLibInstance && isDocxLoaded && isSaverLoaded) {
+            addLog("✅ 环境就绪：PDF.js, Docx.js, FileSaver 已加载");
+            document.getElementById('statusIcon').innerText = "✅";
+            convertBtn.innerText = "立即转换 (含图片)";
+            if (document.getElementById('fileInput').files.length > 0) convertBtn.disabled = false;
+        } else {
+            addLog("等待库加载中...");
+            setTimeout(initApp, 1000);
+        }
+    }
+
+    window.onload = initApp;
+
+    document.getElementById('fileInput').onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            document.getElementById('fileInfo').style.display = 'block';
+            document.getElementById('fileName').innerText = file.name;
+            document.getElementById('fileSize').innerText = (file.size / 1024 / 1024).toFixed(2) + " MB";
+            convertBtn.disabled = false;
+            addLog(`载入文件: ${file.name}`);
+        }
+    };
+
+    // --- 图片提取函数 ---
+    async function extractImages(page) {
+        const images = [];
+        try {
+            const operatorList = await page.getOperatorList();
+            for (let i = 0; i < operatorList.fnArray.length; i++) {
+                if (operatorList.fnArray[i] === pdfLibInstance.OPS.paintImageXObject) {
+                    const imgKey = operatorList.argsArray[i][0];
+                    const img = await page.objs.get(imgKey);
+                    if (img) {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        const imageData = ctx.createImageData(img.width, img.height);
+                        imageData.data.set(img.data);
+                        ctx.putImageData(imageData, 0, 0);
+                        images.push({
+                            data: canvas.toDataURL('image/png'),
+                            width: img.width,
+                            height: img.height
+                        });
+                    }
+                }
+            }
+        } catch (e) { addLog("图片提取微调: " + e.message); }
+        return images;
+    }
+
+    convertBtn.onclick = async () => {
+        const file = document.getElementById('fileInput').files[0];
+        if (!file || !pdfLibInstance) return;
+
+        try {
+            convertBtn.disabled = true;
+            addLog("🚀 启动转换引擎...");
+
+            // 配置 Worker (解决之前的报错)
+            pdfLibInstance.GlobalWorkerOptions.workerSrc = 'https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/pdf.js/2.13.216/pdf.worker.min.js';
+
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfLibInstance.getDocument({data: arrayBuffer});
+            const pdf = await loadingTask.promise;
+            
+            const docChildren = [];
+            const bar = document.getElementById('progressBar');
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                addLog(`正在处理第 ${i}/${pdf.numPages} 页...`);
+                bar.style.width = (i / pdf.numPages * 100) + "%";
+
+                const page = await pdf.getPage(i);
+                
+                // 1. 提取文本
+                const textContent = await page.getTextContent();
+                const text = textContent.items.map(s => s.str).join(' ');
+                if (text.trim()) {
+                    docChildren.push(new window.docx.Paragraph({
+                        children: [new window.docx.TextRun({ text: text, size: 24 })],
+                        spacing: { before: 200, after: 200 }
+                    }));
+                }
+
+                // 2. 提取图片
+                const imgs = await extractImages(page);
+                for (const img of imgs) {
+                    const maxWidth = 550;
+                    const scale = img.width > maxWidth ? maxWidth / img.width : 1;
+                    docChildren.push(new window.docx.Paragraph({
+                        children: [new window.docx.ImageRun({
+                            data: img.data,
+                            transformation: { width: img.width * scale, height: img.height * scale }
+                        })],
+                        alignment: window.docx.AlignmentType.CENTER
+                    }));
+                }
+            }
+
+            addLog("正在生成可编辑 Word 文档...");
+            const doc = new window.docx.Document({
+                sections: [{ properties: {}, children: docChildren }]
+            });
+
+            const blob = await window.docx.Packer.toBlob(doc);
+            window.saveAs(blob, file.name.replace(".pdf", "") + "_Pro.docx");
+            addLog("✅ 转换成功！请查看浏览器下载记录。");
+
+        } catch (err) {
+            addLog("转换失败: " + err.message, true);
+            console.error(err);
+        } finally {
+            convertBtn.disabled = false;
+            document.getElementById('progressBar').style.width = "0%";
+        }
+    };
+</script>
+
+</body>
+</html>
