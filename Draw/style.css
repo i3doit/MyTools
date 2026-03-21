@@ -337,3 +337,40 @@ input[type="file"] {
         justify-content: center;
     }
 }
+/*优化*/
+/* 确保容器和画布占满剩余空间 */
+.canvas-area {
+    flex-grow: 1;
+    position: relative;
+    background-color: #444; /* 画布外的底色 */
+    overflow: hidden;
+    touch-action: none; /* 极其重要：防止手机浏览器默认滚动，交给JS处理 */
+}
+
+#drawingCanvas {
+    background-color: #ffffff;
+    cursor: crosshair;
+    touch-action: none;
+    display: block;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+}
+
+/* 移动端优化：工具栏横向滚动 */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 5px;
+        white-space: nowrap;
+    }
+    .tool-group {
+        display: inline-flex;
+        border-right: 1px solid #555;
+        margin-right: 10px;
+        padding-right: 10px;
+    }
+}
+
+
