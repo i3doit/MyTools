@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的黑板画板</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1 class="app-title">我的黑板画板</h1>
+            <div class="header-right">
+                <input type="text" id="fileNameInput" placeholder="文件名 (可选)" class="file-name-input">
+                <button id="downloadBtn" class="btn primary">下载</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar tools-panel">
+                <div class="tool-group">
+                    <button class="tool-btn active" data-tool="brush" title="画笔 (B)">✏️</button>
+                    <button class="tool-btn" data-tool="eraser" title="橡皮擦 (E)">🧹</button>
+                    <button class="tool-btn" data-tool="line" title="直线 (L)">╱</button>
+                    <button class="tool-btn" data-tool="rect" title="矩形 (R)">⬛</button>
+                    <button class="tool-btn" data-tool="circle" title="圆形 (C)">⚪</button>
+                    <button class="tool-btn" data-tool="diamond" title="菱形 (D)">◆</button>
+                    <button class="tool-btn" data-tool="text" title="文字 (T)">🅰️</button>
+                    <button class="tool-btn" data-tool="airbrush" title="喷枪 (A)">🌫️</button>
+                    <button class="tool-btn" data-tool="fill" title="填充 (F)">bucket</button>
+                    <button class="tool-btn" data-tool="colorPicker" title="取色器 (I)"> pipette</button>
+                </div>
+
+                <div class="tool-group">
+                    <label for="brushSize" class="label">笔刷大小:</label>
+                    <input type="range" id="brushSize" min="1" max="50" value="5">
+                    <span id="brushSizeDisplay">5px</span>
+                </div>
+
+                <div class="tool-group">
+                    <label for="colorPicker" class="label">颜色:</label>
+                    <input type="color" id="colorPicker" value="#000000">
+                    <div class="preset-colors">
+                        <div class="color-box" style="background-color: #000000;" data-color="#000000"></div>
+                        <div class="color-box" style="background-color: #FFFFFF;" data-color="#FFFFFF"></div>
+                        <div class="color-box" style="background-color: #FF0000;" data-color="#FF0000"></div>
+                        <div class="color-box" style="background-color: #00FF00;" data-color="#00FF00"></div>
+                        <div class="color-box" style="background-color: #0000FF;" data-color="#0000FF"></div>
+                        <div class="color-box" style="background-color: #FFFF00;" data-color="#FFFF00"></div>
+                        <div class="color-box" style="background-color: #FF00FF;" data-color="#FF00FF"></div>
+                        <div class="color-box" style="background-color: #00FFFF;" data-color="#00FFFF"></div>
+                    </div>
+                </div>
+
+                <div class="tool-group">
+                    <label for="imageUploader" class="label">添加图片:</label>
+                    <input type="file" id="imageUploader" accept="image/*">
+                    <button class="btn secondary" id="clearCanvasBtn">清空画板</button>
+                </div>
+            </aside>
+
+            <div class="canvas-area">
+                <canvas id="drawingCanvas"></canvas>
+            </div>
+        </div>
+
+        <footer class="app-footer">
+            <div class="status-info">
+                <span>缩放: <span id="zoomDisplay">100%</span></span>
+                <span>坐标: <span id="coordsDisplay">(0, 0)</span></span>
+                <span id="saveStatus">自动保存中...</span>
+            </div>
+            <div class="history-controls">
+                <button id="undoBtn" class="btn small" title="撤销 (Ctrl+Z)">⟲</button>
+                <button id="redoBtn" class="btn small" title="重做 (Ctrl+Y)">⟳</button>
+                <button id="resetViewBtn" class="btn small" title="重置视图">🎯</button>
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
