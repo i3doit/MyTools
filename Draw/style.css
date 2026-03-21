@@ -1,0 +1,339 @@
+/* 通用样式和变量 */
+:root {
+    --bg-color: #2c3e50; /* 深色背景，模仿黑板 */
+    --canvas-bg: #fff;  /* 画板默认白色 */
+    --text-color: #ecf0f1;
+    --primary-color: #3498db;
+    --secondary-color: #e67e22;
+    --accent-color: #2ecc71;
+    --border-color: #34495e;
+    --hover-bg: #34495e;
+    --active-bg: #2980b9;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, sans-serif; /* 免费可商用系统字体 */
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden; /* 防止body滚动 */
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    max-width: 1920px; /* 限制最大宽度 */
+    background-color: var(--bg-color);
+    border-radius: 8px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+/* Header */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: var(--border-color);
+    border-bottom: 1px solid var(--primary-color);
+    flex-shrink: 0; /* 防止被挤压 */
+}
+
+.app-title {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.file-name-input {
+    padding: 8px 12px;
+    border: 1px solid var(--primary-color);
+    border-radius: 5px;
+    background-color: #3f556a;
+    color: var(--text-color);
+    font-size: 0.9em;
+    width: 150px;
+}
+.file-name-input::placeholder {
+    color: #95a5a6;
+}
+
+/* Main Content Area */
+.main-content {
+    flex-grow: 1; /* 占据剩余空间 */
+    display: flex;
+    overflow: hidden; /* 确保内部滚动或画板移动不影响布局 */
+}
+
+/* Sidebar (Tool Panel) */
+.sidebar {
+    width: 200px; /* PC端默认宽度 */
+    background-color: var(--border-color);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    border-right: 1px solid var(--primary-color);
+    overflow-y: auto; /* 工具过多时可滚动 */
+    flex-shrink: 0;
+}
+
+.tool-group {
+    padding-bottom: 15px;
+    border-bottom: 1px solid #4a627d;
+}
+.tool-group:last-child {
+    border-bottom: none;
+}
+
+.label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+    color: var(--text-color);
+}
+
+.tool-btn {
+    width: 40px;
+    height: 40px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 5px;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    margin: 5px;
+}
+
+.tool-btn:hover {
+    background-color: var(--hover-bg);
+}
+
+.tool-btn.active {
+    background-color: var(--active-bg);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+input[type="range"] {
+    width: 100%;
+    margin-top: 5px;
+}
+#brushSizeDisplay {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.8em;
+    color: #95a5a6;
+}
+
+input[type="color"] {
+    width: 100%;
+    height: 35px;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+.preset-colors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 10px;
+}
+.color-box {
+    width: 25px;
+    height: 25px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.color-box:hover {
+    transform: scale(1.1);
+}
+
+input[type="file"] {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    background-color: var(--bg-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 5px;
+    color: var(--text-color);
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+/* Canvas Area */
+.canvas-area {
+    flex-grow: 1; /* 占据剩余所有空间 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #ccc; /* 背景用于显示透明画板区域 */
+    overflow: hidden; /* 防止canvas溢出 */
+    position: relative;
+}
+
+#drawingCanvas {
+    background-color: var(--canvas-bg); /* 画板默认背景 */
+    cursor: crosshair;
+    display: block; /* 移除默认inline-block带来的额外间距 */
+    touch-action: none; /* 禁用浏览器默认触摸事件，由JS处理 */
+}
+
+/* Footer */
+.app-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 20px;
+    background-color: var(--border-color);
+    border-top: 1px solid var(--primary-color);
+    font-size: 0.85em;
+    color: #95a5a6;
+    flex-shrink: 0;
+}
+
+.status-info span {
+    margin-right: 15px;
+}
+
+.history-controls {
+    display: flex;
+    gap: 10px;
+}
+
+/* Buttons */
+.btn {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn.primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+.btn.primary:hover {
+    background-color: #2980b9;
+    transform: translateY(-1px);
+}
+
+.btn.secondary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+.btn.secondary:hover {
+    background-color: #d35400;
+    transform: translateY(-1px);
+}
+
+.btn.small {
+    padding: 5px 10px;
+    font-size: 0.9em;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--primary-color);
+}
+.btn.small:hover {
+    background-color: var(--hover-bg);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .app-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .header-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .file-name-input {
+        flex-grow: 1;
+        width: auto;
+    }
+    .main-content {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+        height: auto; /* 高度自适应内容 */
+        max-height: 150px; /* 限制高度，可滚动 */
+        overflow-x: auto; /* 工具栏横向滚动 */
+        flex-direction: row; /* 工具按钮横向排列 */
+        flex-wrap: nowrap; /* 不换行 */
+        padding: 10px;
+        border-right: none;
+        border-bottom: 1px solid var(--primary-color);
+        -webkit-overflow-scrolling: touch; /* 移动端平滑滚动 */
+    }
+
+    .tool-group {
+        border-bottom: none; /* 移动端不显示底部边框 */
+        border-right: 1px solid #4a627d; /* 工具组之间垂直分割线 */
+        padding-right: 15px;
+        flex-shrink: 0; /* 防止工具组被压缩 */
+    }
+    .tool-group:last-child {
+        border-right: none;
+    }
+
+    .label, #brushSizeDisplay {
+        display: none; /* 移动端默认隐藏一些文本标签，节省空间 */
+    }
+
+    .tool-btn {
+        margin: 0 3px;
+    }
+
+    input[type="range"], input[type="color"] {
+        width: 80px; /* 缩小输入框宽度 */
+    }
+    .preset-colors {
+        display: none; /* 移动端默认隐藏预设颜色，节省空间，可通过按钮弹出 */
+    }
+    input[type="file"] {
+        display: none; /* 移动端图片上传也通过按钮触发 */
+    }
+    #clearCanvasBtn {
+        display: none; /* 移动端清空按钮也通过弹出菜单 */
+    }
+
+    .canvas-area {
+        flex-grow: 1;
+    }
+
+    .app-footer {
+        flex-direction: column;
+        gap: 5px;
+        padding: 8px 10px;
+    }
+    .status-info, .history-controls {
+        width: 100%;
+        justify-content: center;
+    }
+}
