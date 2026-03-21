@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>我的艺术画板 Pro</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --panel-bg: #2d2d2d;
+            --accent: #3b82f6;
+            --text: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; touch-action: none; }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background: var(--panel-bg);
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+            z-index: 10;
+        }
+
+        .logo { font-weight: bold; color: var(--accent); font-size: 1.2rem; }
+
+        .file-controls { display: flex; gap: 8px; }
+        input[type="text"] {
+            background: #3f3f3f; border: 1px solid #555; color: white;
+            padding: 5px 10px; border-radius: 4px; width: 120px;
+        }
+
+        /* Main Container */
+        .main-container {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Sidebar - 响应式设计 */
+        .sidebar {
+            width: 70px;
+            background: var(--panel-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+            gap: 15px;
+            border-right: 1px solid #444;
+            z-index: 5;
+            transition: all 0.3s;
+        }
+
+        .tool-group { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+
+        .tool-btn {
+            width: 44px; height: 44px;
+            background: #3f3f3f; border: 2px solid transparent;
+            border-radius: 8px; color: white; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; transition: 0.2s;
+        }
+
+        .tool-btn.active { border-color: var(--accent); background: #4b5563; }
+        .tool-btn:hover { background: #4b5563; }
+
+        /* Canvas Area */
+        .canvas-area {
+            flex: 1;
+            background: #333;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #drawingCanvas {
+            background-color: #ffffff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            cursor: crosshair;
+            transform-origin: center center;
+            image-rendering: pixelated; /* 导出清晰 */
+        }
+
+        /* Footer */
+        footer {
+            background: var(--panel-bg);
+            padding: 5px 15px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            color: #94a3b8;
+            border-top: 1px solid #444;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .main-container { flex-direction: column-reverse; }
+            .sidebar {
+                width: 100%; height: auto;
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 10px;
+                justify-content: flex-start;
+            }
+            .tool-group { flex-direction: row; }
+        }
+
+        /* 浮动设置面板 (点击按钮触发) */
+        .settings-panel {
+            position: absolute;
+            bottom: 80px; left: 80px;
+            background: var(--panel-bg);
+            padding: 15px; border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: none; flex-direction: column; gap: 10px;
+            z-index: 20; border: 1px solid #555;
+        }
+        
+        .btn {
+            background: var(--accent); border: none; color: white;
+            padding: 6px 12px; border-radius: 4px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">ART BOARD</div>
+        <div class="file-controls">
+            <input type="text" id="fileName" placeholder="输入名称...">
+            <button class="btn" id="exportBtn">导出 PNG</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="tool-group">
+                <button class="tool-btn active" data-tool="brush" title="画笔 (B)">✏️</button>
+                <button class="tool-btn" data-tool="eraser" title="橡皮擦 (E)">🧹</button>
+                <button class="tool-btn" data-tool="line" title="直线">📏</button>
+                <button class="tool-btn" data-tool="rect" title="矩形">⬜</button>
+                <button class="tool-btn" data-tool="circle" title="圆形">⭕</button>
+                <button class="tool-btn" id="settingsToggle">⚙️</button>
+            </div>
+            <div class="tool-group">
+                <button class="tool-btn" id="undoBtn">↩️</button>
+                <button class="tool-btn" id="redoBtn">↪️</button>
+                <button class="tool-btn" id="clearBtn">🗑️</button>
+            </div>
+        </aside>
+
+        <div class="settings-panel" id="settingsPanel">
+            <label>颜色选择</label>
+            <input type="color" id="colorPicker" value="#000000">
+            <label>粗细: <span id="sizeVal">5</span>px</label>
+            <input type="range" id="brushSize" min="1" max="50" value="5">
+            <hr style="border:0; border-top:1px solid #555">
+            <button class="btn" id="resetViewBtn">重置视角 (🎯)</button>
+            <label><input type="checkbox" id="transparentBg"> 透明背景导出</label>
+        </div>
+
+        <div class="canvas-area">
+            <canvas id="drawingCanvas"></canvas>
+        </div>
+    </div>
+
+    <footer>
+        <div id="status">准备就绪</div>
+        <div id="zoomInfo">缩放: 100% | 坐标: (0,0)</div>
+    </footer>
+
+<script>
+    /**
+     * 画板逻辑核心
+     */
+    const canvas = document.getElementById('drawingCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const container = document.querySelector('.canvas-area');
+    
+    // 状态
+    let state = {
+        tool: 'brush',
+        color: '#000000',
+        size: 5,
+        isDrawing: false,
+        scale: 0.9,
+        tx: 0, ty: 0, // 平移
+        history: [],
+        step: -1
+    };
+
+    // 初始化
+    window.onload = () => {
+        initCanvas();
+        bindUI();
+        loadFromLocal();
+    };
+
+    function initCanvas() {
+        // 画布设为固定较大尺寸，通过CSS缩放显示
+        canvas.width = 1600;
+        canvas.height = 900;
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        updateTransform();
+        saveState();
+    }
+
+    function updateTransform() {
+        canvas.style.transform = `translate(${state.tx}px, ${state.ty}px) scale(${state.scale})`;
+        document.getElementById('zoomInfo').innerText = `缩放: ${Math.round(state.scale * 100)}%`;
+    }
+
+    // 坐标转换
+    function getCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        let clientX, clientY;
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        return {
+            x: (clientX - rect.left) / state.scale * (canvas.width / rect.width * state.scale),
+            y: (clientY - rect.top) / state.scale * (canvas.height / rect.height * state.scale)
+        };
+    }
+
+    function bindUI() {
+        // 工具切换
+        document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+            btn.onclick = () => {
+                state.tool = btn.dataset.tool;
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            };
+        });
+
+        // 设置面板开关
+        document.getElementById('settingsToggle').onclick = () => {
+            const p = document.getElementById('settingsPanel');
+            p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
+        };
+
+        // 参数改变
+        document.getElementById('colorPicker').oninput = (e) => state.color = e.target.value;
+        document.getElementById('brushSize').oninput = (e) => {
+            state.size = e.target.value;
+            document.getElementById('sizeVal').innerText = state.size;
+        };
+
+        // 核心绘图事件
+        canvas.onmousedown = startDraw;
+        window.onmousemove = moveDraw;
+        window.onmouseup = endDraw;
+
+        // 移动端手势
+        let lastDist = 0;
+        canvas.ontouchstart = (e) => {
+            if (e.touches.length === 1) startDraw(e);
+            else if (e.touches.length === 2) {
+                lastDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            }
+        };
+
+        canvas.ontouchmove = (e) => {
+            if (e.touches.length === 1) moveDraw(e);
+            else if (e.touches.length === 2) {
+                let dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                state.scale *= (dist / lastDist);
+                lastDist = dist;
+                updateTransform();
+            }
+        };
+        canvas.ontouchend = endDraw;
+
+        // 功能键
+        document.getElementById('undoBtn').onclick = undo;
+        document.getElementById('redoBtn').onclick = redo;
+        document.getElementById('resetViewBtn').onclick = () => {
+            state.scale = 0.9; state.tx = 0; state.ty = 0; updateTransform();
+        };
+        document.getElementById('clearBtn').onclick = () => {
+            if(confirm("确定清空？")) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0,0,canvas.width,canvas.height);
+                saveState();
+            }
+        };
+
+        // 导出
+        document.getElementById('exportBtn').onclick = () => {
+            const fileName = document.getElementById('fileName').value || new Date().toLocaleDateString();
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tCtx = tempCanvas.getContext('2d');
+            
+            if (!document.getElementById('transparentBg').checked) {
+                tCtx.fillStyle = '#ffffff';
+                tCtx.fillRect(0,0,canvas.width,canvas.height);
+            }
+            tCtx.drawImage(canvas, 0, 0);
+            
+            const link = document.createElement('a');
+            link.download = `${fileName}.png`;
+            link.href = tempCanvas.toDataURL();
+            link.click();
+        };
+    }
+
+    let startX, startY, snapshot;
+
+    function startDraw(e) {
+        state.isDrawing = true;
+        const pos = getCoords(e);
+        startX = pos.x; startY = pos.y;
+        
+        snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        
+        ctx.beginPath();
+        ctx.lineWidth = state.size;
+        ctx.strokeStyle = state.tool === 'eraser' ? '#ffffff' : state.color;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        if(state.tool === 'brush' || state.tool === 'eraser') {
+            ctx.moveTo(startX, startY);
+        }
+    }
+
+    function moveDraw(e) {
+        if (!state.isDrawing) return;
+        const pos = getCoords(e);
+        
+        if (state.tool === 'brush' || state.tool === 'eraser') {
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        } else {
+            ctx.putImageData(snapshot, 0, 0);
+            ctx.beginPath();
+            if (state.tool === 'line') {
+                ctx.moveTo(startX, startY); ctx.lineTo(pos.x, pos.y);
+            } else if (state.tool === 'rect') {
+                ctx.strokeRect(startX, startY, pos.x - startX, pos.y - startY);
+            } else if (state.tool === 'circle') {
+                let r = Math.hypot(pos.x - startX, pos.y - startY);
+                ctx.arc(startX, startY, r, 0, Math.PI*2);
+            }
+            ctx.stroke();
+        }
+    }
+
+    function endDraw() {
+        if (state.isDrawing) {
+            state.isDrawing = false;
+            saveState();
+        }
+    }
+
+    // 撤销重做逻辑
+    function saveState() {
+        state.step++;
+        if (state.step < state.history.length) state.history.length = state.step;
+        state.history.push(canvas.toDataURL());
+        if (state.history.length > 20) { state.history.shift(); state.step--; }
+        localStorage.setItem('art_board_backup', canvas.toDataURL());
+    }
+
+    function undo() {
+        if (state.step > 0) {
+            state.step--;
+            let img = new Image();
+            img.src = state.history[state.step];
+            img.onload = () => { ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0); };
+        }
+    }
+
+    function redo() {
+        if (state.step < state.history.length - 1) {
+            state.step++;
+            let img = new Image();
+            img.src = state.history[state.step];
+            img.onload = () => { ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0); };
+        }
+    }
+
+    function loadFromLocal() {
+        const data = localStorage.getItem('art_board_backup');
+        if (data) {
+            let img = new Image();
+            img.src = data;
+            img.onload = () => ctx.drawImage(img, 0, 0);
+        }
+    }
+</script>
+</body>
+</html>
