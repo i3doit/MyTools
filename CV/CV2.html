@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>极简简历编辑器 - Apple Style</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --apple-bg: #F5F5F7;
+            --apple-text: #1D1D1F;
+            --apple-blue: #0071E3;
+            --sky-blue: #00AEEF;
+            --border-color: #E5E5E7;
+            --eye-care: #FAF9F6;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background-color: var(--apple-bg);
+            font-family: -apple-system, "SF Pro SC", "SF Pro Display", system-ui, sans-serif;
+            margin: 0; padding: 0;
+            color: var(--apple-text);
+        }
+
+        /* 工具栏 */
+        .toolbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: 60px; background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: center;
+            gap: 15px; z-index: 1000; padding: 0 15px;
+        }
+
+        button {
+            border: none; padding: 8px 16px; border-radius: 8px;
+            font-size: 14px; font-weight: 500; cursor: pointer; transition: 0.2s;
+        }
+        .btn-pdf { background: var(--apple-blue); color: white; }
+        .btn-clear { background: #F2F2F7; color: #FF3B30; }
+
+        /* 简历容器 */
+        .page-wrapper {
+            padding-top: 80px; padding-bottom: 50px;
+            display: flex; justify-content: center;
+        }
+
+        #resume-paper {
+            width: 800px; /* 固定PC端宽度用于计算 */
+            min-height: 1131px; /* A4比例 */
+            background: #FFFFFF;
+            padding: 50px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        /* --- 手机端兼容性样式 --- */
+        @media screen and (max-width: 800px) {
+            .page-wrapper { padding: 70px 10px 20px 10px; }
+            #resume-paper {
+                width: 100%; padding: 25px 15px;
+                box-shadow: none; border-radius: 12px;
+            }
+            /* 手机编辑时取消分栏，方便录入 */
+            .main-body { flex-direction: column !important; gap: 20px !important; }
+            .left-col { width: 100% !important; border-right: none !important; padding-right: 0 !important; }
+            .header { flex-direction: column-reverse; align-items: center; text-align: center; }
+            .photo-box { margin-bottom: 15px; }
+        }
+
+        /* --- 核心布局 (PC & PDF模式) --- */
+        .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .name { font-size: 32px; font-weight: 700; margin-bottom: 4px; }
+        .job-target { font-size: 18px; color: var(--apple-blue); margin-bottom: 12px; font-weight: 500; }
+        .contact-group { font-size: 13px; color: #666; line-height: 1.6; }
+
+        .photo-box {
+            width: 100px; height: 100px; border-radius: 50%;
+            border: 1px dashed #DDD; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; background: #F9F9F9;
+        }
+        .photo-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        .main-body { display: flex; gap: 40px; }
+        .left-col { width: 220px; flex-shrink: 0; }
+        .right-col { flex: 1; }
+
+        .module { margin-bottom: 25px; }
+        .module-title {
+            font-size: 13px; font-weight: 700; color: #888;
+            border-bottom: 1px solid #F0F0F2; padding-bottom: 4px; margin-bottom: 12px;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        /* 工作经验样式优化 */
+        .exp-item { margin-bottom: 20px; }
+        .exp-role { font-size: 17px; font-weight: 600; color: #000; }
+        .exp-company { font-size: 14px; color: var(--sky-blue); font-weight: 600; margin: 2px 0; }
+        .exp-date { font-size: 12px; color: #999; margin-bottom: 6px; }
+        .exp-content { font-size: 14px; line-height: 1.6; color: #333; }
+        .exp-content ul { padding-left: 18px; margin: 4px 0; }
+
+        /* 编辑状态 */
+        [contenteditable] { outline: none; border-radius: 4px; transition: 0.2s; }
+        [contenteditable]:focus { background: var(--eye-care); box-shadow: 0 0 0 3px var(--eye-care); }
+        .date-input { border: none; font-size: 12px; color: #999; background: transparent; cursor: pointer; }
+
+        .add-btn {
+            color: var(--apple-blue); font-size: 12px; cursor: pointer;
+            padding: 5px 0; display: inline-block; font-weight: 500;
+        }
+
+        /* 导出PDF时的强制类 */
+        .pdf-mode { width: 800px !important; padding: 50px !important; }
+        .pdf-mode .main-body { flex-direction: row !important; }
+        .pdf-mode .left-col { width: 220px !important; }
+        .pdf-mode .header { flex-direction: row !important; text-align: left !important; }
+        .pdf-mode .add-btn, .pdf-mode .date-input::-webkit-calendar-picker-indicator { display: none !important; }
+
+        #toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 10px 24px;
+            border-radius: 25px; font-size: 14px; z-index: 2000; display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="toast">已保存</div>
+
+<div class="toolbar">
+    <button class="btn-clear" onclick="resetData()">清空</button>
+    <button class="btn-pdf" onclick="generatePDF()">导出 PDF</button>
+</div>
+
+<div class="page-wrapper">
+    <div id="resume-paper">
+        <div class="header">
+            <div class="header-info">
+                <div class="name" contenteditable="true" id="data-name" data-placeholder="姓名">你的姓名</div>
+                <div class="job-target" contenteditable="true" id="data-job" data-placeholder="应聘岗位">应聘岗位</div>
+                <div class="contact-group">
+                    <div contenteditable="true" id="data-contact" data-placeholder="联系方式">电话：138-0000-0000 | 邮箱：service@apple.com</div>
+                    <div contenteditable="true" id="data-addr" data-placeholder="地址">所在地：上海市浦东新区</div>
+                </div>
+            </div>
+            <div class="photo-area">
+                <input type="file" id="file-input" hidden onchange="uploadPhoto(this)">
+                <div class="photo-box" id="photo-box" onclick="document.getElementById('file-input').click()">
+                    <span id="photo-placeholder" style="color:#CCC; font-size:12px;">上传头像</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-body">
+            <div class="left-col">
+                <div class="module">
+                    <div class="module-title" contenteditable="true">Summary 总结</div>
+                    <div contenteditable="true" id="data-sum" data-placeholder="请输入总结">请输入个人总结...</div>
+                </div>
+                <div class="module">
+                    <div class="module-title" contenteditable="true">Skills 技能</div>
+                    <div contenteditable="true" id="data-skill" data-placeholder="请输入技能">
+                        <ul><li>熟练掌握 Java/Python</li></ul>
+                    </div>
+                </div>
+                <div class="module">
+                    <div class="module-title" contenteditable="true">Languages 语言</div>
+                    <div contenteditable="true" id="data-lang" data-placeholder="请输入语言">中文、英语</div>
+                </div>
+            </div>
+
+            <div class="right-col">
+                <div class="module">
+                    <div class="module-title" contenteditable="true">Experience 工作经验</div>
+                    <div id="experience-list">
+                        <div class="exp-item">
+                            <div class="exp-role" contenteditable="true" data-placeholder="岗位名称">岗位名称</div>
+                            <div class="exp-company" contenteditable="true" data-placeholder="公司名称">公司名称</div>
+                            <div class="exp-date">
+                                <input type="date" class="date-input"> - <input type="date" class="date-input">
+                            </div>
+                            <div class="exp-content" contenteditable="true" data-placeholder="职责描述">
+                                <ul><li>请在此输入具体的工作内容和成就</li></ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="add-btn" onclick="addExp()">+ 添加工作经历</div>
+                </div>
+
+                <div class="module">
+                    <div class="module-title" contenteditable="true">Project 项目行业</div>
+                    <div contenteditable="true" id="data-project" data-placeholder="请输入项目经历">
+                        <ul><li><strong>项目名称</strong>：简短描述项目背景与产出。</li></ul>
+                    </div>
+                </div>
+
+                <div id="custom-container"></div>
+                <div class="add-btn" style="border: 1px dashed #DDD; width: 100%; text-align: center; margin-top:20px;" onclick="addModule()">+ 添加自定义模块</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const DB_KEY = 'APPLE_RESUME_V3_6';
+
+    // --- 初始化与自动保存 ---
+    window.onload = () => {
+        const saved = localStorage.getItem(DB_KEY);
+        if (saved) {
+            const data = JSON.parse(saved);
+            document.getElementById('resume-paper').innerHTML = data.content;
+            if (data.photo) renderPhoto(data.photo);
+            // 重新绑定日期控件值（因为innerHTML不保存input的value）
+            if (data.dates) {
+                const inputs = document.querySelectorAll('.date-input');
+                data.dates.forEach((val, i) => { if(inputs[i]) inputs[i].value = val; });
+            }
+        }
+        
+        // 监听输入自动保存
+        document.body.addEventListener('input', debounce(saveData, 1000));
+    };
+
+    function saveData() {
+        const dateValues = Array.from(document.querySelectorAll('.date-input')).map(i => i.value);
+        const photoImg = document.querySelector('#photo-box img');
+        const data = {
+            content: document.getElementById('resume-paper').innerHTML,
+            photo: photoImg ? photoImg.src : null,
+            dates: dateValues
+        };
+        localStorage.setItem(DB_KEY, JSON.stringify(data));
+        showToast("已存至本地");
+    }
+
+    // --- 功能组件 ---
+    function addExp() {
+        const tpl = `
+            <div class="exp-item">
+                <div class="exp-role" contenteditable="true" data-placeholder="岗位名称">岗位名称</div>
+                <div class="exp-company" contenteditable="true" data-placeholder="公司名称">公司名称</div>
+                <div class="exp-date"><input type="date" class="date-input"> - <input type="date" class="date-input"></div>
+                <div class="exp-content" contenteditable="true" data-placeholder="职责描述"><ul><li>请输入描述</li></ul></div>
+            </div>`;
+        document.getElementById('experience-list').insertAdjacentHTML('beforeend', tpl);
+        saveData();
+    }
+
+    function addModule() {
+        const tpl = `
+            <div class="module">
+                <div class="module-title" contenteditable="true">新模块标题</div>
+                <div contenteditable="true" data-placeholder="请输入内容"><ul><li>请输入内容</li></ul></div>
+            </div>`;
+        document.getElementById('custom-container').insertAdjacentHTML('beforeend', tpl);
+        saveData();
+    }
+
+    function uploadPhoto(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                renderPhoto(e.target.result);
+                saveData();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function renderPhoto(src) {
+        document.getElementById('photo-box').innerHTML = `<img src="${src}">`;
+    }
+
+    // --- PDF 导出逻辑 ---
+    async function generatePDF() {
+        const paper = document.getElementById('resume-paper');
+        
+        // 1. 预处理：深度克隆一个临时 DOM 用于清理
+        const clone = paper.cloneNode(true);
+        
+        // 2. 移除所有没填写的模块
+        // 定义“没填写”的特征：内容为空，或者等于 placeholder 文案
+        const checkEmpty = (el) => {
+            const text = el.innerText.trim();
+            const placeholder = el.getAttribute('data-placeholder');
+            return text === "" || text === placeholder || text === "请输入内容" || text === "姓名";
+        };
+
+        // 处理普通 contenteditable
+        clone.querySelectorAll('[contenteditable]').forEach(el => {
+            if (checkEmpty(el)) {
+                // 如果是模块里的内容为空，直接删掉整个模块
+                const parentModule = el.closest('.module') || el.closest('.exp-item');
+                if (parentModule) parentModule.remove();
+                else el.remove();
+            }
+        });
+
+        // 处理头像：如果没有 img 标签，移除头像框
+        if (!clone.querySelector('#photo-box img')) {
+            clone.querySelector('.photo-area').remove();
+        }
+
+        // 3. 强制 PDF 样式
+        clone.classList.add('pdf-mode');
+        document.body.appendChild(clone); // 暂时放入 body 以便渲染
+
+        const opt = {
+            margin: 0,
+            filename: 'Resume_Apple_Style.pdf',
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 3, useCORS: true, logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        try {
+            showToast("正在生成高保真 PDF...");
+            await html2pdf().from(clone).set(opt).save();
+            showToast("导出成功");
+        } catch (e) {
+            console.error(e);
+        } finally {
+            clone.remove();
+        }
+    }
+
+    // --- 交互辅助 ---
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg; t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 2000);
+    }
+
+    function debounce(fn, delay) {
+        let timer;
+        return function() {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn.apply(this, arguments), delay);
+        }
+    }
+
+    function resetData() {
+        if (confirm("确定要清空所有数据吗？")) {
+            localStorage.removeItem(DB_KEY);
+            location.reload();
+        }
+    }
+
+    // 右键列表切换
+    document.addEventListener('contextmenu', e => {
+        const target = e.target.closest('[contenteditable]');
+        if (target) {
+            e.preventDefault();
+            const mode = confirm("确定：切换为数字列表\n取消：切换为圆点列表");
+            document.execCommand(mode ? 'insertOrderedList' : 'insertUnorderedList');
+        }
+    });
+</script>
+
+</body>
+</html>
