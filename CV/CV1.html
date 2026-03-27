@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apple Style Resume Builder</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --apple-bg: #F5F5F7;
+            --apple-card: #FFFFFF;
+            --apple-text: #1D1D1F;
+            --apple-secondary: #86868B;
+            --apple-blue: #0066CC;
+            --eye-care-bg: #F0F0E8; /* 护眼背景 */
+        }
+
+        body {
+            background-color: var(--apple-bg);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: var(--apple-text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        /* 顶部工具栏 */
+        .toolbar {
+            width: 800px;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.8);
+            padding: 15px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        button {
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-save { background: var(--apple-blue); color: white; }
+        .btn-pdf { background: #333; color: white; }
+        .btn-clear { background: #ff4444; color: white; }
+
+        /* 简历主体 */
+        #resume-paper {
+            width: 800px;
+            min-height: 1132px; /* A4 比例 */
+            background: var(--apple-card);
+            padding: 50px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-radius: 2px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* 顶部布局 */
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid #EEE;
+            padding-bottom: 30px;
+            margin-bottom: 30px;
+        }
+
+        .info-left { flex: 1; }
+        .name { font-size: 32px; font-weight: 600; margin-bottom: 5px; outline: none; }
+        .job-title { font-size: 18px; color: var(--apple-blue); margin-bottom: 15px; outline: none; }
+        .contact-item { font-size: 14px; color: var(--apple-secondary); margin-bottom: 4px; outline: none; }
+
+        .photo-upload {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 2px dashed #DDD;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            background: #FAFAFA;
+        }
+
+        .photo-upload img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* 下部分 左右布局 */
+        .main-content {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 40px;
+        }
+
+        .column-left { border-right: 1px solid #F0F0F0; padding-right: 20px; }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--apple-secondary);
+            margin-bottom: 15px;
+            border-bottom: 1px solid #F0F0F0;
+            padding-bottom: 5px;
+        }
+
+        [contenteditable] {
+            outline: none;
+            min-height: 1em;
+            transition: background 0.2s;
+        }
+
+        [contenteditable]:hover { background: #F9F9FB; }
+
+        .module { margin-bottom: 30px; position: relative; }
+        .add-btn {
+            color: var(--apple-blue);
+            font-size: 12px;
+            cursor: pointer;
+            display: block;
+            margin-top: 10px;
+        }
+
+        /* Toast 样式 */
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 1000;
+            display: none;
+        }
+
+        @media print {
+            .toolbar, .add-btn { display: none !important; }
+            body { background: white; padding: 0; }
+            #resume-paper { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast">信息已保存</div>
+
+    <div class="toolbar">
+        <button class="btn-save" onclick="saveData()">保存数据</button>
+        <button class="btn-pdf" onclick="exportPDF()">导出 PDF</button>
+        <button class="btn-clear" onclick="clearData()">清空内容</button>
+        <span style="margin-left:auto; font-size: 12px; color: #888;">提示：点击文本直接编辑，右键调整格式</span>
+    </div>
+
+    <div id="resume-paper">
+        <div class="header-section">
+            <div class="info-left">
+                <div class="name" contenteditable="true" id="field-1">姓名</div>
+                <div class="job-title" contenteditable="true" id="field-2">高级自动化测试工程师</div>
+                <div class="contact-item" contenteditable="true" id="field-3">📞 138-0000-0000</div>
+                <div class="contact-item" contenteditable="true" id="field-4">✉️ example@gmail.com</div>
+                <div class="contact-item" contenteditable="true" id="field-5">📍 上海 / 深圳</div>
+            </div>
+            <div class="photo-area">
+                <input type="file" id="photo-input" hidden accept="image/*" onchange="handlePhoto(this)">
+                <div class="photo-upload" onclick="document.getElementById('photo-input').click()" id="field-photo">
+                    <span style="font-size: 12px; color: #CCC;">点击上传</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="column-left">
+                <div class="module">
+                    <div class="section-title">Summary 个人总结</div>
+                    <div contenteditable="true" id="field-6">拥有 8 年以上 QA 经验，精通 Selenium、Java 及自动化框架搭建...</div>
+                </div>
+
+                <div class="module">
+                    <div class="section-title">Skills 技能</div>
+                    <div contenteditable="true" id="field-7">Java, Python, SQL, Docker, Jenkins, Postman</div>
+                </div>
+
+                <div class="module">
+                    <div class="section-title">Languages 语言</div>
+                    <div contenteditable="true" id="field-8">中文 (母语), 英语 (精通)</div>
+                </div>
+            </div>
+
+            <div class="column-right">
+                <div class="module">
+                    <div class="section-title">Experience 工作经验</div>
+                    <div id="experience-container">
+                        <div class="experience-item" contenteditable="true">
+                            <strong>公司名称 | 职位 | 2022 - 至今</strong><br>
+                            • 负责自动化测试平台的架构设计与维护...
+                        </div>
+                    </div>
+                    <span class="add-btn" onclick="addModule('experience-container')">+ 添加经历</span>
+                </div>
+
+                <div class="module">
+                    <div class="section-title">Projects 项目行业</div>
+                    <div id="project-container">
+                        <div class="experience-item" contenteditable="true">
+                            <strong>金融风控系统</strong><br>
+                            主要负责交易链路的压力测试与一致性校验...
+                        </div>
+                    </div>
+                    <span class="add-btn" onclick="addModule('project-container')">+ 添加项目</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. 自动保存与加载
+        window.onload = () => {
+            const saved = localStorage.getItem('resumeData');
+            if (saved) {
+                const data = JSON.parse(saved);
+                Object.keys(data).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        if (id === 'field-photo' && data[id]) {
+                            el.innerHTML = `<img src="${data[id]}">`;
+                        } else {
+                            el.innerHTML = data[id];
+                        }
+                    }
+                });
+                showToast("欢迎回来，数据已自动加载");
+            }
+        };
+
+        function saveData() {
+            const data = {};
+            document.querySelectorAll('[contenteditable]').forEach(el => {
+                if (el.id) data[el.id] = el.innerHTML;
+            });
+            const photoImg = document.querySelector('#field-photo img');
+            if (photoImg) data['field-photo'] = photoImg.src;
+
+            localStorage.setItem('resumeData', JSON.stringify(data));
+            showToast("本地保存成功");
+        }
+
+        // 2. 图片处理
+        function handlePhoto(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('field-photo').innerHTML = `<img src="${e.target.result}">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 3. 动态添加模块
+        function addModule(containerId) {
+            const container = document.getElementById(containerId);
+            const newDiv = document.createElement('div');
+            newDiv.className = 'experience-item';
+            newDiv.contentEditable = true;
+            newDiv.style.marginTop = "15px";
+            newDiv.innerHTML = "<strong>新模块标题</strong><br>点击此处输入内容...";
+            container.appendChild(newDiv);
+        }
+
+        // 4. Toast 提示
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+
+        // 5. PDF 导出 (自动过滤空白)
+        function exportPDF() {
+            showToast("正在生成 PDF...");
+            const element = document.getElementById('resume-paper');
+            const opt = {
+                margin: 0,
+                filename: 'Resume_AppleStyle.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().from(element).set(opt).save();
+        }
+
+        // 6. 清空内容
+        function clearData() {
+            if(confirm("确定清空所有内容吗？此操作不可逆。")) {
+                localStorage.removeItem('resumeData');
+                location.reload();
+            }
+        }
+
+        // 7. 富文本右键控制 (原生支持)
+        document.addEventListener('contextmenu', function(e) {
+            // 这里可以扩展更复杂的菜单，目前直接利用浏览器原生选区功能
+            // 提示：选中文字后使用 Ctrl+B (加粗), Ctrl+I (斜体)
+        });
+    </script>
+</body>
+</html>
