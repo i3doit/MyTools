@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>高级简历编辑器 - 专业版</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --apple-bg: #F5F5F7;
+            --apple-text: #1D1D1F;
+            --apple-blue: #0071E3;
+            --sky-blue: #00AEEF;
+            --border-color: #E5E5E7;
+            --eye-care: #FAF9F6;
+            --eye-focus: #f0f7ff; /* 护眼聚焦色 */
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background-color: var(--apple-bg);
+            font-family: -apple-system, "SF Pro SC", "SF Pro Display", system-ui, sans-serif;
+            margin: 0; padding: 0;
+            color: var(--apple-text);
+            line-height: 1.5;
+        }
+
+        /* --- UI 组件 --- */
+        .toolbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: 60px; background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: center;
+            gap: 15px; z-index: 1000;
+        }
+
+        button {
+            border: none; padding: 8px 18px; border-radius: 8px;
+            font-size: 14px; font-weight: 500; cursor: pointer; transition: 0.2s;
+        }
+        .btn-pdf { background: var(--apple-blue); color: white; }
+        .btn-clear { background: #F2F2F7; color: #FF3B30; }
+
+        #toast-container {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .toast {
+            background: rgba(0,0,0,0.8); color: white; padding: 10px 20px;
+            border-radius: 8px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- 简历容器 --- */
+        .page-wrapper { padding-top: 80px; padding-bottom: 50px; display: flex; justify-content: center; }
+
+        #resume-paper {
+            width: 800px; min-height: 1131px; background: #FFFFFF;
+            padding: 50px; position: relative; word-wrap: break-word; overflow-wrap: break-word;
+        }
+
+        /* 响应式编辑模式 */
+        @media screen and (max-width: 800px) {
+            .page-wrapper { padding: 70px 10px; }
+            #resume-paper { width: 100%; padding: 20px; }
+            .main-body { flex-direction: column !important; }
+            .left-col { width: 100% !important; border: none !important; }
+        }
+
+        /* --- 核心布局 --- */
+        .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .name { font-size: 32px; font-weight: 700; }
+        .job-target { font-size: 18px; color: var(--apple-blue); margin: 5px 0 10px; font-weight: 500; }
+        .contact-group { font-size: 13px; color: #666; }
+
+        .photo-box {
+            width: 100px; height: 100px; border-radius: 50%; border: 1px dashed #DDD;
+            overflow: hidden; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .photo-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        .main-body { display: flex; gap: 40px; }
+        .left-col { width: 220px; flex-shrink: 0; }
+        .right-col { flex: 1; }
+
+        .module { margin-bottom: 25px; }
+        .module-title {
+            font-size: 14px; font-weight: 700; color: #666;
+            border-bottom: 1px solid #EEE; padding-bottom: 4px; margin-bottom: 10px;
+        }
+
+        /* 技能标签样式 */
+        .skill-tag-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .skill-tag { 
+            padding: 4px 10px; border: 1px solid var(--apple-blue); 
+            border-radius: 4px; font-size: 13px; color: var(--apple-blue);
+        }
+
+        /* 日期管理样式 */
+        .date-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #888; margin: 5px 0; }
+        .date-input-group { display: flex; align-items: center; gap: 5px; }
+        .date-input { border: 1px solid #EEE; border-radius: 4px; padding: 2px; font-size: 12px; }
+        .duration-text { font-weight: bold; color: #555; }
+        .print-date-only { display: none; margin-left: auto; font-size: 13px; color: #666; font-weight: normal; }
+
+        /* 内容编辑 */
+        [contenteditable] { outline: none; padding: 2px; transition: background 0.3s; }
+        [contenteditable]:focus { background: var(--eye-focus) !important; border-radius: 4px; }
+        ul { padding-left: 20px; margin: 5px 0; }
+        li { margin-bottom: 3px; }
+
+        /* 自定义右键菜单 */
+        #custom-menu {
+            position: absolute; background: white; border: 1px solid #DDD;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 8px;
+            display: none; z-index: 10000; padding: 5px 0;
+        }
+        .menu-item { padding: 8px 15px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .menu-item:hover { background: #f5f5f7; }
+
+        /* 导出强制样式 */
+        .export-mode { width: 800px !important; display: block !important; padding: 50px !important; }
+        .export-mode .main-body { flex-direction: row !important; }
+        .export-mode .left-col { width: 220px !important; }
+        .export-mode .date-input-group, .export-mode .add-btn, .export-mode .present-label, .export-mode #skill-input-area { display: none !important; }
+        .export-mode .print-date-only { display: inline !important; }
+        .export-mode .exp-header { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }
+
+        .add-btn { color: var(--apple-blue); font-size: 12px; cursor: pointer; margin-top: 10px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div id="custom-menu">
+    <div class="menu-item" onclick="formatDoc('fontSize', '5')">大号字体</div>
+    <div class="menu-item" onclick="formatDoc('fontSize', '3')">标准字体</div>
+    <div class="menu-item" onclick="formatDoc('foreColor', '#0071E3')">蓝色文字</div>
+    <div class="menu-item" onclick="formatDoc('foreColor', '#1D1D1F')">黑色文字</div>
+    <div class="menu-item" onclick="formatDoc('bold')"><b>加粗</b></div>
+</div>
+
+<div class="toolbar">
+    <button class="btn-clear" onclick="confirmReset()">一键清空</button>
+    <button class="btn-pdf" onclick="exportPDF()">导出 PDF</button>
+</div>
+
+<div class="page-wrapper">
+    <div id="resume-paper">
+        <div class="header">
+            <div style="flex:1">
+                <div class="name" contenteditable="true" id="user-name">您的姓名</div>
+                <div class="job-target" contenteditable="true">应聘岗位：全栈开发工程师</div>
+                <div class="contact-group" contenteditable="true">
+                    手机：138-0000-0000 | 邮箱：service@apple.com | 地址：上海市
+                </div>
+            </div>
+            <div class="photo-area">
+                <input type="file" id="photo-upload" hidden onchange="handlePhoto(this)">
+                <div class="photo-box" onclick="document.getElementById('photo-upload').click()" id="avatar">
+                    <span style="color:#CCC; font-size:12px;">上传头像</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-body">
+            <div class="left-col">
+                <div class="module" id="mod-summary">
+                    <div class="module-title" contenteditable="true">Summary 个人总结</div>
+                    <div class="rich-content" contenteditable="true" data-default="true"></div>
+                </div>
+                
+                <div class="module" id="mod-skills">
+                    <div class="module-title" contenteditable="true">Skills 技能标签</div>
+                    <div id="skill-input-area">
+                        <input type="text" id="skill-input" placeholder="输入技能按回车" style="width:100%; padding:5px; border:1px solid #EEE;">
+                    </div>
+                    <div class="skill-tag-container" id="skill-tags"></div>
+                </div>
+
+                <div class="module" id="mod-lang">
+                    <div class="module-title" contenteditable="true">Languages 语言</div>
+                    <div class="rich-content" contenteditable="true" data-default="true"></div>
+                </div>
+            </div>
+
+            <div class="right-col">
+                <div class="module" id="mod-experience">
+                    <div class="module-title" contenteditable="true">Experience 工作经验</div>
+                    <div id="experience-list">
+                        </div>
+                    <div class="add-btn" onclick="addExperience()">+ 添加经验</div>
+                </div>
+
+                <div class="module" id="mod-project">
+                    <div class="module-title" contenteditable="true">Projects 项目经历</div>
+                    <div class="rich-content" contenteditable="true" data-default="true"></div>
+                </div>
+
+                <div id="dynamic-modules"></div>
+                <div class="add-btn" style="border:1px dashed #DDD; width:100%; text-align:center; padding:10px;" onclick="addNewModule()">+ 添加自定义模块</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const STORAGE_KEY = 'RESUME_PRO_DATA';
+
+    // --- 初始化 ---
+    window.onload = () => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            loadData(JSON.parse(saved));
+        } else {
+            initDefaultContent();
+        }
+        setupAutoSave();
+        setupContextMenu();
+        checkStorageLimit();
+    };
+
+    function initDefaultContent() {
+        document.querySelectorAll('.rich-content').forEach(el => {
+            if(!el.innerHTML.trim()) el.innerHTML = '<ul><li>请输入内容...</li></ul>';
+        });
+        addExperience();
+    }
+
+    // --- 智能日期管理 ---
+    function updateDuration(el) {
+        const row = el.closest('.date-row');
+        const startVal = row.querySelector('.start-date').value;
+        const endInput = row.querySelector('.end-date');
+        const isPresent = row.querySelector('.present-check').checked;
+        
+        let endDate = isPresent ? new Date() : new Date(endInput.value);
+        if(isPresent) endInput.style.visibility = 'hidden';
+        else endInput.style.visibility = 'visible';
+
+        if (startVal) {
+            const startDate = new Date(startVal);
+            let months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+            months = Math.max(0, months);
+            
+            let durationStr = "";
+            if (months >= 12) {
+                durationStr = (months / 12).toFixed(1) + " 年";
+            } else {
+                durationStr = months + " 个月";
+            }
+            
+            const displayDate = `${startVal.slice(0,7)} 至 ${isPresent ? '至今' : endInput.value.slice(0,7)} (${durationStr})`;
+            row.querySelector('.duration-text').innerText = `(${durationStr})`;
+            row.querySelector('.print-date-only').innerText = displayDate;
+        }
+    }
+
+    // --- 核心功能 ---
+    function addExperience() {
+        const id = 'exp-' + Date.now();
+        const tpl = `
+            <div class="exp-item module">
+                <div class="exp-header">
+                    <div class="exp-company" contenteditable="true" style="font-weight:bold; color:var(--sky-blue); font-size:15px;">公司名称</div>
+                    <div class="print-date-only"></div>
+                </div>
+                <div class="exp-role" contenteditable="true" style="font-weight:600;">岗位名称</div>
+                <div class="date-row">
+                    <div class="date-input-group">
+                        <input type="month" class="date-input start-date" onchange="updateDuration(this)">
+                        <span>-</span>
+                        <input type="month" class="date-input end-date" onchange="updateDuration(this)">
+                        <label class="present-label"><input type="checkbox" class="present-check" onchange="updateDuration(this)"> 至今</label>
+                    </div>
+                    <span class="duration-text"></span>
+                </div>
+                <div class="rich-content" contenteditable="true"><ul><li>描述工作职责和成就...</li></ul></div>
+            </div>`;
+        document.getElementById('experience-list').insertAdjacentHTML('beforeend', tpl);
+    }
+
+    function addNewModule() {
+        const tpl = `
+            <div class="module">
+                <div class="module-title" contenteditable="true">新模块标题</div>
+                <div class="rich-content" contenteditable="true"><ul><li>请输入内容</li></ul></div>
+            </div>`;
+        document.getElementById('dynamic-modules').insertAdjacentHTML('beforeend', tpl);
+    }
+
+    // --- 技能标签处理 ---
+    document.getElementById('skill-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && this.value.trim()) {
+            const tag = document.createElement('div');
+            tag.className = 'skill-tag';
+            tag.innerHTML = `${this.value.trim()} <span style="cursor:pointer;margin-left:5px" onclick="this.parentElement.remove()">×</span>`;
+            document.getElementById('skill-tags').appendChild(tag);
+            this.value = '';
+            saveData();
+        }
+    });
+
+    // --- 富文本与交互 ---
+    function setupContextMenu() {
+        const menu = document.getElementById('custom-menu');
+        document.addEventListener('contextmenu', e => {
+            const target = e.target.closest('[contenteditable]');
+            if (target && window.getSelection().toString().length > 0) {
+                e.preventDefault();
+                menu.style.display = 'block';
+                menu.style.left = e.pageX + 'px';
+                menu.style.top = e.pageY + 'px';
+            } else {
+                menu.style.display = 'none';
+            }
+        });
+        document.addEventListener('click', () => menu.style.display = 'none');
+    }
+
+    function formatDoc(cmd, val) {
+        document.execCommand(cmd, false, val);
+    }
+
+    // --- 存储与安全 ---
+    function setupAutoSave() {
+        document.getElementById('resume-paper').addEventListener('input', debounce(() => {
+            saveData();
+        }, 1000));
+    }
+
+    function saveData() {
+        const data = {
+            html: document.getElementById('resume-paper').innerHTML,
+            inputs: []
+        };
+        // 保存所有 input 的状态
+        document.querySelectorAll('input').forEach(input => {
+            if(input.type === 'checkbox') data.inputs.push(input.checked);
+            else data.inputs.push(input.value);
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        showToast("已实时同步", 1000);
+    }
+
+    function loadData(data) {
+        document.getElementById('resume-paper').innerHTML = data.html;
+        const inputs = document.querySelectorAll('input');
+        (data.inputs || []).forEach((val, i) => {
+            if(inputs[i]) {
+                if(inputs[i].type === 'checkbox') inputs[i].checked = val;
+                else inputs[i].value = val;
+            }
+        });
+    }
+
+    function checkStorageLimit() {
+        const used = JSON.stringify(localStorage).length;
+        if (used > 4 * 1024 * 1024) { // 接近 5MB
+            alert("提醒：浏览器本地存储空间即将存满，请及时备份或导出 PDF。");
+        }
+    }
+
+    function confirmReset() {
+        if (confirm("确定要清空所有内容吗？此操作不可撤销。")) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+
+    // --- PDF 导出 ---
+    async function exportPDF() {
+        const paper = document.getElementById('resume-paper');
+        const clone = paper.cloneNode(true);
+
+        // 1. 处理空模块过滤
+        clone.querySelectorAll('.module').forEach(mod => {
+            const text = mod.innerText.replace(/\s/g, '');
+            const isDefault = mod.querySelector('[data-default="true"]');
+            if (!text || text.includes('请输入内容') || text.includes('新模块标题')) {
+                mod.remove();
+            }
+        });
+
+        // 2. 移除技能标签中的删除按钮
+        clone.querySelectorAll('.skill-tag span').forEach(s => s.remove());
+
+        // 3. 注入打印强制类
+        clone.classList.add('export-mode');
+        document.body.appendChild(clone);
+
+        const opt = {
+            margin: 0,
+            filename: `简历_${new Date().toLocaleDateString()}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        try {
+            showToast("正在锁定布局并生成 PDF...", 0, true);
+            await html2pdf().from(clone).set(opt).save();
+            showToast("导出成功！");
+        } finally {
+            clone.remove();
+        }
+    }
+
+    // --- 工具 ---
+    function showToast(msg, duration = 2000, isManual = false) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerText = msg;
+        if (isManual) {
+            toast.onclick = () => toast.remove();
+            toast.innerText += " [点击关闭]";
+        } else {
+            setTimeout(() => toast.remove(), duration);
+        }
+        container.appendChild(toast);
+    }
+
+    function handlePhoto(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById('avatar').innerHTML = `<img src="${e.target.result}">`;
+                saveData();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function debounce(fn, delay) {
+        let timer;
+        return function() {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn.apply(this, arguments), delay);
+        }
+    }
+</script>
+</body>
+</html>
