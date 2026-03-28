@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 測試專家簡歷 - 2026 旗艦版</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --apple-bg: #F5F5F7;
+            --apple-text: #1D1D1F;
+            --apple-blue: #0071E3;
+            --sky-blue: #00AEEF;
+            --border-color: #E5E5E7;
+            --eye-focus: #F0F7FF;
+            --danger: #FF3B30;
+            --placeholder-gray: #FFFFFF; 
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--apple-bg); font-family: -apple-system, "SF Pro SC", system-ui, sans-serif; margin: 0; padding: 0; color: var(--apple-text); line-height: 1.5; }
+
+        /* Toolbar */
+        .toolbar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(255,255,255,0.8); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; gap: 15px; z-index: 1000; }
+        button { border: none; padding: 8px 18px; border-radius: 8px; font-weight: 500; cursor: pointer; transition: 0.2s; }
+        .btn-pdf { background: var(--apple-blue); color: white; }
+        .btn-clear { background: #F2F2F7; color: var(--danger); }
+
+        /* Resume Paper */
+        .page-wrapper { padding: 80px 10px 50px; display: flex; justify-content: center; }
+        #resume-paper { 
+            width: 800px; min-height: 1131px; background: #FFFFFF; padding: 45px; position: relative; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); word-wrap: break-word; overflow-wrap: anywhere;
+        }
+
+        .module-wrapper { position: relative; margin-bottom: 10px; }
+        .delete-btn { position: absolute; right: -35px; top: 0; color: #CCC; cursor: pointer; font-size: 20px; display: none; width: 30px; text-align: center; }
+        .module-wrapper:hover .delete-btn { display: block; }
+        .delete-btn:hover { color: var(--danger); }
+
+        /* Header */
+        .header { display: flex; justify-content: space-between; margin-bottom: 25px; align-items: center; }
+        .photo-box { width: 90px; height: 90px; border-radius: 50%; border: none; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--placeholder-gray); flex-shrink: 0; }
+        .photo-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        .main-body { display: flex; gap: 35px; }
+        .left-col { width: 230px; flex-shrink: 0; }
+        .right-col { flex: 1; }
+
+        .module { margin-bottom: 22px; }
+        .module-title { font-size: 13px; font-weight: 700; color: #888; border-bottom: 1px solid #F0F0F2; padding-bottom: 4px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .skill-tag-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+        .skill-tag { padding: 3px 8px; border: 1px solid var(--apple-blue); border-radius: 4px; font-size: 11px; color: var(--apple-blue); background: #FFF; }
+        .skill-tag span { margin-left: 5px; cursor: pointer; opacity: 0.5; }
+
+        /* Work Experience UI */
+        .exp-item { margin-bottom: 20px; }
+        .exp-role { font-size: 16px; font-weight: 700; color: #000; margin-bottom: 2px; }
+        .exp-sub-header { display: flex; justify-content: space-between; align-items: baseline; }
+        .exp-company { font-size: 14px; font-weight: 600; color: var(--sky-blue); }
+        
+        .date-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 11px; color: #999; margin: 4px 0; }
+        .pdf-date-display { display: none; font-size: 12px; color: #666; font-weight: normal; }
+
+        [contenteditable]:focus { background: var(--eye-focus) !important; outline: none; border-radius: 4px; }
+        ul { padding-left: 18px; margin: 5px 0; }
+        li { margin-bottom: 4px; font-size: 13px; color: #333; text-align: justify; }
+
+        /* Export Mode */
+        .export-pdf-mode { width: 800px !important; min-height: auto !important; height: auto !important; box-shadow: none !important; display: block !important; }
+        .export-pdf-mode .main-body { flex-direction: row !important; display: flex !important; }
+        .export-pdf-mode .date-row, .export-pdf-mode .delete-btn, .export-pdf-mode .add-btn, .export-pdf-mode #skill-input-area, .export-pdf-mode #photo-tip, .export-pdf-mode .skill-tag span { display: none !important; }
+        .export-pdf-mode .pdf-date-display { display: block !important; }
+
+        .add-btn { color: var(--apple-blue); font-size: 12px; cursor: pointer; margin-top: 10px; display: inline-block; border: 1px dashed #DDD; padding: 6px; width: 100%; text-align: center; border-radius: 6px; background: #fafafa; }
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; padding: 10px 25px; border-radius: 20px; z-index: 2000; display: none; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div id="toast">提示信息</div>
+
+<div class="toolbar">
+    <button class="btn-clear" onclick="confirmClear()">一键清空</button>
+    <button class="btn-pdf" onclick="exportToPDF()">导出 PDF</button>
+</div>
+
+<div class="page-wrapper">
+    <div id="resume-paper">
+        <div class="header">
+            <div style="flex:1">
+                <div class="name" contenteditable="true" style="font-size: 32px; font-weight: 800;">您的姓名</div>
+                <div class="job-target" contenteditable="true" style="color: var(--apple-blue); font-size: 17px; font-weight: 500; margin-top: 5px;">AI 測試工程專家 / MLOps 工程师</div>
+                <div class="contact" contenteditable="true" style="font-size: 13px; color: #666; margin-top: 8px;">
+                    香港 | +852 0000 0000 | service@example.com | GitHub: ai-tester-pro
+                </div>
+            </div>
+            <div class="photo-area">
+                <input type="file" id="upload-ctrl" hidden onchange="handleImg(this)">
+                <div class="photo-box" id="avatar-box" onclick="document.getElementById('upload-ctrl').click()">
+                    <span id="photo-tip" style="color:#EEE; font-size:11px;">上传头像</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-body">
+            <div class="left-col">
+                <div class="module-wrapper">
+                    <div class="module">
+                        <div class="module-title" contenteditable="true">Summary 自我介绍</div>
+                        <div class="rich-text" contenteditable="true">
+                            <ul>
+                                <li>深耕 AI 测试领域多年，擅长 CV 与大语言模型（LLM）的全流程质量保障。</li>
+                                <li>精通 MLOps 流程整合，具备对抗性测试及模型公平性分析实战经验。</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <span class="delete-btn" onclick="this.parentElement.remove()">×</span>
+                </div>
+
+                <div class="module">
+                    <div class="module-title" contenteditable="true">Skills 技能储备</div>
+                    <div id="skill-input-area">
+                        <input type="text" id="skill-in" placeholder="回车添加技能" style="width:100%; padding:5px; border:1px solid #EEE; font-size:12px; margin-bottom:8px;">
+                    </div>
+                    <div class="skill-tag-container" id="tag-box">
+                        <div class="skill-tag">测试用例设计<span>×</span></div>
+                        <div class="skill-tag">边界值分析<span>×</span></div>
+                        <div class="skill-tag">Python<span>×</span></div>
+                        <div class="skill-tag">Pytest<span>×</span></div>
+                        <div class="skill-tag">CI/CD<span>×</span></div>
+                        <div class="skill-tag">Jenkins<span>×</span></div>
+                        <div class="skill-tag">Docker<span>×</span></div>
+                        <div class="skill-tag">Kubernetes<span>×</span></div>
+                        <div class="skill-tag">机器学习基础<span>×</span></div>
+                        <div class="skill-tag">数据预处理<span>×</span></div>
+                        <div class="skill-tag">数据漂移检测<span>×</span></div>
+                        <div class="skill-tag">鲁棒性测试<span>×</span></div>
+                        <div class="skill-tag">对抗样本测试<span>×</span></div>
+                        <div class="skill-tag">公平性测试<span>×</span></div>
+                        <div class="skill-tag">SHAP / LIME<span>×</span></div>
+                        <div class="skill-tag">MLflow<span>×</span></div>
+                        <div class="skill-tag">PyTorch<span>×</span></div>
+                        <div class="skill-tag">A/B测试<span>×</span></div>
+                        <div class="skill-tag">大语言模型测试<span>×</span></div>
+                        <div class="skill-tag">SQL<span>×</span></div>
+                    </div>
+                </div>
+
+                <div class="module">
+                    <div class="module-title" contenteditable="true">Languages 语言</div>
+                    <div contenteditable="true">
+                        <ul>
+                            <li>粤语 (Native)</li>
+                            <li>普通话 (Native)</li>
+                            <li>英语 (Professional)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="left-custom-modules"></div>
+                <div class="add-btn" onclick="addCustom('left-custom-modules')">+ 侧栏模块</div>
+            </div>
+
+            <div class="right-col">
+                <div class="module">
+                    <div class="module-title" contenteditable="true">Experience 工作经验</div>
+                    <div id="exp-container">
+                        <div class="module-wrapper">
+                            <div class="exp-item">
+                                <div class="exp-role" contenteditable="true">AI 測試工程師</div>
+                                <div class="exp-sub-header">
+                                    <div class="exp-company" contenteditable="true">商湯科技 (SenseTime) | 香港</div>
+                                    <div class="pdf-date-display">04/2022 - 至今 (4.0 年)</div>
+                                </div>
+                                <div class="date-row">
+                                    <input type="month" value="2022-04" class="s-date" onchange="updateTime(this)"> - 
+                                    <input type="month" class="e-date" style="display:none">
+                                    <label><input type="checkbox" checked onchange="updateTime(this)"> 至今</label>
+                                    <span class="dur-label">(4.0 年)</span>
+                                </div>
+                                <div class="rich-text" contenteditable="true">
+                                    <ul>
+                                        <li>負責電腦視覺模型的全流程測試，包括資料品質驗證、模型魯棒性測試及對抗樣本評估，利用Python與Pytest搭建自動化測試框架，提升回歸測試效率40%。</li>
+                                        <li>設計並實施模型評估儀表板，整合MLflow追蹤實驗指標（mAP、F1-score），並建立資料漂移監控告警機制，確保生產環境模型效能穩定。</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <span class="delete-btn" onclick="this.parentElement.remove()">×</span>
+                        </div>
+
+                        <div class="module-wrapper">
+                            <div class="exp-item">
+                                <div class="exp-role" contenteditable="true">資深 AI 測試開發工程師</div>
+                                <div class="exp-sub-header">
+                                    <div class="exp-company" contenteditable="true">眾安銀行 (ZA Bank) | 香港</div>
+                                    <div class="pdf-date-display">01/2020 - 02/2022 (2.1 年)</div>
+                                </div>
+                                <div class="date-row">
+                                    <input type="month" value="2020-01" class="s-date" onchange="updateTime(this)"> - 
+                                    <input type="month" value="2022-02" class="e-date" onchange="updateTime(this)">
+                                    <label><input type="checkbox" onchange="updateTime(this)"> 至今</label>
+                                    <span class="dur-label">(2.1 年)</span>
+                                </div>
+                                <div class="rich-text" contenteditable="true">
+                                    <ul>
+                                        <li>主導風控AI模型測試策略，涵蓋特徵工程驗證、模型可解釋性分析（SHAP、LIME）及A/B測試框架搭建。</li>
+                                        <li>建立MLOps測試流程，整合Jenkins與Kubernetes實現模型訓練、評估及部署的自動化驗證。</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <span class="delete-btn" onclick="this.parentElement.remove()">×</span>
+                        </div>
+
+                        <div class="module-wrapper">
+                            <div class="exp-item">
+                                <div class="exp-role" contenteditable="true">測試工程師（AI方向）</div>
+                                <div class="exp-sub-header">
+                                    <div class="exp-company" contenteditable="true">思謀科技 (SmartMore) | 深圳/香港</div>
+                                    <div class="pdf-date-display">07/2018 - 12/2019 (1.4 年)</div>
+                                </div>
+                                <div class="date-row">
+                                    <input type="month" value="2018-07" class="s-date" onchange="updateTime(this)"> - 
+                                    <input type="month" value="2019-12" class="e-date" onchange="updateTime(this)">
+                                    <label><input type="checkbox" onchange="updateTime(this)"> 至今</label>
+                                    <span class="dur-label">(1.4 年)</span>
+                                </div>
+                                <div class="rich-text" contenteditable="true">
+                                    <ul>
+                                        <li>負責工業缺陷檢測AI模型的測試工作，設計涵蓋邊界案例的測試數據集，利用PyTorch編寫模型推理校驗腳本。</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <span class="delete-btn" onclick="this.parentElement.remove()">×</span>
+                        </div>
+                    </div>
+                    <div class="add-btn" onclick="addExp()">+ 工作经验</div>
+                </div>
+
+                <div id="right-custom-modules"></div>
+                <div class="add-btn" onclick="addCustom('right-custom-modules')">+ 自定义模块</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const STORAGE_KEY = 'RESUME_AI_ULTRAL_COMPLETE';
+
+    window.onload = () => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const data = JSON.parse(saved);
+            document.getElementById('resume-paper').innerHTML = data.html;
+            const inputs = document.querySelectorAll('input[type="month"], input[type="checkbox"]');
+            (data.values || []).forEach((v, i) => {
+                if(!inputs[i]) return;
+                if(inputs[i].type === 'checkbox') inputs[i].checked = v;
+                else inputs[i].value = v;
+                if(inputs[i].type === 'checkbox' && v === true) inputs[i].parentElement.previousElementSibling.style.display = 'none';
+            });
+        }
+        setupAutoSave();
+        setupSkillInput();
+        document.querySelectorAll('.s-date').forEach(el => updateTime(el));
+        // 给初始标签添加点击删除
+        document.querySelectorAll('.skill-tag span').forEach(s => s.onclick = function(){this.parentElement.remove();});
+    };
+
+    function setupAutoSave() {
+        document.getElementById('resume-paper').addEventListener('input', debounce(() => {
+            const values = Array.from(document.querySelectorAll('input[type="month"], input[type="checkbox"]')).map(i => i.type === 'checkbox' ? i.checked : i.value);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ html: document.getElementById('resume-paper').innerHTML, values: values }));
+            showToast("实时保存");
+        }, 1000));
+    }
+
+    function setupSkillInput() {
+        document.getElementById('skill-in').addEventListener('keypress', e => {
+            if(e.key === 'Enter' && e.target.value.trim()){
+                const tag = document.createElement('div');
+                tag.className = 'skill-tag';
+                tag.innerHTML = `${e.target.value.trim()}<span>×</span>`;
+                tag.querySelector('span').onclick = function(){this.parentElement.remove();};
+                document.getElementById('tag-box').appendChild(tag);
+                e.target.value = '';
+            }
+        });
+    }
+
+    function updateTime(el) {
+        const row = el.closest('.date-row');
+        const sVal = row.querySelector('.s-date').value;
+        const eInput = row.querySelector('.e-date');
+        const isNow = row.querySelector('input[type="checkbox"]').checked;
+        if(!sVal) return;
+        eInput.style.display = isNow ? 'none' : 'inline-block';
+        const start = new Date(sVal), end = isNow ? new Date() : new Date(eInput.value || sVal);
+        let months = Math.max(1, (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()));
+        const durText = months >= 12 ? (months/12).toFixed(1) + " 年" : months + " 个月";
+        const range = `${sVal.split('-').reverse().join('/')} - ${isNow ? '至今' : (eInput.value ? eInput.value.split('-').reverse().join('/') : '')} (${durText})`;
+        row.querySelector('.dur-label').innerText = `(${durText})`;
+        const displayBox = row.closest('.module-wrapper').querySelector('.pdf-date-display');
+        if(displayBox) displayBox.innerText = range;
+    }
+
+    function addExp() {
+        const tpl = `<div class="module-wrapper"><div class="exp-item"><div class="exp-role" contenteditable="true">岗位名称</div><div class="exp-sub-header"><div class="exp-company" contenteditable="true">公司名称</div><div class="pdf-date-display"></div></div><div class="date-row"><input type="month" class="s-date" onchange="updateTime(this)"> - <input type="month" class="e-date" onchange="updateTime(this)"> <label><input type="checkbox" onchange="updateTime(this)"> 至今</label> <span class="dur-label"></span></div><div class="rich-text" contenteditable="true"><ul><li>描述...</li></ul></div></div><span class="delete-btn" onclick="this.parentElement.remove()">×</span></div>`;
+        document.getElementById('exp-container').insertAdjacentHTML('beforeend', tpl);
+    }
+
+    function addCustom(id) {
+        const tpl = `<div class="module-wrapper"><div class="module"><div class="module-title" contenteditable="true">模块标题</div><div class="rich-text" contenteditable="true"><ul><li>内容描述...</li></ul></div></div><span class="delete-btn" onclick="this.parentElement.remove()">×</span></div>`;
+        document.getElementById(id).insertAdjacentHTML('beforeend', tpl);
+    }
+
+    async function exportToPDF() {
+        document.querySelectorAll('.s-date').forEach(el => updateTime(el));
+        const clone = document.getElementById('resume-paper').cloneNode(true);
+        // 智能移除未修改的占位符
+        clone.querySelectorAll('.module-wrapper').forEach(mw => {
+            const t = mw.innerText;
+            if(t.includes('岗位名称') || t.includes('模块标题') || t.trim() === '×') mw.remove();
+        });
+        clone.classList.add('export-pdf-mode');
+        document.body.appendChild(clone);
+        const opt = { margin: 0, filename: 'AI_Test_Resume.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2.5, useCORS: true, windowWidth: 800 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } };
+        try { showToast("生成 PDF 中..."); await html2pdf().from(clone).set(opt).save(); showToast("导出成功"); } finally { clone.remove(); }
+    }
+
+    function handleImg(input) {
+        if(input.files && input.files[0]){
+            const reader = new FileReader();
+            reader.onload = e => { document.getElementById('avatar-box').innerHTML = `<img src="${e.target.result}">`; };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function confirmClear() { if(confirm("确定清空所有内容吗？")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } }
+    function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 1500); }
+    function debounce(fn, d) { let t; return function() { clearTimeout(t); t = setTimeout(() => fn.apply(this, arguments), d); } }
+</script>
+</body>
+</html>
