@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>eKYC 測試數據進階生成器</title>
+    <style>
+        :root { --primary-color: #4a90e2; --success-color: #27ae60; --bg-color: #f8f9fa; }
+        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: var(--bg-color); padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; margin-bottom: 25px; }
+        
+        .control-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; position: relative; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        .input-group { display: flex; gap: 8px; }
+        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        
+        button { cursor: pointer; padding: 10px 15px; border: none; border-radius: 5px; transition: 0.2s; font-weight: 600; }
+        .btn-copy { background: #e9ecef; color: #495057; font-size: 12px; }
+        .btn-copy:hover { background: #dee2e6; }
+        .btn-main { background: var(--primary-color); color: white; width: 100%; font-size: 16px; margin-top: 10px; }
+        .btn-main:hover { opacity: 0.9; }
+        .btn-download { background: var(--success-color); color: white; width: 100%; margin-top: 15px; }
+
+        .preview-section { margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; text-align: center; }
+        canvas { max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 8px; margin-top: 10px; background-color: #fff; }
+        .upload-area { margin-bottom: 20px; padding: 15px; border: 2px dashed var(--primary-color); border-radius: 8px; background: #f0f7ff; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>eKYC 測試數據生成器 (Pro版)</h2>
+
+    <div class="upload-area">
+        <label>Step 1: 上傳護照底圖 (可選，不傳則使用預設模板)</label>
+        <input type="file" id="bgUpload" accept="image/*" onchange="handleImageUpload(this)">
+    </div>
+
+    <div class="control-panel">
+        <div>
+            <div class="form-group">
+                <label>國家區號</label>
+                <div class="input-group">
+                    <input type="text" id="country" oninput="updateCanvas()">
+                    <button class="btn-copy" onclick="copyValue('country')">複製</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>手機號碼</label>
+                <div class="input-group">
+                    <input type="text" id="phone" oninput="updateCanvas()">
+                    <button class="btn-copy" onclick="copyValue('phone')">複製</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>中文姓名</label>
+                <div class="input-group">
+                    <input type="text" id="nameChn" oninput="updateCanvas()">
+                    <button class="btn-copy" onclick="copyValue('nameChn')">複製</button>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="form-group">
+                <label>英文姓名</label>
+                <div class="input-group">
+                    <input type="text" id="nameEng" oninput="updateCanvas()">
+                    <button class="btn-copy" onclick="copyValue('nameEng')">複製</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>護照號碼</label>
+                <div class="input-group">
+                    <input type="text" id="passportNo" oninput="updateCanvas()">
+                    <button class="btn-copy" onclick="copyValue('passportNo')">複製</button>
+                </div>
+            </div>
+            <button class="btn-main" onclick="generateRandomData()">🔀 一鍵隨機生成</button>
+        </div>
+    </div>
+
+    <div class="preview-section">
+        <label>護照仿真圖片預覽</label><br>
+        <canvas id="passportCanvas" width="600" height="400"></canvas>
+        <button class="btn-download" onclick="downloadImage()">💾 下載仿真圖片 (PNG)</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('passportCanvas');
+    const ctx = canvas.getContext('2d');
+    let uploadedImage = null;
+
+    const countries = [
+        { n: "美國", c: "+1", l: 10 }, { n: "馬來西亞", c: "+60", l: 9 }, 
+        { n: "泰國", c: "+66", l: 9 }, { n: "新加坡", c: "+65", l: 8 }
+    ];
+
+    function copyValue(id) {
+        const input = document.getElementById(id);
+        input.select();
+        document.execCommand('copy');
+        const btn = event.target;
+        const originalText = btn.innerText;
+        btn.innerText = "已複製";
+        btn.style.color = "green";
+        setTimeout(() => { btn.innerText = originalText; btn.style.color = "#495057"; }, 1000);
+    }
+
+    function generateRandomData() {
+        const country = countries[Math.floor(Math.random() * countries.length)];
+        document.getElementById('country').value = `${country.n} (${country.c})`;
+        
+        let phone = "";
+        for(let i=0; i<country.l; i++) phone += Math.floor(Math.random() * 10);
+        document.getElementById('phone').value = phone;
+
+        const cNames = ["王小明", "李大華", "張美麗", "陳志強"];
+        const eNames = ["WANG XIAOMING", "LI DAHUA", "ZHANG MEILI", "CHEN ZHIQIANG"];
+        const idx = Math.floor(Math.random() * cNames.length);
+        
+        document.getElementById('nameChn').value = cNames[idx];
+        document.getElementById('nameEng').value = eNames[idx];
+        document.getElementById('passportNo').value = "E" + Math.floor(Math.random() * 90000000 + 10000000);
+
+        updateCanvas();
+    }
+
+    function handleImageUpload(input) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                uploadedImage = img;
+                updateCanvas();
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function updateCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (uploadedImage) {
+            ctx.drawImage(uploadedImage, 0, 0, canvas.width, canvas.height);
+        } else {
+            // 預設底色
+            ctx.fillStyle = "#fcfaf2";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = "#333";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(10, 10, canvas.width-20, canvas.height-20);
+            
+            // 標題
+            ctx.fillStyle = "#1a5276";
+            ctx.font = "bold 24px Arial";
+            ctx.fillText("PASSPORT / 護照", 200, 50);
+        }
+
+        // 設置文字樣式（可根據底圖調整顏色）
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 18px Courier New";
+
+        const chn = document.getElementById('nameChn').value;
+        const eng = document.getElementById('nameEng').value;
+        const pNo = document.getElementById('passportNo').value;
+
+        // 繪製文字（座標可根據需求手動微調）
+        ctx.fillText("姓名/Name: " + chn, 180, 120);
+        ctx.fillText(eng, 180, 145);
+        ctx.fillText("證件號/No: " + pNo, 180, 185);
+
+        // 模擬機讀碼 (MRZ)
+        ctx.font = "16px Courier New";
+        ctx.fillText("P<CHN" + eng.replace(" ","<") + "<<<<<<<<<<<<<<<<<<<<", 40, 330);
+        ctx.fillText(pNo + "8CHN<<<<<<<<<<<<<<<<<<<<<<<<", 40, 360);
+    }
+
+    function downloadImage() {
+        const link = document.createElement('a');
+        link.download = `test_passport_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+
+    window.onload = generateRandomData;
+</script>
+
+</body>
+</html>
