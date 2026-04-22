@@ -1,1 +1,294 @@
-1
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>金融工具-BIC标准版</title>
+    <style>
+        :root { --primary: #0056b3; --bg: #f4f7f9; --border: #e2e8f0; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        .container { background: white; padding: 16px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); width: 100%; max-width: 600px; }
+        .preview-area { margin-bottom: 20px; width: 100%; }
+        canvas { width: 100% !important; height: auto !important; border-radius: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); background: #fff; }
+        .controls { display: flex; flex-direction: column; gap: 12px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        label { font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
+        .input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
+        input, select { width: 100%; padding: 12px 75px 12px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 15px; outline: none; background: #fff; }
+        .inner-btns { position: absolute; right: 6px; display: flex; gap: 4px; background: white; padding-left: 5px; }
+        .btn-mini { border: none; background: #f1f5f9; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .short-fields { display: flex; gap: 8px; flex-wrap: wrap; }
+        .cvc-input { width: 75px !important; padding: 12px 5px !important; text-align: center; }
+        .exp-input { width: 95px !important; padding: 12px 5px !important; text-align: center; }
+        .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .btn { padding: 14px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 14px; color: white; text-align: center; transition: 0.2s; }
+        .btn:active { opacity: 0.8; }
+        .btn-main { background: var(--primary); grid-column: span 2; }
+        .btn-sub { background: #334155; }
+        #toast { position: fixed; top: 20px; background: #334155; color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; opacity: 0; transition: 0.3s; z-index: 999; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="toast">操作成功</div>
+
+    <div class="container">
+        <div class="preview-area">
+            <canvas id="cardCanvas"></canvas>
+            <div id="stmtWrapper" style="display:none; margin-top:15px;"></div>
+        </div>
+
+        <div class="controls">
+            <div class="form-group">
+                <label>国家/地区</label>
+                <select id="regionSelect" onchange="onRegionChange()">
+                    <option value="MO">🇲🇴 澳门 (MO)</option>
+                    <option value="HK">🇭🇰 香港 (HK)</option>
+                    <option value="US">🇺🇸 美国 (US)</option>
+                    <option value="GB">🇬🇧 英国 (GB)</option>
+                    <option value="JP">🇯🇵 日本 (JP)</option>
+                    <option value="CN">🇨🇳 中国 (CN)</option>
+                    <option value="SG">🇸🇬 新加坡 (SG)</option>
+                    <option value="CA">🇨🇦 加拿大 (CA)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>银行名称</label>
+                <div class="input-wrapper">
+                    <input type="text" id="bankEn" oninput="updateAll()">
+                    <div class="inner-btns">
+                        <button class="btn-mini" onclick="copyValue('bankEn')">📋</button>
+                        <button class="btn-mini" onclick="singleGen('bank')">🎲</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>BIC / SWIFT (8或11位)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="bic" maxlength="11" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,''); updateAll()">
+                    <div class="inner-btns">
+                        <button class="btn-mini" onclick="copyValue('bic')">📋</button>
+                        <button class="btn-mini" onclick="singleGen('bic')">🎲</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>卡号</label>
+                <div class="input-wrapper">
+                    <input type="text" id="cardNo" inputmode="numeric" oninput="updateAll()">
+                    <div class="inner-btns">
+                        <button class="btn-mini" onclick="copyValue('cardNo')">📋</button>
+                        <button class="btn-mini" onclick="singleGen('cardNo')">🎲</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>持卡人 / 有效期 / CVC码</label>
+                <div class="short-fields">
+                    <div class="input-wrapper" style="flex:1; min-width: 140px;">
+                        <input type="text" id="holder" placeholder="HOLDER NAME" oninput="saveHolder(); updateAll()">
+                        <div class="inner-btns">
+                            <button class="btn-mini" onclick="singleGen('name')">🎲</button>
+                        </div>
+                    </div>
+                    <input type="text" id="expiry" class="exp-input" value="12/28" oninput="updateAll()">
+                    <input type="text" id="cvc" class="cvc-input" value="888" maxlength="3" oninput="updateAll()">
+                </div>
+            </div>
+
+            <div class="action-btns">
+                <button class="btn btn-main" onclick="downloadImg('card')">📥 下载高清卡面</button>
+                <button class="btn btn-sub" onclick="allGen()">🎲 全随机刷新</button>
+                <button class="btn btn-sub" onclick="generateStatement()">📑 生成对账单</button>
+            </div>
+            <button id="dlStmtBtn" class="btn" style="background:#10b981; display:none; width:100%; margin-top:5px" onclick="downloadImg('stmt')">✅ 下载账单图片</button>
+        </div>
+    </div>
+
+    <script>
+        const cardCanvas = document.getElementById('cardCanvas');
+        
+        // 地区配置数据 - 优化了BIC生成逻辑所需的结构
+        const regionData = {
+            MO: { banks: [{n:"BNU MACAU", c:"BNUM"}, {n:"BANK OF CHINA (MO)", c:"BKCH"}, {n:"ICBC MACAU", c:"ICBK"}, {n:"LUSO BANK", c:"LUSB"}], cardPrefix: "4507" },
+            HK: { banks: [{n:"HSBC HK", c:"HSBC"}, {n:"STANDARD CHARTERED HK", c:"SCBL"}, {n:"BOCHK", c:"BKCH"}, {n:"HANG SENG BANK", c:"HASE"}], cardPrefix: "4597" },
+            US: { banks: [{n:"JPM CHASE", c:"CHAS"}, {n:"BANK OF AMERICA", c:"BOFA"}, {n:"CITIBANK", c:"CITI"}, {n:"WELLS FARGO", c:"WFBI"}], cardPrefix: "4111" },
+            GB: { banks: [{n:"BARCLAYS BANK", c:"BARC"}, {n:"LLOYDS BANK", c:"LOYD"}, {n:"NATWEST", c:"NWBK"}, {n:"HSBC UK", c:"MIDL"}], cardPrefix: "4921" },
+            JP: { banks: [{n:"MUFG BANK", c:"BOTK"}, {n:"SMBC", c:"SMBC"}, {n:"MIZUHO BANK", c:"MHCB"}, {n:"JP POST BANK", c:"JPPS"}], cardPrefix: "3528" },
+            CN: { banks: [{n:"BANK OF CHINA", c:"BKCH"}, {n:"ICBC", c:"ICBK"}, {n:"CONSTRUCTION BANK", c:"PCBK"}, {n:"AGRICULTURAL BANK", c:"ABOC"}], cardPrefix: "6222" },
+            SG: { banks: [{n:"DBS BANK", c:"DBSS"}, {n:"OCBC BANK", c:"OCBC"}, {n:"UOB BANK", c:"UOVB"}, {n:"STANDARD CHARTERED SG", c:"SCBL"}], cardPrefix: "4556" },
+            CA: { banks: [{n:"RBC ROYAL BANK", c:"ROYC"}, {n:"TD CANADA TRUST", c:"TDOM"}, {n:"SCOTIABANK", c:"NOSC"}, {n:"BMO", c:"BOFM"}], cardPrefix: "4500" }
+        };
+
+        const addressData = {
+            MO: ["Avenida de Almeida Ribeiro, No. 88, Macau", "Rua do Campo, Edif. Admin, Macau"],
+            HK: ["88 Queensway, Admiralty, Hong Kong", "1 Connaught Place, Central, Hong Kong"],
+            US: ["725 5th Ave, New York, NY 10022", "1600 Amphitheatre Pkwy, Mountain View, CA"],
+            CN: ["北京市东城区长安街1号", "上海市浦东新区陆家嘴环路1000号"]
+        };
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.style.opacity = '1';
+            setTimeout(() => t.style.opacity = '0', 1500);
+        }
+
+        function saveHolder() { localStorage.setItem('saved_holder', document.getElementById('holder').value); }
+        function copyValue(id) { 
+            const val = document.getElementById(id).value;
+            navigator.clipboard.writeText(val).then(() => showToast("已复制: " + val)); 
+        }
+
+        // 核心优化：满足 BIC 8/11 位标准的随机逻辑
+        function generateBIC(bankCode, countryCode) {
+            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 避免易混淆字符
+            let location = "";
+            for(let i=0; i<2; i++) location += chars.charAt(Math.floor(Math.random() * chars.length));
+            
+            // 50% 概率生成 11 位（带分行码），50% 概率生成 8 位（总行用XXX或不带）
+            const isBranch = Math.random() > 0.5;
+            if (isBranch) {
+                let branch = "";
+                for(let i=0; i<3; i++) branch += chars.charAt(Math.floor(Math.random() * chars.length));
+                return bankCode + countryCode + location + branch;
+            } else {
+                return bankCode + countryCode + location + (Math.random() > 0.5 ? "XXX" : "");
+            }
+        }
+
+        function singleGen(type) {
+            const reg = document.getElementById('regionSelect').value;
+            const config = regionData[reg];
+            // 获取当前选择或随机的银行对象
+            const bankIdx = Math.floor(Math.random() * config.banks.length);
+            const selectedBank = config.banks[bankIdx];
+
+            if (type === 'bank') {
+                document.getElementById('bankEn').value = selectedBank.n;
+                // 银行变动通常伴随 BIC 变动
+                singleGen('bic');
+            } else if (type === 'bic') {
+                // 查找当前输入框银行对应的代码，找不到则用随机的
+                const currentBankName = document.getElementById('bankEn').value;
+                const bankObj = config.banks.find(b => b.n === currentBankName) || selectedBank;
+                document.getElementById('bic').value = generateBIC(bankObj.c, reg);
+            } else if (type === 'cardNo') {
+                let no = config.cardPrefix + " ";
+                for(let i=0; i<3; i++) {
+                    no += Math.floor(1000 + Math.random() * 9000) + (i === 2 ? "" : " ");
+                }
+                document.getElementById('cardNo').value = no;
+            } else if (type === 'name') {
+                const names = ["JAMES WALKER", "SOPHIA CHENG", "TAKASHI SATO", "EMMA WILSON", "LI WEI", "ROBERT SMITH"];
+                document.getElementById('holder').value = names[Math.floor(Math.random()*names.length)];
+                saveHolder();
+            }
+            updateAll();
+        }
+
+        function onRegionChange() {
+            singleGen('bank'); // bank 内部会触发 bic 生成
+            singleGen('cardNo');
+            showToast("已切换地区并更新配置");
+        }
+
+        function allGen() {
+            const keys = Object.keys(regionData);
+            document.getElementById('regionSelect').value = keys[Math.floor(Math.random()*keys.length)];
+            onRegionChange();
+            singleGen('name');
+        }
+
+        function getCtx(canvas, w, h) {
+            const ratio = window.devicePixelRatio || 2;
+            canvas.width = w * ratio; canvas.height = h * ratio;
+            canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+            const ctx = canvas.getContext('2d'); ctx.scale(ratio, ratio);
+            return ctx;
+        }
+
+        function drawCard() {
+            const ctx = getCtx(cardCanvas, 500, 315);
+            const d = { 
+                en: document.getElementById('bankEn').value, 
+                no: document.getElementById('cardNo').value, 
+                holder: document.getElementById('holder').value.toUpperCase(), 
+                exp: document.getElementById('expiry').value 
+            };
+            
+            const g = ctx.createLinearGradient(0,0,500,315);
+            g.addColorStop(0, '#1e293b'); g.addColorStop(1, '#334155');
+            ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(0,0,500,315,20); ctx.fill();
+            
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'right'; 
+            ctx.fillText(d.en || "BANK NAME", 470, 45);
+            
+            ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.roundRect(40,85,55,40,6); ctx.fill();
+            
+            ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; 
+            ctx.font = '30px "Courier New"'; ctx.fillText(d.no || "0000 0000 0000 0000", 40, 190);
+            ctx.font = '20px "Courier New"'; ctx.fillText(d.holder || "HOLDER NAME", 40, 275);
+            ctx.font = '16px Arial'; ctx.fillText("EXP: " + d.exp, 300, 275);
+        }
+
+        function generateStatement() {
+            const wrap = document.getElementById('stmtWrapper');
+            wrap.innerHTML = '<canvas id="stmtCanvas"></canvas>';
+            const btn = document.getElementById('dlStmtBtn');
+            wrap.style.display = 'block'; btn.style.display = 'block';
+            
+            const ctx = getCtx(document.getElementById('stmtCanvas'), 500, 650);
+            const reg = document.getElementById('regionSelect').value;
+            const holder = document.getElementById('holder').value.toUpperCase();
+            const addrList = addressData[reg] || addressData["US"];
+            const addr = addrList[Math.floor(Math.random()*addrList.length)];
+            const bank = document.getElementById('bankEn').value;
+
+            ctx.fillStyle = '#fff'; ctx.fillRect(0,0,500,650);
+            ctx.fillStyle = '#1e293b'; ctx.font = 'bold 24px Arial'; ctx.fillText(bank, 30, 60);
+            ctx.font = '12px Arial'; ctx.fillStyle = '#64748b'; ctx.fillText("OFFICIAL MONTHLY STATEMENT", 30, 85);
+            ctx.fillStyle = '#1e293b'; ctx.font = 'bold 14px Arial'; ctx.fillText(holder, 30, 130);
+            ctx.font = '12px Arial'; ctx.fillStyle = '#475569'; ctx.fillText(addr, 30, 150);
+            
+            ctx.fillStyle = '#f1f5f9'; ctx.fillRect(280, 115, 190, 60);
+            ctx.fillStyle = '#1e293b'; ctx.font = '11px Arial';
+            ctx.fillText("Statement No: " + Math.floor(Math.random()*900000+100000), 290, 135);
+            ctx.fillText("BIC/SWIFT: " + document.getElementById('bic').value, 290, 155);
+
+            ctx.strokeRect(30, 200, 440, 1);
+            ctx.font = 'bold 12px Arial'; ctx.fillText("DATE", 40, 230); ctx.fillText("DESCRIPTION", 120, 230); ctx.fillText("AMOUNT", 400, 230);
+            
+            const txs = [["03/01", "PAYMENT RECEIVED", "+$2,500.00"], ["03/10", "STARBUCKS COFFEE", "-$15.00"], ["03/15", "APPLE SERVICES", "-$9.99"]];
+            let y = 265;
+            txs.forEach(t => {
+                ctx.font = '12px Courier';
+                ctx.fillText(t[0], 40, y); ctx.fillText(t[1], 120, y);
+                ctx.textAlign='right'; ctx.fillText(t[2], 460, y); ctx.textAlign='left';
+                y += 35;
+            });
+            wrap.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function downloadImg(type) {
+            const can = (type === 'card') ? cardCanvas : document.getElementById('stmtCanvas');
+            const link = document.createElement('a');
+            link.download = `${type}_${Date.now()}.png`;
+            link.href = can.toDataURL();
+            link.click();
+        }
+
+        function updateAll() { drawCard(); }
+
+        window.onload = () => {
+            const saved = localStorage.getItem('saved_holder');
+            document.getElementById('holder').value = saved || "MARK TESTER";
+            onRegionChange(); 
+        };
+    </script>
+</body>
+</html>
