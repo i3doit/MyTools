@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>520 致最爱的你</title>
+    <style>
+        :root {
+            --primary-pink: #ff758c;
+            --secondary-pink: #ff7eb3;
+            --bg-gradient: linear-gradient(135deg, #ffe9e9 0%, #ffe3e3 100%);
+            --text-color: #4a4a4a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Noto Serif CJK SC", "Source Han Serif SC", "Source Han Serif CN", "STSong", "Songti SC", serif;
+            background: var(--bg-gradient);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        /* 背景爱心粒子动画 */
+        .bg-hearts {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* 主容器 */
+        .container {
+            position: relative;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 10px 30px rgba(255, 117, 140, 0.15);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        /* 核心爱心动效 */
+        .heart-wrapper {
+            position: relative;
+            width: 100px;
+            height: 90px;
+            margin: 0 auto 30px;
+            animation: pulse 1.5s infinite alternate cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .heart-main {
+            position: absolute;
+            width: 50px;
+            height: 80px;
+            background: linear-gradient(to bottom, var(--secondary-pink), var(--primary-pink));
+            border-radius: 50px 50px 0 0;
+            transform-origin: 0 100%;
+        }
+
+        .heart-left {
+            left: 50px;
+            transform: rotate(-45deg);
+        }
+
+        .heart-right {
+            left: 0;
+            transform: rotate(45deg);
+            transform-origin: 100% 100%;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); filter: drop-shadow(0 2px 5px rgba(255,117,140,0.4)); }
+            100% { transform: scale(1.08); filter: drop-shadow(0 8px 20px rgba(255,117,140,0.6)); }
+        }
+
+        /* 文本呈现区 */
+        .confession-text {
+            font-size: 1.35rem;
+            line-height: 1.8;
+            letter-spacing: 2px;
+            color: #5a4a4a;
+            margin-bottom: 30px;
+            min-height: 100px;
+            white-space: pre-line;
+            font-weight: 500;
+        }
+
+        /* 交互按钮 */
+        .btn {
+            background: linear-gradient(90deg, var(--primary-pink), var(--secondary-pink));
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            font-size: 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 117, 140, 0.3);
+            transition: all 0.3s ease;
+            outline: none;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 117, 140, 0.5);
+        }
+
+        /* 表单与输入框 */
+        .input-group {
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .input-control {
+            width: 100%;
+            padding: 12px 20px;
+            border: 1px solid #ffd0d6;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            outline: none;
+            text-align: center;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.9);
+        }
+
+        .input-control:focus {
+            border-color: var(--primary-pink);
+            box-shadow: 0 0 8px rgba(255,117,140,0.2);
+        }
+
+        .hint-text {
+            font-size: 0.85rem;
+            color: #9e8b8d;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .wechat-highlight {
+            color: var(--primary-pink);
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* 提示弹窗 */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(0, 0, 0, 0.75);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* 页脚品牌标识 */
+        .footer-logo {
+            margin-top: 30px;
+            font-size: 0.8rem;
+            color: #bfa8ab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-logo:hover {
+            color: var(--primary-pink);
+        }
+
+        .footer-logo svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        /* 动画定义 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            50% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-hearts" id="bgHearts"></div>
+
+    <div class="container">
+        <div class="heart-wrapper">
+            <div class="heart-main heart-left"></div>
+            <div class="heart-main heart-right"></div>
+        </div>
+
+        <div class="confession-text" id="confessionDisplay">
+            浮世三千，吾爱有三。<br>日、月与卿。<br>日为朝，月为暮，卿为朝朝暮暮。
+        </div>
+
+        <div id="actionArea">
+            <button class="btn" onclick="showUnlockSection()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                定制我的520文案
+            </button>
+        </div>
+
+        <div class="input-group" id="unlockSection">
+            <p class="hint-text">
+                请添加作者微信号：<span class="wechat-highlight" onclick="copyWeChat()">857023577</span><br>回复“520”获取验证码解锁自定义功能
+            </p>
+            <input type="text" class="input-control" id="verifyCode" placeholder="请输入验证码">
+            <button class="btn" onclick="verifyCode()">验证并解锁</button>
+        </div>
+
+        <div class="input-group" id="editSection">
+            <textarea class="input-control" id="customText" rows="3" placeholder="在这里写下你的深情告白..."></textarea>
+            <button class="btn" onclick="generateShare()">生成专属表白链接</button>
+        </div>
+
+        <a href="#" class="footer-logo" target="_blank">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+            <span>LoveCraft 创意工坊提供技术支持</span>
+        </a>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 预设验证码（可自行在此修改）
+        const CORRECT_CODE = "5201314";
+
+        // 初始化：检查URL中是否携带自定义文本
+        window.onload = function() {
+            createAmbientHearts();
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedText = urlParams.get('text');
+            if (sharedText) {
+                document.getElementById('confessionDisplay').innerHTML = decodeURIComponent(sharedText);
+            }
+        }
+
+        // 创建背景飘落的浪漫爱心粒子
+        function createAmbientHearts() {
+            const container = document.getElementById('bgHearts');
+            const heartCount = 15;
+            
+            for (let i = 0; i < heartCount; i++) {
+                const heart = document.createElement('div');
+                heart.style.position = 'absolute';
+                heart.style.width = '15px';
+                heart.style.height = '15px';
+                heart.style.background = 'rgba(255, 117, 140, 0.2)';
+                heart.style.transform = 'rotate(45deg)';
+                heart.style.left = Math.random() * 100 + 'vw';
+                heart.style.top = '100vh';
+                
+                // 伪元素创建爱心形状
+                heart.style.borderRadius = '0';
+                const duration = 6 + Math.random() * 8;
+                const delay = Math.random() * 5;
+                
+                heart.style.animation = `floatUp ${duration}s linear ${delay}s infinite`;
+                
+                // 简易爱心构造
+                heart.innerHTML = `<div style="position:absolute;width:15px;height:15px;background:inherit;border-radius:50%;top:-8px;left:0;"></div>
+                                   <div style="position:absolute;width:15px;height:15px;background:inherit;border-radius:50%;top:0;left:-8px;"></div>`;
+                
+                container.appendChild(heart);
+            }
+        }
+
+        // 显示自定义弹窗
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 点击复制微信号，并执行3秒自动关闭的提示
+        function copyWeChat() {
+            const wechatId = "857023577";
+            navigator.clipboard.writeText(wechatId).then(() => {
+                showToast(`微信号 ${wechatId} 已自动复制！\n正在打开微信... (提示将在3秒后关闭)`);
+            }).catch(() => {
+                // 兼容老旧设备手动选择复制
+                showToast(`请长按复制微信号: ${wechatId}`);
+            });
+        }
+
+        // 显示解锁输入框
+        function showUnlockSection() {
+            document.getElementById('actionArea').style.display = 'none';
+            document.getElementById('unlockSection').style.display = 'block';
+        }
+
+        // 验证码校验
+        function verifyCode() {
+            const inputCode = document.getElementById('verifyCode').value.trim();
+            if (inputCode === CORRECT_CODE) {
+                showToast("解锁成功！快来定制你的专属告白吧~");
+                document.getElementById('unlockSection').style.display = 'none';
+                document.getElementById('editSection').style.display = 'block';
+                // 将当前文本填入输入框方便修改
+                const currentText = document.getElementById('confessionDisplay').innerText;
+                document.getElementById('customText').value = currentText;
+            } else {
+                showToast("验证码不正确哦，请添加作者微信获取");
+            }
+        }
+
+        // 生成分享链接
+        function generateShare() {
+            const textInput = document.getElementById('customText').value.trim();
+            if (!textInput) {
+                showToast("写点什么吧，深情不能留白哦~");
+                return;
+            }
+
+            // 更新当前预览
+            document.getElementById('confessionDisplay').innerHTML = textInput.replace(/\n/g, '<br>');
+
+            // 编码文本并拼接URL
+            const encodedText = encodeURIComponent(textInput);
+            const shareUrl = `${window.location.origin}${window.location.pathname}?text=${encodedText}`;
+
+            // 复制生成的链接
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showToast("专属表白链接已生成并复制！\n赶快发给心爱的Ta或者分享到朋友圈吧~");
+            }).catch(() => {
+                showToast("生成成功！请复制浏览器地址栏链接分享");
+            });
+        }
+    </script>
+</body>
+</html>
