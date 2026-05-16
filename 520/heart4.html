@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>520 极致浪漫渐变烟花</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary: #ff758c;
+            --secondary: #ff7eb3;
+            --bg-deep: #030008;
+            --glass: rgba(255, 255, 255, 0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, "Source Han Serif SC", serif; background: var(--bg-deep); color: #fff; min-height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; }
+
+        /* 宇宙背景 */
+        #starField { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #000; }
+        #fireworksCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+
+        /* 酷炫倒计时 */
+        #countdown {
+            position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 28vw; font-weight: 900; z-index: 100;
+            background: linear-gradient(to bottom, #fff, var(--primary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 30px var(--primary));
+            opacity: 0; pointer-events: none;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #countdown.active { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+
+        /* 文案区 */
+        .content-box { position: relative; z-index: 10; margin-top: 35vh; width: 85%; max-width: 600px; text-align: center; transition: opacity 1.5s ease; }
+        .text-glow { font-size: 1.6rem; line-height: 2; letter-spacing: 5px; text-shadow: 0 0 15px var(--primary); white-space: pre-line; }
+
+        /* 侧边色盘 */
+        .side-bar { position: fixed; right: 15px; top: 40%; transform: translateY(-50%); z-index: 50; background: var(--glass); backdrop-filter: blur(15px); padding: 18px 10px; border-radius: 40px; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; gap: 20px; }
+        .dot { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; transition: 0.3s; border: 2px solid transparent; }
+        .dot.active { border-color: #fff; transform: scale(1.3); box-shadow: 0 0 15px #fff; }
+
+        /* 底部工具 */
+        .toolbar { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(120px); z-index: 60; display: flex; gap: 20px; transition: 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        .toolbar.show { transform: translateX(-50%) translateY(0); }
+        .btn { width: 55px; height: 55px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--primary), var(--secondary)); box-shadow: 0 10px 25px rgba(0,0,0,0.4); transition: 0.3s; position: relative; }
+        .btn svg { width: 24px; height: 24px; fill: #fff; }
+
+        /* 引导箭头 */
+        .guide-arrow { position: absolute; top: -50px; width: 30px; height: 30px; fill: #fff; animation: arrowJump 0.8s infinite alternate; }
+        @keyframes arrowJump { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+
+        /* 大尺寸弹窗 */
+        .modal { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%) translateY(100%); width: 100%; max-width: 550px; background: #0c0a12; border-radius: 35px 35px 0 0; padding: 45px 30px; z-index: 200; transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1); border-top: 1px solid var(--primary); }
+        .modal.open { transform: translateX(-50%) translateY(0); }
+        .modal h2 { text-align: center; margin-bottom: 25px; font-size: 1.4rem; color: var(--secondary); }
+        .input-field { width: 100%; background: #16141d; border: 1px solid #333; border-radius: 18px; color: #fff; padding: 20px; font-size: 1.1rem; margin-bottom: 25px; outline: none; transition: 0.3s; }
+        .input-field:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(255,117,140,0.2); }
+        .confirm-btn { width: 100%; padding: 20px; border-radius: 18px; border: none; font-weight: bold; background: linear-gradient(90deg, var(--primary), var(--secondary)); color: #fff; font-size: 1.1rem; cursor: pointer; }
+
+        .share-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; }
+        .share-item { display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; }
+        .share-icon { width: 65px; height: 65px; border-radius: 20px; background: #1a1822; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .share-item:hover .share-icon { background: var(--primary); transform: translateY(-5px); }
+
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 150; display: none; }
+        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; color: #000; padding: 12px 25px; border-radius: 30px; font-weight: bold; z-index: 1000; opacity: 0; pointer-events: none; transition: 0.3s; }
+    </style>
+</head>
+<body>
+
+    <canvas id="starField"></canvas>
+    <canvas id="fireworksCanvas"></canvas>
+    <div id="countdown"></div>
+
+    <div class="side-bar">
+        <div class="dot active" style="background:#ff758c;" onclick="changeTheme(345, this)"></div>
+        <div class="dot" style="background:#00ffcc;" onclick="changeTheme(165, this)"></div>
+        <div class="dot" style="background:#ffcc00;" onclick="changeTheme(45, this)"></div>
+        <div class="dot" style="background:#00bfff;" onclick="changeTheme(195, this)"></div>
+    </div>
+
+    <div class="content-box" id="textBox">
+        <div class="text-glow" id="displayText"></div>
+    </div>
+
+    <div class="toolbar" id="toolbar">
+        <button class="btn" onclick="handleCustomClick()">
+            <svg class="guide-arrow" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5H7z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        </button>
+        <button class="btn" style="background:rgba(255,255,255,0.1);" onclick="saveToAlbum()">
+            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        </button>
+        <button class="btn" style="background:rgba(255,255,255,0.1);" onclick="openModal('shareModal')">
+            <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+        </button>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="closeModals()"></div>
+
+    <div class="modal" id="unlockModal">
+        <h2>🔒 输入验证码解锁</h2>
+        <p style="text-align:center; color:#888; margin-bottom:20px; font-size:0.9rem;">
+            关注私信“520”获取：<b style="color:var(--primary); cursor:pointer;" onclick="copyCode('857023577')">857023577 (点击复制)</b>
+        </p>
+        <input type="text" class="input-field" id="verifyInput" placeholder="请输入 7 位解锁码">
+        <button class="confirm-btn" onclick="verify()">验证并解锁</button>
+    </div>
+
+    <div class="modal" id="editModal">
+        <h2>💖 定制你的告白</h2>
+        <textarea class="input-field" id="textInput" rows="5" placeholder="在这里写下你的浪漫..."></textarea>
+        <button class="confirm-btn" onclick="applyCustom()">重新开始循环</button>
+    </div>
+
+    <div class="modal" id="shareModal">
+        <h2>📤 分享至平台</h2>
+        <div class="share-row">
+            <div class="share-item" onclick="showToast('已复制链接，去微信粘贴')"><div class="share-icon"><svg viewBox="0 0 24 24"><path d="M8.5 14a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm7 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM12 2C6.5 2 2 5.8 2 10.5c0 2.7 1.5 5.1 4 6.6l-.8 2.4c-.1.3.1.5.4.4l2.8-1.4c1.1.3 2.3.5 3.6.5 5.5 0 10-3.8 10-8.5S17.5 2 12 2z"/></svg></div></div>
+            <div class="share-item" onclick="showToast('链接复制成功，去抖音分享')"><div class="share-icon"><svg viewBox="0 0 24 24"><path d="M12.53 2.48a1 1 0 0 0-.3.02v13.04a3.72 3.72 0 1 1-3.18-3.67 1 1 0 0 0 .82-1V6.2a1 1 0 0 0-1-1 8.2 8.2 0 1 0 7.84 8.78V7.83a8.13 8.13 0 0 0 4.13 1.48 1 1 0 0 0 1.06-.99V3.66a1 1 0 0 0-.85-1 5.92 5.92 0 0 1-5.32-3.14 1 1 0 0 0-.92-.54h-2.3a1 1 0 0 0-.36.06z"/></svg></div></div>
+            <div class="share-item" onclick="showToast('链接复制成功，去微博粘贴')"><div class="share-icon"><svg viewBox="0 0 24 24"><path d="M21.7 11.2c-.4-.1-.7-.3-.8-.6-.2-.5 0-1 .4-1.4.6-.6.8-1.4.5-2.2-.3-.9-1.2-1.5-2.2-1.4-.5 0-.9-.3-1-.7-.3-.9-1.2-1.6-2.2-1.5-1 .1-1.8.8-2 1.8 0 .4-.3.8-.8.8-.9-.1-1.8.4-2.2 1.3-.4.8-.2 1.8.4 2.4.3.3.4.8.2 1.1-.5.7-.5 1.7-.1 2.4.4.7 1.2 1.1 2.1 1 1.6-.2 3.1 1 3.4 2.6.2.9.9 1.6 1.8 1.7 1 .1 1.9-.4 2.3-1.3.2-.4.6-.7 1.1-.6.9.1 1.8-.4 2.2-1.3.3-.8.1-1.8-.4-2.4zm-7.6 2.4c-.9.9-2.4.9-3.4 0-.9-.9-.9-2.4 0-3.4.9-.9 2.4-.9 3.4 0 .9 1 .9 2.5 0 3.4z"/></svg></div></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const texts = [
+            "浮世三千，吾爱有三。\n日、月与卿。\n日为朝，月为暮，卿为朝朝暮暮。",
+            "晓看天色暮看云，\n行也思君，坐也思君。",
+            "即便世界荒芜，\n总有一个人，\n是他所有往日里的星辰。"
+        ];
+        let currentIdx = 0, isUnlocked = false, globalHue = 345, fireLoop = null, warpSpeed = 1;
+
+        // --- 动态星空逻辑 ---
+        const starCanvas = document.getElementById('starField'), starCtx = starCanvas.getContext('2d');
+        let stars = [];
+        function initStars() {
+            starCanvas.width = window.innerWidth; starCanvas.height = window.innerHeight;
+            stars = [];
+            for(let i=0; i<400; i++) stars.push({ x: Math.random()*starCanvas.width - starCanvas.width/2, y: Math.random()*starCanvas.height - starCanvas.height/2, z: Math.random()*starCanvas.width });
+        }
+        function drawStars() {
+            starCtx.fillStyle = '#000'; starCtx.fillRect(0,0,starCanvas.width, starCanvas.height);
+            starCtx.translate(starCanvas.width/2, starCanvas.height/2);
+            stars.forEach(s => {
+                s.z -= warpSpeed;
+                if(s.z <= 0) s.z = starCanvas.width;
+                const px = s.x / (s.z / starCanvas.width), py = s.y / (s.z / starCanvas.width);
+                const size = (1 - s.z/starCanvas.width) * 3;
+                starCtx.fillStyle = `rgba(255,255,255,${1 - s.z/starCanvas.width})`;
+                starCtx.beginPath();
+                if(warpSpeed > 5) starCtx.rect(px, py, size, size * 5); // 倒计时拉伸感
+                else starCtx.arc(px, py, size, 0, 7);
+                starCtx.fill();
+            });
+            starCtx.translate(-starCanvas.width/2, -starCanvas.height/2);
+            requestAnimationFrame(drawStars);
+        }
+
+        // --- 核心流程 ---
+        window.onload = () => { initStars(); drawStars(); initFire(); startCycle(); };
+
+        function startCycle() {
+            const cd = document.getElementById('countdown'), tb = document.getElementById('textBox'), tool = document.getElementById('toolbar');
+            clearInterval(fireLoop);
+            tb.style.opacity = '0'; tool.classList.remove('show');
+            
+            let time = 3;
+            cd.innerText = time; cd.classList.add('active'); warpSpeed = 15; // 加速
+
+            const timer = setInterval(() => {
+                time--;
+                if(time > 0) cd.innerText = time;
+                else {
+                    clearInterval(timer);
+                    cd.classList.remove('active');
+                    warpSpeed = 1; // 恢复常速
+                    launchFireworks();
+                    fireLoop = setInterval(launchFireworks, 1500);
+                    setTimeout(() => typeWriter(texts[currentIdx]), 600);
+                }
+            }, 1000);
+        }
+
+        function typeWriter(txt) {
+            const el = document.getElementById('displayText'), box = document.getElementById('textBox');
+            el.innerHTML = ""; box.style.opacity = '1';
+            let i = 0;
+            const run = () => {
+                if(i < txt.length) {
+                    el.innerHTML += txt[i] === '\n' ? '<br>' : txt[i];
+                    i++; setTimeout(run, 110);
+                } else {
+                    document.getElementById('toolbar').classList.add('show');
+                    setTimeout(() => {
+                        box.style.opacity = '0';
+                        setTimeout(() => { currentIdx = (currentIdx+1)%texts.length; startCycle(); }, 2000);
+                    }, 8000);
+                }
+            };
+            run();
+        }
+
+        // --- 交互功能 ---
+        function changeTheme(h, el) {
+            globalHue = h;
+            document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+            el.classList.add('active');
+            document.documentElement.style.setProperty('--primary', `hsl(${h}, 100%, 75%)`);
+            launchFireworks();
+        }
+
+        function handleCustomClick() { isUnlocked ? openModal('editModal') : openModal('unlockModal'); }
+        function openModal(id) { document.getElementById('overlay').style.display = 'block'; document.getElementById(id).classList.add('open'); }
+        function closeModals() { document.getElementById('overlay').style.display = 'none'; document.querySelectorAll('.modal').forEach(m => m.classList.remove('open')); }
+        function copyCode(c) { navigator.clipboard.writeText(c); showToast("解锁码已复制"); }
+        function verify() { if(document.getElementById('verifyInput').value === '5201314') { isUnlocked = true; closeModals(); openModal('editModal'); } else showToast("验证码错误"); }
+        function applyCustom() { const v = document.getElementById('textInput').value; if(v) { texts[currentIdx] = v; closeModals(); startCycle(); } }
+        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.opacity = '1'; setTimeout(()=>t.style.opacity='0', 2000); }
+        function saveToAlbum() {
+            showToast("正在生成浪漫海报...");
+            html2canvas(document.getElementById('textBox'), { backgroundColor: '#030008' }).then(c => {
+                const a = document.createElement('a'); a.href = c.toDataURL(); a.download = "LoveCard.png"; a.click();
+            });
+        }
+
+        // --- 渐变爱心烟花引擎 ---
+        const fCvs = document.getElementById('fireworksCanvas'), fCtx = fCvs.getContext('2d');
+        let particles = [];
+        function initFire() { fCvs.width = window.innerWidth; fCvs.height = window.innerHeight; fLoop(); }
+        window.addEventListener('resize', () => { fCvs.width = window.innerWidth; fCvs.height = window.innerHeight; });
+
+        function launchFireworks() {
+            const num = 2 + Math.floor(Math.random()*2);
+            for(let i=0; i<num; i++) {
+                setTimeout(() => {
+                    createHeart(Math.random()*fCvs.width, fCvs.height*0.2 + Math.random()*fCvs.height*0.3);
+                }, i*300);
+            }
+        }
+
+        function createHeart(cx, cy) {
+            const scale = fCvs.width < 500 ? 4 : 7;
+            const points = [];
+            const drawH = (ox, s) => {
+                for(let t=0; t<Math.PI*2; t+=0.15) {
+                    let x = 16 * Math.pow(Math.sin(t), 3);
+                    let y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+                    points.push({x: cx + (x + ox)*s, y: cy + y*s});
+                }
+            };
+            drawH(-20, scale); drawH(20, scale); // ♡+♡
+            for(let i=-5; i<5; i++) points.push({x: cx + i*scale, y: cy}); // "=" 连线感
+            
+            points.forEach(p => {
+                particles.push({
+                    x: cx, y: cy, tx: p.x, ty: p.y,
+                    vx: (p.x - cx) * 0.1, vy: (p.y - cy) * 0.1,
+                    life: 80 + Math.random()*20, hue: globalHue
+                });
+            });
+        }
+
+        function fLoop() {
+            fCtx.fillStyle = 'rgba(3,0,8,0.2)'; fCtx.fillRect(0,0,fCvs.width, fCvs.height);
+            particles = particles.filter(p => {
+                p.x += p.vx; p.y += p.vy; p.vy += 0.02; p.life--;
+                // 渐变逻辑：从亮白过渡到主题色
+                const alpha = p.life / 100;
+                const lightness = 50 + (1 - alpha) * 20;
+                fCtx.fillStyle = `hsla(${p.hue}, 100%, ${lightness}%, ${alpha})`;
+                fCtx.beginPath(); fCtx.arc(p.x, p.y, 1.8, 0, 7); fCtx.fill();
+                return p.life > 0;
+            });
+            requestAnimationFrame(fLoop);
+        }
+    </script>
+</body>
+</html>
