@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>520 浪漫表白动态烟花小工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-pink: #ff758c;
+            --secondary-pink: #ff7eb3;
+            --text-light: #ffffff;
+            --glass-bg: rgba(20, 15, 30, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Noto Serif CJK SC", "Source Han Serif SC", "Source Han Serif CN", "STSong", "Songti SC", serif;
+            background: #090514; 
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        /* 烟花 Canvas 完全全屏置底 */
+        #fireworksCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* 可下载的文案卡片：采用绝对居中且不阻挡视线的优雅设计 */
+        .card-wrapper {
+            position: relative;
+            z-index: 10;
+            margin: auto 0;
+            width: 100%;
+            max-width: 420px;
+            perspective: 1000px;
+            animation: floatCard 4s ease-in-out infinite alternate;
+        }
+
+        #captureArea {
+            background: linear-gradient(135deg, rgba(35, 20, 50, 0.7) 0%, rgba(15, 10, 25, 0.7) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 35px 25px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 117, 140, 0.15);
+        }
+
+        .confession-text {
+            font-size: 1.3rem;
+            line-height: 1.8;
+            letter-spacing: 2px;
+            color: #fff0f2;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: pre-line;
+            text-shadow: 0 2px 12px rgba(255, 117, 140, 0.5);
+            font-weight: 500;
+        }
+
+        /* 底部操作和引导区域 */
+        .bottom-controls {
+            position: relative;
+            z-index: 20;
+            width: 100%;
+            max-width: 450px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        /* 按钮设计 */
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(90deg, var(--primary-pink), var(--secondary-pink));
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            font-size: 0.9rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 117, 140, 0.3);
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(255, 117, 140, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 4px 12px rgba(255,255,255,0.1);
+        }
+
+        /* 引导与解锁弹窗 */
+        .popup-modal {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+            width: 100%;
+            max-width: 500px;
+            background: rgba(20, 15, 30, 0.95);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            border: 1px solid var(--glass-border);
+            border-bottom: none;
+            padding: 30px 24px;
+            z-index: 100;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        }
+
+        .popup-modal.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .popup-header {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: var(--secondary-pink);
+            font-weight: bold;
+        }
+
+        .input-control {
+            width: 100%;
+            padding: 12px 20px;
+            border: 1px solid rgba(255, 117, 140, 0.3);
+            border-radius: 16px;
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+            outline: none;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            transition: all 0.3s;
+        }
+        .input-control:focus {
+            border-color: var(--primary-pink);
+            box-shadow: 0 0 10px rgba(255,117,140,0.3);
+        }
+
+        .hint-text {
+            font-size: 0.85rem;
+            color: #c9b0b4;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .highlight {
+            color: var(--secondary-pink);
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .close-popup {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            cursor: pointer;
+            color: #aaa;
+            font-size: 1.2rem;
+        }
+
+        /* 提示通知 */
+        .toast {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(255, 255, 255, 0.95);
+            color: #1a1226;
+            padding: 14px 24px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            pointer-events: none;
+            white-space: pre-line;
+        }
+        .toast.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* 版权与品牌群组 */
+        .brand-footer {
+            margin-top: 15px;
+            font-size: 0.75rem;
+            color: #79687a;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center;
+        }
+        .brand-links {
+            display: flex;
+            gap: 15px;
+        }
+        .brand-links a {
+            color: #9c859e;
+            text-decoration: none;
+            transition: color 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .brand-links a:hover {
+            color: var(--secondary-pink);
+        }
+
+        /* 动画 */
+        @keyframes floatCard {
+            0% { transform: translateY(0) rotateX(2deg); }
+            100% { transform: translateY(-10px) rotateX(-2deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="fireworksCanvas"></canvas>
+
+    <div class="card-wrapper">
+        <div id="captureArea">
+            <div class="confession-text" id="confessionDisplay">加载中...</div>
+        </div>
+    </div>
+
+    <div class="bottom-controls">
+        <div class="btn-group">
+            <button class="btn" onclick="openModal('unlockModal')">✨ 定制/换一条</button>
+            <button class="btn btn-secondary" onclick="copyShareLink()">🔗 复制链接分享</button>
+            <button class="btn btn-secondary" onclick="downloadCardImage()">📸 下载表白卡片</button>
+        </div>
+
+        <div class="brand-footer">
+            <div class="brand-links">
+                <a href="https://mp.weixin.qq.com/s/n17RzI4ZL3-PPhcI30JouQ" target="_blank">关注公众号：艾兜兜儿</a>
+                <a href="https://t.zsxq.com/FhQcu" target="_blank">🚀 知识星球</a>
+            </div>
+            <div>© 艾兜兜儿 创意工坊技术支持</div>
+        </div>
+    </div>
+
+    <div class="popup-modal" id="unlockModal">
+        <span class="close-popup" onclick="closeModal('unlockModal')">✕</span>
+        <div class="popup-header">🔒 解锁高级自定义功能</div>
+        <p class="hint-text">
+            请添加作者微信号：<span class="highlight" onclick="copyWeChat()">857023577</span><br>回复“520”获取验证码，即可解锁自定义及无重复题库。
+        </p>
+        <input type="text" class="input-control" id="verifyCode" placeholder="请输入解锁验证码">
+        <button class="btn" style="width: 100%;" onclick="verifyCode()">验证并解锁</button>
+    </div>
+
+    <div class="popup-modal" id="editModal">
+        <span class="close-popup" onclick="closeModal('editModal')">✕</span>
+        <div class="popup-header">💖 专属告白定制面板</div>
+        <textarea class="input-control" id="customText" rows="3" placeholder="在这里写下想对Ta说的话..."></textarea>
+        <div class="btn-group" style="margin-bottom: 0;">
+            <button class="btn btn-secondary" style="flex: 1;" onclick="triggerRandomText()">🎲 随机换一条</button>
+            <button class="btn" style="flex: 1;" onclick="applyCustomText()">确认生成文案</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 1. 内置 520 文案库 (JSON 格式)
+        const textDatabase = [
+            "浮世三千，吾爱有三。\n日、月与卿。\n日为朝，月为暮，卿为朝朝暮暮。",
+            "晓看天色暮看云，\n行也思君，坐也思君。",
+            "我曾踏过万里河山，\n可见过最美的风景，\n不过是你奔向我时的眉眼。",
+            "听闻远方有你，动身跋涉千里。\n万里山河不如你，\n江河落日不及你。",
+            "如果说这世间有无数巧合，\n那我能遇见你，\n便是其中最美妙的一篇诗章。",
+            "你是落日弥漫的橘，\n天边透亮的星，\n是我生命里不可多得的温柔。"
+        ];
+
+        let remainingTexts = [...textDatabase]; // 动态去重池
+        const CORRECT_CODE = "5201314";
+        let isUnlocked = false;
+
+        // 2. 初始化逻辑
+        window.onload = function() {
+            initFireworks();
+            
+            // 检查链接里是否有别人分享的自定义文案
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedText = urlParams.get('text');
+            
+            if (sharedText) {
+                document.getElementById('confessionDisplay').innerHTML = decodeURIComponent(sharedText);
+            } else {
+                // 默认从JSON题库随机抽一条
+                triggerRandomText(true); 
+            }
+        }
+
+        // 3. 去重随机生成文案算法
+        function triggerRandomText(isFirstLoad = false) {
+            if (!isUnlocked && !isFirstLoad) {
+                showToast("请先输入验证码解锁该功能哦！");
+                return;
+            }
+
+            if (remainingTexts.length === 0) {
+                showToast("所有的内置文案都看过了哦，正在重新洗牌！");
+                remainingTexts = [...textDatabase];
+            }
+
+            // 随机抽取并移出队列防止重复
+            const randomIndex = Math.floor(Math.random() * remainingTexts.length);
+            const selectedText = remainingTexts.splice(randomIndex, 1)[0];
+            
+            document.getElementById('confessionDisplay').innerHTML = selectedText.replace(/\n/g, '<br>');
+            document.getElementById('customText').value = selectedText;
+        }
+
+        // 4. 弹窗控制逻辑
+        function openModal(id) {
+            // 如果已经解锁了，点击直接打开编辑面板
+            if (id === 'unlockModal' && isUnlocked) {
+                id = 'editModal';
+            }
+            document.getElementById(id).style.display = 'block';
+            setTimeout(() => document.getElementById(id).classList.add('show'), 10);
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+            setTimeout(() => document.getElementById(id).style.display = 'none', 400);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // 5. 复制微信号逻辑 (3秒自动关闭提示)
+        function copyWeChat() {
+            const wechatId = "857023577";
+            navigator.clipboard.writeText(wechatId).then(() => {
+                showToast(`微信号 ${wechatId} 已复制！\n请前往微信添加。\n(提示将在3秒后关闭)`);
+            }).catch(() => {
+                showToast(`长按复制微信号: ${wechatId}`);
+            });
+        }
+
+        // 6. 验证码解锁
+        function verifyCode() {
+            const code = document.getElementById('verifyCode').value.trim();
+            if (code === CORRECT_CODE) {
+                isUnlocked = true;
+                showToast("🎉 解锁成功！\n已为您开启自定义编辑与随机换题库。");
+                closeModal('unlockModal');
+                setTimeout(() => openModal('editModal'), 500);
+            } else {
+                showToast("验证码错误，请联系作者获取哦~");
+            }
+        }
+
+        // 7. 应用并生成用户自定义文案
+        function applyCustomText() {
+            const text = document.getElementById('customText').value.trim();
+            if(!text) {
+                showToast("不能留白哦，写下你的心里话吧~");
+                return;
+            }
+            document.getElementById('confessionDisplay').innerHTML = text.replace(/\n/g, '<br>');
+            closeModal('editModal');
+            // 手动触发一发公式烟花致敬
+            fireCustomRocket();
+        }
+
+        // 8. 快捷复制专属分享链接
+        function copyShareLink() {
+            const currentText = document.getElementById('confessionDisplay').innerText;
+            const encodedText = encodeURIComponent(currentText);
+            const shareUrl = `${window.location.origin}${window.location.pathname}?text=${encodedText}`;
+
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showToast("🔗 专属表白链接已复制！\n可直接发送至微信、QQ、微博或朋友圈~");
+            }).catch(() => {
+                showToast("请直接复制当前浏览器地址栏的链接分享");
+            });
+        }
+
+        // 9. 将网页文案合成为唯美卡片并下载/长按保存
+        function downloadCardImage() {
+            showToast("正在精心为您生成唯美表白卡片，请稍候...");
+            const target = document.getElementById('captureArea');
+            
+            html2canvas(target, {
+                backgroundColor: null, // 保持半透明质感
+                useCORS: true,
+                scale: 2 // 提升清晰度
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                link.download = `520表白卡片-${new Date().getTime()}.png`;
+                link.href = imgData;
+                link.click();
+                
+                showToast("📸 卡片生成成功！\n已为您拉起下载，移动端可长按保存。");
+            }).catch(() => {
+                showToast("卡片生成失败，建议截图保存分享哦~");
+            });
+        }
+
+
+        // ================= 烟花动效引擎核心 =================
+        const cvs = document.getElementById('fireworksCanvas');
+        const ctx = cvs.getContext('2d');
+        let rockets = [], particles = [];
+
+        function resize() { cvs.width = window.innerWidth; cvs.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+
+        function initFireworks() {
+            resize();
+            animLoop();
+        }
+
+        function getPoints(cx, cy, scale) {
+            const pts = [];
+            function heart(ox, oy, sc) {
+                for (let a = 0; a < Math.PI * 2; a += 0.06) {
+                    const x = 16 * Math.pow(Math.sin(a), 3);
+                    const y = -(13 * Math.cos(a) - 5 * Math.cos(2*a) - 2 * Math.cos(3*a) - Math.cos(4*a));
+                    pts.push({ x: cx + x * sc + ox, y: cy + y * sc + oy });
+                }
+            }
+            function text(txt, ox, oy, sz) {
+                const b = document.createElement('canvas');
+                b.width = 160; b.height = 100;
+                const c = b.getContext('2d');
+                c.font = `bold ${sz}px Arial`; c.fillStyle = 'white';
+                c.fillText(txt, 10, 60);
+                const data = c.getImageData(0,0,160,100).data;
+                for(let y=0; y<100; y+=4) {
+                    for(let x=0; x<160; x+=4) {
+                        if(data[(y*160+x)*4+3] > 128) pts.push({ x: cx + x + ox - 50, y: cy + y + oy - 50 });
+                    }
+                }
+            }
+            const gap = scale * 22;
+            heart(-gap, -10, scale);
+            text("+", -gap * 0.35, -25, 32);
+            heart(0, -10, scale);
+            text("=", gap * 0.45, -25, 32);
+            heart(gap, -10, scale);
+            text("2", gap * 1.35, -45, 20);
+            return pts;
+        }
+
+        class Rocket {
+            constructor(customY = false) {
+                this.x = cvs.width / 2 + (Math.random() - 0.5) * 60;
+                this.y = cvs.height;
+                this.tx = cvs.width / 2;
+                this.ty = customY ? customY : cvs.height * 0.28; // 公式爆破的核心黄金分割点高度
+                this.speed = 5;
+                this.angle = Math.atan2(this.ty - this.y, this.tx - this.x);
+                this.hue = Math.random() * 40 + 335; // 浪漫粉红流光色系
+            }
+            update() {
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+                if (Math.abs(this.y - this.ty) < 8) {
+                    explode(this.tx, this.ty, this.hue);
+                    return false;
+                }
+                return true;
+            }
+            draw() {
+                ctx.beginPath(); ctx.arc(this.x, this.y, 3, 0, Math.PI*2);
+                ctx.fillStyle = `hsl(${this.hue}, 100%, 75%)`; ctx.fill();
+            }
+        }
+
+        class Part {
+            constructor(x, y, tx, ty, hue) {
+                this.x = x; this.y = y; this.alpha = 1;
+                this.vx = (tx - x) * (0.04 + Math.random() * 0.02);
+                this.vy = (ty - y) * (0.04 + Math.random() * 0.02);
+                this.life = 140 + Math.random() * 40;
+                this.hue = hue; this.stage = 1;
+            }
+            update() {
+                if(this.stage === 1) {
+                    this.x += this.vx; this.y += this.vy; this.life--;
+                    if(this.life <= 50) {
+                        this.stage = 2;
+                        this.vx = (Math.random() - 0.5) * 1.5;
+                        this.vy = Math.random() * 1.2 + 0.4; // 浪漫的散落星沙效果
+                    }
+                } else {
+                    this.x += this.vx; this.y += this.vy; this.alpha -= 0.012;
+                }
+                return this.alpha > 0;
+            }
+            draw() {
+                ctx.save(); ctx.globalAlpha = this.alpha;
+                ctx.beginPath(); ctx.arc(this.x, this.y, Math.random() * 2 + 1, 0, Math.PI*2);
+                ctx.fillStyle = `hsl(${this.hue}, 100%, ${75 + Math.random()*20}%)`;
+                ctx.shadowBlur = 5; ctx.shadowColor = `hsl(${this.hue}, 100%, 70%)`;
+                ctx.fill(); ctx.restore();
+            }
+        }
+
+        function explode(cx, cy, hue) {
+            const sc = cvs.width < 500 ? 4.5 : 7.5;
+            getPoints(cx, cy, sc).forEach(p => particles.push(new Part(cx, cy, p.x, p.y, hue)));
+        }
+
+        function fireCustomRocket() { rockets.push(new Rocket()); }
+
+        function animLoop() {
+            ctx.fillStyle = 'rgba(9, 5, 20, 0.25)'; ctx.fillRect(0, 0, cvs.width, cvs.height);
+            if (rockets.length === 0 && Math.random() < 0.012) rockets.push(new Rocket());
+            rockets = rockets.filter(r => { r.update(); r.draw(); return r.y > r.ty; });
+            particles = particles.filter(p => { const a = p.update(); p.draw(); return a; });
+            requestAnimationFrame(animLoop);
+        }
+    </script>
+</body>
+</html>
