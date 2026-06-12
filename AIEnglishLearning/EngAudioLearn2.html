@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>沉浸式英文听力健身房 | Immersive English Hearing Gym</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --text-muted: #aaaaaa;
+            --accent-color: #00e676;
+            --accent-hover: #00c853;
+            --exercise-color: #29b6f6;
+            --danger-color: #ff5252;
+            --border-radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            text-align: center;
+            color: var(--accent-color);
+            margin: 5px 0;
+            letter-spacing: 1px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 16px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            border: 1px solid #2d2d2d;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #2d2d2d;
+            padding-bottom: 6px;
+            color: var(--text-color);
+        }
+
+        /* 统计看板 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .stat-item {
+            background: #252525;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-val {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-top: 4px;
+        }
+
+        /* 工具栏开关 */
+        .toggle-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 12px 6px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: var(--text-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .toggle-btn.active {
+            background-color: rgba(0, 230, 118, 0.15);
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        /* 输入区域优化 */
+        .textarea-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        textarea {
+            width: 100%;
+            height: 140px;
+            background-color: #151515;
+            border: 1px solid #333;
+            color: var(--text-color);
+            padding: 12px;
+            border-radius: var(--border-radius);
+            resize: none;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        .paste-overlay-btn {
+            position: absolute;
+            right: 10px;
+            bottom: 12px;
+            background: rgba(50, 50, 50, 0.9);
+            border: 1px solid #555;
+            color: var(--accent-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        /* 互动阅读区与高亮 */
+        .reader-area {
+            min-height: 140px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #151515;
+            border: 1px solid #333;
+            padding: 12px;
+            border-radius: var(--border-radius);
+            font-size: 1.1rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .reader-area.blur {
+            filter: blur(7px);
+            user-select: none;
+        }
+
+        .word-span {
+            display: inline-block;
+            cursor: pointer;
+            padding: 0 2px;
+            margin: 1px 0;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+        /* 手机端点击反馈 */
+        .word-span:active {
+            background-color: #444;
+        }
+
+        .current-sentence {
+            background-color: rgba(0, 230, 118, 0.2) !important;
+            border-bottom: 2px solid var(--accent-color);
+            border-radius: 4px;
+            padding: 2px 0;
+            transition: all 0.3s ease;
+        }
+
+        /* 控制面板 */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .slider-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent-color);
+            height: 6px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .btn-primary { background-color: var(--accent-color); color: #121212; }
+        .btn-secondary { background-color: #333; border: 1px solid #444; color: var(--text-color); }
+        .btn-exercise { background-color: var(--exercise-color); color: #121212; }
+
+        /* 练习区 */
+        .exercise-panel {
+            display: none;
+            background: #252525;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-left: 4px solid var(--exercise-color);
+        }
+        .ex-input-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .ex-input {
+            flex: 1;
+            padding: 8px;
+            background: #151515;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        /* 生词本 */
+        .vocab-list {
+            max-height: 180px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .vocab-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #151515;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid #252525;
+        }
+
+        .vocab-text {
+            font-size: 1rem;
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .vocab-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 2px;
+        }
+
+        .icon-btn.delete { color: var(--danger-color); }
+
+        .data-links {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 12px;
+            font-size: 0.8rem;
+        }
+
+        .data-links label, .data-links span {
+            color: var(--text-muted);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        input[type="file"] { display: none; }
+
+        /* 移动端优化划词捕捉悬浮条 */
+        #mobile-selection-bar {
+            display: none;
+            background: #29b6f6;
+            color: #121212;
+            text-align: center;
+            padding: 8px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-radius: 6px;
+            margin-top: 6px;
+            cursor: pointer;
+        }
+
+        /* 弹出式菜单气泡 */
+        #word-bubble {
+            position: absolute;
+            background: #333;
+            padding: 6px 10px;
+            border-radius: 6px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            display: none;
+            gap: 6px;
+            z-index: 1000;
+            border: 1px solid #555;
+            align-items: center;
+        }
+
+        #word-bubble button {
+            background: var(--accent-color);
+            border: none;
+            color: #121212;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #555;
+            margin-top: auto;
+            padding-top: 20px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🎧 Immersive Hearing Gym</h1>
+
+        <div class="card stats-grid">
+            <div class="stat-item">
+                <div style="font-size:0.8rem; color:var(--text-muted);">今日练词/进度</div>
+                <div class="stat-val" id="stat-words">0 / 0%</div>
+            </div>
+            <div class="stat-item">
+                <div style="font-size:0.8rem; color:var(--text-muted);">生词本储量</div>
+                <div class="stat-val" id="stat-vocab" style="color:var(--exercise-color)">0</div>
+            </div>
+        </div>
+
+        <div class="toggle-group">
+            <button class="toggle-btn" id="btn-blur">👁️ 盲听遮罩: 关</button>
+            <button class="toggle-btn" id="btn-pause-mode">⏱️ 断句暂停: 关</button>
+        </div>
+
+        <div class="card">
+            <div class="textarea-wrapper" id="input-wrapper">
+                <textarea id="text-input" placeholder="在此输入或粘贴英文段落或对话...可以使用下方的覆盖粘贴快捷键。"></textarea>
+                <button class="paste-overlay-btn" id="btn-smart-paste">📋 覆盖粘贴</button>
+            </div>
+            <div id="reader-area" class="reader-area" style="display: none;"></div>
+            <div id="mobile-selection-bar">✨ 捕捉到您选中的文本：点击加入生词本</div>
+        </div>
+
+        <div class="card controls">
+            <div class="slider-box">
+                <span>语速: <span id="speed-val">1.0</span>x</span>
+                <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" id="btn-main">▶️ 开始训练</button>
+                <button class="btn btn-exercise" id="btn-to-exercise">✏️ 听写练习</button>
+                <button class="btn btn-secondary" id="btn-reset" style="display:none;">🔄 返回修改</button>
+            </div>
+        </div>
+
+        <div class="card" id="exercise-card" style="display:none;">
+            <div class="card-title">
+                <span id="ex-mode-title">✏️ 听写强化练习</span>
+                <button class="icon-btn" id="btn-close-ex" style="font-size:0.9rem;">关闭 ✕</button>
+            </div>
+            <div class="exercise-panel" id="exercise-panel" style="display:block; margin-top:0;">
+                <div id="ex-question-hint" style="font-size:0.95rem; color:#fff; line-height:1.4;">请先在上方输入文章或添加生词。</div>
+                <div id="ex-cloze-display" style="font-size:1.1rem; letter-spacing:1px; margin:10px 0; font-family:monospace; color:var(--accent-color);"></div>
+                <div class="ex-input-row">
+                    <input type="text" class="ex-input" id="ex-user-input" placeholder="听语音，在此键入拼写..." autocomplete="off" autocapitalize="off">
+                    <button class="btn btn-primary" id="btn-ex-check" style="flex:0; padding:0 15px; font-size:0.9rem;">检查</button>
+                </div>
+                <div id="ex-feedback" style="margin-top:8px; font-size:0.85rem; font-weight:bold;"></div>
+                <div class="btn-row" style="margin-top:10px;">
+                    <button class="btn btn-secondary" id="btn-ex-replay" style="padding:6px; font-size:0.85rem;">🔊 重听一次</button>
+                    <button class="btn btn-secondary" id="btn-ex-add-vocab" style="padding:6px; font-size:0.85rem; display:none; color:var(--danger-color);">⭐ 扔进生词本</button>
+                    <button class="btn btn-secondary" id="btn-ex-next" style="padding:6px; font-size:0.85rem;">➡️ 跳过/下一题</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <h3>⭐ 我的生词本</h3>
+                <button class="icon-btn" id="btn-copy-all-vocab" style="font-size:0.8rem; text-decoration:underline; color:var(--text-muted);">复制全本</button>
+            </div>
+            <div class="vocab-list" id="vocab-list"></div>
+            <div class="data-links">
+                <label for="import-file">📥 导入 JSON</label>
+                <input type="file" id="import-file" accept=".json">
+                <span id="btn-export">📤 导出备份</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="word-bubble">
+        <span id="selected-word-text" style="font-weight: bold; font-size: 0.9rem; color:#fff; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+        <button id="bubble-add">⭐ 生词本</button>
+        <button id="bubble-copy">📋 复制</button>
+    </div>
+
+    <footer>
+        <p>© 2026 - <span id="current-year"></span> Immersive English Hearing Gym. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        // --- 状态管理 ---
+        let isTraining = false;
+        let isBlur = false;
+        let isPauseMode = false;
+        let sentences = [];
+        let currentSentenceIndex = 0;
+        let totalWordsCount = 0;
+        let vocabList = JSON.parse(localStorage.getItem('gym_vocab_list')) || [];
+        
+        // 练习子系统状态
+        let currentExType = 'sentence'; // 'word' 或 'sentence'
+        let currentExTarget = '';
+        let currentExFullText = '';
+
+        // TTS
+        const synth = window.speechSynthesis;
+        let utterance = null;
+
+        // --- DOM 节点 ---
+        const textInput = document.getElementById('text-input');
+        const inputWrapper = document.getElementById('input-wrapper');
+        const readerArea = document.getElementById('reader-area');
+        const btnBlur = document.getElementById('btn-blur');
+        const btnPauseMode = document.getElementById('btn-pause-mode');
+        const btnMain = document.getElementById('btn-main');
+        const btnReset = document.getElementById('btn-reset');
+        const btnSmartPaste = document.getElementById('btn-smart-paste');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedVal = document.getElementById('speed-val');
+        const vocabListEl = document.getElementById('vocab-list');
+        const wordBubble = document.getElementById('word-bubble');
+        const selectedWordText = document.getElementById('selected-word-text');
+        const mobileSelectionBar = document.getElementById('mobile-selection-bar');
+        
+        // 统计节点
+        const statWords = document.getElementById('stat-words');
+        const statVocab = document.getElementById('stat-vocab');
+        
+        // 练习节点
+        const exerciseCard = document.getElementById('exercise-card');
+        const btnToExercise = document.getElementById('btn-to-exercise');
+        const btnCloseEx = document.getElementById('btn-close-ex');
+        const exQuestionHint = document.getElementById('ex-question-hint');
+        const exClozeDisplay = document.getElementById('ex-cloze-display');
+        const exUserInput = document.getElementById('ex-user-input');
+        const btnExCheck = document.getElementById('btn-ex-check');
+        const exFeedback = document.getElementById('ex-feedback');
+        const btnExReplay = document.getElementById('btn-ex-replay');
+        const btnExAddVocab = document.getElementById('btn-ex-add-vocab');
+        const btnExNext = document.getElementById('btn-ex-next');
+
+        // --- 初始化 ---
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+        updateVocabStats();
+        renderVocab();
+
+        // --- 覆盖粘贴功能 ---
+        btnSmartPaste.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    textInput.value = text;
+                } else {
+                    alert('剪贴板中没有读取到内容，请确保已赋予读取权限。');
+                }
+            } catch (err) {
+                // 兜底方案
+                alert('由于浏览器安全限制，请直接长按输入框选择系统自带的“粘贴”。');
+            }
+        });
+
+        // --- 盲听与断句开关 ---
+        btnBlur.addEventListener('click', () => {
+            isBlur = !isBlur;
+            btnBlur.classList.toggle('active', isBlur);
+            btnBlur.textContent = `👁️ 盲听遮罩: ${isBlur ? '开' : '关'}`;
+            readerArea.classList.toggle('blur', isBlur);
+        });
+
+        btnPauseMode.addEventListener('click', () => {
+            isPauseMode = !isPauseMode;
+            btnPauseMode.classList.toggle('active', isPauseMode);
+            btnPauseMode.textContent = `⏱️ 断句暂停: ${isPauseMode ? '开' : '关'}`;
+        });
+
+        speedSlider.addEventListener('input', (e) => {
+            speedVal.textContent = e.target.value;
+        });
+
+        // --- 修复版：多端单词捕捉器 (彻底根治手机端无法弹出生词本) ---
+        let capturedWord = "";
+        
+        // 策略1：HTML颗粒化点击监听（针对单点单词）
+        function setupWordClickHandlers() {
+            document.querySelectorAll('.word-span').forEach(span => {
+                // 同时兼容触屏与鼠标
+                const handleSelection = (e) => {
+                    e.stopPropagation();
+                    let rawWord = span.textContent;
+                    capturedWord = rawWord.replace(/[^a-zA-Z]/g, ""); 
+                    if(capturedWord.length > 0) {
+                        showBubbleMenu(e.pageX, e.pageY - 35, capturedWord);
+                    }
+                };
+                span.addEventListener('click', handleSelection);
+            });
+        }
+
+        // 策略2：针对手机浏览器双击/长按系统自由选中的全局监听兜底
+        document.addEventListener('selectionchange', () => {
+            const selection = window.getSelection().toString().trim();
+            if (selection && selection.length > 0 && selection.length < 30) {
+                // 过滤清理多余符号成干净单词
+                let cleanWord = selection.replace(/[^a-zA-Z\s]/g, "");
+                if (cleanWord) {
+                    capturedWord = cleanWord;
+                    mobileSelectionBar.textContent = `✨ 捕捉到选中内容: "${capturedWord}" (点击存入生词本)`;
+                    mobileSelectionBar.style.display = 'block';
+                }
+            } else {
+                mobileSelectionBar.style.display = 'none';
+            }
+        });
+
+        mobileSelectionBar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (capturedWord) {
+                addWordToVocab(capturedWord);
+                mobileSelectionBar.style.display = 'none';
+                window.getSelection().removeAllRanges();
+            }
+        });
+
+        function showBubbleMenu(x, y, word) {
+            selectedWordText.textContent = word;
+            wordBubble.style.left = `${x}px`;
+            wordBubble.style.top = `${y}px`;
+            wordBubble.style.display = 'flex';
+        }
+
+        document.addEventListener('click', () => {
+            wordBubble.style.display = 'none';
+        });
+
+        document.getElementById('bubble-add').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (capturedWord) addWordToVocab(capturedWord);
+            wordBubble.style.display = 'none';
+        });
+
+        document.getElementById('bubble-copy').addEventListener('click', (e) => {
+            e.stopPropagation();
+            navigator.clipboard.writeText(capturedWord);
+            wordBubble.style.display = 'none';
+        });
+
+        // --- 训练引擎（含自动滚动定位与高亮） ---
+        btnMain.addEventListener('click', () => {
+            if (!isTraining) {
+                const text = textInput.value.trim();
+                if (!text) return alert('请输入英文内容再开始！');
+                
+                // 依据标点及换行精确断句
+                sentences = text.match(/[^.!?\n]+[.!?\n]*/g) || [text];
+                // 过滤掉纯空字符行
+                sentences = sentences.map(s => s.trim()).filter(s => s.length > 0);
+                
+                totalWordsCount = text.split(/\s+/).filter(w => /\w+/.test(w)).length;
+                currentSentenceIndex = 0;
+                
+                buildReaderDOM();
+                
+                inputWrapper.style.display = 'none';
+                readerArea.style.display = 'block';
+                btnReset.style.display = 'inline-block';
+                isTraining = true;
+                
+                playSentence();
+            } else {
+                if (synth.speaking && !synth.paused) {
+                    synth.pause();
+                    btnMain.textContent = '▶️ 继续播放';
+                } else if (synth.paused) {
+                    synth.resume();
+                    btnMain.textContent = '⏸️ 暂停播放';
+                } else {
+                    playSentence();
+                }
+            }
+        });
+
+        btnReset.addEventListener('click', () => {
+            synth.cancel();
+            inputWrapper.style.display = 'block';
+            readerArea.style.display = 'none';
+            btnReset.style.display = 'none';
+            btnMain.textContent = '▶️ 开始训练';
+            isTraining = false;
+            wordBubble.style.display = 'none';
+            updateStatsUI(0);
+        });
+
+        function buildReaderDOM() {
+            readerArea.innerHTML = '';
+            sentences.forEach((sentence, sIdx) => {
+                const sSpan = document.createElement('span');
+                sSpan.id = `s-${sIdx}`;
+                sSpan.style.display = 'inline';
+                
+                const words = sentence.split(/(\s+)/);
+                words.forEach(word => {
+                    if (/\w+/.test(word)) {
+                        const wSpan = document.createElement('span');
+                        wSpan.className = 'word-span';
+                        wSpan.textContent = word;
+                        sSpan.appendChild(wSpan);
+                    } else {
+                        sSpan.appendChild(document.createTextNode(word));
+                    }
+                });
+                readerArea.appendChild(sSpan);
+                readerArea.appendChild(document.createTextNode(' '));
+            });
+            setupWordClickHandlers();
+        }
+
+        function playSentence() {
+            synth.cancel();
+            if (currentSentenceIndex >= sentences.length) {
+                updateStatsUI(100);
+                alert('全篇文章已听力练完！');
+                btnReset.click();
+                return;
+            }
+
+            // 更新同步高亮
+            document.querySelectorAll('.current-sentence').forEach(el => el.classList.remove('current-sentence'));
+            const currentEl = document.getElementById(`s-${currentSentenceIndex}`);
+            if (currentEl) {
+                currentEl.classList.add('current-sentence');
+                // 自动平滑滚动定位（盲听模式下不自动追踪滚动防止破坏盲听感）
+                if (!isBlur) {
+                    currentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+
+            // 计算进度统计
+            let progress = Math.round((currentSentenceIndex / sentences.length) * 100);
+            updateStatsUI(progress);
+
+            utterance = new SpeechSynthesisUtterance(sentences[currentSentenceIndex]);
+            utterance.lang = 'en-US';
+            utterance.rate = parseFloat(speedSlider.value);
+
+            utterance.onend = () => {
+                currentSentenceIndex++;
+                if (isPauseMode) {
+                    btnMain.textContent = '▶️ 下一句';
+                } else {
+                    playSentence();
+                }
+            };
+
+            utterance.onerror = () => { btnReset.click(); };
+            synth.speak(utterance);
+            btnMain.textContent = '⏸️ 暂停播放';
+        }
+
+        function updateStatsUI(progress) {
+            statWords.textContent = `${totalWordsCount}词 / ${progress}%`;
+        }
+
+        // --- 新增：智能练习子系统 (填空/听写训练) ---
+        btnToExercise.addEventListener('click', () => {
+            exerciseCard.style.display = 'block';
+            exerciseCard.scrollIntoView({ behavior: 'smooth' });
+            generateExercise();
+        });
+
+        btnCloseEx.addEventListener('click', () => {
+            exerciseCard.style.display = 'none';
+            synth.cancel();
+        });
+
+        function generateExercise() {
+            exFeedback.textContent = '';
+            btnExAddVocab.style.display = 'none';
+            exUserInput.value = '';
+            
+            // 随机抉择练习模式：如果有生词优先练习生词，否则练习句子填空
+            if (vocabList.length > 0 && Math.random() > 0.4) {
+                currentExType = 'word';
+                currentExTarget = vocabList[Math.floor(Math.random() * vocabList.length)];
+                exExcuteWordCloze(currentExTarget);
+            } else {
+                currentExType = 'sentence';
+                let sourceList = sentences.length > 0 ? sentences : (textInput.value.trim() ? textInput.value.match(/[^.!?\n]+[.!?\n]*/g) : []);
+                if (!sourceList || sourceList.length === 0) {
+                    exQuestionHint.textContent = "💡 请先在上方文本域输入一些英文句子，或在生词本中添加单词，即可激活自动化练习舱。";
+                    exClozeDisplay.textContent = "";
+                    return;
+                }
+                let rawSentence = sourceList[Math.floor(Math.random() * sourceList.length)].trim();
+                exExcuteSentenceCloze(rawSentence);
+            }
+            playExAudio();
+        }
+
+        function exExcuteWordCloze(word) {
+            exQuestionHint.textContent = "🎯 模式：生词本单词拼写强化";
+            // 挖空算法：保留首尾字母，中间替换为下划线
+            if (word.length <= 2) {
+                exClozeDisplay.textContent = "__";
+            } else {
+                let center = "_".repeat(word.length - 2);
+                exClozeDisplay.textContent = word[0] + center + word[word.length - 1];
+            }
+        }
+
+        function exExcuteSentenceCloze(sentence) {
+            exQuestionHint.textContent = "🎯 模式：语境句子盲听填空";
+            currentExFullText = sentence;
+            let tokens = sentence.split(/(\s+)/);
+            // 挑选长度大于4的英文单词作为挖空目标
+            let validWords = tokens.filter(t => /[a-zA-Z]{4,}/.test(t));
+            
+            if (validWords.length === 0) {
+                // 兜底
+                currentExTarget = tokens.find(t => /\w+/.test(t)) || "english";
+            } else {
+                currentExTarget = validWords[Math.floor(Math.random() * validWords.length)];
+            }
+            
+            currentExTarget = currentExTarget.replace(/[^a-zA-Z]/g, ""); // 清理掉标点
+            
+            // 渲染句子挖空外观
+            let clozeSentence = sentence.replace(new RegExp('\\b' + currentExTarget + '\\b', 'g'), "_______");
+            exClozeDisplay.textContent = clozeSentence;
+        }
+
+        function playExAudio() {
+            synth.cancel();
+            let textToSpeak = currentExType === 'word' ? currentExTarget : currentExFullText;
+            let u = new SpeechSynthesisUtterance(textToSpeak);
+            u.lang = 'en-US';
+            u.rate = parseFloat(speedSlider.value) * 0.9; // 练习时稍微降低一成语速确保听清
+            synth.speak(u);
+        }
+
+        btnExCheck.addEventListener('click', () => {
+            let ans = exUserInput.value.trim().toLowerCase();
+            let target = currentExTarget.toLowerCase();
+            
+            if (!ans) return;
+
+            if (ans === target) {
+                exFeedback.innerHTML = "<span style='color:var(--accent-color);'>🎉 极度正确！太棒了！</span>";
+            } else {
+                exFeedback.innerHTML = `<span style='color:var(--danger-color);'>❌ 拼写有误。正确答案是: ${currentExTarget}</span>`;
+                btnExAddVocab.style.display = 'inline-block'; // 错误引导加入生词本
+            }
+        });
+
+        btnExReplay.addEventListener('click', playExAudio);
+        btnExNext.addEventListener('click', generateExercise);
+        btnExAddVocab.addEventListener('click', () => {
+            if (currentExTarget) {
+                addWordToVocab(currentExTarget);
+                btnExAddVocab.style.display = 'none';
+                exFeedback.insertAdjacentHTML('beforeend', ' (已存入生词本)');
+            }
+        });
+
+        // --- 生词本核心业务 ---
+        function addWordToVocab(word) {
+            let clean = word.trim().replace(/[^a-zA-Z]/g, "");
+            if (clean && !vocabList.includes(clean)) {
+                vocabList.push(clean);
+                saveVocabData();
+                renderVocab();
+            }
+        }
+
+        function saveVocabData() {
+            localStorage.setItem('gym_vocab_list', JSON.stringify(vocabList));
+            updateVocabStats();
+        }
+
+        function updateVocabStats() {
+            statVocab.textContent = vocabList.length;
+        }
+
+        function renderVocab() {
+            vocabListEl.innerHTML = '';
+            if(vocabList.length === 0) {
+                vocabListEl.innerHTML = '<div style="color:#666; font-size:0.9rem; text-align:center; padding:10px;">生词本空空如也，在阅读区点击单词添加。</div>';
+                return;
+            }
+            vocabList.forEach(word => {
+                const item = document.createElement('div');
+                item.className = 'vocab-item';
+                item.innerHTML = `
+                    <span class="vocab-text">${word}</span>
+                    <div class="vocab-actions">
+                        <button class="icon-btn" onclick="speakVocabWord('${word}')">🔊</button>
+                        <button class="icon-btn" onclick="copyVocabWord('${word}')">📋</button>
+                        <button class="icon-btn delete" onclick="deleteVocabWord('${word}')">❌</button>
+                    </div>
+                `;
+                vocabListEl.appendChild(item);
+            });
+        }
+
+        window.speakVocabWord = function(word) {
+            synth.cancel();
+            const u = new SpeechSynthesisUtterance(word);
+            u.lang = 'en-US';
+            synth.speak(u);
+        };
+
+        window.copyVocabWord = function(word) {
+            navigator.clipboard.writeText(word);
+        };
+
+        window.deleteVocabWord = function(word) {
+            vocabList = vocabList.filter(v => v !== word);
+            saveVocabData();
+            renderVocab();
+        };
+
+        document.getElementById('btn-copy-all-vocab').addEventListener('click', () => {
+            if (vocabList.length === 0) return alert('生词本还没有单词。');
+            navigator.clipboard.writeText(vocabList.join('\n'));
+            alert('整个生词本的单词已成功导出复制到剪贴板！');
+        });
+
+        // --- 备份跨端管理 (JSON 导入/导出) ---
+        document.getElementById('btn-export').addEventListener('click', () => {
+            if(vocabList.length === 0) return alert('生词本为空，无需备份。');
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(vocabList));
+            const dlNode = document.createElement('a');
+            dlNode.setAttribute("href", dataStr);
+            dlNode.setAttribute("download", `HearingGym_Backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(dlNode);
+            dlNode.click();
+            dlNode.remove();
+        });
+
+        document.getElementById('import-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const imported = JSON.parse(evt.target.result);
+                    if (Array.isArray(imported)) {
+                        vocabList = [...new Set([...vocabList, ...imported])];
+                        saveVocabData();
+                        renderVocab();
+                        alert('成功安全合入并去重了外部生词数据！');
+                    } else {
+                        alert('JSON 格式验证未通过。');
+                    }
+                } catch (err) {
+                    alert('文件解析失败，请确保导入的是本系统导出的标准备份文件。');
+                }
+            };
+            reader.readAsText(file);
+        });
+    </script>
+</body>
+</html>
