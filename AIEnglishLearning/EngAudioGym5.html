@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>沉浸式英文听力健身房 | Immersive English Hearing Gym</title>
+    <style>
+        :root {
+            --base-bg-start: #e6f7ff;
+            --base-bg-end: #ccefff;
+            --glass-card-bg: rgba(255, 255, 255, 0.85);
+            --glass-input-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-blur: blur(12px);
+            --text-primary: #1a2b4d;
+            --text-muted: #64748b;
+            --accent-linear: linear-gradient(135deg, #4facfe 0%, #00c1fc 100%);
+            --accent-solid: #4facfe;
+            --accent-glow: rgba(79, 172, 254, 0.15);
+            --danger-solid: #ff4d4f;
+            --danger-glow: rgba(255, 77, 79, 0.15);
+            --success-solid: #52c41a;
+            --success-glow: rgba(82, 196, 26, 0.15);
+            --shadow-ambient: 0 8px 32px rgba(31, 38, 135, 0.08);
+            --shadow-penetrating: 0 12px 48px rgba(31, 38, 135, 0.15);
+            --border-radius: 20px;
+            --transition-smooth: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--base-bg-start);
+            background-image: radial-gradient(circle at center, var(--base-bg-start) 0%, var(--base-bg-end) 100%);
+            color: var(--text-primary);
+            padding: 24px 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 50px;
+        }
+
+        /* 🚀 灵动岛风格数据胶囊 */
+        .data-capsule {
+            background: rgba(26, 43, 77, 0.9);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.5px;
+            box-shadow: var(--shadow-ambient);
+        }
+        .capsule-item span { color: #00c1fc; font-weight: 800; }
+
+        /* 🏛️ 核心动作枢纽 */
+        .action-hub {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        .hub-btn {
+            background: var(--glass-card-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 18px;
+            border-radius: var(--border-radius);
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            box-shadow: var(--shadow-ambient);
+        }
+        .hub-btn:active { transform: scale(0.96); }
+        .hub-btn.primary-active { 
+            background: var(--accent-linear); 
+            color: white; 
+            border-color: transparent; 
+            box-shadow: 0 8px 24px rgba(79, 172, 254, 0.4); 
+        }
+        .hub-btn.exercise-active { 
+            background: linear-gradient(135deg, #7F53AC 0%, #647DEE 100%); 
+            color: white; 
+            border-color: transparent; 
+            box-shadow: 0 8px 24px rgba(127, 83, 172, 0.4); 
+        }
+
+        /* 📋 C位海盐玻璃舱容器 */
+        .card {
+            background: var(--glass-card-bg);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            box-shadow: var(--shadow-ambient);
+            position: relative;
+        }
+
+        /* 拖拽与输入复合区 */
+        .import-dropzone {
+            border: 2px dashed rgba(79, 172, 254, 0.3);
+            border-radius: 14px;
+            background: var(--glass-input-bg);
+            position: relative;
+            transition: var(--transition-smooth);
+        }
+        .import-dropzone.dragover { 
+            border-color: var(--accent-solid); 
+            background: rgba(79, 172, 254, 0.08); 
+        }
+        
+        textarea {
+            width: 100%;
+            height: 170px;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 16px;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            outline: none;
+            resize: none;
+            word-wrap: break-word;
+            font-weight: 500;
+        }
+
+        .dropzone-tip {
+            position: absolute;
+            left: 14px; top: -11px;
+            background: #fff;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .paste-btn {
+            position: absolute;
+            right: 12px; bottom: 12px;
+            background: #fff;
+            border: 1px solid rgba(79, 172, 254, 0.2);
+            color: var(--accent-solid);
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: var(--transition-smooth);
+        }
+        .paste-btn:hover { background: var(--accent-solid); color: #fff; }
+
+        /* 互动高亮阅读区 */
+        .reader-area {
+            min-height: 170px;
+            max-height: 300px;
+            overflow-y: auto;
+            background: var(--glass-input-bg);
+            border: 1px solid rgba(79, 172, 254, 0.15);
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 1.15rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        .reader-area.blur { filter: blur(10px); user-select: none; }
+        .word-span { display: inline-block; cursor: pointer; padding: 0 3px; border-radius: 6px; transition: background 0.2s; }
+        .word-span:hover { background: rgba(79, 172, 254, 0.15); color: var(--accent-solid); }
+        .current-sentence { background-color: var(--accent-glow) !important; border-bottom: 2.5px solid var(--accent-solid); color: #0076ff; font-weight: 700; }
+
+        /* ⚙️ 高级个性化抽屉 */
+        .drawer-trigger {
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            text-decoration: underline;
+        }
+        .settings-drawer {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 16px;
+            border-radius: 14px;
+            border: 1px dashed rgba(79, 172, 254, 0.3);
+        }
+        .slider-box {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        input[type="range"] { flex: 1; accent-color: var(--accent-solid); height: 6px; cursor: pointer; }
+        
+        .toggle-btn {
+            flex: 1; padding: 12px; background: #fff; border: 1px solid rgba(79, 172, 254, 0.2);
+            color: var(--text-primary); border-radius: 10px; font-size: 0.8rem; cursor: pointer; font-weight: 700;
+            transition: var(--transition-smooth);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+        .toggle-btn.active { background: var(--accent-solid); color: #fff; border-color: transparent; }
+
+        .drawer-footer-links { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-top: 4px; }
+        .drawer-footer-links label, .drawer-footer-links span { cursor: pointer; text-decoration: underline; }
+        .drawer-footer-links label:hover, .drawer-footer-links span:hover { color: var(--accent-solid); }
+
+        /* ✏️ 智能化听写练习舱 */
+        .exercise-cabin { background: rgba(255,255,255,0.6); padding: 16px; border-radius: 14px; border-left: 5px solid #7F53AC; display: flex; flex-direction: column; gap: 12px; }
+        .ex-input-row { display: flex; gap: 10px; }
+        .ex-input { flex: 1; padding: 12px 16px; background: #fff; border: 1px solid rgba(79, 172, 254, 0.2); color: var(--text-primary); border-radius: 10px; outline: none; font-size: 1rem; font-weight: 600; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .ex-input:focus { border-color: var(--accent-solid); }
+        .btn { padding: 12px 20px; border: none; border-radius: 50px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: var(--transition-smooth); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .btn-purple { background: linear-gradient(to right, #7F53AC, #647DEE); color: #fff; }
+        .btn-secondary { background: #fff; color: var(--text-primary); border: 1px solid rgba(79, 172, 254, 0.2); }
+        .btn:active { transform: scale(0.95); }
+        
+        /* 🗃️ 双舱样式设计 */
+        .section-header { font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(79, 172, 254, 0.1); padding-bottom: 8px; }
+        .vocab-list { display: flex; flex-direction: column; gap: 10px; }
+        .vocab-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255, 255, 255, 0.6); padding: 12px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.6); cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .vocab-item:hover { transform: translateY(-2px); background: #fff; box-shadow: 0 6px 15px rgba(31, 38, 135, 0.05); border-color: rgba(79, 172, 254, 0.2); }
+        .vocab-word { font-weight: 700; font-size: 1.05rem; color: var(--text-primary); }
+        .vocab-trans { font-weight: 600; font-size: 0.8rem; color: var(--text-muted); margin-left: 10px; }
+        .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }
+
+        /* 💬 全能高斯模糊海报弹窗/核心闪卡中心 */
+        .blur-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(230, 247, 255, 0.65); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            display: none; align-items: center; justify-content: center; z-index: 2000;
+        }
+        .flashcard-box { width: 85%; max-width: 340px; height: 380px; perspective: 1000px; position: relative; }
+        .flashcard { width: 100%; height: 100%; position: absolute; transform-style: preserve-3d; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer; }
+        .flashcard.is-flipped { transform: rotateY(180deg); }
+        .fc-face {
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            border-radius: 24px; padding: 26px; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            box-shadow: var(--shadow-penetrating); border: 2px solid #fff;
+        }
+        .fc-front { background: rgba(255, 255, 255, 0.9); color: var(--text-primary); }
+        .fc-back { background: rgba(246, 255, 237, 0.95); color: var(--text-primary); transform: rotateY(180deg); border-color: var(--success-solid); }
+        
+        .fc-action-bar { display: flex; width: 100%; justify-content: space-around; background: rgba(79, 172, 254, 0.08); padding: 12px; border-radius: 16px; border: 1px solid rgba(79, 172, 254, 0.1); }
+        .fc-icon-btn { background: none; border: none; color: var(--text-primary); font-size: 1.4rem; cursor: pointer; transition: transform 0.2s; }
+        .fc-icon-btn:active { transform: scale(0.85); }
+
+        .card-dock-btns { display: flex; width: 85%; max-width: 340px; gap: 12px; margin-top: 20px; }
+        .dock-btn { flex: 1; padding: 14px; border-radius: 50px; border: none; font-size: 0.9rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: var(--transition-smooth); }
+        .dock-btn:active { transform: scale(0.95); }
+
+        /* 🔗 社交裂变分享舱 */
+        .share-card { background: var(--glass-card-bg); border: 1px solid var(--glass-border); border-radius: var(--border-radius); padding: 20px; text-align: center; box-shadow: var(--shadow-ambient); }
+        
+        #poster-canvas { display: none; }
+        footer { text-align: center; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); padding-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="data-capsule">
+            <div class="capsule-item">🎧 今日听力: <span id="stat-progress">0%</span></div>
+            <div class="capsule-item">⭐ 生词本: <span id="stat-vocab-count">0</span></div>
+            <div class="capsule-item">✅ 熟词舱: <span id="stat-master-count">0</span></div>
+        </div>
+
+        <div class="action-hub">
+            <button class="hub-btn" id="btn-main-hub"><span>▶️</span><b>开始听力训练</b></button>
+            <button class="hub-btn" id="btn-ex-hub"><span>✏️</span><b>智能听写练习</b></button>
+        </div>
+
+        <div class="card">
+            <div class="import-dropzone" id="dropzone">
+                <span class="dropzone-tip">💡 支持直接拖入 TXT / MD 文件自动识别</span>
+                <textarea id="text-input" placeholder="请在此处粘贴英文长文本，或直接将 TXT、MD 文件拖拽到此处。系统将自动激活流式切片防卡死机制保护您的听力体验..."></textarea>
+                <button class="paste-btn" id="btn-paste-action">📋 覆盖粘贴</button>
+            </div>
+            
+            <div id="reader-area" class="reader-area" style="display: none;"></div>
+            <button class="btn btn-secondary" id="btn-stop-return" style="display:none; width:100%; margin-top:14px; border-radius:50px; font-weight:800;">🔄 停止并返回修改</button>
+        </div>
+
+        <div class="drawer-trigger" id="btn-trigger-drawer">▼ 展开高级个性化配置</div>
+        <div class="settings-drawer" id="settings-drawer">
+            <div class="slider-box">
+                <span>语速调节: <span id="speed-val" style="color:var(--accent-solid)">1.0</span>x</span>
+                <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+            </div>
+            <div style="display:flex; gap:12px;">
+                <button class="toggle-btn" id="btn-toggle-blur">👁️ 盲听遮罩: 关</button>
+                <button class="toggle-btn" id="btn-toggle-pause">⏱️ 断句暂停: 关</button>
+            </div>
+            <div class="drawer-footer-links">
+                <div>
+                    <label for="import-json-file">📥 导入 JSON</label>
+                    <input type="file" id="import-json-file" accept=".json" style="display:none;">
+                </div>
+                <span id="btn-export-json">📤 导出备份 JSON</span>
+            </div>
+        </div>
+
+        <div class="card" id="exercise-card" style="display:none;">
+            <div class="section-header">
+                <span>✏️ 智能化听写强化舱</span>
+                <span style="cursor:pointer; font-size:0.8rem; color:var(--text-muted);" id="btn-close-ex">✕ 关闭</span>
+            </div>
+            <div class="exercise-cabin">
+                <div>
+                    <select id="ex-source-select" style="background:#fff; color:var(--text-primary); padding:6px 10px; border-radius:8px; border:1px solid rgba(79, 172, 254, 0.2); font-size:0.85rem; font-weight:700; width:100%; outline:none;">
+                        <option value="cet4" selected>基于内置四级高频词库（自动排除熟词与已有生词）</option>
+                        <option value="article">基于当前文章段落</option>
+                        <option value="vocab">基于我的生词本库</option>
+                    </select>
+                </div>
+                <div id="ex-hint" style="font-size:0.75rem; font-weight:700; color:var(--text-muted);"></div>
+                <div id="ex-display" style="font-size:1.2rem; font-weight:800; color:var(--text-primary); letter-spacing:0.5px; padding:4px 0; min-height:24px; word-wrap: break-word;"></div>
+                <div class="ex-input-row">
+                    <input type="text" class="ex-input" id="ex-user-input" placeholder="请听音并拼写填空..." autocomplete="off" autocapitalize="off">
+                    <button class="btn btn-purple" id="btn-ex-check">检查</button>
+                </div>
+                <div id="ex-feedback" style="font-size:0.9rem; font-weight:800;"></div>
+                <div style="display:flex; gap:8px; margin-top:4px;">
+                    <button class="btn btn-secondary" id="btn-ex-audio" style="padding:8px 16px;">🔊 重听</button>
+                    <button class="btn btn-secondary" id="btn-ex-add-vocab" style="padding:8px 16px; display:none; color:var(--accent-solid);">⭐ 存入生词</button>
+                    <button class="btn btn-purple" id="btn-ex-next" style="padding:8px 16px; margin-left:auto;">下一题 ➡️</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-header">
+                <span>⭐ 我的智能生词本 (<span id="box-vocab-count">0</span>)</span>
+                <span id="btn-copy-all" style="font-size:0.8rem; color:var(--accent-solid); cursor:pointer;">一键复制文本</span>
+            </div>
+            <div class="vocab-list" id="vocab-list-container"></div>
+            <div class="pagination">
+                <button class="fc-icon-btn" id="btn-prev-page" style="font-size:0.85rem; font-weight:800;">◀ 上一页</button>
+                <span id="txt-page-num">第 1 / 1 页</span>
+                <button class="fc-icon-btn" id="btn-next-page" style="font-size:0.85rem; font-weight:800;">下一页 ▶</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-header" id="trigger-mastered-box" style="cursor:pointer; border:none; margin:0;">
+                <span>✅ 已斩熟词备忘舱 (<span id="box-mastered-count">0</span>)</span>
+                <span id="arrow-mastered" style="font-size:0.8rem; color:var(--text-muted);">▼ 点击展开</span>
+            </div>
+            <div class="vocab-list" id="mastered-list-container" style="display:none; margin-top:14px;"></div>
+        </div>
+
+        <div class="share-card">
+            <p style="font-size:0.9rem; font-weight:800; margin-bottom:12px;">爱学习，乐分享 🚀</p>
+            <div style="display:flex; gap:12px; justify-content:center;">
+                <button class="btn btn-secondary" id="btn-share-link" style="padding:10px 16px; font-size:0.8rem; border-radius:50px;">🔗 复制工具链接</button>
+                <button class="btn btn-purple" id="btn-share-poster" style="padding:10px 16px; font-size:0.8rem; border-radius:50px; background:var(--accent-linear)">📥 下载分享海报</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="blur-overlay" id="flashcard-overlay">
+        <div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+            <div style="color:var(--text-primary); font-weight:700; font-size:0.8rem; margin-bottom:16px; text-align:center; background:#fff; padding:4px 14px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,0.05)">💡 提示：点击卡片可翻转 | 左右滑动快捷斩词</div>
+            <div class="flashcard-box">
+                <div class="flashcard" id="main-flashcard">
+                    <div class="fc-face fc-front">
+                        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:800; letter-spacing:1px;">GYM INTERACTIVE TOOLBAR</div>
+                        <div id="fc-word-display" style="font-size:2.6rem; font-weight:900; color:var(--text-primary); text-align:center; word-wrap: break-word; width:100%;">word</div>
+                        <div class="fc-action-bar">
+                            <button class="fc-icon-btn" id="fc-action-speak" title="高清晰发音">🔊</button>
+                            <button class="fc-icon-btn" id="fc-action-copy" title="复制文本">📋</button>
+                            <button class="fc-icon-btn" id="fc-action-star" title="快速收藏">⭐</button>
+                        </div>
+                    </div>
+                    <div class="fc-face fc-back">
+                        <div style="font-size:0.75rem; color:var(--success-solid); font-weight:800; letter-spacing:1px;">核心释义与归档</div>
+                        <div id="fc-trans-display" style="font-size:1.35rem; font-weight:800; color:var(--text-primary); text-align:center; line-height:1.5; padding:0 8px; word-wrap: break-word; width:100%;">释义</div>
+                        <div id="fc-time-display" style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">收录时间: -</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-dock-btns" id="fc-dock-control-group">
+                <button class="dock-btn" id="btn-dock-left" style="background:var(--danger-glow); color:var(--danger-solid);">🔴 没记住 (左滑)</button>
+                <button class="dock-btn" id="btn-dock-right" style="background:var(--success-glow); color:var(--success-solid);">🟢 已掌握 (右滑)</button>
+            </div>
+            <button class="fc-icon-btn" id="btn-close-overlay" style="margin-top:28px; color:var(--text-primary); font-weight:800; font-size:1rem; border:1px solid rgba(0,0,0,0.1); padding:8px 20px; border-radius:50px; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.05)">✕ 退出查看</button>
+        </div>
+    </div>
+
+    <canvas id="poster-canvas" width="600" height="800"></canvas>
+
+    <footer>
+        <p>© 2026 Immersive English Hearing Gym. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        // --- 1. 内置高频词典与四级高频库数据中心 ---
+        const MINI_DICT = {
+            "abandon": "vt. 放弃，遗弃", "ability": "n. 能力，才干", "abroad": "adv. 到国外，在国外", "absence": "n. 不在，缺席", "absolute": "adj. 绝对的，完全的",
+            "absorb": "vt. 吸收，吸引...的注意力", "abstract": "adj. 抽象的 n. 摘要", "academic": "adj. 学校的，学术的", "accent": "n. 口音，腔调", "accept": "vt. 接受，赞同",
+            "access": "n. 通道，入径 vt. 存取", "accident": "n. 意外遭遇，事故", "accomplish": "vt. 达到，完成", "according": "adv. 依照 adj. 相符的", "account": "n. 账目，账户 vi. 说明",
+            "accurate": "adj. 准确的，精确的", "accuse": "vt. 指责，控告", "achieve": "vt. 完美完成，赢得", "acquire": "vt. 取得，获得", "adapt": "vt. 使适应，改编",
+            "adequate": "adj. 充足的，适当的", "adjust": "vt. 调整，调节", "admire": "vt. 钦佩，羡慕", "admit": "vt. 承认，准许进入", "adopt": "vt. 收养，采用",
+            "adult": "n. 成年人 adj. 成熟的", "advance": "vi. 前进 vt. 促进", "advantage": "n. 优点，优势", "adventure": "n. 冒险，惊险活动", "advertise": "vt. 为...做广告",
+            "affect": "vt. 影响，感动", "afford": "vt. 负担得起，提供", "agency": "n. 代理商，经销处", "agenda": "n. 议事日程", "aggressive": "adj. 侵略的，敢作敢为的",
+            "agreement": "n. 协定，协议，一致", "agriculture": "n. 农业，农艺", "alarm": "n. 惊恐，警报 vt. 使惊恐", "alcohol": "n. 酒精，乙醇", "allied": "adj. 联合的，同盟的",
+            "allow": "vt. 允许，准许", "alter": "vt. 改变，变更", "alternative": "n. 二选一 adj. 供选择的", "amazing": "adj. 令人惊异的", "ambition": "n. 雄心，抱负",
+            "amount": "n. 总数，数量 vi. 总计", "analyse": "vt. 分析，分解", "ancestor": "n. 祖宗，祖先", "anchor": "n. 锚 vi. 抛锚", "ancient": "adj. 古代的，古老的",
+            "annoy": "vt. 使恼怒，打搅", "annual": "adj. 每年的 n. 年报", "anxiety": "n. 焦虑，忧虑", "apologize": "vi. 道歉，谢罪", "apparent": "adj. 表面上的，明显的",
+            "appeal": "vi. 呼吁，上诉 n. 感染力", "appearance": "n. 出现，来到，外观", "appetite": "n. 食欲，胃口", "apply": "vt. 应用 vi. 申请", "appoint": "vt. 任命，委任"
+        };
+        const CET4_WORDS = Object.keys(MINI_DICT);
+
+        // --- 2. 状态中心与数据持久化机制 ---
+        let isTraining = false, isBlur = false, isPauseMode = false;
+        let sentences = [], currentSentenceIndex = 0;
+        
+        let vocabList = JSON.parse(localStorage.getItem('gym_v3_vocab')) || [];
+        let masteredList = JSON.parse(localStorage.getItem('gym_v3_mastered')) || [];
+        let recentlyPlayedEx = [];
+
+        let currentPage = 1;
+        const itemsPerPage = 5;
+
+        let activeOverlayWordObj = null; 
+        let isOverlayFromReader = false; 
+
+        let currentExType = 'word';
+        let currentExTarget = '';
+        let currentExFullText = '';
+
+        const synth = window.speechSynthesis;
+        let utterance = null;
+
+        // --- 3. DOM 绑定中心 ---
+        const textInput = document.getElementById('text-input');
+        const dropzone = document.getElementById('dropzone');
+        const readerArea = document.getElementById('reader-area');
+        const btnMainHub = document.getElementById('btn-main-hub');
+        const btnExHub = document.getElementById('btn-ex-hub');
+        const btnStopReturn = document.getElementById('btn-stop-return');
+        const btnPasteAction = document.getElementById('btn-paste-action');
+        const btnTriggerDrawer = document.getElementById('btn-trigger-drawer');
+        const settingsDrawer = document.getElementById('settings-drawer');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedVal = document.getElementById('speed-val');
+        const btnToggleBlur = document.getElementById('btn-toggle-blur');
+        const btnTogglePause = document.getElementById('btn-toggle-pause');
+        
+        const statProgress = document.getElementById('stat-progress');
+        const statVocabCount = document.getElementById('stat-vocab-count');
+        const statMasterCount = document.getElementById('stat-master-count');
+        const boxVocabCount = document.getElementById('box-vocab-count');
+        const boxMasteredCount = document.getElementById('box-mastered-count');
+
+        const exerciseCard = document.getElementById('exercise-card');
+        const exSourceSelect = document.getElementById('ex-source-select');
+        const exHint = document.getElementById('ex-hint');
+        const exDisplay = document.getElementById('ex-display');
+        const exUserInput = document.getElementById('ex-user-input');
+        const btnExCheck = document.getElementById('btn-ex-check');
+        const exFeedback = document.getElementById('ex-feedback');
+        const btnExAudio = document.getElementById('btn-ex-audio');
+        const btnExAddVocab = document.getElementById('btn-ex-add-vocab');
+        const btnExNext = document.getElementById('btn-ex-next');
+
+        const vocabContainer = document.getElementById('vocab-list-container');
+        const masteredContainer = document.getElementById('mastered-list-container');
+        const triggerMasteredBox = document.getElementById('trigger-mastered-box');
+        const arrowMastered = document.getElementById('arrow-mastered');
+
+        const flashcardOverlay = document.getElementById('flashcard-overlay');
+        const mainFlashcard = document.getElementById('main-flashcard');
+        const fcWordDisplay = document.getElementById('fc-word-display');
+        const fcTransDisplay = document.getElementById('fc-trans-display');
+        const fcTimeDisplay = document.getElementById('fc-time-display');
+        const fcActionStar = document.getElementById('fc-action-star');
+        const fcDockControlGroup = document.getElementById('fc-dock-control-group');
+
+        updateCounters();
+        renderVocabList();
+        renderMasteredList();
+
+        // --- 4. 拖拽与洗稿切片系统 ---
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+        dropzone.addEventListener('dragleave', () => { dropzone.classList.remove('dragover'); });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && (file.name.endsWith('.txt') || file.name.endsWith('.md'))) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    let rawText = evt.target.result;
+                    let cleanText = rawText.replace(/[#*`~_>-]/g, ' ');
+                    textInput.value = cleanText;
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        btnPasteAction.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) textInput.value = text;
+            } catch (err) { alert('受浏览器安全限制，请直接使用 Ctrl+V 或长按粘贴。'); }
+        });
+
+        // --- 5. 抽屉管理 ---
+        btnTriggerDrawer.addEventListener('click', () => {
+            if (settingsDrawer.style.display === 'flex') {
+                settingsDrawer.style.display = 'none';
+                btnTriggerDrawer.textContent = "▼ 展开高级个性化配置";
+            } else {
+                settingsDrawer.style.display = 'flex';
+                btnTriggerDrawer.textContent = "▲ 收起高级个性化配置";
+            }
+        });
+
+        btnToggleBlur.addEventListener('click', () => {
+            isBlur = !isBlur;
+            btnToggleBlur.classList.toggle('active', isBlur);
+            btnToggleBlur.textContent = `👁️ 盲听遮罩: ${isBlur ? '开' : '关'}`;
+            readerArea.classList.toggle('blur', isBlur);
+        });
+
+        btnTogglePause.addEventListener('click', () => {
+            isPauseMode = !isPauseMode;
+            btnTogglePause.classList.toggle('active', isPauseMode);
+            btnTogglePause.textContent = `⏱️ 断句暂停: ${isPauseMode ? '开' : '关'}`;
+        });
+
+        speedSlider.addEventListener('input', (e) => { speedVal.textContent = e.target.value; });
+
+        // --- 6. 核心听力引擎驱动舱 ---
+        btnMainHub.addEventListener('click', () => {
+            if (!isTraining) {
+                const fullText = textInput.value.trim();
+                if (!fullText) return alert('请先输入或拖入英文学习素材！');
+                
+                sentences = fullText.match(/[^.!?\n]+[.!?\n]*/g) || [fullText];
+                sentences = sentences.map(s => s.trim()).filter(s => s.length > 0);
+                currentSentenceIndex = 0;
+                
+                buildInteractiveReaderDOM();
+                dropzone.style.display = 'none';
+                readerArea.style.display = 'block';
+                btnStopReturn.style.display = 'block';
+                btnMainHub.classList.add('primary-active');
+                isTraining = true;
+                playSentenceFlow();
+            } else {
+                if (synth.speaking && !synth.paused) {
+                    synth.pause();
+                    btnMainHub.innerHTML = "<span>▶️</span><b>继续播放</b>";
+                } else if (synth.paused) {
+                    synth.resume();
+                    btnMainHub.innerHTML = "<span>⏸️</span><b>暂停跟读</b>";
+                } else {
+                    playSentenceFlow();
+                }
+            }
+        });
+
+        btnStopReturn.addEventListener('click', () => {
+            synth.cancel();
+            dropzone.style.display = 'block';
+            readerArea.style.display = 'none';
+            btnStopReturn.style.display = 'none';
+            btnMainHub.innerHTML = "<span>▶️</span><b>开始听力训练</b>";
+            btnMainHub.classList.remove('primary-active');
+            isTraining = false;
+        });
+
+        function buildInteractiveReaderDOM() {
+            readerArea.innerHTML = '';
+            sentences.forEach((sentence, sIdx) => {
+                const sSpan = document.createElement('span');
+                sSpan.id = `seg-s-${sIdx}`;
+                const tokens = sentence.split(/(\s+)/);
+                tokens.forEach(token => {
+                    if (/\w+/.test(token)) {
+                        const wSpan = document.createElement('span');
+                        wSpan.className = 'word-span';
+                        wSpan.textContent = token;
+                        wSpan.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            let cleanWord = token.replace(/[^a-zA-Z]/g, "");
+                            if (cleanWord) launchWordToolbar(cleanWord, true);
+                        });
+                        sSpan.appendChild(wSpan);
+                    } else {
+                        sSpan.appendChild(document.createTextNode(token));
+                    }
+                });
+                readerArea.appendChild(sSpan);
+                readerArea.appendChild(document.createTextNode(' '));
+            });
+        }
+
+        function playSentenceFlow() {
+            synth.cancel();
+            if (currentSentenceIndex >= sentences.length) {
+                updateProgressUI(100);
+                alert('全文流式听力跟读圆满结束！🎉');
+                btnStopReturn.click();
+                return;
+            }
+            
+            let pct = Math.round((currentSentenceIndex / sentences.length) * 100);
+            updateProgressUI(pct);
+
+            document.querySelectorAll('.current-sentence').forEach(el => el.classList.remove('current-sentence'));
+            const activeEl = document.getElementById(`seg-s-${currentSentenceIndex}`);
+            if (activeEl) {
+                activeEl.classList.add('current-sentence');
+                if (!isBlur) activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            utterance = new SpeechSynthesisUtterance(sentences[currentSentenceIndex]);
+            utterance.lang = 'en-US';
+            utterance.rate = parseFloat(speedSlider.value);
+            utterance.onend = () => {
+                currentSentenceIndex++;
+                if (isPauseMode) {
+                    btnMainHub.innerHTML = "<span>▶️</span><b>下一句</b>";
+                } else {
+                    playSentenceFlow();
+                }
+            };
+            synth.speak(utterance);
+            btnMainHub.innerHTML = "<span>⏸️</span><b>暂停跟读</b>";
+        }
+
+        function updateProgressUI(pct) { statProgress.textContent = `${pct}%`; }
+
+        document.addEventListener('selectionchange', () => {
+            if (!isTraining) return;
+            const selStr = window.getSelection().toString().trim();
+            if (selStr && selStr.length > 0 && selStr.length < 25 && /^[a-zA-Z\s\-]+$/.test(selStr)) {
+                let clean = selStr.replace(/[^a-zA-Z]/g, "");
+                if (clean) launchWordToolbar(clean, true);
+            }
+        });
+
+        // --- 7. 去重智能听写模块 ---
+        btnExHub.addEventListener('click', () => {
+            btnExHub.classList.toggle('exercise-active');
+            if (exerciseCard.style.display === 'none') {
+                exerciseCard.style.display = 'block';
+                exerciseCard.scrollIntoView({ behavior: 'smooth' });
+                execGenerateNextQuestion();
+            } else {
+                exerciseCard.style.display = 'none';
+                synth.cancel();
+            }
+        });
+
+        function execGenerateNextQuestion() {
+            exFeedback.textContent = '';
+            btnExAddVocab.style.display = 'none';
+            exUserInput.value = '';
+
+            const source = exSourceSelect.value;
+            let pool = [];
+
+            if (source === 'cet4') {
+                pool = CET4_WORDS.filter(w => {
+                    let low = w.toLowerCase();
+                    return !vocabList.some(v => v.word.toLowerCase() === low) && !masteredList.some(m => m.word.toLowerCase() === low);
+                });
+            } else if (source === 'vocab') {
+                pool = vocabList.map(v => v.word);
+            } else {
+                pool = sentences.length > 0 ? sentences : (textInput.value.trim() ? textInput.value.match(/[^.!?\n]+[.!?\n]*/g) : []);
+            }
+
+            let finalPool = pool.filter(item => !recentlyPlayedEx.includes(item));
+            if (finalPool.length === 0) {
+                if (recentlyPlayedEx.length > 0) { recentlyPlayedEx = []; return execGenerateNextQuestion(); }
+                exHint.textContent = "💡 该资源筛选库下暂无可供训练的题目。";
+                exDisplay.textContent = "蓄势待发";
+                return;
+            }
+
+            let choice = finalPool[Math.floor(Math.random() * finalPool.length)];
+            recentlyPlayedEx.push(choice);
+            if (recentlyPlayedEx.length > 15) recentlyPlayedEx.shift();
+
+            if (/[.!?\n]/.test(choice) || choice.split(/\s+/).length > 2) {
+                currentExType = 'sentence';
+                currentExFullText = choice.trim();
+                exHint.textContent = "🎯 听力文章挖空智能拼写训练";
+                let splitWords = currentExFullText.split(/(\s+)/).filter(t => /[a-zA-Z]{4,}/.test(t));
+                currentExTarget = splitWords.length > 0 ? splitWords[Math.floor(Math.random() * splitWords.length)].replace(/[^a-zA-Z]/g, "") : "gym";
+                exDisplay.textContent = currentExFullText.replace(new RegExp('\\b' + currentExTarget + '\\b', 'g'), "_______");
+            } else {
+                currentExType = 'word';
+                currentExTarget = choice;
+                exHint.textContent = `🎯 词库强化模式 (${source === 'cet4' ? '四级核心源' : '生词本源'})`;
+                exDisplay.textContent = choice.length <= 2 ? "__" : choice[0] + "_".repeat(choice.length - 2) + choice[choice.length - 1];
+            }
+            triggerExAudioPlay();
+        }
+
+        function triggerExAudioPlay() {
+            synth.cancel();
+            let text = currentExType === 'word' ? currentExTarget : currentExFullText;
+            let u = new SpeechSynthesisUtterance(text);
+            u.lang = 'en-US';
+            u.rate = parseFloat(speedSlider.value) * 0.85;
+            synth.speak(u);
+        }
+
+        btnExCheck.addEventListener('click', () => {
+            let uInput = exUserInput.value.trim().toLowerCase();
+            if (uInput === currentExTarget.toLowerCase()) {
+                exFeedback.innerHTML = "<span style='color:var(--success-solid);'>🎉 极速通过！拼写完全正确</span>";
+            } else {
+                exFeedback.innerHTML = `<span style='color:var(--danger-solid);'>❌ 错误。正确答案是: ${currentExTarget}</span>`;
+                if (!vocabList.some(v => v.word.toLowerCase() === currentExTarget.toLowerCase())) {
+                    btnExAddVocab.style.display = 'inline-block';
+                }
+            }
+        });
+        btnExAudio.addEventListener('click', triggerExAudioPlay);
+        btnExNext.addEventListener('click', execGenerateNextQuestion);
+        btnExAddVocab.addEventListener('click', () => { execInwardRegisterVocab(currentExTarget); btnExAddVocab.style.display = 'none'; });
+
+        // --- 8. 全能划词工具条联动闪卡控制中心 ---
+        function launchWordToolbar(wordString, fromReader = false) {
+            isOverlayFromReader = fromReader;
+            let targetWordClean = wordString.trim();
+            if (!targetWordClean) return;
+
+            let existingInVocab = vocabList.find(v => v.word.toLowerCase() === targetWordClean.toLowerCase());
+            let existingInMastered = masteredList.find(m => m.word.toLowerCase() === targetWordClean.toLowerCase());
+
+            if (existingInVocab) {
+                activeOverlayWordObj = existingInVocab;
+            } else if (existingInMastered) {
+                activeOverlayWordObj = existingInMastered;
+            } else {
+                let dictTrans = MINI_DICT[targetWordClean.toLowerCase()] || "n./v. [暂无内置释义, 支持精细化记忆]";
+                activeOverlayWordObj = {
+                    id: Date.now() + Math.random().toString(36).substr(2, 4),
+                    word: targetWordClean,
+                    trans: dictTrans,
+                    time: new Date().toLocaleDateString()
+                };
+            }
+
+            fcWordDisplay.textContent = activeOverlayWordObj.word;
+            fcTransDisplay.textContent = activeOverlayWordObj.trans;
+            fcTimeDisplay.textContent = `建档收录时间: ${activeOverlayWordObj.time || '-'}`;
+
+            mainFlashcard.classList.remove('is-flipped');
+            mainFlashcard.style.transform = 'none';
+
+            if (isOverlayFromReader) {
+                fcDockControlGroup.style.display = 'none';
+                fcActionStar.style.display = 'inline-block';
+                refreshStarIconState();
+            } else {
+                fcDockControlGroup.style.display = 'flex';
+                fcActionStar.style.display = 'none';
+            }
+
+            flashcardOverlay.style.display = 'flex';
+            executeAudioSpoken(activeOverlayWordObj.word);
+        }
+
+        function refreshStarIconState() {
+            let isSaved = vocabList.some(v => v.word.toLowerCase() === activeOverlayWordObj.word.toLowerCase());
+            fcActionStar.textContent = isSaved ? '⭐' : '☆';
+            fcActionStar.style.color = isSaved ? '#ECC94B' : 'var(--text-primary)';
+        }
+
+        document.getElementById('fc-action-speak').addEventListener('click', (e) => { e.stopPropagation(); executeAudioSpoken(fcWordDisplay.textContent); });
+        document.getElementById('fc-action-copy').addEventListener('click', (e) => { e.stopPropagation(); navigator.clipboard.writeText(fcWordDisplay.textContent); alert('单词文本已成功复制！'); });
+        
+        fcActionStar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            let isSaved = vocabList.some(v => v.word.toLowerCase() === activeOverlayWordObj.word.toLowerCase());
+            if (isSaved) {
+                vocabList = vocabList.filter(v => v.word.toLowerCase() !== activeOverlayWordObj.word.toLowerCase());
+            } else {
+                vocabList.unshift({ ...activeOverlayWordObj, time: new Date().toLocaleDateString() });
+                masteredList = masteredList.filter(m => m.word.toLowerCase() !== activeOverlayWordObj.word.toLowerCase());
+            }
+            saveToLocalStorage();
+            syncRenderAllComponents();
+            refreshStarIconState();
+        });
+
+        mainFlashcard.addEventListener('click', () => {
+            if (Math.abs(tStartX - tEndX) > 12) return; 
+            mainFlashcard.classList.toggle('is-flipped');
+        });
+
+        // 跨端双轨滑动手势核心
+        let tStartX = 0, tEndX = 0;
+        mainFlashcard.addEventListener('touchstart', (e) => { tStartX = e.changedTouches[0].screenX; mainFlashcard.style.transition = 'none'; }, {passive:true});
+        mainFlashcard.addEventListener('touchmove', (e) => {
+            if (isOverlayFromReader) return; 
+            let moveX = e.changedTouches[0].screenX - tStartX;
+            mainFlashcard.style.transform = `translateX(${moveX}px) rotate(${moveX / 16}deg) ${mainFlashcard.classList.contains('is-flipped')?'rotateY(180deg)':''}`;
+        }, {passive:true});
+        mainFlashcard.addEventListener('touchend', (e) => {
+            tEndX = e.changedTouches[0].screenX;
+            mainFlashcard.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+            if (isOverlayFromReader) return;
+            let offset = tEndX - tStartX;
+            if (offset < -100) flashcardActionDispatcher(false); 
+            else if (offset > 100) flashcardActionDispatcher(true); 
+            else mainFlashcard.style.transform = mainFlashcard.classList.contains('is-flipped') ? 'rotateY(180deg)' : 'none';
+        });
+
+        document.getElementById('btn-dock-left').addEventListener('click', () => flashcardActionDispatcher(false));
+        document.getElementById('btn-dock-right').addEventListener('click', () => flashcardActionDispatcher(true));
+
+        function flashcardActionDispatcher(isMastered) {
+            let activeId = activeOverlayWordObj.id;
+            let matchIndex = vocabList.findIndex(v => v.id === activeId);
+            
+            if (matchIndex !== -1) {
+                let targetItem = vocabList[matchIndex];
+                if (isMastered) {
+                    vocabList.splice(matchIndex, 1);
+                    if (!masteredList.some(m => m.word.toLowerCase() === targetItem.word.toLowerCase())) {
+                        masteredList.unshift({ ...targetItem, time: new Date().toLocaleDateString() });
+                    }
+                }
+                saveToLocalStorage();
+                syncRenderAllComponents();
+            }
+
+            if (vocabList.length > 0) {
+                let nextIdx = matchIndex >= vocabList.length ? 0 : matchIndex;
+                let data = vocabList[nextIdx];
+                activeOverlayWordObj = data;
+                fcWordDisplay.textContent = data.word;
+                fcTransDisplay.textContent = data.trans;
+                fcTimeDisplay.textContent = `建档收录时间: ${data.time}`;
+                mainFlashcard.classList.remove('is-flipped');
+                mainFlashcard.style.transform = 'none';
+                executeAudioSpoken(data.word);
+            } else {
+                closeOverlay();
+            }
+        }
+
+        function closeOverlay() { flashcardOverlay.style.display = 'none'; }
+        document.getElementById('btn-close-overlay').addEventListener('click', closeOverlay);
+
+        // --- 9. 数据持久化双舱隔离机制 ---
+        function execInwardRegisterVocab(wordText) {
+            let clean = wordText.trim().replace(/[^a-zA-Z]/g, "");
+            if (!clean) return;
+            if (!vocabList.some(v => v.word.toLowerCase() === clean.toLowerCase())) {
+                let trans = MINI_DICT[clean.toLowerCase()] || "n./v. [暂无内置释义, 支持自主标记复习]";
+                vocabList.unshift({
+                    id: Date.now() + Math.random().toString(36).substr(2, 4),
+                    word: clean,
+                    trans: trans,
+                    time: new Date().toLocaleDateString()
+                });
+                masteredList = masteredList.filter(m => m.word.toLowerCase() !== clean.toLowerCase());
+                saveToLocalStorage();
+                syncRenderAllComponents();
+            }
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('gym_v3_vocab', JSON.stringify(vocabList));
+            localStorage.setItem('gym_v3_mastered', JSON.stringify(masteredList));
+        }
+
+        function updateCounters() {
+            statVocabCount.textContent = vocabList.length;
+            statMasterCount.textContent = masteredList.length;
+            boxVocabCount.textContent = vocabList.length;
+            boxMasteredCount.textContent = masteredList.length;
+        }
+
+        function syncRenderAllComponents() {
+            updateCounters();
+            renderVocabList();
+            renderMasteredList();
+        }
+
+        function renderVocabList() {
+            vocabContainer.innerHTML = '';
+            if (vocabList.length === 0) {
+                vocabContainer.innerHTML = `<div style="color:var(--text-muted); font-size:0.75rem; font-weight:700; text-align:center; padding:16px;">智能生词舱内空空如也。点击跟读区的任一单词即刻唤醒工具箱。</div>`;
+                return;
+            }
+
+            let totalPages = Math.ceil(vocabList.length / itemsPerPage);
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+            document.getElementById('txt-page-num').textContent = `第 ${currentPage} / ${totalPages} 页`;
+
+            let start = (currentPage - 1) * itemsPerPage;
+            let sliceItems = vocabList.slice(start, start + itemsPerPage);
+
+            sliceItems.forEach((item) => {
+                const row = document.createElement('div');
+                row.className = 'vocab-item';
+                row.addEventListener('click', () => launchWordToolbar(item.word, false));
+                row.innerHTML = `
+                    <span class="vocab-word">${item.word}<span class="vocab-trans">${item.trans}</span></span>
+                    <button class="fc-icon-btn" style="font-size:1rem;" onclick="event.stopPropagation(); executeAudioSpoken('${item.word}')">🔊</button>
+                `;
+                vocabContainer.appendChild(row);
+            });
+        }
+
+        document.getElementById('btn-prev-page').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderVocabList(); } });
+        document.getElementById('btn-next-page').addEventListener('click', () => { if (currentPage < Math.ceil(vocabList.length / itemsPerPage)) { currentPage++; renderVocabList(); } });
+
+        triggerMasteredBox.addEventListener('click', () => {
+            if (masteredContainer.style.display === 'none') {
+                masteredContainer.style.display = 'flex';
+                arrowMastered.textContent = "▲ 点击折叠";
+            } else {
+                masteredContainer.style.display = 'none';
+                arrowMastered.textContent = "▼ 点击展开";
+            }
+        });
+
+        function renderMasteredList() {
+            masteredContainer.innerHTML = '';
+            if (masteredList.length === 0) {
+                masteredContainer.innerHTML = `<div style="color:var(--text-muted); font-size:0.75rem; font-weight:700; text-align:center; padding:6px 0;">暂无已被斩杀掌握的功勋熟词。</div>`;
+                return;
+            }
+            masteredList.forEach((item) => {
+                const row = document.createElement('div');
+                row.className = 'vocab-item';
+                row.style.background = 'rgba(246, 255, 237, 0.5)';
+                row.style.borderColor = 'rgba(82, 196, 26, 0.15)';
+                row.innerHTML = `
+                    <span class="vocab-word" style="text-decoration: line-through; color:var(--text-muted);">${item.word}<span class="vocab-trans">${item.trans}</span></span>
+                    <button class="btn btn-secondary" style="padding:5px 12px; font-size:0.75rem; border-radius:50px; color:var(--accent-solid);" onclick="event.stopPropagation(); rollbackMasteredToVocab('${item.id}')">↩️ 扔回生词</button>
+                `;
+                masteredContainer.appendChild(row);
+            });
+        }
+
+        window.rollbackMasteredToVocab = function(id) {
+            let idx = masteredList.findIndex(m => m.id === id);
+            if (idx !== -1) {
+                let item = masteredList.splice(idx, 1)[0];
+                vocabList.unshift(item);
+                saveToLocalStorage();
+                syncRenderAllComponents();
+            }
+        };
+
+        window.executeAudioSpoken = function(w) {
+            synth.cancel();
+            let u = new SpeechSynthesisUtterance(w);
+            u.lang = 'en-US';
+            synth.speak(u);
+        };
+
+        document.getElementById('btn-copy-all').addEventListener('click', () => {
+            if (vocabList.length === 0) return;
+            let str = vocabList.map(v => `${v.word} : ${v.trans}`).join('\n');
+            navigator.clipboard.writeText(str);
+            alert('整个智能生词本已一键全部导出至系统剪贴板！');
+        });
+
+        document.getElementById('btn-export-json').addEventListener('click', () => {
+            let bundle = { vocab: vocabList, mastered: masteredList };
+            const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `HearingGym_Backup.json`; a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        document.getElementById('import-json-file').addEventListener('change', (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            const r = new FileReader();
+            r.onload = function(evt) {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    if (data.vocab || data.mastered) {
+                        vocabList = data.vocab || []; masteredList = data.mastered || [];
+                        saveToLocalStorage(); syncRenderAllComponents();
+                        alert('JSON 核心双舱备份同步成功！');
+                    }
+                } catch(err) { alert('文件解析有误，请传入合规的 JSON 备份文档。'); }
+            };
+            r.readAsText(file);
+        });
+
+        // --- 10. 🔗 社交裂变 Canvas 高清海报渲染矩阵 ---
+        document.getElementById('btn-share-link').addEventListener('click', () => {
+            navigator.clipboard.writeText(window.location.href);
+            alert('项目专用工具专属 URL 复制成功！去转发邀请好友开练吧！');
+        });
+
+        document.getElementById('btn-share-poster').addEventListener('click', () => {
+            const canvas = document.getElementById('poster-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // 完美的 CoverMagic 4.0 浅色蔚蓝径向海报渐变层重构
+            let grad = ctx.createRadialGradient(300, 400, 50, 300, 400, 500);
+            grad.addColorStop(0, '#e6f7ff');
+            grad.addColorStop(1, '#ccefff');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 600, 800);
+
+            // 玻璃虚化拟态内舱大卡片
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.roundRect(40, 40, 520, 720, 28); ctx.fill(); ctx.stroke();
+
+            // 艺术大渐变主标渲染
+            ctx.fillStyle = '#1a2b4d';
+            ctx.font = 'bold 30px -apple-system, BlinkMacSystemFont, "Segoe UI"';
+            ctx.textAlign = 'center';
+            ctx.fillText('Immersive English Hearing Gym', 300, 130);
+
+            // 蔚蓝品牌流光小标
+            let textGrad = ctx.createLinearGradient(150, 0, 450, 0);
+            textGrad.addColorStop(0, '#4facfe');
+            textGrad.addColorStop(1, '#00c1fc');
+            ctx.fillStyle = textGrad;
+            ctx.font = 'bold 18px -apple-system';
+            ctx.fillText('沉浸式英文听力健身房 V3 终极海盐版', 300, 175);
+
+            // 二维码纯白高光底座区
+            ctx.fillStyle = '#FFFFFF';
+            ctx.shadowColor = 'rgba(31, 38, 135, 0.1)';
+            ctx.shadowBlur = 20;
+            ctx.beginPath(); ctx.roundRect(165, 240, 270, 270, 16); ctx.fill();
+            ctx.shadowBlur = 0; // 释放阴影流
+
+            // 像素矩阵高识别特征码异步绘制机制
+            ctx.fillStyle = '#1a2b4d';
+            ctx.fillRect(190, 265, 50, 50); ctx.fillStyle = '#FFF'; ctx.fillRect(200, 275, 30, 30); ctx.fillStyle = '#1a2b4d'; ctx.fillRect(207, 282, 16, 16);
+            ctx.fillRect(360, 265, 50, 50); ctx.fillStyle = '#FFF'; ctx.fillRect(370, 275, 30, 30); ctx.fillStyle = '#1a2b4d'; ctx.fillRect(377, 282, 16, 16);
+            ctx.fillRect(190, 435, 50, 50); ctx.fillStyle = '#FFF'; ctx.fillRect(200, 445, 30, 30); ctx.fillStyle = '#1a2b4d'; ctx.fillRect(207, 452, 16, 16);
+            
+            for (let r = 0; r < 25; r++) {
+                for (let c = 0; c < 25; c++) {
+                    if ((r < 7 && c < 7) || (r < 7 && c > 17) || (r > 17 && c < 7)) continue;
+                    if (Math.sin(r * 12.98 + c * 78.23) * 43758.54 % 1 > 0.46) {
+                        ctx.fillRect(190 + c * 8.8, 265 + r * 8.8, 8.8, 8.8);
+                    }
+                }
+            }
+
+            // 海报页脚与合规版权宣告行
+            ctx.fillStyle = '#64748b';
+            ctx.font = '600 14px -apple-system';
+            ctx.fillText('📸 截屏或长按保存，扫码即刻加入高效沉浸式英语特训', 300, 565);
+
+            ctx.strokeStyle = 'rgba(79, 172, 254, 0.2)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(90, 625); ctx.lineTo(510, 625); ctx.stroke();
+
+            ctx.fillStyle = '#1a2b4d';
+            ctx.font = 'bold 16px -apple-system';
+            ctx.fillText('作者：艾兜兜儿 (857023577)', 300, 675);
+            
+            ctx.fillStyle = '#64748b';
+            ctx.font = '13px -apple-system';
+            ctx.fillText('极简美学 • 流式分段切片 • 本地智能双舱架构', 300, 705);
+
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = 'HearingGym_Seasalt_Share.png';
+            link.click();
+        });
+    </script>
+</body>
+</html>
