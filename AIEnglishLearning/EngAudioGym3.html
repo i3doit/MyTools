@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>沉浸式英文听力健身房 | Immersive English Hearing Gym</title>
+    <style>
+        :root {
+            --bg-color: #0d0e12;
+            --card-bg: #161822;
+            --input-bg: #090a0f;
+            --text-color: #f0f2f5;
+            --text-muted: #787f95;
+            --accent-color: #00e676;
+            --accent-glow: rgba(0, 230, 118, 0.2);
+            --exercise-color: #00b0ff;
+            --danger-color: #ff5252;
+            --border-radius: 14px;
+            --border-color: #242936;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            text-align: center;
+            color: var(--text-color);
+            font-weight: 700;
+        }
+        h1 span { color: var(--accent-color); }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 16px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        /* 顶部主大招按钮（极简化整合） */
+        .main-action-hub {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* C位焦点输入/展示区 */
+        .textarea-wrapper { position: relative; width: 100%; }
+        textarea {
+            width: 100%;
+            height: 150px;
+            background-color: var(--input-bg);
+            border: 1px solid #282d3d;
+            color: var(--text-color);
+            padding: 14px;
+            border-radius: 10px;
+            resize: none;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            outline: none;
+        }
+        .paste-overlay-btn {
+            position: absolute;
+            right: 12px;
+            bottom: 14px;
+            background: #1c1f2f;
+            border: 1px solid #3d4663;
+            color: var(--accent-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .reader-area {
+            min-height: 150px;
+            max-height: 260px;
+            overflow-y: auto;
+            background-color: var(--input-bg);
+            border: 1px solid #282d3d;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .reader-area.blur { filter: blur(7px); user-select: none; }
+        .word-span { display: inline-block; cursor: pointer; padding: 0 2px; border-radius: 4px; }
+        .current-sentence { background-color: rgba(0, 230, 118, 0.15) !important; border-bottom: 2px solid var(--accent-color); }
+
+        /* 隐藏齿轮高级设置抽屉 */
+        .drawer-toggle {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+        }
+        .settings-drawer {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            background: #11131a;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px dashed #333;
+        }
+        .slider-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        input[type="range"] { flex: 1; accent-color: var(--accent-color); height: 4px; }
+        .drawer-btns { display: flex; gap: 8px; font-size: 0.8rem; justify-content: space-between; }
+        .drawer-btns label, .drawer-btns span { color: var(--text-muted); text-decoration: underline; cursor: pointer; }
+
+        /* 通用按钮 */
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .btn-primary { background-color: var(--accent-color); color: #090a0f; }
+        .btn-exercise { background-color: var(--exercise-color); color: #090a0f; }
+        .btn-secondary { background-color: #1c1f2f; color: var(--text-color); border: 1px solid var(--border-color); }
+
+        /* 智能化练习舱 */
+        .exercise-panel { background: #0f111a; padding: 14px; border-radius: 10px; border-left: 4px solid var(--exercise-color); }
+        .ex-input-row { display: flex; gap: 8px; margin-top: 10px; }
+        .ex-input { flex: 1; padding: 10px; background: #050608; border: 1px solid #242936; color: #fff; border-radius: 6px; outline: none; }
+        #ex-feedback { margin-top: 8px; font-size: 0.85rem; font-weight: 600; }
+
+        /* 生词本列表与分页 */
+        .vocab-list { display: flex; flex-direction: column; gap: 6px; min-height: 40px; }
+        .vocab-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0f111a;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .vocab-text { font-size: 0.95rem; font-weight: 500; }
+        .vocab-actions { display: flex; gap: 12px; }
+        .icon-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; }
+        .pagination-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 0.8rem; color: var(--text-muted); }
+
+        /* 独创：智能反转滑动闪卡系统（全屏遮罩弹窗） */
+        .flashcard-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(5,6,8,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(4px);
+        }
+        .flashcard-container {
+            width: 85%;
+            max-width: 340px;
+            height: 400px;
+            position: relative;
+            perspective: 1000px;
+        }
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transform-style: preserve-3d;
+            transition: transform 0.4s ease;
+            cursor: pointer;
+        }
+        .flashcard.is-flipped { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute;
+            width: 100%; height: 100%;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            border: 2px solid #333b52;
+        }
+        .card-front { background: #1e2230; color: #fff; }
+        .card-back { background: #1a2e26; color: #fff; transform: rotateY(180deg); border-color: var(--accent-color); }
+        
+        /* 闪卡底部边缘按钮（兜底用） */
+        .card-edge-btns { display: flex; width: 100%; gap: 10px; margin-top: 15px;}
+
+        /* 系统划词通知条 */
+        #mobile-selection-bar { display: none; background: var(--exercise-color); color: #000; text-align: center; padding: 8px; font-size: 0.8rem; font-weight: 700; border-radius: 8px; margin-top: 8px; cursor: pointer; }
+        #word-bubble { position: absolute; background: #202433; padding: 5px 8px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: none; gap: 5px; z-index: 1000; border: 1px solid #333b52; align-items: center; }
+        #word-bubble button { background: var(--accent-color); border: none; color: #000; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 700; }
+
+        footer { text-align: center; font-size: 0.7rem; color: #3a3f50; margin-top: auto; padding-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🎧 Immersive <span>Hearing Gym</span></h1>
+
+        <div class="main-action-hub">
+            <button class="btn btn-primary" id="btn-main">▶️ 开始听力训练</button>
+            <button class="btn btn-exercise" id="btn-to-exercise">✏️ 智能听写练习</button>
+        </div>
+
+        <div class="card" style="border: 1px solid #252936;">
+            <div class="textarea-wrapper" id="input-wrapper">
+                <textarea id="text-input" placeholder="请在此粘贴或键入英文段落/对话... 点击上方‘开始听力训练’即可进入高效高亮跟读模式。"></textarea>
+                <button class="paste-overlay-btn" id="btn-smart-paste">📋 覆盖粘贴</button>
+            </div>
+            <div id="reader-area" class="reader-area" style="display: none;"></div>
+            <button class="btn btn-secondary" id="btn-reset" style="display:none; width:100%; margin-top:10px; padding:8px;">🔄 停止并返回修改</button>
+            <div id="mobile-selection-bar">捕捉到选中内容：点击存入生词本</div>
+        </div>
+
+        <div class="drawer-toggle" id="btn-toggle-drawer">⚙️ 点击展开高级配置面板 ▼</div>
+        <div class="settings-drawer" id="settings-drawer">
+            <div class="slider-box">
+                <span>语速调节: <span id="speed-val" style="color:var(--text-color)">1.0</span>x</span>
+                <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="toggle-btn" id="btn-blur" style="flex:1;">👁️ 盲听遮罩: 关</button>
+                <button class="toggle-btn" id="btn-pause-mode" style="flex:1;">⏱️ 断句暂停: 关</button>
+            </div>
+            <div class="drawer-btns">
+                <div>
+                    <label for="import-file">📥 导入 JSON</label>
+                    <input type="file" id="import-file" accept=".json">
+                </div>
+                <span id="btn-export">📤 导出备份备份</span>
+            </div>
+        </div>
+
+        <div class="card" id="exercise-card" style="display:none;">
+            <div class="card-title">
+                <span>✏️ 智能化听写练习舱</span>
+                <button class="icon-btn" id="btn-close-ex">关闭 ✕</button>
+            </div>
+            <div class="exercise-panel">
+                <div style="margin-bottom: 8px;">
+                    <select id="ex-repo-select" style="background:#1c1f2f; color:#fff; padding:4px 8px; border-radius:4px; border:1px solid #444; font-size:0.8rem;">
+                        <option value="article">基于当前文章段落</option>
+                        <option value="cet4" selected>基于内置四级高频词库</option>
+                        <option value="vocab">基于我的生词本</option>
+                    </select>
+                </div>
+                <div id="ex-question-hint" style="font-size:0.8rem; color:var(--text-muted);"></div>
+                <div id="ex-cloze-display"></div>
+                <div class="ex-input-row">
+                    <input type="text" class="ex-input" id="ex-user-input" placeholder="输入拼写..." autocomplete="off" autocapitalize="off">
+                    <button class="btn btn-primary" id="btn-ex-check" style="padding:0 14px;">检查</button>
+                </div>
+                <div id="ex-feedback"></div>
+                <div class="btn-row" style="margin-top:12px;">
+                    <button class="btn btn-secondary" id="btn-ex-replay" style="padding:6px; font-size:0.8rem;">🔊 重听</button>
+                    <button class="btn btn-secondary" id="btn-ex-add-vocab" style="padding:6px; font-size:0.8rem; display:none; color:var(--danger-color);">⭐ 存入生词</button>
+                    <button class="btn btn-secondary" id="btn-ex-next" style="padding:6px; font-size:0.8rem;">➡️ 下一题</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <h3>⭐ 我的智能生词本 (<span id="stat-vocab">0</span>)</h3>
+                <button class="icon-btn" id="btn-copy-all-vocab" style="font-size:0.75rem; color:var(--text-muted);">一键复制</button>
+            </div>
+            <div class="vocab-list" id="vocab-list"></div>
+            <div class="pagination-bar">
+                <button class="icon-btn" id="btn-page-prev">◀ 上一页</button>
+                <span id="page-indicator">第 1 / 1 页</span>
+                <button class="icon-btn" id="btn-page-next">下一页 ▶</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="flashcard-overlay" id="flashcard-overlay">
+        <div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+            <div style="color:var(--text-muted); font-size:0.8rem; margin-bottom:12px;">💡 技巧：点击卡片可翻转 | 📱手机上可左右滑动卡片</div>
+            <div class="flashcard-container">
+                <div class="flashcard" id="flashcard">
+                    <div class="card-face card-front">
+                        <div style="font-size:0.8rem; color:var(--text-muted);">FLASHCARD 正面</div>
+                        <div id="fc-word" style="font-size:2.2rem; font-weight:700; text-align:center; letter-spacing:0.5px;">apple</div>
+                        <button class="btn btn-secondary" id="btn-fc-speak" style="border-radius:50%; width:44px; height:44px; padding:0;">🔊</button>
+                    </div>
+                    <div class="card-face card-back">
+                        <div style="font-size:0.8rem; color:var(--accent-color);">FLASHCARD 背面 (释义)</div>
+                        <div id="fc-translation" style="font-size:1.2rem; text-align:center; font-weight:500; line-height:1.4; padding:0 10px;">n. 苹果</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);" id="fc-time"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-edge-btns" style="max-width:340px; width:85%;">
+                <button class="btn" id="btn-fc-left" style="background:#2a1b1b; color:var(--danger-color); border:1px solid var(--danger-color); flex:1;">🔴 没记住 (左滑)</button>
+                <button class="btn" id="btn-fc-right" style="background:#1b2a1b; color:var(--accent-color); border:1px solid var(--accent-color); flex:1;">🟢 已斩词 (右滑)</button>
+            </div>
+            <button class="icon-btn" id="btn-close-fc" style="margin-top:20px; color:#fff; font-size:1.2rem;">✕ 关闭复习</button>
+        </div>
+    </div>
+
+    <div id="word-bubble">
+        <span id="selected-word-text" style="font-weight:700; font-size:0.8rem; color:#fff;"></span>
+        <button id="bubble-add">⭐ 记生词</button>
+    </div>
+
+    <footer>
+        <p>© 2026 - <span id="current-year"></span> Immersive English Hearing Gym. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        // --- 1. 内置常用字典及四级核心高频词库（纯前端自包含） ---
+        const MINI_DICT = {
+            "abandon": "vt. 放弃，遗弃", "ability": "n. 能力，才干", "abroad": "adv. 到国外，在国外", "absence": "n. 不在，缺席", "absolute": "adj. 绝对的，完全的",
+            "absorb": "vt. 吸收，吸引...的注意力", "abstract": "adj. 抽象的 n. 摘要", "academic": "adj. 学校的，学术的", "accent": "n. 口音，腔调", "accept": "vt. 接受，赞同",
+            "access": "n. 通道，入径 vt. 存取", "accident": "n. 意外遭遇，事故", "accomplish": "vt. 达到，完成", "according": "adv. 依照 adj. 相符的", "account": "n. 账目，账户 vi. 说明",
+            "accurate": "adj. 准确的，精确的", "accuse": "vt. 指责，控告", "achieve": "vt. 完美完成，赢得", "acquire": "vt. 取得，获得", "adapt": "vt. 使适应，改编",
+            "adequate": "adj. 充足的，适当的", "adjust": "vt. 调整，调节", "admire": "vt. 钦佩，羡慕", "admit": "vt. 承认，准许进入", "adopt": "vt. 收养，采用",
+            "adult": "n. 成年人 adj. 成熟的", "advance": "vi. 前进 vt. 促进", "advantage": "n. 优点，优势", "adventure": "n. 冒险，惊险活动", "advertise": "vt. 为...做广告",
+            "affect": "vt. 影响，感动", "afford": "vt. 负担得起，提供", "agency": "n. 代理商，经销处", "agenda": "n. 议事日程", "aggressive": "adj. 侵略的，敢作敢为的",
+            "agreement": "n. 协定，协议，一致", "agriculture": "n. 农业，农艺", "alarm": "n. 惊恐，警报 vt. 使惊恐", "alcohol": "n. 酒精，乙醇", "allied": "adj. 联合的，同盟的",
+            "allow": "vt. 允许，准许", "alter": "vt. 改变，变更", "alternative": "n. 二选一 adj. 供选择的", "amazing": "adj. 令人惊异的", "ambition": "n. 雄心，抱负",
+            "amount": "n. 总数，数量 vi. 总计", "analyse": "vt. 分析，分解", "ancestor": "n. 祖宗，祖先", "anchor": "n. 锚 vi. 抛锚", "ancient": "adj. 古代的，古老的",
+            "annoy": "vt. 使恼怒，打搅", "annual": "adj. 每年的 n. 年报", "anxiety": "n. 焦虑，忧虑", "apologize": "vi. 道歉，谢罪", "apparent": "adj. 表面上的，明显的",
+            "appeal": "vi. 呼吁，上诉 n. 感染力", "appearance": "n. 出现，来到，外观", "appetite": "n. 食欲，胃口", "apply": "vt. 应用 vi. 申请", "appoint": "vt. 任命，委任"
+        };
+        const CET4_WORDS = Object.keys(MINI_DICT);
+
+        // --- 2. 状态存储 ---
+        let isTraining = false, isBlur = false, isPauseMode = false;
+        let sentences = [], currentSentenceIndex = 0;
+        let vocabList = JSON.parse(localStorage.getItem('gym_vocab_v3')) || [];
+        let recentlyPlayedEx = []; // 答题去重队列
+
+        // 分页状态
+        let currentPage = 1;
+        const itemsPerPage = 5;
+
+        // 练习状态
+        let currentExType = 'word', currentExTarget = '', currentExFullText = '';
+
+        const synth = window.speechSynthesis;
+        let utterance = null;
+
+        // --- 3. DOM 绑定 ---
+        const textInput = document.getElementById('text-input');
+        const inputWrapper = document.getElementById('input-wrapper');
+        const readerArea = document.getElementById('reader-area');
+        const btnMain = document.getElementById('btn-main');
+        const btnReset = document.getElementById('btn-reset');
+        const btnSmartPaste = document.getElementById('btn-smart-paste');
+        const btnToggleDrawer = document.getElementById('btn-toggle-drawer');
+        const settingsDrawer = document.getElementById('settings-drawer');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedVal = document.getElementById('speed-val');
+        const btnBlur = document.getElementById('btn-blur');
+        const btnPauseMode = document.getElementById('btn-pause-mode');
+        const vocabListEl = document.getElementById('vocab-list');
+        const statVocab = document.getElementById('stat-vocab');
+        const mobileSelectionBar = document.getElementById('mobile-selection-bar');
+        const wordBubble = document.getElementById('word-bubble');
+        const selectedWordText = document.getElementById('selected-word-text');
+
+        // 练习DOM
+        const exerciseCard = document.getElementById('exercise-card');
+        const btnToExercise = document.getElementById('btn-to-exercise');
+        const btnCloseEx = document.getElementById('btn-close-ex');
+        const exRepoSelect = document.getElementById('ex-repo-select');
+        const exQuestionHint = document.getElementById('ex-question-hint');
+        const exClozeDisplay = document.getElementById('ex-cloze-display');
+        const exUserInput = document.getElementById('ex-user-input');
+        const btnExCheck = document.getElementById('btn-ex-check');
+        const exFeedback = document.getElementById('ex-feedback');
+        const btnExReplay = document.getElementById('btn-ex-replay');
+        const btnExAddVocab = document.getElementById('btn-ex-add-vocab');
+        const btnExNext = document.getElementById('btn-ex-next');
+
+        // 闪卡DOM
+        const flashcardOverlay = document.getElementById('flashcard-overlay');
+        const flashcard = document.getElementById('flashcard');
+        const fcWord = document.getElementById('fc-word');
+        const fcTranslation = document.getElementById('fc-translation');
+        const fcTime = document.getElementById('fc-time');
+        const btnCloseFc = document.getElementById('btn-close-fc');
+        let currentFcIndex = -1; 
+
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+        renderVocab();
+
+        // --- 4. 交互：高级设置抽屉收纳 ---
+        btnToggleDrawer.addEventListener('click', () => {
+            if (settingsDrawer.style.display === 'flex') {
+                settingsDrawer.style.display = 'none';
+                btnToggleDrawer.textContent = "⚙️ 点击展开高级配置面板 ▼";
+            } else {
+                settingsDrawer.style.display = 'flex';
+                btnToggleDrawer.textContent = "⚙️ 点击收起高级配置面板 ▲";
+            }
+        });
+
+        btnSmartPaste.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) textInput.value = text;
+            } catch (err) { alert('受环境安全限制，请直接长按文本框进行系统粘贴。'); }
+        });
+
+        btnBlur.addEventListener('click', () => {
+            isBlur = !isBlur;
+            btnBlur.classList.toggle('active', isBlur);
+            btnBlur.textContent = `👁️ 盲听遮罩: ${isBlur ? '开' : '关'}`;
+            readerArea.classList.toggle('blur', isBlur);
+        });
+
+        btnPauseMode.addEventListener('click', () => {
+            isPauseMode = !isPauseMode;
+            btnPauseMode.classList.toggle('active', isPauseMode);
+            btnPauseMode.textContent = `⏱️ 断句暂停: ${isPauseMode ? '开' : '关'}`;
+        });
+
+        speedSlider.addEventListener('input', (e) => { speedVal.textContent = e.target.value; });
+
+        // --- 5. 核心听力引擎与同步定位高亮 ---
+        btnMain.addEventListener('click', () => {
+            if (!isTraining) {
+                const text = textInput.value.trim();
+                if (!text) return alert('请输入英文段落！');
+                sentences = text.match(/[^.!?\n]+[.!?\n]*/g) || [text];
+                sentences = sentences.map(s => s.trim()).filter(s => s.length > 0);
+                currentSentenceIndex = 0;
+                
+                buildReaderDOM();
+                inputWrapper.style.display = 'none';
+                readerArea.style.display = 'block';
+                btnReset.style.display = 'block';
+                isTraining = true;
+                playSentence();
+            } else {
+                if (synth.speaking && !synth.paused) { synth.pause(); btnMain.textContent = '▶️ 继续播放'; }
+                else if (synth.paused) { synth.resume(); btnMain.textContent = '⏸️ 暂停播放'; }
+                else { playSentence(); }
+            }
+        });
+
+        btnReset.addEventListener('click', () => {
+            synth.cancel();
+            inputWrapper.style.display = 'block';
+            readerArea.style.display = 'none';
+            btnReset.style.display = 'none';
+            btnMain.textContent = '▶️ 开始听力训练';
+            isTraining = false;
+        });
+
+        function buildReaderDOM() {
+            readerArea.innerHTML = '';
+            sentences.forEach((sentence, sIdx) => {
+                const sSpan = document.createElement('span');
+                sSpan.id = `s-${sIdx}`;
+                const words = sentence.split(/(\s+)/);
+                words.forEach(word => {
+                    if (/\w+/.test(word)) {
+                        const wSpan = document.createElement('span');
+                        wSpan.className = 'word-span';
+                        wSpan.textContent = word;
+                        wSpan.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            capturedWord = word.replace(/[^a-zA-Z]/g, "");
+                            if (capturedWord) showBubbleMenu(e.pageX, e.pageY - 35, capturedWord);
+                        });
+                        sSpan.appendChild(wSpan);
+                    } else {
+                        sSpan.appendChild(document.createTextNode(word));
+                    }
+                });
+                readerArea.appendChild(sSpan);
+                readerArea.appendChild(document.createTextNode(' '));
+            });
+        }
+
+        function playSentence() {
+            synth.cancel();
+            if (currentSentenceIndex >= sentences.length) {
+                alert('全文练歌完毕！');
+                btnReset.click();
+                return;
+            }
+            document.querySelectorAll('.current-sentence').forEach(el => el.classList.remove('current-sentence'));
+            const currentEl = document.getElementById(`s-${currentSentenceIndex}`);
+            if (currentEl) {
+                currentEl.classList.add('current-sentence');
+                if (!isBlur) currentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            utterance = new SpeechSynthesisUtterance(sentences[currentSentenceIndex]);
+            utterance.lang = 'en-US';
+            utterance.rate = parseFloat(speedSlider.value);
+            utterance.onend = () => {
+                currentSentenceIndex++;
+                if (isPauseMode) btnMain.textContent = '▶️ 下一句';
+                else playSentence();
+            };
+            synth.speak(utterance);
+            btnMain.textContent = '⏸️ 暂停播放';
+        }
+
+        // --- 6. 移动端划词捕捉极速追踪 ---
+        let capturedWord = "";
+        document.addEventListener('selectionchange', () => {
+            const selection = window.getSelection().toString().trim();
+            if (selection && selection.length > 0 && selection.length < 30) {
+                let clean = selection.replace(/[^a-zA-Z\s]/g, "");
+                if (clean) {
+                    capturedWord = clean;
+                    mobileSelectionBar.textContent = `✨ 捕捉选中: "${capturedWord}" (点击存入生词本)`;
+                    mobileSelectionBar.style.display = 'block';
+                }
+            } else { mobileSelectionBar.style.display = 'none'; }
+        });
+
+        mobileSelectionBar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            addWordToVocab(capturedWord);
+            mobileSelectionBar.style.display = 'none';
+            window.getSelection().removeAllRanges();
+        });
+
+        function showBubbleMenu(x, y, word) {
+            selectedWordText.textContent = word;
+            wordBubble.style.left = `${x}px`;
+            wordBubble.style.top = `${y}px`;
+            wordBubble.style.display = 'flex';
+        }
+        document.addEventListener('click', () => wordBubble.style.display = 'none');
+        document.getElementById('bubble-add').addEventListener('click', () => addWordToVocab(capturedWord));
+
+        // --- 7. 词库智能去重练习舱 ---
+        btnToExercise.addEventListener('click', () => {
+            exerciseCard.style.display = 'block';
+            exerciseCard.scrollIntoView({ behavior: 'smooth' });
+            generateExercise();
+        });
+        btnCloseEx.addEventListener('click', () => { exerciseCard.style.display = 'none'; synth.cancel(); });
+
+        function generateExercise() {
+            exFeedback.textContent = '';
+            btnExAddVocab.style.display = 'none';
+            exUserInput.value = '';
+
+            const mode = exRepoSelect.value;
+            let targetPool = [];
+
+            if (mode === 'cet4') {
+                currentExType = 'word';
+                targetPool = CET4_WORDS;
+            } else if (mode === 'vocab') {
+                currentExType = 'word';
+                targetPool = vocabList.map(v => v.word);
+            } else {
+                currentExType = 'sentence';
+                targetPool = sentences.length > 0 ? sentences : (textInput.value.trim() ? textInput.value.match(/[^.!?\n]+[.!?\n]*/g) : []);
+            }
+
+            // 过滤算法：排除生词本(如果是内置库练习)、排除最近15次答过的题
+            let finalPool = targetPool.filter(item => {
+                let text = (typeof item === 'string') ? item : item.word;
+                if (mode === 'cet4' && vocabList.some(v => v.word.toLowerCase() === text.toLowerCase())) return false;
+                return !recentlyPlayedEx.includes(text);
+            });
+
+            if (finalPool.length === 0) {
+                if(recentlyPlayedEx.length > 0) { recentlyPlayedEx = []; return generateExercise(); } // 队列清空重置
+                exQuestionHint.textContent = "💡 该词库或文本源暂时无可用词汇。";
+                exClozeDisplay.textContent = "";
+                return;
+            }
+
+            let chosen = finalPool[Math.floor(Math.random() * finalPool.length)];
+            let chosenText = (typeof chosen === 'string') ? chosen : chosen.word;
+
+            // 压入去重队列
+            recentlyPlayedEx.push(chosenText);
+            if(recentlyPlayedEx.length > 15) recentlyPlayedEx.shift();
+
+            if (currentExType === 'word') {
+                currentExTarget = chosenText;
+                exQuestionHint.textContent = `🎯 模式：单词强化训练 (${mode==='cet4'?'四级核心词':'生词本'})`;
+                exClozeDisplay.textContent = chosenText.length <= 2 ? "__" : chosenText[0] + "_".repeat(chosenText.length - 2) + chosenText[chosenText.length - 1];
+            } else {
+                currentExFullText = chosenText.trim();
+                exQuestionHint.textContent = "🎯 模式：句子挖空听写";
+                let tokens = currentExFullText.split(/(\s+)/);
+                let validWords = tokens.filter(t => /[a-zA-Z]{4,}/.test(t));
+                currentExTarget = validWords.length > 0 ? validWords[Math.floor(Math.random() * validWords.length)].replace(/[^a-zA-Z]/g, "") : "gym";
+                exClozeDisplay.textContent = currentExFullText.replace(new RegExp('\\b' + currentExTarget + '\\b', 'g'), "_______");
+            }
+            playExAudio();
+        }
+
+        function playExAudio() {
+            synth.cancel();
+            let u = new SpeechSynthesisUtterance(currentExType === 'word' ? currentExTarget : currentExFullText);
+            u.lang = 'en-US';
+            u.rate = parseFloat(speedSlider.value) * 0.9;
+            synth.speak(u);
+        }
+
+        btnExCheck.addEventListener('click', () => {
+            let ans = exUserInput.value.trim().toLowerCase();
+            if (ans === currentExTarget.toLowerCase()) {
+                exFeedback.innerHTML = "<span style='color:var(--accent-color);'>🎉 完全正确！</span>";
+            } else {
+                exFeedback.innerHTML = `<span style='color:var(--danger-color);'>❌ 错误。答案是: ${currentExTarget}</span>`;
+                btnExAddVocab.style.display = 'inline-block';
+            }
+        });
+        btnExReplay.addEventListener('click', playExAudio);
+        btnExNext.addEventListener('click', generateExercise);
+        btnExAddVocab.addEventListener('click', () => { addWordToVocab(currentExTarget); btnExAddVocab.style.display='none'; });
+
+        // --- 8. 生词本业务逻辑（支持智能释义与轻量分页） ---
+        function addWordToVocab(word) {
+            let clean = word.trim().replace(/[^a-zA-Z]/g, "");
+            if (!clean) return;
+            if (!vocabList.some(v => v.word.toLowerCase() === clean.toLowerCase())) {
+                let trans = MINI_DICT[clean.toLowerCase()] || "n. [暂无释义, 点击卡片查看]";
+                vocabList.unshift({ word: clean, trans: trans, time: new Date().toLocaleDateString() });
+                saveVocab();
+                renderVocab();
+            }
+        }
+
+        function saveVocab() { localStorage.setItem('gym_vocab_v3', JSON.stringify(vocabList)); }
+
+        function renderVocab() {
+            statVocab.textContent = vocabList.length;
+            vocabListEl.innerHTML = '';
+            
+            if (vocabList.length === 0) {
+                vocabListEl.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem; text-align:center; padding:12px;">生词本为空。在听力跟读时点击单词或划词即可添加。</div>';
+                return;
+            }
+
+            let totalPages = Math.ceil(vocabList.length / itemsPerPage);
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+            document.getElementById('page-indicator').textContent = `第 ${currentPage} / ${totalPages} 页`;
+
+            let start = (currentPage - 1) * itemsPerPage;
+            let pageItems = vocabList.slice(start, start + itemsPerPage);
+
+            pageItems.forEach((item, index) => {
+                let globalIndex = start + index;
+                const div = document.createElement('div');
+                div.className = 'vocab-item';
+                div.addEventListener('click', () => openFlashcard(globalIndex));
+                div.innerHTML = `
+                    <span class="vocab-text">${item.word} <span style="font-size:0.75rem; color:var(--text-muted); margin-left:8px;">${item.trans}</span></span>
+                    <div class="vocab-actions">
+                        <button class="icon-btn" onclick="event.stopPropagation(); speakWord('${item.word}')">🔊</button>
+                    </div>
+                `;
+                vocabListEl.appendChild(div);
+            });
+        }
+
+        document.getElementById('btn-page-prev').addEventListener('click', () => { if(currentPage > 1){ currentPage--; renderVocab(); } });
+        document.getElementById('btn-page-next').addEventListener('click', () => { if(currentPage < Math.ceil(vocabList.length / itemsPerPage)){ currentPage++; renderVocab(); } });
+
+        window.speakWord = function(word) {
+            synth.cancel();
+            let u = new SpeechSynthesisUtterance(word);
+            u.lang = 'en-US';
+            synth.speak(u);
+        };
+
+        // --- 9. 核心交互升级：支持左右滑动的智能反转闪卡系统 ---
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        function openFlashcard(index) {
+            currentFcIndex = index;
+            let data = vocabList[index];
+            fcWord.textContent = data.word;
+            fcTranslation.textContent = data.trans;
+            fcTime.textContent = `收录日期: ${data.time}`;
+            
+            flashcard.classList.remove('is-flipped');
+            flashcard.style.transform = 'none'; // 重置位置
+            flashcardOverlay.style.display = 'flex';
+            speakWord(data.word);
+        }
+
+        // 翻转动作
+        flashcard.addEventListener('click', (e) => {
+            // 如果是滑行引起的点击，不做翻转
+            if (Math.abs(touchStartX - touchEndX) > 10) return;
+            flashcard.classList.toggle('is-flipped');
+        });
+
+        // 触摸滑动捕捉手势（手机端滑动切换）
+        flashcard.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            flashcard.style.transition = 'none';
+        }, {passive: true});
+
+        flashcard.addEventListener('touchmove', (e) => {
+            let currentX = e.changedTouches[0].screenX;
+            let moveX = currentX - touchStartX;
+            // 实时伴随位移和旋转偏角
+            flashcard.style.transform = `translateX(${moveX}px) rotate(${moveX / 15}deg) ${flashcard.classList.contains('is-flipped')?'rotateY(180deg)':''}`;
+        }, {passive: true});
+
+        flashcard.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            flashcard.style.transition = 'transform 0.4s ease';
+            handleSwipeAction();
+        });
+
+        function handleSwipeAction() {
+            let swipeDistance = touchEndX - touchStartX;
+            if (swipeDistance < -100) {
+                // 左滑 -> 没记住
+                flashcardAction(false);
+            } else if (swipeDistance > 100) {
+                // 右滑 -> 斩词成功
+                flashcardAction(true);
+            } else {
+                // 复原弹回
+                flashcard.style.transform = flashcard.classList.contains('is-flipped') ? 'rotateY(180deg)' : 'none';
+            }
+        }
+
+        // 底部按钮控制联动机制
+        document.getElementById('btn-fc-left').addEventListener('click', () => flashcardAction(false));
+        document.getElementById('btn-fc-right').addEventListener('click', () => flashcardAction(true));
+
+        function flashcardAction(isMastered) {
+            if (isMastered) {
+                // 斩词：从生词本中抹去
+                vocabList.splice(currentFcIndex, 1);
+                saveVocab();
+                renderVocab();
+            }
+            
+            // 动画切到下一个词
+            if (vocabList.length > 0 && currentFcIndex < vocabList.length) {
+                openFlashcard(currentFcIndex); // 索引位置更新自动载入下词
+            } else if (vocabList.length > 0) {
+                openFlashcard(0); // 循环折返
+            } else {
+                closeFlashcard();
+            }
+        }
+
+        function closeFlashcard() { flashcardOverlay.style.display = 'none'; renderVocab(); }
+        btnCloseFc.addEventListener('click', closeFlashcard);
+        document.getElementById('btn-fc-speak').addEventListener('click', (e) => { e.stopPropagation(); speakWord(fcWord.textContent); });
+
+        // 一键复制
+        document.getElementById('btn-copy-all-vocab').addEventListener('click', () => {
+            if(vocabList.length === 0) return;
+            navigator.clipboard.writeText(vocabList.map(v => `${v.word} : ${v.trans}`).join('\n'));
+            alert('生词本已导出至剪贴板。');
+        });
+
+        // 备份导入导出
+        document.getElementById('btn-export').addEventListener('click', () => {
+            if(vocabList.length===0)return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(vocabList));
+            const dl = document.createElement('a');
+            dl.setAttribute("href", dataStr);
+            dlNode.setAttribute("download", `HearingGym_V3.json`);
+            dl.click();
+        });
+
+        document.getElementById('import-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const imported = JSON.parse(evt.target.result);
+                    if (Array.isArray(imported)) {
+                        vocabList = [...imported]; // 直接还原覆盖
+                        saveVocab(); renderVocab(); alert('生词本数据还原成功！');
+                    }
+                } catch (err) { alert('解析失败。'); }
+            };
+            reader.readAsText(file);
+        });
+    </script>
+</body>
+</html>
