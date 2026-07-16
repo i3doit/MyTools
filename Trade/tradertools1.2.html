@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>专业保证金计算工具</title>
+
+<style>
+body{
+    font-family: "Segoe UI", Arial;
+    background:#eef2f7;
+    margin:0;
+    padding:10px;
+}
+
+/* 标题 */
+h2{
+    text-align:center;
+    color:#333;
+}
+
+/* Tabs */
+.tabs{
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+}
+.tabs button{
+    margin:5px;
+    padding:8px 12px;
+    border:none;
+    background:#d0d7e2;
+    border-radius:6px;
+    cursor:pointer;
+}
+.tabs button.active{
+    background:#4CAF50;
+    color:#fff;
+}
+
+/* 内容块 */
+.tab-content{
+    display:none;
+    background:#ffffff;
+    padding:15px;
+    border-radius:10px;
+}
+
+/* 护眼色 */
+.type1{ background:#f7fbff; }
+.type2{ background:#f9fff5; }
+.type3{ background:#fffaf5; }
+.type4{ background:#f8f5ff; }
+
+/* 行布局 */
+.row{
+    display:flex;
+    align-items:center;
+    margin:8px 0;
+}
+.row label{
+    width:160px;
+    color:#333;
+}
+.row input{
+    flex:1;
+    padding:6px;
+    border:1px solid #ccc;
+    border-radius:6px;
+}
+
+/* 按钮 */
+.btn{
+    margin-top:10px;
+    padding:8px 12px;
+    border:none;
+    border-radius:6px;
+    color:white;
+    background:#4CAF50;
+    cursor:pointer;
+}
+.btn.secondary{
+    background:#999;
+}
+.btn:hover{
+    opacity:0.9;
+}
+
+/* 结果 */
+.result{
+    margin-top:10px;
+    color:#e53935;
+    font-weight:bold;
+}
+
+/* 名词解释 */
+.desc{
+    background:#fff;
+    padding:10px;
+    border-radius:8px;
+    margin-bottom:10px;
+    font-size:13px;
+    line-height:1.6;
+}
+</style>
+</head>
+
+<body>
+
+<h2>保证金计算工具（专业版）</h2>
+
+<div class="desc">
+<b>名词解释：</b><br>
+1. 账户币种：账户余额币种（默认 USD）<br>
+2. 货币对类型：直盘1 / 直盘2 / 交叉盘<br>
+3. 保证金模式：固定杠杆<br>
+4. 汇率类型：
+- 账户币在前（USDJPY）
+- 账户币在后（GBPUSD）<br>
+5. 汇率币种：根据类型进行乘或除计算
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+<button onclick="show(1)" class="active">直盘1</button>
+<button onclick="show(2)">直盘2</button>
+<button onclick="show(3)">账户币在前</button>
+<button onclick="show(4)">账户币在后</button>
+</div>
+
+<!-- 直盘1 -->
+<div id="tab1" class="tab-content type1" style="display:block">
+<h3>直盘1（XAUUSD / EURUSD）</h3>
+<h5>公式：预付款=手数 * 合约数量 * 建仓价格 / 杠杆</h5>
+
+<div class="row"><label>手数</label><input id="l1" type="number" value="1"></div>
+<div class="row"><label>合约数量</label><input id="c1" type="number" value="100000"></div>
+<div class="row"><label>建仓价格</label><input id="p1" type="number" value="1.08"></div>
+<div class="row"><label>杠杆</label><input id="lev1" type="number" value="500"></div>
+
+<button class="btn" onclick="calc1()">计算</button>
+<button class="btn secondary" onclick="clearBox(['l1','c1','p1','lev1'],'r1')">清空</button>
+
+<div id="r1" class="result"></div>
+</div>
+
+<!-- 直盘2 -->
+<div id="tab2" class="tab-content type2">
+<h3>直盘2（USDJPY）</h3>
+<h5>公式：预付款=手数 * 合约数量 / 杠杆</h5>
+
+<div class="row"><label>手数</label><input id="l2" type="number" value="1"></div>
+<div class="row"><label>合约数量</label><input id="c2" type="number" value="100000"></div>
+<div class="row"><label>杠杆</label><input id="lev2" type="number" value="500"></div>
+
+<button class="btn" onclick="calc2()">计算</button>
+<button class="btn secondary" onclick="clearBox(['l2','c2','lev2'],'r2')">清空</button>
+
+<div id="r2" class="result"></div>
+</div>
+
+<!-- 账户币在前 -->
+<div id="tab3" class="tab-content type3">
+<h3>汇率型（账户币在前，如 USDJPY）</h3>
+<h5>公式： 预付款 = 手数 * 合约数量* 建仓价格 / 汇率币种（ask） / 杠杆</h5>
+
+<div class="row"><label>手数</label><input id="l3" type="number" value="1"></div>
+<div class="row"><label>合约数量</label><input id="c3" type="number" value="100000"></div>
+<div class="row"><label>建仓价格</label><input id="p3" type="number" value="1.08"></div>
+<div class="row"><label>汇率 Ask</label><input id="ask3" type="number" value="7.8"></div>
+<div class="row"><label>杠杆</label><input id="lev3" type="number" value="500"></div>
+
+<button class="btn" onclick="calc3()">计算</button>
+<button class="btn secondary" onclick="clearBox(['l3','c3','p3','ask3','lev3'],'r3')">清空</button>
+
+<div id="r3" class="result"></div>
+</div>
+
+<!-- 账户币在后 -->
+<div id="tab4" class="tab-content type4">
+<h3>汇率型（账户币在后，如 GBPUSD）</h3>
+<h5>公式：预付款 = 手数 * 合约数量 * 建仓价格 * 汇率币种（bid） / 杠杆</h5>
+
+<div class="row"><label>手数</label><input id="l4" type="number" value="1"></div>
+<div class="row"><label>合约数量</label><input id="c4" type="number" value="100000"></div>
+<div class="row"><label>建仓价格</label><input id="p4" type="number" value="1.08"></div>
+<div class="row"><label>汇率 Bid</label><input id="bid4" type="number" value="7.8"></div>
+<div class="row"><label>杠杆</label><input id="lev4" type="number" value="500"></div>
+
+<button class="btn" onclick="calc4()">计算</button>
+<button class="btn secondary" onclick="clearBox(['l4','c4','p4','bid4','lev4'],'r4')">清空</button>
+
+<div id="r4" class="result"></div>
+</div>
+
+<script>
+
+/* 安全处理 */
+function safe(v){
+    let n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+}
+function div(a,b){
+    return b===0?0:a/b;
+}
+
+/* tab切换 */
+function show(n){
+    let tabs = document.querySelectorAll(".tab-content");
+    tabs.forEach(t=>t.style.display="none");
+
+    document.getElementById("tab"+n).style.display="block";
+
+    document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".tabs button")[n-1].classList.add("active");
+}
+
+/* 计算逻辑（严格按P0） */
+
+function calc1(){
+    let r = div(safe(l1.value)*safe(c1.value)*safe(p1.value), safe(lev1.value));
+    r1.innerText = "预付款 = " + r.toFixed(2);
+}
+
+function calc2(){
+    let r = div(safe(l2.value)*safe(c2.value), safe(lev2.value));
+    r2.innerText = "预付款 = " + r.toFixed(2);
+}
+
+function calc3(){
+    let r = div(safe(l3.value)*safe(c3.value)*safe(p3.value), safe(ask3.value));
+    r = div(r, safe(lev3.value));
+    r3.innerText = "预付款 = " + r.toFixed(2);
+}
+
+function calc4(){
+    let r = safe(l4.value)*safe(c4.value)*safe(p4.value)*safe(bid4.value);
+    r = div(r, safe(lev4.value));
+    r4.innerText = "预付款 = " + r.toFixed(2);
+}
+
+/* 清空 */
+function clearBox(ids, rid){
+    ids.forEach(id => document.getElementById(id).value="");
+    document.getElementById(rid).innerText="";
+}
+
+</script>
+
+</body>
+</html>
