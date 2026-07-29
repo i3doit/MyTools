@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二维码扫描器</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+        }
+
+        #reader {
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .upload-section {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            width: 100%;
+            padding: 12px 0;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            box-sizing: border-box;
+            transition: background 0.2s;
+        }
+
+        .file-input-label:hover {
+            background-color: #0056b3;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .history-section {
+            margin-top: 25px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 8px;
+        }
+
+        .history-header h2 {
+            font-size: 1.05rem;
+            margin: 0;
+        }
+
+        .btn-clear {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 10px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            word-break: break-all;
+        }
+
+        .history-item .time {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-bottom: 4px;
+        }
+
+        .history-item a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .history-item a:hover {
+            text-decoration: underline;
+        }
+
+        .empty-tip {
+            text-align: center;
+            color: #888;
+            font-size: 0.9rem;
+            padding: 15px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>二维码扫描器</h1>
+    
+    <div id="reader"></div>
+
+    <div class="upload-section">
+        <label for="qr-input-file" class="file-input-label">选择相册/本地图片识别</label>
+        <input type="file" id="qr-input-file" accept="image/*">
+    </div>
+
+    <div class="history-section">
+        <div class="history-header">
+            <h2>扫描历史</h2>
+            <button class="btn-clear" onclick="clearHistory()">清空历史</button>
+        </div>
+        <ul id="history-list" class="history-list"></ul>
+    </div>
+</div>
+
+<script>
+    const STORAGE_KEY = 'qr_scan_history';
+    let html5QrcodeScanner = null;
+
+    // 格式化时间
+    function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+
+    // 保存到 LocalStorage
+    function saveHistory(text) {
+        let history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        // 去重：如果与最新一条完全相同则不重复保存
+        if (history.length > 0 && history[0].text === text) return;
+        
+        history.unshift({
+            text: text,
+            time: new Date().toISOString()
+        });
+        
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+        renderHistory();
+    }
+
+    // 渲染历史列表
+    function renderHistory() {
+        const historyList = document.getElementById('history-list');
+        const history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        
+        if (history.length === 0) {
+            historyList.innerHTML = '<li class="empty-tip">暂无扫描历史</li>';
+            return;
+        }
+
+        historyList.innerHTML = history.map(item => {
+            const isUrl = /^https?:\/\//i.test(item.text);
+            const displayContent = isUrl 
+                ? `<a href="${item.text}" target="_blank" rel="noopener noreferrer">${item.text}</a>`
+                : `<span>${item.text}</span>`;
+            
+            return `
+                <li class="history-item">
+                    <div class="time">${formatDate(item.time)}</div>
+                    <div>${displayContent}</div>
+                </li>
+            `;
+        }).join('');
+    }
+
+    // 清空历史
+    function clearHistory() {
+        if (confirm('确定要清空所有扫描历史吗？')) {
+            localStorage.removeItem(STORAGE_KEY);
+            renderHistory();
+        }
+    }
+
+    // 统一处理扫码/识别成功逻辑
+    function handleScanSuccess(decodedText) {
+        // 清理首尾空格与换行符
+        const resultText = decodedText.trim();
+        if (!resultText) return;
+
+        // 存入历史
+        saveHistory(resultText);
+
+        // 验证是否为标准 URL 格式
+        const isUrl = /^https?:\/\//i.test(resultText);
+
+        if (isUrl) {
+            // 立即跳转
+            window.location.href = resultText;
+        } else {
+            alert('扫描到的内容非网址：\n' + resultText);
+        }
+    }
+
+    // 初始化摄像头扫描
+    function initScanner() {
+        html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", 
+            { 
+                fps: 10, 
+                qrbox: { width: 220, height: 220 },
+                rememberLastUsedCamera: true
+            },
+            /* verbose= */ false
+        );
+
+        html5QrcodeScanner.render((decodedText) => {
+            // 关键优化：识别成功后先停止摄像头扫描，防止重复高频触发跳转/弹窗
+            html5QrcodeScanner.clear().then(() => {
+                handleScanSuccess(decodedText);
+            }).catch(err => {
+                console.error("停止扫描器失败:", err);
+                handleScanSuccess(decodedText);
+            });
+        }, (errorMessage) => {
+            // 扫描中的帧忽略（不需要处理错误提示）
+        });
+    }
+
+    // 处理图片上传识别（独立实例化，避免 DOM 冲突）
+    document.getElementById('qr-input-file').addEventListener('change', e => {
+        if (e.target.files.length === 0) return;
+        
+        const imageFile = e.target.files[0];
+        const html5QrCode = new Html5Qrcode("reader");
+
+        // 如果摄像头正在运行，先清理
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().catch(() => {}).finally(() => {
+                scanFileImage(html5QrCode, imageFile);
+            });
+        } else {
+            scanFileImage(html5QrCode, imageFile);
+        }
+    });
+
+    function scanFileImage(html5QrCodeInstance, imageFile) {
+        html5QrCodeInstance.scanFile(imageFile, true)
+            .then(decodedText => {
+                handleScanSuccess(decodedText);
+            })
+            .catch(err => {
+                alert("未在图片中识别出有效的二维码");
+                // 重新初始化摄像头
+                initScanner();
+            });
+    }
+
+    // 页面加载完成后初始化
+    window.addEventListener('DOMContentLoaded', () => {
+        renderHistory();
+        initScanner();
+    });
+</script>
+
+</body>
+</html>
