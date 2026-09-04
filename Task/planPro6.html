@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>捕鼠器 Pro v3.0 - 蘋果極簡版</title>
+  <!-- 引入极简矢量图标库 Lucide -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* CSS Reset & Apple Dark Mode Base Variables */
+    :root {
+      --bg-primary: #000000;
+      --bg-card: #1c1c1e;
+      --bg-card-secondary: #2c2c2e;
+      --text-primary: #f5f5f7;
+      --text-secondary: #8e8e93;
+      --accent-p0: #ff453a;
+      --accent-p1: #ffd60a;
+      --apple-green: #30d158;
+      --apple-blue: #0a84ff;
+      --apple-orange: #ff9f0a;
+      --apple-red: #ff453a;
+      --border-color: #38383a;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 40px 16px;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 820px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Red Banner (Pressure Valve) */
+    .red-banner {
+      background: rgba(255, 69, 58, 0.1);
+      color: #ffb3b0;
+      border: 1px solid rgba(255, 69, 58, 0.3);
+      backdrop-filter: blur(20px);
+      padding: 14px 20px;
+      border-radius: var(--radius-md);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .red-banner:hover {
+      background: rgba(255, 69, 58, 0.15);
+      border-color: var(--accent-p0);
+    }
+
+    .banner-icon {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Apple Glassmorphic Card Style */
+    .section-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.3px;
+    }
+
+    /* Inputs */
+    .task-input-box {
+      display: flex;
+      gap: 12px;
+    }
+
+    .task-input, .search-input {
+      background-color: var(--bg-card-secondary);
+      border: 1px solid transparent;
+      color: var(--text-primary);
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+
+    .task-input { flex: 1; }
+
+    .task-input:focus, .search-input:focus, textarea.inspiration-box:focus {
+      outline: none;
+      background-color: #323234;
+      border-color: var(--apple-blue);
+      box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+    }
+
+    /* Buttons Style */
+    .btn {
+      background-color: var(--bg-card-secondary);
+      color: var(--text-primary);
+      border: none;
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .btn:hover { background-color: #3a3a3c; }
+    .btn:active { transform: scale(0.97); }
+
+    /* Square Icon Buttons */
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: var(--radius-sm);
+      background-color: rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+    }
+    .btn-icon:hover { background-color: rgba(255, 255, 255, 0.12); color: var(--text-primary); }
+
+    /* Thematic Buttons */
+    .btn-primary { background-color: var(--apple-blue); color: #fff; }
+    .btn-primary:hover { background-color: #3095ff; }
+    
+    .btn-play { color: var(--apple-green); }
+    .btn-play:hover { background-color: rgba(48, 209, 88, 0.15); color: var(--apple-green); }
+    
+    .btn-pause { color: var(--apple-orange); }
+    .btn-pause:hover { background-color: rgba(255, 159, 10, 0.15); color: var(--apple-orange); }
+    
+    .btn-done { color: var(--apple-blue); }
+    .btn-done:hover { background-color: rgba(10, 132, 255, 0.15); color: var(--apple-blue); }
+    
+    .btn-danger { color: var(--apple-red); }
+    .btn-danger:hover { background-color: rgba(255, 69, 58, 0.15); color: var(--apple-red); }
+
+    /* Task Controls Bar */
+    .task-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 16px;
+    }
+
+    .filter-tabs {
+      display: flex;
+      background-color: rgba(255, 255, 255, 0.04);
+      padding: 4px;
+      border-radius: var(--radius-md);
+    }
+
+    .filter-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .filter-btn.active {
+      background-color: #3a3a3c;
+      color: var(--text-primary);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .task-stats {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* Task Items */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 80px;
+    }
+
+    .task-card {
+      background-color: var(--bg-card-secondary);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .task-card:hover {
+      background-color: #323234;
+    }
+
+    /* P0 Visuals */
+    .task-card.p0 {
+      background-color: rgba(255, 69, 58, 0.08);
+      border-left: 4px solid var(--accent-p0);
+    }
+    .task-card.p0:hover { background-color: rgba(255, 69, 58, 0.12); }
+
+    /* P1 Visuals */
+    .task-card.p1 {
+      border-left: 4px solid var(--border-color);
+    }
+
+    /* Completed Visuals */
+    .task-card.completed {
+      opacity: 0.5;
+      border-left: 4px solid #48484a;
+      background-color: transparent;
+      border: 1px solid var(--border-color);
+    }
+
+    .task-card.completed .task-text {
+      text-decoration: line-through;
+      color: var(--text-secondary);
+    }
+
+    .task-content {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .task-header-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .task-text {
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.2px;
+      word-break: break-word;
+    }
+
+    /* Pill Badges */
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: 0.5px;
+    }
+    .badge-p0 { background-color: rgba(255, 69, 58, 0.2); color: var(--apple-red); border: 1px solid rgba(255, 69, 58, 0.3); }
+    .badge-p1 { background-color: rgba(255, 255, 255, 0.1); color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.1); }
+
+    .task-timer {
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .time-mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: rgba(0,0,0,0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--text-primary);
+    }
+
+    .task-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding-top: 16px;
+    }
+
+    .page-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* Inspiration Area (Bottom) */
+    textarea.inspiration-box {
+      width: 100%;
+      height: 140px;
+      background-color: var(--bg-card-secondary);
+      border: 1px solid transparent;
+      color: var(--text-primary);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      resize: vertical;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .inspiration-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      background-color: rgba(255,255,255,0.03);
+      padding: 6px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+
+    .status-text {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      body { padding: 20px 12px; }
+      .task-card { flex-direction: column; align-items: stretch; gap: 12px; }
+      .task-actions { justify-content: flex-end; padding-top: 8px; border-top: 1px solid var(--border-color); }
+      .inspiration-toolbar { flex-direction: column; align-items: stretch; }
+      .toolbar-actions { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Top Red Banner -->
+  <div id="redBanner" class="red-banner" style="display: none;" onclick="switchFilterToUnfinished()" title="點擊切換至「未完成」檢視">
+    <div class="banner-icon">
+      <i data-lucide="alert-circle" size="18"></i>
+      <span>還有 <span id="unfinishedCount">0</span> 件未完成任務！</span>
+    </div>
+    <span style="font-size: 12px; opacity: 0.8; display: flex; align-items: center; gap: 4px;">查看待辦 <i data-lucide="chevron-right" size="14"></i></span>
+  </div>
+
+  <!-- TOP FOCUS AREA -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title"><i data-lucide="target" size="20" color="var(--apple-blue)"></i> 必做清單</div>
+    </div>
+
+    <!-- Task Input Row -->
+    <div class="task-input-box">
+      <input type="text" id="taskInput" class="task-input" placeholder="輸入緊急任務 (! 前綴自動標記 P0)..." onkeydown="handleTaskInputKey(event)">
+      <button class="btn btn-primary" onclick="addTask()">
+        <i data-lucide="plus" size="18"></i> 新增
+      </button>
+    </div>
+
+    <!-- Task Filter & Controls -->
+    <div class="task-controls">
+      <div class="filter-tabs">
+        <button id="filterAll" class="filter-btn" onclick="setFilter('all')">全部</button>
+        <button id="filterUnfinished" class="filter-btn active" onclick="setFilter('unfinished')">未完成</button>
+        <button id="filterFinished" class="filter-btn" onclick="setFilter('finished')">已完成</button>
+      </div>
+
+      <div class="task-stats" id="taskStats">總數: 0 | 未完成: 0 | 已完成: 0</div>
+
+      <button class="btn btn-icon btn-danger" style="width: auto; padding: 0 12px;" onclick="clearCompletedTasks()" title="清理已完成">
+        <i data-lucide="trash-2" size="16"></i>
+      </button>
+    </div>
+
+    <!-- Task List -->
+    <div id="taskList" class="task-list"></div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination">
+      <div class="page-controls">
+        <button class="btn btn-icon" onclick="changePage(-1)" title="上一頁"><i data-lucide="chevron-left" size="18"></i></button>
+        <span id="pageIndicator" style="font-variant-numeric: tabular-nums;">1 / 1</span>
+        <button class="btn btn-icon" onclick="changePage(1)" title="下一頁"><i data-lucide="chevron-right" size="18"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM BUFFER AREA -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title"><i data-lucide="lightbulb" size="20" color="var(--apple-orange)"></i> 靈感與雜念區</div>
+      <span id="saveStatus" class="status-text"><i data-lucide="check-circle-2" size="14"></i> 每 15 秒自動儲存</span>
+    </div>
+    
+    <textarea id="inspirationText" class="inspiration-box" placeholder="工作中突發的雜念、草稿、連結隨手倒在這裡，不打斷當前核心任務 (Ctrl+S 手動儲存)..."></textarea>
+    
+    <div class="inspiration-toolbar">
+      <div style="position: relative; flex: 1; max-width: 300px;">
+        <i data-lucide="search" size="16" style="position: absolute; left: 12px; top: 14px; color: var(--text-secondary);"></i>
+        <input type="text" id="searchInspiration" class="search-input" style="width: 100%; padding-left: 36px;" placeholder="搜尋靈感..." oninput="handleInspirationSearch()">
+      </div>
+      
+      <div class="toolbar-actions">
+        <button class="btn btn-icon" onclick="saveInspiration()" title="手動儲存"><i data-lucide="save" size="16"></i></button>
+        <button class="btn btn-icon" onclick="copyInspiration()" title="複製全部"><i data-lucide="copy" size="16"></i></button>
+        <div style="width: 1px; background: var(--border-color); margin: 4px;"></div>
+        <button class="btn btn-icon" onclick="exportData()" title="匯出備份"><i data-lucide="download" size="16"></i></button>
+        <button class="btn btn-icon" onclick="triggerImport()" title="匯入備份"><i data-lucide="upload" size="16"></i></button>
+        <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importData(event)">
+        <div style="width: 1px; background: var(--border-color); margin: 4px;"></div>
+        <button class="btn btn-icon btn-danger" onclick="clearInspiration()" title="清空"><i data-lucide="trash" size="16"></i></button>
+      </div>
+    </div>
+    <div id="searchResultCount" class="status-text" style="display: none;"></div>
+  </div>
+</div>
+
+<script>
+  let state = {
+    inspiration: '',
+    tasks: [],
+    filter: 'unfinished',
+    currentPage: 1,
+    pageSize: 10,
+    timerInterval: null
+  };
+
+  window.onload = function() {
+    loadData();
+    initTimer();
+    setInterval(autoSaveInspiration, 15000);
+    
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveInspiration();
+      }
+    });
+  };
+
+  function loadData() {
+    const savedInspiration = localStorage.getItem('mouseTrap_inspiration');
+    if (savedInspiration !== null) {
+      state.inspiration = savedInspiration;
+      document.getElementById('inspirationText').value = savedInspiration;
+    }
+
+    const savedTasks = localStorage.getItem('mouseTrap_tasks');
+    if (savedTasks) {
+      try {
+        state.tasks = JSON.parse(savedTasks);
+        state.tasks.forEach(task => {
+          if (!task.status) task.status = task.completed ? 'completed' : 'pending';
+          if (task.elapsedTime === undefined) task.elapsedTime = 0;
+          if (task.priority === undefined) task.priority = 'P1';
+        });
+      } catch (e) {
+        state.tasks = [];
+      }
+    }
+    render();
+  }
+
+  function saveData() {
+    localStorage.setItem('mouseTrap_inspiration', state.inspiration);
+    localStorage.setItem('mouseTrap_tasks', JSON.stringify(state.tasks));
+  }
+
+  // --- Inspiration ---
+  function saveInspiration() {
+    state.inspiration = document.getElementById('inspirationText').value;
+    saveData();
+    showStatus('已手動儲存');
+  }
+
+  function autoSaveInspiration() {
+    const current = document.getElementById('inspirationText').value;
+    if (current !== state.inspiration) {
+      state.inspiration = current;
+      saveData();
+      showStatus('已自動儲存');
+    }
+  }
+
+  function showStatus(text) {
+    const statusEl = document.getElementById('saveStatus');
+    statusEl.innerHTML = `<i data-lucide="check" size="14" color="var(--apple-green)"></i> ${text}`;
+    lucide.createIcons();
+    setTimeout(() => {
+      statusEl.innerHTML = `<i data-lucide="check-circle-2" size="14"></i> 每 15 秒自動儲存`;
+      lucide.createIcons();
+    }, 2000);
+  }
+
+  function copyInspiration() {
+    const text = document.getElementById('inspirationText').value;
+    navigator.clipboard.writeText(text).then(() => alert('靈感已複製到剪貼簿！'));
+  }
+
+  function clearInspiration() {
+    if (confirm('確定要清空靈感區嗎？此操作無法撤銷。')) {
+      document.getElementById('inspirationText').value = '';
+      state.inspiration = '';
+      saveData();
+    }
+  }
+
+  function handleInspirationSearch() {
+    const query = document.getElementById('searchInspiration').value.toLowerCase();
+    const text = document.getElementById('inspirationText').value;
+    const countEl = document.getElementById('searchResultCount');
+
+    if (!query) {
+      countEl.style.display = 'none';
+      return;
+    }
+    const matches = (text.toLowerCase().match(new RegExp(query, 'g')) || []).length;
+    countEl.style.display = 'flex';
+    countEl.innerHTML = `<i data-lucide="info" size="14"></i> 找到 ${matches} 處匹配`;
+    lucide.createIcons();
+  }
+
+  // --- Tasks ---
+  function handleTaskInputKey(e) {
+    if (e.key === 'Enter') addTask();
+  }
+
+  function addTask() {
+    const input = document.getElementById('taskInput');
+    let title = input.value.trim();
+    if (!title) return;
+
+    let priority = 'P1';
+    if (title.startsWith('!')) {
+      priority = 'P0';
+      title = title.substring(1).trim();
+    }
+
+    state.tasks.unshift({
+      id: Date.now().toString(),
+      title: title,
+      priority: priority,
+      status: 'pending',
+      elapsedTime: 0
+    });
+
+    input.value = '';
+    saveData();
+    render();
+  }
+
+  function togglePriority(id) {
+    const task = state.tasks.find(t => t.id === id);
+    if (task && task.status !== 'completed') {
+      task.priority = task.priority === 'P0' ? 'P1' : 'P0';
+      saveData();
+      render();
+    }
+  }
+
+  function startTask(id) {
+    state.tasks.forEach(t => { if (t.id !== id && t.status === 'running') t.status = 'paused'; });
+    const task = state.tasks.find(t => t.id === id);
+    if (task) { task.status = 'running'; saveData(); render(); }
+  }
+
+  function pauseTask(id) {
+    const task = state.tasks.find(t => t.id === id);
+    if (task) { task.status = 'paused'; saveData(); render(); }
+  }
+
+  function completeTask(id) {
+    const task = state.tasks.find(t => t.id === id);
+    if (task) { task.status = 'completed'; saveData(); render(); }
+  }
+
+  function deleteTask(id) {
+    if (confirm('確定刪除此任務？')) {
+      state.tasks = state.tasks.filter(t => t.id !== id);
+      saveData(); render();
+    }
+  }
+
+  function clearCompletedTasks() {
+    if (confirm('確定要清理所有已完成的任務嗎？')) {
+      state.tasks = state.tasks.filter(t => t.status !== 'completed');
+      saveData(); render();
+    }
+  }
+
+  // --- Timer ---
+  function initTimer() {
+    if (state.timerInterval) clearInterval(state.timerInterval);
+    state.timerInterval = setInterval(() => {
+      let active = false;
+      state.tasks.forEach(t => {
+        if (t.status === 'running') { t.elapsedTime = (t.elapsedTime || 0) + 1; active = true; }
+      });
+      if (active) updateTimerDisplays();
+    }, 1000);
+  }
+
+  function updateTimerDisplays() {
+    state.tasks.forEach(t => {
+      if (t.status === 'running') {
+        const timerEl = document.getElementById(`timer-${t.id}`);
+        if (timerEl) timerEl.innerText = formatTime(t.elapsedTime);
+      }
+    });
+  }
+
+  function formatTime(s) {
+    const m = Math.floor(s / 60).toString().padStart(2, '0');
+    const sec = (s % 60).toString().padStart(2, '0');
+    return `${m}:${sec}`;
+  }
+
+  // --- Views ---
+  function setFilter(f) { state.filter = f; state.currentPage = 1; render(); }
+  function switchFilterToUnfinished() { setFilter('unfinished'); }
+
+  function changePage(delta) {
+    const filtered = getFilteredTasks();
+    const maxPage = Math.max(1, Math.ceil(filtered.length / state.pageSize));
+    const newPage = state.currentPage + delta;
+    if (newPage >= 1 && newPage <= maxPage) { state.currentPage = newPage; render(); }
+  }
+
+  function getFilteredTasks() {
+    return state.tasks.filter(t => {
+      if (state.filter === 'unfinished') return t.status !== 'completed';
+      if (state.filter === 'finished') return t.status === 'completed';
+      return true;
+    });
+  }
+
+  // --- Render ---
+  function render() {
+    const unfinished = state.tasks.filter(t => t.status !== 'completed');
+    const banner = document.getElementById('redBanner');
+    if (unfinished.length > 0) {
+      banner.style.display = 'flex';
+      document.getElementById('unfinishedCount').innerText = unfinished.length;
+    } else { banner.style.display = 'none'; }
+
+    document.getElementById('filterAll').className = `filter-btn ${state.filter === 'all' ? 'active' : ''}`;
+    document.getElementById('filterUnfinished').className = `filter-btn ${state.filter === 'unfinished' ? 'active' : ''}`;
+    document.getElementById('filterFinished').className = `filter-btn ${state.filter === 'finished' ? 'active' : ''}`;
+
+    const completedCount = state.tasks.filter(t => t.status === 'completed').length;
+    document.getElementById('taskStats').innerText = `總數: ${state.tasks.length} | 未完成: ${unfinished.length} | 已完成: ${completedCount}`;
+
+    const filtered = getFilteredTasks();
+    const maxPage = Math.max(1, Math.ceil(filtered.length / state.pageSize));
+    if (state.currentPage > maxPage) state.currentPage = maxPage;
+
+    const startIdx = (state.currentPage - 1) * state.pageSize;
+    const paged = filtered.slice(startIdx, startIdx + state.pageSize);
+    const list = document.getElementById('taskList');
+    list.innerHTML = '';
+
+    if (paged.length === 0) {
+      list.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 40px 0; font-size: 14px;"><i data-lucide="inbox" size="32" style="opacity: 0.5; margin-bottom: 8px;"></i><br>尚無任務</div>`;
+    } else {
+      paged.forEach(t => {
+        const isCompleted = t.status === 'completed';
+        const card = document.createElement('div');
+        card.className = `task-card ${t.priority.toLowerCase()} ${isCompleted ? 'completed' : ''}`;
+
+        let actionBtns = '';
+        if (!isCompleted) {
+          if (t.status === 'running') {
+            actionBtns += `<button class="btn-icon btn-pause" onclick="pauseTask('${t.id}')" title="暫停"><i data-lucide="pause" size="18"></i></button>`;
+          } else {
+            actionBtns += `<button class="btn-icon btn-play" onclick="startTask('${t.id}')" title="開始"><i data-lucide="play" size="18"></i></button>`;
+          }
+          actionBtns += `<button class="btn-icon btn-done" onclick="completeTask('${t.id}')" title="完成"><i data-lucide="check" size="18"></i></button>`;
+          actionBtns += `<button class="btn-icon" onclick="togglePriority('${t.id}')" title="切換優先級"><i data-lucide="tag" size="16"></i></button>`;
+        }
+        actionBtns += `<button class="btn-icon btn-danger" onclick="deleteTask('${t.id}')" title="刪除"><i data-lucide="trash-2" size="16"></i></button>`;
+
+        let statusIcon = t.status === 'running' ? '<i data-lucide="loader" size="12" class="spin"></i> ' : '';
+        let timerDisplay = `<span class="time-mono" id="timer-${t.id}">${formatTime(t.elapsedTime)}</span>`;
+
+        card.innerHTML = `
+          <div class="task-content">
+            <div class="task-header-line">
+              <span class="badge badge-${t.priority.toLowerCase()}">${t.priority}</span>
+              <span class="task-text">${escapeHTML(t.title)}</span>
+            </div>
+            <div class="task-timer">
+              <i data-lucide="clock" size="14"></i> 耗時 ${timerDisplay}
+            </div>
+          </div>
+          <div class="task-actions">${actionBtns}</div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    document.getElementById('pageIndicator').innerText = `${state.currentPage} / ${maxPage}`;
+    
+    // 初始化/刷新 Lucide 矢量图标
+    lucide.createIcons();
+  }
+
+  // --- Backup ---
+  function exportData() {
+    const backupData = {
+      version: '3.0',
+      exportDate: new Date().toISOString(),
+      inspiration: document.getElementById('inspirationText').value,
+      tasks: state.tasks
+    };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+    const a = document.createElement('a');
+    a.href = dataStr;
+    a.download = `mousetrap_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  }
+  function triggerImport() { document.getElementById('importFile').click(); }
+  function importData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        const imported = JSON.parse(evt.target.result);
+        if (imported.inspiration !== undefined) {
+          state.inspiration = imported.inspiration;
+          document.getElementById('inspirationText').value = imported.inspiration;
+        }
+        if (Array.isArray(imported.tasks)) state.tasks = imported.tasks;
+        saveData(); render(); alert('資料匯入成功！');
+      } catch (err) { alert('檔案格式不正確'); }
+    };
+    reader.readAsText(file);
+  }
+  function escapeHTML(str) { return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
+</script>
+</body>
+</html>
