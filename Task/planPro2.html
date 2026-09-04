@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>🧠 捕鼠器 Pro v2.1</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #1a1a2e;
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            justify-content: center;
+            padding: 24px 16px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 920px;
+            width: 100%;
+            background: #16213e;
+            border-radius: 28px;
+            padding: 28px 26px;
+            color: #eaeef2;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+        h1 {
+            font-size: 26px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        .sub {
+            font-size: 14px;
+            color: #8899b0;
+            border-left: 3px solid #f0a500;
+            padding-left: 14px;
+            margin-bottom: 22px;
+            background: #0f1a2b;
+            border-radius: 10px;
+            padding: 12px 18px;
+        }
+        .sub strong {
+            color: #f0a500;
+        }
+        .version-tag {
+            font-size: 12px;
+            background: #2a3a55;
+            padding: 2px 12px;
+            border-radius: 40px;
+            color: #8899b0;
+            margin-left: 8px;
+        }
+
+        /* ---- 必做清單 ---- */
+        .must-do-section {
+            background: #0f1a2b;
+            border-radius: 18px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            border: 1px solid #2a3a55;
+        }
+        .must-do-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .must-do-header h2 {
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .must-do-header h2 .badge {
+            background: #e74c3c;
+            font-size: 12px;
+            padding: 2px 12px;
+            border-radius: 40px;
+            color: #fff;
+        }
+        .must-do-input-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .must-do-input-row input {
+            flex: 1;
+            min-width: 180px;
+            padding: 10px 16px;
+            border-radius: 40px;
+            border: 1px solid #2a3a55;
+            background: #0b1422;
+            color: #eee;
+            font-size: 14px;
+            outline: none;
+        }
+        .must-do-input-row input:focus {
+            border-color: #f0a500;
+        }
+        .must-do-input-row button {
+            padding: 10px 24px;
+            border-radius: 40px;
+            border: none;
+            background: #f0a500;
+            color: #16213e;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        .must-do-input-row button:hover {
+            background: #ffbe2e;
+            transform: scale(1.02);
+        }
+
+        /* ---- 過濾器 + 統計 ---- */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #1a2a44;
+        }
+        .filter-bar .filter-group {
+            display: flex;
+            gap: 6px;
+        }
+        .filter-bar .filter-group button {
+            padding: 5px 16px;
+            border-radius: 30px;
+            border: 1px solid #2a3a55;
+            background: transparent;
+            color: #8899b0;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+        .filter-bar .filter-group button:hover {
+            background: #1a2a44;
+            color: #eaeef2;
+        }
+        .filter-bar .filter-group button.active {
+            background: #f0a500;
+            color: #16213e;
+            border-color: #f0a500;
+        }
+        .filter-bar .stats {
+            font-size: 13px;
+            color: #8899b0;
+            margin-left: auto;
+        }
+        .filter-bar .stats strong {
+            color: #eaeef2;
+        }
+
+        /* ---- 任務列表 ---- */
+        .must-do-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 180px;
+        }
+        .must-do-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #1a2a44;
+            padding: 12px 18px;
+            border-radius: 14px;
+            border-left: 4px solid #f0a500;
+            transition: 0.2s;
+            flex-wrap: wrap;
+        }
+        .must-do-item.completed {
+            border-left-color: #27ae60;
+            opacity: 0.6;
+        }
+        .must-do-item .item-text {
+            flex: 1;
+            font-size: 15px;
+            word-break: break-word;
+            min-width: 120px;
+        }
+        .must-do-item.completed .item-text {
+            text-decoration: line-through;
+            color: #8899b0;
+        }
+        .must-do-item .item-timer {
+            font-size: 13px;
+            color: #aabbcc;
+            font-family: monospace;
+            min-width: 80px;
+        }
+        .must-do-item .item-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .must-do-item .item-actions button {
+            padding: 5px 14px;
+            border-radius: 30px;
+            border: none;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-start {
+            background: #2ecc71;
+            color: #0b1422;
+        }
+        .btn-start:hover {
+            background: #58d68d;
+        }
+        .btn-start.running {
+            background: #e67e22;
+            color: #fff;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        .btn-done {
+            background: #3498db;
+            color: #fff;
+        }
+        .btn-done:hover {
+            background: #5dade2;
+        }
+        .btn-done:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .btn-del {
+            background: #c0392b;
+            color: #fff;
+        }
+        .btn-del:hover {
+            background: #e74c3c;
+        }
+
+        /* ---- 分頁控制 ---- */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 14px;
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid #1a2a44;
+        }
+        .pagination button {
+            padding: 6px 18px;
+            border-radius: 30px;
+            border: 1px solid #2a3a55;
+            background: transparent;
+            color: #8899b0;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .pagination button:hover:not(:disabled) {
+            background: #1a2a44;
+            color: #eaeef2;
+        }
+        .pagination button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .pagination .page-info {
+            font-size: 14px;
+            color: #8899b0;
+        }
+        .pagination .page-info strong {
+            color: #eaeef2;
+        }
+
+        /* ---- 靈感區 ---- */
+        .idea-section {
+            margin-top: 8px;
+        }
+        .idea-section .search-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .idea-section .search-row input {
+            flex: 1;
+            min-width: 150px;
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid #2a3a55;
+            background: #0b1422;
+            color: #eee;
+            font-size: 14px;
+            outline: none;
+        }
+        .idea-section .search-row input:focus {
+            border-color: #f0a500;
+        }
+        .idea-section .search-row .search-hint {
+            font-size: 13px;
+            color: #8899b0;
+            align-self: center;
+        }
+        .idea-section textarea {
+            width: 100%;
+            height: 160px;
+            background: #0b1422;
+            border: 1px solid #2a3a55;
+            border-radius: 16px;
+            padding: 16px 18px;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #eaeef2;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            outline: none;
+            transition: 0.2s;
+        }
+        .idea-section textarea:focus {
+            border-color: #f0a500;
+        }
+
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 14px 0 10px;
+        }
+        .action-row button {
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: none;
+            background: #2a3a55;
+            color: #eaeef2;
+            font-weight: 500;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .action-row button:hover {
+            background: #3d5277;
+        }
+        .action-row .btn-primary {
+            background: #f0a500;
+            color: #16213e;
+            font-weight: 600;
+        }
+        .action-row .btn-primary:hover {
+            background: #ffbe2e;
+        }
+        .action-row .btn-danger {
+            background: #c0392b;
+            color: #fff;
+        }
+        .action-row .btn-danger:hover {
+            background: #e74c3c;
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #7788a0;
+            border-top: 1px solid #1a2a44;
+            padding-top: 14px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        /* ---- 醒目提醒 ---- */
+        .alert-banner {
+            background: #e74c3c;
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 16px;
+            display: none;
+            animation: flashAlert 1.5s infinite;
+        }
+        @keyframes flashAlert {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
+        }
+        .alert-banner.show {
+            display: block;
+        }
+
+        .empty-hint {
+            color: #556;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 16px;
+            }
+            .must-do-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .must-do-item .item-actions {
+                justify-content: flex-start;
+            }
+            .action-row {
+                flex-direction: column;
+            }
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-bar .stats {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>
+            🧠 捕鼠器 Pro
+            <span class="version-tag">v2.1</span>
+        </h1>
+        <div class="sub">
+            ⚡ 必做清單 → 點「開始」計時 → 完成後點「完成」<br>
+            🛑 靈感先丟下方，<strong>測完再回來處理</strong>
+        </div>
+
+        <!-- 醒目提醒區 -->
+        <div class="alert-banner" id="alertBanner">⚠️ 還有未完成的必做事項！請優先處理！</div>
+
+        <!-- ===== 必做清單 ===== -->
+        <div class="must-do-section">
+            <div class="must-do-header">
+                <h2>📋 必做清單 <span class="badge" id="pendingBadge">0 未完成</span></h2>
+                <span style="font-size:13px; color:#7788a0;">點「開始」計時 · 完成後點「✓ 完成」</span>
+            </div>
+
+            <div class="must-do-input-row">
+                <input type="text" id="newTaskInput" placeholder="例如：測完 P0 核心流程 ..." />
+                <button id="addTaskBtn">➕ 加入必做</button>
+            </div>
+
+            <!-- 過濾器 + 統計 -->
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <button class="active" data-filter="all">全部</button>
+                    <button data-filter="pending">未完成</button>
+                    <button data-filter="done">已完成</button>
+                </div>
+                <div class="stats">
+                    總: <strong id="totalCount">0</strong> &nbsp;·&nbsp; 未完成: <strong id="pendingCount">0</strong> &nbsp;·&nbsp; 已完成: <strong id="doneCount">0</strong>
+                </div>
+            </div>
+
+            <!-- 任務列表 -->
+            <div class="must-do-list" id="mustDoList"></div>
+
+            <!-- 分頁 -->
+            <div class="pagination" id="pagination">
+                <button id="prevPage">◀ 上一頁</button>
+                <span class="page-info">第 <strong id="currentPageNum">1</strong> / <strong id="totalPagesNum">1</strong> 頁</span>
+                <button id="nextPage">下一頁 ▶</button>
+            </div>
+        </div>
+
+        <!-- ===== 靈感記錄區 ===== -->
+        <div class="idea-section">
+            <div class="search-row">
+                <input type="text" id="ideaSearchInput" placeholder="🔎 搜尋靈感關鍵字..." />
+                <span class="search-hint" id="ideaSearchHint">顯示全部</span>
+            </div>
+            <textarea id="noteBox" placeholder="💡 靈感、待辦、連結… 一行一條，先倒進來再說"></textarea>
+
+            <div class="action-row">
+                <button class="btn-primary" id="saveBtn">💾 儲存靈感</button>
+                <button id="copyBtn">📋 複製全部</button>
+                <button id="exportBtn">📤 匯出 (.json)</button>
+                <button class="btn-danger" id="clearBtn">🗑️ 清空</button>
+                <span class="file-input-wrapper">
+                    <button>📥 匯入 .json</button>
+                    <input type="file" id="importFile" accept=".json">
+                </span>
+            </div>
+        </div>
+
+        <div class="info-bar">
+            <span>💾 靈感最後儲存：<span id="lastSaved">從未</span></span>
+            <span id="countBadge">0 條靈感</span>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  v2.1 - 核心數據
+        // ============================================================
+        const STORAGE_KEY = 'mousetrap_pro_data';
+        const TIME_KEY = 'mousetrap_pro_time';
+
+        let tasks = [];
+        let ideaContent = '';
+        let currentFilter = 'all'; // 'all' | 'pending' | 'done'
+        let currentPage = 1;
+        const PAGE_SIZE = 10;
+
+        // DOM
+        const listEl = document.getElementById('mustDoList');
+        const newTaskInput = document.getElementById('newTaskInput');
+        const addBtn = document.getElementById('addTaskBtn');
+        const noteBox = document.getElementById('noteBox');
+        const saveBtn = document.getElementById('saveBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const importFile = document.getElementById('importFile');
+        const lastSaved = document.getElementById('lastSaved');
+        const countBadge = document.getElementById('countBadge');
+        const pendingBadge = document.getElementById('pendingBadge');
+        const alertBanner = document.getElementById('alertBanner');
+        const totalCount = document.getElementById('totalCount');
+        const pendingCount = document.getElementById('pendingCount');
+        const doneCount = document.getElementById('doneCount');
+        const currentPageNum = document.getElementById('currentPageNum');
+        const totalPagesNum = document.getElementById('totalPagesNum');
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+        const filterBtns = document.querySelectorAll('[data-filter]');
+        const ideaSearchInput = document.getElementById('ideaSearchInput');
+        const ideaSearchHint = document.getElementById('ideaSearchHint');
+
+        // ============================================================
+        //  載入 / 儲存
+        // ============================================================
+        function loadData() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try {
+                    const data = JSON.parse(raw);
+                    tasks = data.tasks || [];
+                    ideaContent = data.idea || '';
+                    noteBox.value = ideaContent;
+                } catch (e) {
+                    tasks = [];
+                    ideaContent = '';
+                }
+            } else {
+                tasks = [
+                    { id: Date.now() + 1, text: '✅ 範例：測完 P0 登入/支付流程', status: 'done', startTime: null,
+                        endTime: null, elapsedSeconds: 47 },
+                    { id: Date.now() + 2, text: '🔥 範例：下午2點前面試準備', status: 'pending', startTime: null,
+                        endTime: null, elapsedSeconds: 0 },
+                ];
+                ideaContent = '# 靈感暫存區\n# AI框架：研究 Playwright + pytest\n# 知識庫：補效能測試章節';
+                noteBox.value = ideaContent;
+                saveFullData();
+            }
+            // 遷移舊版純文字
+            const oldText = localStorage.getItem('mousetrap_data');
+            if (oldText && !raw) {
+                ideaContent = oldText;
+                noteBox.value = ideaContent;
+                saveFullData();
+                localStorage.removeItem('mousetrap_data');
+            }
+            renderTasks();
+            updateMeta();
+            updateIdeaSearchHint();
+        }
+
+        function saveFullData() {
+            const data = {
+                tasks: tasks,
+                idea: noteBox.value,
+                updatedAt: Date.now()
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            localStorage.setItem(TIME_KEY, String(Date.now()));
+            const d = new Date();
+            lastSaved.textContent = d.toLocaleString('zh-HK', { hour12: false });
+            updateMeta();
+        }
+
+        // ============================================================
+        //  過濾 + 分頁邏輯
+        // ============================================================
+        function getFilteredTasks() {
+            if (currentFilter === 'pending') {
+                return tasks.filter(t => t.status === 'pending' || t.status === 'running');
+            } else if (currentFilter === 'done') {
+                return tasks.filter(t => t.status === 'done');
+            }
+            return tasks;
+        }
+
+        function getPaginatedTasks() {
+            const filtered = getFilteredTasks();
+            const total = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end = Math.min(start + PAGE_SIZE, total);
+            return {
+                items: filtered.slice(start, end),
+                total: total,
+                totalPages: totalPages,
+                currentPage: currentPage,
+                startIndex: start,
+                endIndex: end
+            };
+        }
+
+        // ============================================================
+        //  渲染
+        // ============================================================
+        function renderTasks() {
+            const result = getPaginatedTasks();
+            const items = result.items;
+
+            if (items.length === 0) {
+                listEl.innerHTML = `<div class="empty-hint">📭 目前沒有符合條件的任務</div>`;
+            } else {
+                let html = '';
+                items.forEach(task => {
+                    const isPending = task.status === 'pending';
+                    const isRunning = task.status === 'running';
+                    const isDone = task.status === 'done';
+
+                    let timerDisplay = '⏱️ 未開始';
+                    if (isRunning && task.startTime) {
+                        const elapsed = Math.floor((Date.now() - task.startTime) / 1000);
+                        timerDisplay = '⏳ ' + formatDuration(elapsed);
+                    } else if (isDone && task.elapsedSeconds) {
+                        timerDisplay = '✅ ' + formatDuration(task.elapsedSeconds);
+                    } else if (isDone) {
+                        timerDisplay = '✅ 已完成';
+                    }
+
+                    const doneClass = isDone ? 'completed' : '';
+
+                    html += `
+                        <div class="must-do-item ${doneClass}" data-id="${task.id}">
+                            <span class="item-text">${escapeHtml(task.text)}</span>
+                            <span class="item-timer">${timerDisplay}</span>
+                            <div class="item-actions">
+                                ${isPending ? `<button class="btn-start" data-action="start" data-id="${task.id}">▶ 開始</button>` : ''}
+                                ${isRunning ? `<button class="btn-start running" data-action="start" data-id="${task.id}">⏳ 進行中</button>` : ''}
+                                ${(isPending || isRunning) ? `<button class="btn-done" data-action="done" data-id="${task.id}">✓ 完成</button>` : `<button class="btn-done" disabled>✓ 已完成</button>`}
+                                <button class="btn-del" data-action="delete" data-id="${task.id}">✕</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                listEl.innerHTML = html;
+            }
+
+            // 事件委託
+            listEl.querySelectorAll('[data-action]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const action = btn.dataset.action;
+                    const id = parseInt(btn.dataset.id);
+                    if (action === 'start') handleStart(id);
+                    else if (action === 'done') handleDone(id);
+                    else if (action === 'delete') handleDelete(id);
+                });
+            });
+
+            // 更新分頁資訊
+            currentPageNum.textContent = result.currentPage;
+            totalPagesNum.textContent = result.totalPages;
+            prevPageBtn.disabled = result.currentPage <= 1;
+            nextPageBtn.disabled = result.currentPage >= result.totalPages;
+
+            // 更新統計
+            const allPending = tasks.filter(t => t.status === 'pending' || t.status === 'running').length;
+            const allDone = tasks.filter(t => t.status === 'done').length;
+            totalCount.textContent = tasks.length;
+            pendingCount.textContent = allPending;
+            doneCount.textContent = allDone;
+            pendingBadge.textContent = allPending + ' 未完成';
+
+            if (allPending > 0) {
+                alertBanner.classList.add('show');
+            } else {
+                alertBanner.classList.remove('show');
+            }
+        }
+
+        // ============================================================
+        //  任務操作
+        // ============================================================
+        function handleStart(id) {
+            const task = tasks.find(t => t.id === id);
+            if (!task || task.status === 'done') return;
+            const running = tasks.find(t => t.status === 'running');
+            if (running && running.id !== id) {
+                handleDone(running.id);
+            }
+            task.status = 'running';
+            task.startTime = Date.now();
+            task.endTime = null;
+            saveFullData();
+            renderTasks();
+        }
+
+        function handleDone(id) {
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+            if (task.status === 'running' && task.startTime) {
+                task.elapsedSeconds = (task.elapsedSeconds || 0) + Math.floor((Date.now() - task.startTime) / 1000);
+            }
+            task.status = 'done';
+            task.endTime = Date.now();
+            task.startTime = null;
+            saveFullData();
+            renderTasks();
+        }
+
+        function handleDelete(id) {
+            if (!confirm('確定刪除此任務嗎？')) return;
+            tasks = tasks.filter(t => t.id !== id);
+            saveFullData();
+            renderTasks();
+        }
+
+        function addTask(text) {
+            const trimmed = text.trim();
+            if (!trimmed) return alert('請輸入任務內容');
+            tasks.push({
+                id: Date.now() + Math.random() * 1000,
+                text: trimmed,
+                status: 'pending',
+                startTime: null,
+                endTime: null,
+                elapsedSeconds: 0
+            });
+            saveFullData();
+            renderTasks();
+            newTaskInput.value = '';
+            // 切換到「未完成」過濾器，方便看到新任務
+            setFilter('pending');
+        }
+
+        // ============================================================
+        //  過濾器切換
+        // ============================================================
+        function setFilter(filter) {
+            currentFilter = filter;
+            currentPage = 1;
+            filterBtns.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+            renderTasks();
+        }
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                setFilter(btn.dataset.filter);
+            });
+        });
+
+        // ============================================================
+        //  分頁控制
+        // ============================================================
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) { currentPage--;
+                renderTasks(); }
+        });
+        nextPageBtn.addEventListener('click', () => {
+            const total = Math.ceil(getFilteredTasks().length / PAGE_SIZE);
+            if (currentPage < total) { currentPage++;
+                renderTasks(); }
+        });
+
+        // ============================================================
+        //  靈感搜尋（即時過濾顯示，不影響儲存）
+        // ============================================================
+        ideaSearchInput.addEventListener('input', function() {
+            updateIdeaSearchHint();
+        });
+
+        function updateIdeaSearchHint() {
+            const keyword = ideaSearchInput.value.trim().toLowerCase();
+            if (!keyword) {
+                ideaSearchHint.textContent = '顯示全部';
+                // 還原完整內容
+                noteBox.value = ideaContent;
+                return;
+            }
+            const lines = ideaContent.split('\n');
+            const matched = lines.filter(line => line.toLowerCase().includes(keyword));
+            if (matched.length === 0) {
+                noteBox.value = '🔍 沒有找到包含「' + keyword + '」的靈感';
+                ideaSearchHint.textContent = '找到 0 條';
+            } else {
+                noteBox.value = matched.join('\n');
+                ideaSearchHint.textContent = '找到 ' + matched.length + ' 條（僅供瀏覽）';
+            }
+        }
+
+        // 當靈感區被手動編輯時，同步到 ideaContent（但搜尋時不觸發）
+        noteBox.addEventListener('input', function() {
+            // 只有在「非搜尋模式」下才更新儲存內容
+            if (!ideaSearchInput.value.trim()) {
+                ideaContent = noteBox.value;
+            }
+        });
+
+        // ============================================================
+        //  輔助函數
+        // ============================================================
+        function formatDuration(seconds) {
+            if (seconds < 60) return seconds + '秒';
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            if (mins < 60) return mins + '分' + secs + '秒';
+            const hrs = Math.floor(mins / 60);
+            const remainMins = mins % 60;
+            return hrs + '時' + remainMins + '分';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updateMeta() {
+            const lines = noteBox.value.split('\n').filter(l => l.trim() !== '').length;
+            countBadge.textContent = lines + ' 條靈感';
+        }
+
+        // ============================================================
+        //  靈感區操作
+        // ============================================================
+        copyBtn.addEventListener('click', async () => {
+            const txt = noteBox.value;
+            try {
+                await navigator.clipboard.writeText(txt);
+                copyBtn.textContent = '✅ 已複製';
+                setTimeout(() => { copyBtn.innerHTML = '📋 複製全部'; }, 1500);
+            } catch {
+                noteBox.select();
+                document.execCommand('copy');
+                copyBtn.textContent = '✅ 已複製';
+                setTimeout(() => { copyBtn.innerHTML = '📋 複製全部'; }, 1500);
+            }
+        });
+
+        exportBtn.addEventListener('click', () => {
+            const data = {
+                version: '2.1',
+                exportedAt: new Date().toISOString(),
+                tasks: tasks,
+                idea: ideaContent
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `捕鼠器Pro_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            exportBtn.textContent = '✅ 已匯出';
+            setTimeout(() => { exportBtn.innerHTML = '📤 匯出 (.json)'; }, 1500);
+        });
+
+        importFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const json = JSON.parse(ev.target.result);
+                    if (json.tasks && json.idea !== undefined) {
+                        tasks = json.tasks;
+                        ideaContent = json.idea;
+                        noteBox.value = ideaContent;
+                        saveFullData();
+                        renderTasks();
+                        alert('✅ 匯入成功！');
+                    } else {
+                        alert('⚠️ 格式不正確，請確認是捕鼠器Pro匯出的 .json');
+                    }
+                } catch {
+                    alert('⚠️ 檔案解析失敗');
+                }
+            };
+            reader.readAsText(file);
+            importFile.value = '';
+        });
+
+        clearBtn.addEventListener('click', () => {
+            if (noteBox.value.trim() === '') return;
+            if (confirm('⚠️ 確定清空靈感區嗎？（必做清單不受影響）')) {
+                ideaContent = '';
+                noteBox.value = '';
+                saveFullData();
+                updateMeta();
+                clearBtn.textContent = '✅ 已清空';
+                setTimeout(() => { clearBtn.innerHTML = '🗑️ 清空'; }, 1500);
+            }
+        });
+
+        // ============================================================
+        //  儲存按鈕 + 快捷鍵
+        // ============================================================
+        saveBtn.addEventListener('click', () => {
+            // 如果搜尋框有內容，先清空搜尋再儲存
+            if (ideaSearchInput.value.trim()) {
+                ideaSearchInput.value = '';
+                noteBox.value = ideaContent;
+                updateIdeaSearchHint();
+            }
+            ideaContent = noteBox.value;
+            saveFullData();
+            saveBtn.textContent = '✅ 已儲存';
+            setTimeout(() => { saveBtn.innerHTML = '💾 儲存靈感'; }, 1200);
+        });
+
+        addBtn.addEventListener('click', () => addTask(newTaskInput.value));
+        newTaskInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addTask(newTaskInput.value);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                if (ideaSearchInput.value.trim()) {
+                    ideaSearchInput.value = '';
+                    noteBox.value = ideaContent;
+                    updateIdeaSearchHint();
+                }
+                ideaContent = noteBox.value;
+                saveFullData();
+                saveBtn.textContent = '✅ 已儲存';
+                setTimeout(() => { saveBtn.innerHTML = '💾 儲存靈感'; }, 1200);
+            }
+        });
+
+        // 自動儲存靈感（每15秒）
+        setInterval(() => {
+            // 只在非搜尋模式下自動儲存
+            if (!ideaSearchInput.value.trim()) {
+                ideaContent = noteBox.value;
+            }
+            const current = noteBox.value;
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    const data = JSON.parse(stored);
+                    if (data.idea !== current) {
+                        data.idea = ideaContent;
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                        localStorage.setItem(TIME_KEY, String(Date.now()));
+                        const d = new Date();
+                        lastSaved.textContent = d.toLocaleString('zh-HK', { hour12: false });
+                        updateMeta();
+                    }
+                } catch (e) {}
+            }
+        }, 15000);
+
+        // ============================================================
+        //  啟動
+        // ============================================================
+        loadData();
+    </script>
+</body>
+</html>
