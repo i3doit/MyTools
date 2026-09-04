@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>捕鼠器 Pro v2.2 - 靈感捕捉 + 任務強制執行</title>
+  <style>
+    /* Global Styles & Reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    
+    body {
+      background-color: #0d1117;
+      color: #c9d1d9;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 12px;
+      padding-bottom: 90px; /* Space for sticky bottom input */
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Top Red Banner */
+    .red-banner {
+      background-color: #4a0e0e;
+      color: #ffcccc;
+      border: 1px solid #ff4444;
+      padding: 10px 16px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      user-select: none;
+      transition: background-color 0.2s, transform 0.1s;
+      animation: pulse-border 2s infinite;
+    }
+
+    .red-banner:hover {
+      background-color: #5c1212;
+    }
+
+    .red-banner:active {
+      transform: scale(0.99);
+    }
+
+    @keyframes pulse-border {
+      0% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.4); }
+      70% { box-shadow: 0 0 0 8px rgba(255, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
+    }
+
+    /* Section Cards */
+    .section-card {
+      background-color: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f0f6fc;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Buttons */
+    .btn {
+      background-color: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #363b42;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: background-color 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #30363d;
+    }
+
+    .btn-icon {
+      padding: 6px 10px;
+      font-size: 14px;
+    }
+
+    .btn-green { background-color: #2ea043; color: #fff; border: none; }
+    .btn-green:hover { background-color: #2c974b; }
+    .btn-blue { background-color: #1f6feb; color: #fff; border: none; }
+    .btn-blue:hover { background-color: #388bfd; }
+    .btn-red { background-color: #da3633; color: #fff; border: none; }
+    .btn-red:hover { background-color: #f85149; }
+    .btn-orange { background-color: #e67e22; color: #fff; border: none; }
+    .btn-orange:hover { background-color: #d35400; }
+
+    /* Inspiration Area */
+    .inspiration-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .inspiration-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      background-color: #0d1117;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      width: 160px;
+    }
+
+    .search-input:focus {
+      outline: 1px solid #58a6ff;
+    }
+
+    textarea.inspiration-box {
+      width: 100%;
+      height: 110px;
+      background-color: #0d1117;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 10px;
+      border-radius: 6px;
+      resize: vertical;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    textarea.inspiration-box:focus {
+      outline: 1px solid #58a6ff;
+    }
+
+    .status-text {
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    /* Tasks Controls */
+    .task-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-bottom: 1px solid #21262d;
+      padding-bottom: 12px;
+    }
+
+    .filter-tabs {
+      display: flex;
+      background-color: #0d1117;
+      padding: 3px;
+      border-radius: 6px;
+      border: 1px solid #21262d;
+    }
+
+    .filter-btn {
+      background: none;
+      border: none;
+      color: #8b949e;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .filter-btn.active {
+      background-color: #21262d;
+      color: #f0f6fc;
+      font-weight: bold;
+    }
+
+    .task-stats {
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    /* Task Items & Lists */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 50px;
+    }
+
+    .task-card {
+      padding: 12px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+
+    /* P0 Visuals */
+    .task-card.p0 {
+      background-color: #4a0e0e;
+      color: #ffcccc;
+      border-left: 5px solid #ff4444;
+      animation: flash-left-border 1.5s infinite;
+    }
+
+    @keyframes flash-left-border {
+      0% { border-left-color: #ff4444; }
+      50% { border-left-color: #800000; }
+      100% { border-left-color: #ff4444; }
+    }
+
+    /* P1 Visuals */
+    .task-card.p1 {
+      background-color: #161b22;
+      border: 1px solid #f0a500;
+      border-left: 5px solid #f0a500;
+      color: #c9d1d9;
+    }
+
+    /* Completed Visuals */
+    .task-card.completed {
+      background-color: #1a1a1a !important;
+      opacity: 0.5;
+      border: 1px solid #333 !important;
+      border-left: 5px solid #555 !important;
+      animation: none !important;
+    }
+
+    .task-card.completed .task-text {
+      text-decoration: line-through;
+    }
+
+    .task-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .task-header-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .task-text {
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .badge-p0 {
+      background-color: #da3633;
+      color: #fff;
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-weight: bold;
+    }
+
+    .badge-p1 {
+      background-color: #f0a500;
+      color: #000;
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-weight: bold;
+    }
+
+    .task-timer {
+      font-size: 12px;
+      color: #8b949e;
+      font-family: monospace;
+    }
+
+    .task-card.p0 .task-timer { color: #ffaaaa; }
+
+    .task-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    /* Active Pulse Animation for Timing Button */
+    .btn-timing {
+      animation: pulse-orange 1s infinite;
+      background-color: #e67e22 !important;
+      color: #fff !important;
+    }
+
+    @keyframes pulse-orange {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 10px;
+      border-top: 1px solid #21262d;
+    }
+
+    .page-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    /* Sticky Task Input Box at Bottom */
+    .sticky-input-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      background-color: rgba(13, 17, 23, 0.95);
+      backdrop-filter: blur(5px);
+      border-top: 1px solid #30363d;
+      padding: 12px;
+      z-index: 100;
+    }
+
+    .input-wrapper {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .task-input {
+      flex: 1;
+      background-color: #161b22;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .task-input:focus {
+      outline: 1px solid #58a6ff;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      body { padding: 8px; padding-bottom: 90px; }
+      .app-container { gap: 12px; }
+      .inspiration-toolbar { flex-direction: column; align-items: stretch; }
+      .inspiration-actions { justify-content: space-between; }
+      .search-input { width: 100%; }
+      .task-card { flex-direction: column; align-items: stretch; gap: 8px; }
+      .task-actions { justify-content: flex-end; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Top Red Banner (Pressure Valve) -->
+  <div id="redBanner" class="red-banner" style="display: none;" onclick="switchFilterToUnfinished()" title="點擊跳轉到「未完成」任務檢視">
+    <span>⚠️ 還有 <span id="unfinishedCount">0</span> 件未完成任務！</span>
+    <span style="font-size: 12px; text-decoration: underline;">查看待辦 ➔</span>
+  </div>
+
+  <!-- Top Inspiration Area (Garbage Can / Thought Capture) -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title">📝 靈感區</div>
+      <span id="saveStatus" class="status-text">自動儲存：每 15 秒</span>
+    </div>
+    
+    <textarea id="inspirationText" class="inspiration-box" placeholder="在此倒出任何雜念、連結或臨時想法 (Ctrl+S 手動儲存)..."></textarea>
+    
+    <div class="inspiration-toolbar">
+      <input type="text" id="searchInspiration" class="search-input" placeholder="🔍 搜尋靈感..." oninput="handleInspirationSearch()">
+      
+      <div class="inspiration-actions">
+        <button class="btn" onclick="saveInspiration()" title="手動儲存靈感">💾 儲存</button>
+        <button class="btn" onclick="copyInspiration()" title="一鍵複製全部靈感">📋 複製</button>
+        <button class="btn" onclick="exportData()" title="匯出 .json 備份">📤 匯出</button>
+        <button class="btn" onclick="triggerImport()" title="匯入 .json 備份">📥 匯入</button>
+        <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importData(event)">
+        <button class="btn btn-red" onclick="clearInspiration()" title="清空靈感區內容">🗑️ 清空</button>
+      </div>
+    </div>
+    <div id="searchResultCount" class="status-text" style="display: none;"></div>
+  </div>
+
+  <!-- Middle Task List Area (Commitments / Single-Task Execution) -->
+  <div class="section-card">
+    <div class="task-controls">
+      <div class="filter-tabs">
+        <button id="filterAll" class="filter-btn" onclick="setFilter('all')">全部</button>
+        <button id="filterUnfinished" class="filter-btn active" onclick="setFilter('unfinished')">未完成</button>
+        <button id="filterFinished" class="filter-btn" onclick="setFilter('finished')">已完成</button>
+      </div>
+
+      <div class="task-stats" id="taskStats">
+        總數: 0 | 未完成: 0 | 已完成: 0
+      </div>
+
+      <button class="btn btn-red btn-icon" onclick="clearCompletedTasks()" title="一鍵清空所有已完成任務">
+        🗑️ 清理已完成
+      </button>
+    </div>
+
+    <!-- Task Items List -->
+    <div id="taskList" class="task-list"></div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <div class="page-controls">
+        <button class="btn btn-icon" onclick="changePage(-1)" title="上一頁">◀</button>
+        <span id="pageIndicator">1/1</span>
+        <button class="btn btn-icon" onclick="changePage(1)" title="下一頁">▶</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Sticky Task Input -->
+<div class="sticky-input-container">
+  <div class="input-wrapper">
+    <input type="text" id="taskInput" class="task-input" placeholder="新增任務 (加 ! 前綴自動設為 P0 緊急，如: !測試核心流程)..." onkeydown="handleTaskInputKey(event)">
+    <button class="btn btn-green" onclick="addTask()" title="新增任務">新增</button>
+  </div>
+</div>
+
+<script>
+  // App Data State Structure
+  let state = {
+    inspiration: '',
+    tasks: [],
+    filter: 'unfinished',
+    currentPage: 1,
+    pageSize: 10,
+    timerInterval: null
+  };
+
+  // Initialize Application
+  window.onload = function() {
+    loadData();
+    initTimer();
+    setInterval(autoSaveInspiration, 15000); // 15s Auto-save
+    
+    // Ctrl+S Shortcut
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveInspiration();
+      }
+    });
+  };
+
+  // LocalStorage Operations & Migration
+  function loadData() {
+    const savedInspiration = localStorage.getItem('mouseTrap_inspiration');
+    if (savedInspiration !== null) {
+      state.inspiration = savedInspiration;
+      document.getElementById('inspirationText').value = savedInspiration;
+    }
+
+    const savedTasks = localStorage.getItem('mouseTrap_tasks');
+    if (savedTasks) {
+      try {
+        state.tasks = JSON.parse(savedTasks);
+        // Schema Migration Guarantee
+        state.tasks.forEach(task => {
+          if (!task.status) task.status = task.completed ? 'completed' : 'pending';
+          if (task.elapsedTime === undefined) task.elapsedTime = 0;
+          if (task.priority === undefined) task.priority = 'P1';
+        });
+      } catch (e) {
+        console.error('Failed to parse saved tasks', e);
+        state.tasks = [];
+      }
+    }
+    render();
+  }
+
+  function saveData() {
+    localStorage.setItem('mouseTrap_inspiration', state.inspiration);
+    localStorage.setItem('mouseTrap_tasks', JSON.stringify(state.tasks));
+  }
+
+  // Inspiration Functions
+  function saveInspiration() {
+    state.inspiration = document.getElementById('inspirationText').value;
+    saveData();
+    showStatus('✅ 已儲存');
+  }
+
+  function autoSaveInspiration() {
+    const current = document.getElementById('inspirationText').value;
+    if (current !== state.inspiration) {
+      state.inspiration = current;
+      saveData();
+      showStatus('✅ 自動已儲存');
+    }
+  }
+
+  function showStatus(text) {
+    const statusEl = document.getElementById('saveStatus');
+    statusEl.innerText = text;
+    setTimeout(() => {
+      statusEl.innerText = '自動儲存：每 15 秒';
+    }, 2000);
+  }
+
+  function copyInspiration() {
+    const text = document.getElementById('inspirationText').value;
+    navigator.clipboard.writeText(text).then(() => {
+      alert('📋 靈感內容已成功複製到剪貼簿！');
+    });
+  }
+
+  function clearInspiration() {
+    if (confirm('確定要清空靈感區嗎？此操作無法撤銷。')) {
+      document.getElementById('inspirationText').value = '';
+      state.inspiration = '';
+      saveData();
+    }
+  }
+
+  function handleInspirationSearch() {
+    const query = document.getElementById('searchInspiration').value.toLowerCase();
+    const text = document.getElementById('inspirationText').value;
+    const countEl = document.getElementById('searchResultCount');
+
+    if (!query) {
+      countEl.style.display = 'none';
+      return;
+    }
+
+    const matches = (text.toLowerCase().match(new RegExp(query, 'g')) || []).length;
+    countEl.style.display = 'block';
+    countEl.innerText = `🔍 找到 ${matches} 處匹配內容`;
+  }
+
+  // Tasks Management
+  function handleTaskInputKey(e) {
+    if (e.key === 'Enter') {
+      addTask();
+    }
+  }
+
+  function addTask() {
+    const input = document.getElementById('taskInput');
+    let title = input.value.trim();
+    if (!title) return;
+
+    let priority = 'P1';
+    if (title.startsWith('!')) {
+      priority = 'P0';
+      title = title.substring(1).trim();
+    }
+
+    const newTask = {
+      id: Date.now().toString(),
+      title: title,
+      priority: priority,
+      status: 'pending', // 'pending', 'running', 'paused', 'completed'
+      elapsedTime: 0,
+      createdAt: new Date().toISOString()
+    };
+
+    state.tasks.unshift(newTask);
+    input.value = '';
+    saveData();
+    render();
+  }
+
+  function togglePriority(id) {
+    const task = state.tasks.find(t => t.id === id);
+    if (task && task.status !== 'completed') {
+      task.priority = task.priority === 'P0' ? 'P1' : 'P0';
+      saveData();
+      render();
+    }
+  }
+
+  // State Machine & Single-Task Execution Engine
+  function startTask(id) {
+    // Single-Task Logic: Auto-pause any currently running task
+    state.tasks.forEach(t => {
+      if (t.id !== id && t.status === 'running') {
+        t.status = 'paused';
+      }
+    });
+
+    const task = state.tasks.find(t => t.id === id);
+    if (task) {
+      task.status = 'running';
+      saveData();
+      render();
+    }
+  }
+
+  function pauseTask(id) {
+    const task = state.tasks.find(t => t.id === id);
+    if (task) {
+      task.status = 'paused';
+      saveData();
+      render();
+    }
+  }
+
+  function completeTask(id) {
+    const task = state.tasks.find(t => t.id === id);
+    if (task) {
+      task.status = 'completed';
+      saveData();
+      render();
+    }
+  }
+
+  function deleteTask(id) {
+    if (confirm('確定要刪除這條任務嗎？')) {
+      state.tasks = state.tasks.filter(t => t.id !== id);
+      saveData();
+      render();
+    }
+  }
+
+  function clearCompletedTasks() {
+    if (confirm('確定要清理所有已完成的任務嗎？')) {
+      state.tasks = state.tasks.filter(t => t.status !== 'completed');
+      saveData();
+      render();
+    }
+  }
+
+  // Timer Tick Engine
+  function initTimer() {
+    if (state.timerInterval) clearInterval(state.timerInterval);
+    state.timerInterval = setInterval(() => {
+      let runningFound = false;
+      state.tasks.forEach(t => {
+        if (t.status === 'running') {
+          t.elapsedTime = (t.elapsedTime || 0) + 1;
+          runningFound = true;
+        }
+      });
+
+      if (runningFound) {
+        updateTimerDisplays();
+      }
+    }, 1000);
+  }
+
+  function updateTimerDisplays() {
+    state.tasks.forEach(t => {
+      if (t.status === 'running') {
+        const timerEl = document.getElementById(`timer-${t.id}`);
+        if (timerEl) {
+          timerEl.innerText = formatTime(t.elapsedTime);
+        }
+      }
+    });
+  }
+
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  // Filtering & Pagination
+  function setFilter(filterType) {
+    state.filter = filterType;
+    state.currentPage = 1;
+    render();
+  }
+
+  function switchFilterToUnfinished() {
+    setFilter('unfinished');
+  }
+
+  function changePage(delta) {
+    const filtered = getFilteredTasks();
+    const maxPage = Math.max(1, Math.ceil(filtered.length / state.pageSize));
+    const newPage = state.currentPage + delta;
+
+    if (newPage >= 1 && newPage <= maxPage) {
+      state.currentPage = newPage;
+      render();
+    }
+  }
+
+  function getFilteredTasks() {
+    return state.tasks.filter(t => {
+      if (state.filter === 'unfinished') return t.status !== 'completed';
+      if (state.filter === 'finished') return t.status === 'completed';
+      return true;
+    });
+  }
+
+  // Main UI Render Function
+  function render() {
+    // 1. Red Banner Update
+    const unfinishedTasks = state.tasks.filter(t => t.status !== 'completed');
+    const bannerEl = document.getElementById('redBanner');
+    const unfinishedCountEl = document.getElementById('unfinishedCount');
+    
+    if (unfinishedTasks.length > 0) {
+      bannerEl.style.display = 'flex';
+      unfinishedCountEl.innerText = unfinishedTasks.length;
+    } else {
+      bannerEl.style.display = 'none';
+    }
+
+    // 2. Filter Tabs Visual Update
+    document.getElementById('filterAll').className = `filter-btn ${state.filter === 'all' ? 'active' : ''}`;
+    document.getElementById('filterUnfinished').className = `filter-btn ${state.filter === 'unfinished' ? 'active' : ''}`;
+    document.getElementById('filterFinished').className = `filter-btn ${state.filter === 'finished' ? 'active' : ''}`;
+
+    // 3. Stats Update
+    const completedCount = state.tasks.filter(t => t.status === 'completed').length;
+    document.getElementById('taskStats').innerText = 
+      `總數: ${state.tasks.length} | 未完成: ${unfinishedTasks.length} | 已完成: ${completedCount}`;
+
+    // 4. Render Task List with Pagination
+    const filteredTasks = getFilteredTasks();
+    const maxPage = Math.max(1, Math.ceil(filteredTasks.length / state.pageSize));
+    if (state.currentPage > maxPage) state.currentPage = maxPage;
+
+    const startIdx = (state.currentPage - 1) * state.pageSize;
+    const pagedTasks = filteredTasks.slice(startIdx, startIdx + state.pageSize);
+
+    const listContainer = document.getElementById('taskList');
+    listContainer.innerHTML = '';
+
+    if (pagedTasks.length === 0) {
+      listContainer.innerHTML = `<div style="text-align: center; color: #8b949e; padding: 20px;">尚無任務</div>`;
+    } else {
+      pagedTasks.forEach(task => {
+        const card = document.createElement('div');
+        const isCompleted = task.status === 'completed';
+        card.className = `task-card ${task.priority.toLowerCase()} ${isCompleted ? 'completed' : ''}`;
+
+        // Dynamic Actions Button Construction
+        let actionBtnHTML = '';
+        if (!isCompleted) {
+          if (task.status === 'running') {
+            actionBtnHTML += `
+              <button class="btn btn-icon btn-timing" onclick="pauseTask('${task.id}')" title="暫停計時">⏸️</button>
+            `;
+          } else {
+            actionBtnHTML += `
+              <button class="btn btn-icon btn-green" onclick="startTask('${task.id}')" title="${task.status === 'paused' ? '繼續計時' : '開始計時'}">▶️</button>
+            `;
+          }
+          actionBtnHTML += `
+            <button class="btn btn-icon btn-blue" onclick="completeTask('${task.id}')" title="標記為完成">✅</button>
+            <button class="btn btn-icon" onclick="togglePriority('${task.id}')" title="切換 P0 (緊急) / P1 (普通)">🏷️</button>
+          `;
+        }
+        actionBtnHTML += `
+          <button class="btn btn-icon btn-red" onclick="deleteTask('${task.id}')" title="刪除任務">🗑️</button>
+        `;
+
+        card.innerHTML = `
+          <div class="task-content">
+            <div class="task-header-line">
+              <span class="badge-${task.priority.toLowerCase()}">${task.priority}</span>
+              <span class="task-text">${escapeHTML(task.title)}</span>
+            </div>
+            <div class="task-timer">
+              耗時: <span id="timer-${task.id}">${formatTime(task.elapsedTime || 0)}</span>
+              ${task.status === 'running' ? ' (進行中...)' : task.status === 'paused' ? ' (已暫停)' : ''}
+            </div>
+          </div>
+          <div class="task-actions">
+            ${actionBtnHTML}
+          </div>
+        `;
+        listContainer.appendChild(card);
+      });
+    }
+
+    // 5. Update Pagination Indicator
+    document.getElementById('pageIndicator').innerText = `${state.currentPage}/${maxPage}`;
+  }
+
+  // Backup Import & Export
+  function exportData() {
+    const backupData = {
+      version: '2.2',
+      exportDate: new Date().toISOString(),
+      inspiration: document.getElementById('inspirationText').value,
+      tasks: state.tasks
+    };
+    
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `mousetrap_backup_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
+  function triggerImport() {
+    document.getElementById('importFile').click();
+  }
+
+  function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.inspiration !== undefined) {
+          state.inspiration = imported.inspiration;
+          document.getElementById('inspirationText').value = imported.inspiration;
+        }
+        if (Array.isArray(imported.tasks)) {
+          state.tasks = imported.tasks;
+        }
+        saveData();
+        render();
+        alert('📥 資料匯入成功！');
+      } catch (err) {
+        alert('❌ 匯入失敗：檔案格式不正確');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // Security Helper
+  function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, 
+      tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+  }
+</script>
+</body>
+</html>
