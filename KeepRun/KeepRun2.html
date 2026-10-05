@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日运动记录表 - 日历打卡版</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2canvas for poster export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- canvas-confetti for positive feedback -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sport: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* Calendar grid responsiveness */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+        }
+
+        /* Active Tab indicator animation */
+        .tab-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tab-btn.active {
+            background-color: #16a34a;
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
+        }
+
+        /* Day Cell Styles */
+        .day-cell {
+            min-height: 86px;
+            transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .day-cell:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .day-today {
+            border: 2px solid #22c55e !important;
+            background-color: #f0fdf4 !important;
+        }
+
+        /* Custom Scrollbar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .icon-btn-pop {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .icon-btn-pop:hover {
+            transform: scale(1.08);
+        }
+        .icon-btn-pop:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen pb-12">
+
+    <header class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-500/20 p-2.5 rounded-2xl border border-emerald-500/30">
+                    <i class="fa-solid fa-person-running text-2xl text-emerald-400"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight flex items-center gap-2">
+                        每日运动记录表
+                    </h1>
+                    <p class="text-xs text-slate-400">极简打卡 · 轻松坚持</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="openAddExerciseModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold shadow transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-plus"></i> 新增项目
+                </button>
+                <button onclick="exportPoster()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs px-3.5 py-2 rounded-xl font-medium transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-share-nodes text-emerald-400"></i> 导出图片
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-3 sm:px-6 pt-6">
+
+        <!-- Top Exercise Tabs -->
+        <section class="mb-6">
+            <div class="flex items-center justify-between mb-2.5 px-1">
+                <span class="text-xs font-bold text-slate-400 tracking-wider uppercase">运动项目列表</span>
+                <span class="text-[11px] text-slate-400">点击切换项目打卡</span>
+            </div>
+            
+            <div class="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1" id="exerciseTabsList">
+                <!-- Dynamically populated Exercise Tabs -->
+            </div>
+        </section>
+
+        <section class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 mb-6 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+            
+            <!-- Month Selector -->
+            <div class="md:col-span-5 flex items-center justify-between bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/50">
+                <button onclick="changeMonth(-1)" class="w-9 h-9 flex items-center justify-center rounded-xl bg-white text-slate-700 hover:bg-slate-50 shadow-xs transition">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                </button>
+                
+                <div class="flex items-center gap-1 font-bold text-slate-800 text-base">
+                    <select id="yearSelect" onchange="onDateSelectChange()" class="bg-transparent font-bold cursor-pointer outline-none">
+                        <!-- Populated Years -->
+                    </select>
+                    <span>年</span>
+                    <select id="monthSelect" onchange="onDateSelectChange()" class="bg-transparent font-bold text-emerald-600 cursor-pointer outline-none">
+                        <!-- Populated Months -->
+                    </select>
+                    <span>月</span>
+                </div>
+
+                <button onclick="changeMonth(1)" class="w-9 h-9 flex items-center justify-center rounded-xl bg-white text-slate-700 hover:bg-slate-50 shadow-xs transition">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Dashboard Badges -->
+            <div class="md:col-span-7 grid grid-cols-3 gap-2">
+                <div class="bg-emerald-50/70 border border-emerald-100 p-2.5 rounded-2xl text-center">
+                    <div class="text-[11px] text-emerald-700 font-medium">本月达标</div>
+                    <div class="text-xl font-black text-emerald-600 mt-0.5"><span id="statSuccessCount">0</span> <span class="text-xs font-normal">天</span></div>
+                </div>
+
+                <div class="bg-indigo-50/70 border border-indigo-100 p-2.5 rounded-2xl text-center">
+                    <div class="text-[11px] text-indigo-700 font-medium">达成率</div>
+                    <div class="text-xl font-black text-indigo-600 mt-0.5" id="statCompletionRate">0%</div>
+                </div>
+
+                <div class="bg-amber-50/70 border border-amber-100 p-2.5 rounded-2xl text-center">
+                    <div class="text-[11px] text-amber-700 font-medium">连续打卡</div>
+                    <div class="text-xl font-black text-amber-600 mt-0.5"><span id="statStreak">0</span> <span class="text-xs font-normal">天</span></div>
+                </div>
+            </div>
+
+        </section>
+
+        <div id="exportCalendarArea" class="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-200/80">
+            
+            <!-- Calendar Header Info -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-5 pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div id="currentTabIcon" class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl font-bold shadow-inner">
+                        🏃‍♂️
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <span id="currentTabTitle">跑步</span>打卡日历
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">
+                            每日目标：<span id="currentTabTarget" class="font-bold text-emerald-600">30 分钟</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Legend icons -->
+                <div class="flex items-center gap-3 text-xs font-medium text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                    <span class="inline-flex items-center gap-1"><span class="text-base">✅</span>已完成</span>
+                    <span class="inline-flex items-center gap-1"><span class="text-base">❌</span>未完成</span>
+                    <span class="inline-flex items-center gap-1"><span class="text-base">⏸️</span>休息日</span>
+                </div>
+            </div>
+
+            <!-- Weekday Header -->
+            <div class="calendar-grid mb-2 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <div class="py-1 text-rose-500">周日</div>
+                <div class="py-1">周一</div>
+                <div class="py-1">周二</div>
+                <div class="py-1">周三</div>
+                <div class="py-1">周四</div>
+                <div class="py-1">周五</div>
+                <div class="py-1 text-indigo-500">周六</div>
+            </div>
+
+            <!-- Calendar Days Grid -->
+            <div class="calendar-grid gap-1.5 sm:gap-2" id="calendarGrid">
+                <!-- Dynamically Rendered Days -->
+            </div>
+
+            <!-- Poster Footer (visible in export) -->
+            <div class="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
+                <span class="flex items-center gap-1.5"><i class="fa-solid fa-fire text-emerald-500"></i> 自律即自由，记录每天的改变</span>
+                <span id="posterDateStamp" class="font-semibold text-slate-500">2026年10月</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal 1: Icon-Only Quick Check-in Dialog -->
+    <div id="checkinModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-3xl max-w-xs w-full p-6 shadow-2xl transform transition-all">
+            <div class="flex justify-between items-center mb-5">
+                <div>
+                    <h3 class="text-base font-bold text-slate-800" id="modalDateTitle">10月15日 打卡</h3>
+                    <p class="text-xs text-slate-400 mt-0.5" id="modalExInfo">项目：跑步</p>
+                </div>
+                <button onclick="closeCheckinModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Pure Icon Action Buttons -->
+            <div class="grid grid-cols-3 gap-3 my-2">
+                <!-- Completed Icon -->
+                <button onclick="setQuickStatus('completed')" 
+                    class="icon-btn-pop flex flex-col items-center justify-center py-4 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 shadow-xs group">
+                    <span class="text-3xl filter drop-shadow-sm">✅</span>
+                </button>
+
+                <!-- Failed Icon -->
+                <button onclick="setQuickStatus('failed')" 
+                    class="icon-btn-pop flex flex-col items-center justify-center py-4 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200/80 shadow-xs group">
+                    <span class="text-3xl filter drop-shadow-sm">❌</span>
+                </button>
+
+                <!-- Rest Icon -->
+                <button onclick="setQuickStatus('rest')" 
+                    class="icon-btn-pop flex flex-col items-center justify-center py-4 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 shadow-xs group">
+                    <span class="text-3xl filter drop-shadow-sm">⏸️</span>
+                </button>
+            </div>
+
+            <div class="mt-5 pt-3 border-t border-slate-100 flex justify-between items-center">
+                <button onclick="clearDayCheckin()" class="text-xs text-slate-400 hover:text-rose-500 font-medium flex items-center gap-1 transition">
+                    <i class="fa-solid fa-trash-can"></i> 清除打卡
+                </button>
+                <button onclick="closeCheckinModal()" class="text-xs text-slate-500 hover:text-slate-800 font-medium">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Add / Edit Exercise -->
+    <div id="addExerciseModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-slate-800">新增运动项目</h3>
+                <button onclick="closeAddExerciseModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">项目 Emoji 图标</label>
+                    <div class="flex gap-2 items-center">
+                        <input type="text" id="newExIcon" value="🏃‍♂️" class="w-16 text-center text-xl p-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                        <span class="text-xs text-slate-400">输入任意表情，如 🧘‍♀️ 🏋️ 🚴‍♂️ 🪢</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">项目名称</label>
+                    <input type="text" id="newExName" placeholder="如：跳绳、核心训练、瑜伽" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">每日目标</label>
+                        <input type="number" id="newExTarget" placeholder="30" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">单位</label>
+                        <input type="text" id="newExUnit" placeholder="分钟 / 个 / 公里" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <button onclick="closeAddExerciseModal()" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-medium">取消</button>
+                <button onclick="saveExerciseItem()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow">保存项目</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <script>
+        
+        // Initial Default Exercise Tabs
+        const DEFAULT_EXERCISES = [
+            { id: 'ex_running', icon: '🏃‍♂️', name: '跑步', target: 30, unit: '分钟' },
+            { id: 'ex_rope', icon: '🪢', name: '跳绳', target: 1000, unit: '个' },
+            { id: 'ex_gym', icon: '🏋️', name: '力量训练', target: 45, unit: '分钟' },
+            { id: 'ex_yoga', icon: '🧘‍♀️', name: '瑜伽拉伸', target: 20, unit: '分钟' }
+        ];
+
+        // Global State
+        let currentYear = new Date().getFullYear();
+        let currentMonth = new Date().getMonth() + 1; // 1-12
+        let activeExerciseId = 'ex_running';
+        let exercises = [];
+        let records = {}; // Structure: { [exId]: { "YYYY-MM-DD": 'completed' | 'failed' | 'rest' } }
+        let selectedDayToRecord = null; // Day clicked for checkin modal
+
+        // Page Onload initialization
+        window.onload = function() {
+            initDateSelectors();
+            loadLocalStorageData();
+            renderTabs();
+            renderCalendar();
+        };
+
+        // Populate year & month dropdowns
+        function initDateSelectors() {
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            yearSelect.innerHTML = '';
+            monthSelect.innerHTML = '';
+
+            const todayYear = new Date().getFullYear();
+            for (let y = todayYear - 3; y <= todayYear + 3; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                if (y === currentYear) opt.selected = true;
+                yearSelect.appendChild(opt);
+            }
+
+            for (let m = 1; m <= 12; m++) {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m < 10 ? '0' + m : m;
+                if (m === currentMonth) opt.selected = true;
+                monthSelect.appendChild(opt);
+            }
+        }
+
+        function onDateSelectChange() {
+            currentYear = parseInt(document.getElementById('yearSelect').value);
+            currentMonth = parseInt(document.getElementById('monthSelect').value);
+            renderCalendar();
+        }
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth > 12) {
+                currentMonth = 1;
+                currentYear++;
+            } else if (currentMonth < 1) {
+                currentMonth = 12;
+                currentYear--;
+            }
+            document.getElementById('yearSelect').value = currentYear;
+            document.getElementById('monthSelect').value = currentMonth;
+            renderCalendar();
+        }
+
+        function loadLocalStorageData() {
+            try {
+                const savedEx = localStorage.getItem('fitness_icon_exercises');
+                const savedRec = localStorage.getItem('fitness_icon_records');
+
+                exercises = savedEx ? JSON.parse(savedEx) : DEFAULT_EXERCISES;
+                records = savedRec ? JSON.parse(savedRec) : {};
+
+                if (exercises.length > 0 && !exercises.some(e => e.id === activeExerciseId)) {
+                    activeExerciseId = exercises[0].id;
+                }
+            } catch (e) {
+                console.error("Storage error:", e);
+                exercises = DEFAULT_EXERCISES;
+                records = {};
+            }
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem('fitness_icon_exercises', JSON.stringify(exercises));
+                localStorage.setItem('fitness_icon_records', JSON.stringify(records));
+            } catch (e) {
+                console.error("Save error:", e);
+            }
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('exerciseTabsList');
+            container.innerHTML = '';
+
+            exercises.forEach(ex => {
+                const btn = document.createElement('button');
+                const isActive = ex.id === activeExerciseId;
+                btn.className = `tab-btn px-4 py-2 rounded-2xl border text-xs font-bold flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                    isActive 
+                    ? 'active border-emerald-600' 
+                    : 'bg-white text-slate-700 border-slate-200/80 hover:bg-slate-50'
+                }`;
+
+                btn.innerHTML = `
+                    <span class="text-base">${ex.icon || '🏃'}</span>
+                    <span>${ex.name}</span>
+                `;
+
+                btn.onclick = () => {
+                    activeExerciseId = ex.id;
+                    renderTabs();
+                    renderCalendar();
+                };
+
+                container.appendChild(btn);
+            });
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            const currentEx = exercises.find(e => e.id === activeExerciseId) || exercises[0];
+            if (!currentEx) return;
+
+            // Update Header Info
+            document.getElementById('currentTabIcon').textContent = currentEx.icon || '🏃';
+            document.getElementById('currentTabTitle').textContent = currentEx.name;
+            document.getElementById('currentTabTarget').textContent = `${currentEx.target} ${currentEx.unit}`;
+            document.getElementById('posterDateStamp').textContent = `${currentYear}年${currentMonth}月`;
+
+            // Calculate Date parameters
+            const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+            const firstDayIndex = new Date(currentYear, currentMonth - 1, 1).getDay(); // 0 = Sunday
+
+            const today = new Date();
+            const isRealCurrentMonth = (today.getFullYear() === currentYear && (today.getMonth() + 1) === currentMonth);
+            const realTodayDate = isRealCurrentMonth ? today.getDate() : -1;
+
+            if (!records[currentEx.id]) records[currentEx.id] = {};
+            const exRecords = records[currentEx.id];
+
+            // 1. Render Blank Padding Cells for Days before Month Start
+            for (let i = 0; i < firstDayIndex; i++) {
+                const blank = document.createElement('div');
+                blank.className = 'day-cell rounded-2xl bg-slate-50/40 border border-dashed border-slate-100 opacity-40';
+                grid.appendChild(blank);
+            }
+
+            let successCount = 0;
+            let totalCheckedCount = 0;
+
+            // 2. Render Calendar Days with Icon-Only Badges
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayStatus = exRecords[dateKey];
+                const isToday = (day === realTodayDate);
+
+                const cell = document.createElement('div');
+                let borderStyle = "border-slate-200/80 bg-white hover:border-emerald-300";
+                let iconBadgeHTML = '';
+
+                // Render Icon-Only Badges
+                if (dayStatus) {
+                    totalCheckedCount++;
+                    if (dayStatus === 'completed') {
+                        successCount++;
+                        borderStyle = "border-emerald-200 bg-emerald-50/50";
+                        iconBadgeHTML = `<div class="text-xl sm:text-2xl filter drop-shadow-xs transition-transform transform scale-100 hover:scale-110">✅</div>`;
+                    } else if (dayStatus === 'failed') {
+                        borderStyle = "border-rose-200 bg-rose-50/50";
+                        iconBadgeHTML = `<div class="text-xl sm:text-2xl filter drop-shadow-xs transition-transform transform scale-100 hover:scale-110">❌</div>`;
+                    } else if (dayStatus === 'rest') {
+                        borderStyle = "border-amber-200 bg-amber-50/40";
+                        iconBadgeHTML = `<div class="text-xl sm:text-2xl filter drop-shadow-xs transition-transform transform scale-100 hover:scale-110">⏸️</div>`;
+                    }
+                }
+
+                cell.className = `day-cell p-2 rounded-2xl border flex flex-col justify-between items-center cursor-pointer ${borderStyle} ${isToday ? 'day-today' : ''}`;
+                
+                cell.innerHTML = `
+                    <div class="w-full flex justify-between items-center">
+                        <span class="text-xs font-extrabold ${isToday ? 'text-emerald-700' : 'text-slate-700'}">${day}</span>
+                        ${isToday ? '<span class="text-[9px] bg-emerald-600 text-white px-1 rounded font-bold">今</span>' : ''}
+                    </div>
+                    <div class="my-auto flex items-center justify-center">
+                        ${iconBadgeHTML}
+                    </div>
+                `;
+
+                cell.onclick = () => openCheckinModal(day, dateKey);
+
+                grid.appendChild(cell);
+            }
+
+            // Update stats
+            document.getElementById('statSuccessCount').textContent = successCount;
+            const rate = totalCheckedCount > 0 ? Math.round((successCount / totalCheckedCount) * 100) : 0;
+            document.getElementById('statCompletionRate').textContent = `${rate}%`;
+
+            // Calculate Streak
+            let streak = 0;
+            const checkStart = isRealCurrentMonth ? today.getDate() : daysInMonth;
+            for (let d = checkStart; d >= 1; d--) {
+                const dk = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const status = exRecords[dk];
+                if (status === 'completed') {
+                    streak++;
+                } else if (d === checkStart && !status) {
+                    continue; // Today not yet recorded
+                } else {
+                    break;
+                }
+            }
+            document.getElementById('statStreak').textContent = streak;
+        }
+
+        function openCheckinModal(day, dateKey) {
+            selectedDayToRecord = { day, dateKey };
+            const currentEx = exercises.find(e => e.id === activeExerciseId);
+
+            document.getElementById('modalDateTitle').textContent = `${currentMonth}月${day}日 打卡`;
+            document.getElementById('modalExInfo').textContent = `项目：${currentEx.name}`;
+
+            document.getElementById('checkinModal').classList.remove('hidden');
+            document.getElementById('checkinModal').classList.add('flex');
+        }
+
+        function closeCheckinModal() {
+            document.getElementById('checkinModal').classList.add('hidden');
+            document.getElementById('checkinModal').classList.remove('flex');
+            selectedDayToRecord = null;
+        }
+
+        function setQuickStatus(status) {
+            if (!selectedDayToRecord) return;
+            const { dateKey } = selectedDayToRecord;
+
+            if (!records[activeExerciseId]) records[activeExerciseId] = {};
+            
+            records[activeExerciseId][dateKey] = status;
+
+            saveData();
+            renderCalendar();
+            closeCheckinModal();
+
+            if (status === 'completed') {
+                triggerConfetti();
+                showToast("已打卡完成！太棒了 🎉", "success");
+            } else if (status === 'rest') {
+                showToast("已标记为休整日 ⏸️", "info");
+            } else {
+                showToast("已更新未完成状态 ❌", "info");
+            }
+        }
+
+        function clearDayCheckin() {
+            if (!selectedDayToRecord) return;
+            const { dateKey } = selectedDayToRecord;
+            if (records[activeExerciseId] && records[activeExerciseId][dateKey]) {
+                delete records[activeExerciseId][dateKey];
+                saveData();
+                renderCalendar();
+            }
+            closeCheckinModal();
+            showToast("已清除该日打卡", "info");
+        }
+
+        function openAddExerciseModal() {
+            document.getElementById('newExIcon').value = '🏃‍♂️';
+            document.getElementById('newExName').value = '';
+            document.getElementById('newExTarget').value = '30';
+            document.getElementById('newExUnit').value = '分钟';
+
+            document.getElementById('addExerciseModal').classList.remove('hidden');
+            document.getElementById('addExerciseModal').classList.add('flex');
+        }
+
+        function closeAddExerciseModal() {
+            document.getElementById('addExerciseModal').classList.add('hidden');
+            document.getElementById('addExerciseModal').classList.remove('flex');
+        }
+
+        function saveExerciseItem() {
+            const icon = document.getElementById('newExIcon').value.trim() || '🏃‍♂️';
+            const name = document.getElementById('newExName').value.trim();
+            const target = parseFloat(document.getElementById('newExTarget').value) || 1;
+            const unit = document.getElementById('newExUnit').value.trim() || '次';
+
+            if (!name) {
+                showToast("请输入项目名称", "warning");
+                return;
+            }
+
+            const newEx = {
+                id: 'ex_' + Date.now(),
+                icon,
+                name,
+                target,
+                unit
+            };
+
+            exercises.push(newEx);
+            activeExerciseId = newEx.id;
+
+            saveData();
+            renderTabs();
+            renderCalendar();
+            closeAddExerciseModal();
+            showToast(`已添加“${name}”运动`, "success");
+        }
+
+        function exportPoster() {
+            showToast("正在生成打卡海报...", "info");
+            const area = document.getElementById('exportCalendarArea');
+
+            html2canvas(area, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                useCORS: true
+            }).then(canvas => {
+                const currentEx = exercises.find(e => e.id === activeExerciseId);
+                const link = document.createElement('a');
+                link.download = `${currentEx.name}_打卡日历_${currentYear}年${currentMonth}月.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast("导出图片成功！", "success");
+            }).catch(err => {
+                console.error("Export error:", err);
+                showToast("导出失败，请重试", "warning");
+            });
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 80,
+                    spread: 60,
+                    origin: { y: 0.65 }
+                });
+            }
+        }
+
+        function showToast(msg, type = "info") {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            let bg = "bg-slate-800 text-white";
+            if (type === "success") bg = "bg-emerald-600 text-white shadow-emerald-200";
+            if (type === "warning") bg = "bg-rose-600 text-white shadow-rose-200";
+
+            toast.className = `${bg} px-4 py-2.5 rounded-2xl shadow-xl text-xs font-bold flex items-center gap-2 transform transition-all duration-300 translate-y-3 opacity-0`;
+            toast.innerHTML = `<span>${msg}</span>`;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-3', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-3');
+                setTimeout(() => toast.remove(), 300);
+            }, 2600);
+        }
+    </script>
+</body>
+</html>
