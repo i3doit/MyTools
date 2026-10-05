@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日运动记录表</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2canvas for export image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- canvas-confetti for positive feedback animations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f3ff',
+                            100: '#e0e7ff',
+                            500: '#4f46e5',
+                            600: '#4338ca',
+                            700: '#3730a3',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* Fixed headers and sticky columns for table responsiveness */
+        .table-container {
+            overflow-x: auto;
+            max-width: 100%;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .fitness-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+
+        .fitness-table th, .fitness-table td {
+            border-right: 1px solid #cbd5e1;
+            border-bottom: 1px solid #cbd5e1;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .fitness-table th {
+            background-color: #6366f1;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Clean inputs inside cells */
+        .cell-input {
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            background: transparent;
+            outline: none;
+            font-size: 0.825rem;
+            font-weight: 500;
+            padding: 2px 0;
+            transition: all 0.15s ease;
+        }
+
+        .cell-input:focus {
+            background-color: #e0e7ff;
+            font-weight: 700;
+        }
+
+        /* Chrome, Safari, Edge, Opera remove arrow buttons on number inputs */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* Custom scrollbar styling */
+        .table-container::-webkit-scrollbar {
+            height: 10px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 5px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Today's column highlighting */
+        .today-col {
+            background-color: #fef08a !important;
+        }
+        .today-header {
+            background-color: #4f46e5 !important;
+            color: #fde047 !important;
+            font-weight: bold;
+        }
+
+        .export-mode {
+            padding: 20px !important;
+            background-color: #ffffff !important;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen pb-12">
+
+    <!-- Header & Nav Bar -->
+    <header class="bg-gradient-to-r from-indigo-700 via-indigo-600 to-purple-600 text-white shadow-lg mb-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/10 p-3 rounded-2xl backdrop-blur-md">
+                    <i class="fa-solid font-bold fa-heart-pulse text-2xl text-pink-300"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight">每日运动记录表</h1>
+                    <p class="text-xs text-indigo-100 opacity-90">保持自律，记录成长，遇见更好的自己</p>
+                </div>
+            </div>
+
+            <!-- Global Actions -->
+            <div class="flex flex-wrap items-center gap-3">
+                <button onclick="addNewExercise()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> 新增运动
+                </button>
+                <button onclick="exportToImage()" class="bg-white text-indigo-700 hover:bg-indigo-50 px-4 py-2 rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition flex items-center gap-2">
+                    <i class="fa-solid fa-download"></i> 导出图片
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-[98%] mx-auto px-2 sm:px-4">
+        
+        <!-- Controls & Statistics Cards -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
+            
+            <!-- Date Picker Card -->
+            <div class="lg:col-span-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">切换时间 / 时间跨度</div>
+                <div class="flex items-center gap-3">
+                    <div class="flex-1 flex items-center bg-slate-100 p-1.5 rounded-xl">
+                        <select id="yearSelect" onchange="onDateChange()" class="bg-transparent text-slate-700 font-bold px-2 py-1 outline-none text-base cursor-pointer">
+                            <!-- JS Populated Years -->
+                        </select>
+                        <span class="text-slate-500 font-medium mr-2">年</span>
+                        <select id="monthSelect" onchange="onDateChange()" class="bg-transparent text-indigo-600 font-bold px-2 py-1 outline-none text-base cursor-pointer flex-1">
+                            <!-- JS Populated Months -->
+                        </select>
+                        <span class="text-slate-500 font-medium mr-2">月</span>
+                    </div>
+                    <button onclick="jumpToCurrentMonth()" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-semibold px-3 py-2 rounded-xl text-xs transition">
+                        回到本月
+                    </button>
+                </div>
+                <div class="text-xs text-slate-500 mt-3 flex items-center gap-1.5" id="monthDaysInfo">
+                    <i class="fa-regular fa-calendar-days text-indigo-500"></i> 本月共 <span id="daysCountBadge" class="font-bold text-slate-700">31</span> 天
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="lg:col-span-8 bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                
+                <!-- Stat 1: Complete Days -->
+                <div class="flex flex-col justify-between border-r border-slate-100 pr-2">
+                    <span class="text-xs font-medium text-slate-400">本月达标天数</span>
+                    <div class="mt-2 flex items-baseline gap-1">
+                        <span id="statSuccessDays" class="text-2xl font-black text-indigo-600">0</span>
+                        <span class="text-xs text-slate-400">天</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+                        <div id="progressDaysBar" class="bg-indigo-600 h-1.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Stat 2: Completion Rate -->
+                <div class="flex flex-col justify-between border-r border-slate-100 pr-2">
+                    <span class="text-xs font-medium text-slate-400">总体达标率</span>
+                    <div class="mt-2 flex items-baseline gap-1">
+                        <span id="statRate" class="text-2xl font-black text-emerald-500">0%</span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2">基于已记录单元格</p>
+                </div>
+
+                <!-- Stat 3: Streak Days -->
+                <div class="flex flex-col justify-between border-r border-slate-100 pr-2">
+                    <span class="text-xs font-medium text-slate-400">连续坚持打卡</span>
+                    <div class="mt-2 flex items-baseline gap-1">
+                        <span id="statStreak" class="text-2xl font-black text-amber-500">0</span>
+                        <span class="text-xs text-slate-400">天</span>
+                    </div>
+                    <p class="text-[10px] text-amber-600 font-medium mt-2"><i class="fa-solid fa-fire text-amber-500"></i> 运动习惯形成中</p>
+                </div>
+
+                <!-- Stat 4: Encouragement -->
+                <div class="flex flex-col justify-between bg-gradient-to-br from-indigo-50 to-purple-50 p-3 rounded-xl border border-indigo-100/50">
+                    <span class="text-xs font-bold text-indigo-800">今日打卡语</span>
+                    <p id="motivationalQuote" class="text-xs text-indigo-600 font-medium leading-relaxed mt-1">每一滴汗水，都是击败平庸的勋章！</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Main Tracker Table Container -->
+        <div id="captureArea" class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200/80">
+            
+            <!-- Export Sheet Title (Visible in export / nicely framed) -->
+            <div class="mb-4 text-center border-b border-indigo-100 pb-3 flex flex-col sm:flex-row justify-between items-center gap-2">
+                <div class="text-left">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2" id="tableTitleHeader">
+                        <i class="fa-solid fa-calendar-check text-indigo-600"></i> 
+                        <span id="displayYear">2026</span>年<span id="displayMonth">10</span>月 运动健身记录表
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">规则：达成数值 ≥ 目标值即算完成（自动显示绿色对勾）</p>
+                </div>
+                
+                <div class="flex items-center gap-2 text-xs font-medium">
+                    <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md border border-emerald-200">
+                        <span class="text-emerald-600 font-bold">√</span> 已完成
+                    </span>
+                    <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-700 px-2.5 py-1 rounded-md border border-rose-200">
+                        <span class="text-rose-600 font-bold">×</span> 未达标
+                    </span>
+                    <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md border border-amber-200">
+                        <i class="fa-solid fa-star text-amber-500 text-[10px]"></i> 今日
+                    </span>
+                </div>
+            </div>
+
+            <!-- Scrollable Table -->
+            <div class="table-container border border-slate-300">
+                <table class="fitness-table text-xs text-slate-700 min-w-max" id="trackerTable">
+                    <thead>
+                        <!-- Day header dynamically generated in JS -->
+                        <tr id="tableHeaderRow">
+                            <th class="w-20 px-2 py-2.5">项目</th>
+                            <th class="w-14 px-2 py-2.5">单位</th>
+                            <th class="w-20 px-2 py-2.5">数量</th>
+                            <!-- 1-31 Days Columns inserted here -->
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Dynamic Exercise Items generated here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 flex flex-wrap justify-between items-center text-xs text-slate-400 px-1 gap-2">
+                <span>提示：点击“每日目标”可修改该项目的目标值，并在后方文本框直接录入每日实际运动量。</span>
+                <span>数据实时本地存储 <i class="fa-solid fa-cloud-arrow-up text-emerald-500 ml-1"></i></span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal: Add New Exercise -->
+    <div id="addModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">添加自定义运动项目</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">运动项目名称</label>
+                    <input type="text" id="newExName" placeholder="例如：羽毛球、瑜伽、骑行" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">计量单位</label>
+                    <input type="text" id="newExUnit" placeholder="例如：分钟、个、公里、组" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">本月每日默认目标</label>
+                    <input type="number" id="newExDefaultTarget" placeholder="例如：30" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-sm font-medium">取消</button>
+                <button onclick="confirmAddExercise()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-md">确认添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <!-- Application Logic Javascript -->
+    <script>
+        
+        // Default Exercise Items (Matching reference image structure)
+        const DEFAULT_EXERCISES = [
+            { id: 'ex_1', name: '跑步', unit: '分钟', defaultTarget: 30 },
+            { id: 'ex_2', name: '跳绳', unit: '个', defaultTarget: 1000 },
+            { id: 'ex_3', name: '俯卧撑', unit: '个', defaultTarget: 50 },
+            { id: 'ex_4', name: '深蹲', unit: '个', defaultTarget: 60 }
+        ];
+
+        // Quotes for positive motivation
+        const MOTIVATION_QUOTES = [
+            "每一滴汗水，都是击败平庸的勋章！",
+            "自律即自由，今天的努力会在明天发光！",
+            "不必与别人相比，只需超越昨天的自己！",
+            "健身不是终点，而是一种生活态度。",
+            "坚持100天，遇见全新的自己！",
+            "再坚持一下，最难的部分你已经完成了！"
+        ];
+
+        // State variables
+        let currentYear = new Date().getFullYear();
+        let currentMonth = new Date().getMonth() + 1; // 1 - 12
+        let appData = {}; // Format: { "YYYY-MM": { exercises: [], records: { exId: { target: [], actual: [] } } } }
+
+        // Initialize App
+        window.onload = function() {
+            initDateSelectors();
+            loadLocalStorageData();
+            renderTable();
+            updateMotivationalQuote();
+        };
+
+        // Populate year and month select dropdowns
+        function initDateSelectors() {
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+
+            yearSelect.innerHTML = '';
+            monthSelect.innerHTML = '';
+
+            // 5 years range (2 years back, 2 years forward)
+            const todayYear = new Date().getFullYear();
+            for (let y = todayYear - 2; y <= todayYear + 3; y++) {
+                const option = document.createElement('option');
+                option.value = y;
+                option.textContent = y;
+                if (y === currentYear) option.selected = true;
+                yearSelect.appendChild(option);
+            }
+
+            for (let m = 1; m <= 12; m++) {
+                const option = document.createElement('option');
+                option.value = m;
+                option.textContent = m < 10 ? '0' + m : m;
+                if (m === currentMonth) option.selected = true;
+                monthSelect.appendChild(option);
+            }
+        }
+
+        // Handle date change
+        function onDateChange() {
+            currentYear = parseInt(document.getElementById('yearSelect').value);
+            currentMonth = parseInt(document.getElementById('monthSelect').value);
+            renderTable();
+        }
+
+        function jumpToCurrentMonth() {
+            const now = new Date();
+            currentYear = now.getFullYear();
+            currentMonth = now.getMonth() + 1;
+            document.getElementById('yearSelect').value = currentYear;
+            document.getElementById('monthSelect').value = currentMonth;
+            renderTable();
+            showToast("已回到当前月份", "info");
+        }
+
+        
+        // Calculate days in month considering leap years
+        function getDaysInMonth(year, month) {
+            // Month is 1-indexed in our app (1=Jan, 2=Feb, etc.)
+            return new Date(year, month, 0).getDate();
+        }
+
+        // Storage Key helper
+        function getMonthKey() {
+            return `${currentYear}-${currentMonth < 10 ? '0' + currentMonth : currentMonth}`;
+        }
+
+        // Local Storage Handlers
+        function loadLocalStorageData() {
+            try {
+                const saved = localStorage.getItem('fitness_tracker_data');
+                if (saved) {
+                    appData = JSON.parse(saved);
+                }
+            } catch (e) {
+                console.error("Failed to load local storage", e);
+                appData = {};
+            }
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem('fitness_tracker_data', JSON.stringify(appData));
+                calculateStats();
+            } catch (e) {
+                console.error("Failed to save data", e);
+            }
+        }
+
+        // Ensure state structure exists for current active month
+        function ensureCurrentMonthData() {
+            const monthKey = getMonthKey();
+            if (!appData[monthKey]) {
+                // If previous month exists, copy exercises structure from it, else fallback to DEFAULT_EXERCISES
+                let templateExercises = DEFAULT_EXERCISES;
+                const keys = Object.keys(appData);
+                if (keys.length > 0) {
+                    const lastKey = keys[keys.length - 1];
+                    if (appData[lastKey] && appData[lastKey].exercises) {
+                        templateExercises = appData[lastKey].exercises;
+                    }
+                }
+
+                const days = getDaysInMonth(currentYear, currentMonth);
+                appData[monthKey] = {
+                    exercises: JSON.parse(JSON.stringify(templateExercises)),
+                    records: {}
+                };
+
+                // Initialize records
+                appData[monthKey].exercises.forEach(ex => {
+                    appData[monthKey].records[ex.id] = {
+                        target: Array(days).fill(ex.defaultTarget || 30),
+                        actual: Array(days).fill('')
+                    };
+                });
+            }
+            return appData[monthKey];
+        }
+
+        
+        // Render Table Headers and Body
+        function renderTable() {
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+            const monthData = ensureCurrentMonthData();
+
+            // Check if current view is today's real date
+            const today = new Date();
+            const isCurrentRealMonth = (today.getFullYear() === currentYear && (today.getMonth() + 1) === currentMonth);
+            const realTodayDay = isCurrentRealMonth ? today.getDate() : -1;
+
+            // Update Titles
+            document.getElementById('displayYear').textContent = currentYear;
+            document.getElementById('displayMonth').textContent = currentMonth < 10 ? '0' + currentMonth : currentMonth;
+            document.getElementById('daysCountBadge').textContent = daysInMonth;
+
+            // 1. Render Headers (Days 1 to daysInMonth)
+            const headerRow = document.getElementById('tableHeaderRow');
+            headerRow.innerHTML = `
+                <th class="w-24 px-2 py-2.5 bg-indigo-600 text-white font-semibold sticky left-0 z-10 border-b border-indigo-700">项目</th>
+                <th class="w-14 px-1 py-2.5 bg-indigo-600 text-white font-semibold border-b border-indigo-700">单位</th>
+                <th class="w-20 px-2 py-2.5 bg-indigo-600 text-white font-semibold border-b border-indigo-700">数量</th>
+            `;
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const isToday = (d === realTodayDay);
+                const th = document.createElement('th');
+                th.className = `w-10 px-1 py-2 text-center text-xs border-b border-indigo-700 ${isToday ? 'today-header' : 'bg-indigo-600 text-white'}`;
+                th.innerHTML = `${d}${isToday ? '<div class="text-[9px] font-normal leading-tight">今天</div>' : ''}`;
+                headerRow.appendChild(th);
+            }
+
+            // 2. Render Body Rows
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            monthData.exercises.forEach((ex, exIndex) => {
+                const exRecord = monthData.records[ex.id] || {
+                    target: Array(daysInMonth).fill(ex.defaultTarget || 0),
+                    actual: Array(daysInMonth).fill('')
+                };
+
+                // Ensure target & actual array lengths match current month days length
+                while (exRecord.target.length < daysInMonth) exRecord.target.push(ex.defaultTarget || 0);
+                while (exRecord.actual.length < daysInMonth) exRecord.actual.push('');
+
+                // Row 1: 每日目标 (Daily Target)
+                const targetTr = document.createElement('tr');
+                targetTr.className = "hover:bg-slate-50/80 transition-colors";
+
+                let targetCells = `
+                    <td rowspan="3" class="font-bold text-slate-800 bg-slate-50 border-r border-slate-300 p-2 align-middle relative group">
+                        <div class="flex items-center justify-between">
+                            <span>${ex.name}</span>
+                            <button onclick="deleteExercise('${ex.id}')" title="删除该项目" class="text-rose-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td rowspan="3" class="text-slate-500 bg-slate-50 border-r border-slate-300 p-1 align-middle text-xs">
+                        ${ex.unit}
+                    </td>
+                    <td class="bg-indigo-50/60 font-semibold text-indigo-900 border-r border-slate-300 py-1 px-1 flex items-center justify-between">
+                        <span>每日目标</span>
+                        <button onclick="quickBatchFillTarget('${ex.id}')" title="一键将第一天目标应用于全月" class="text-[10px] text-indigo-600 hover:underline">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </button>
+                    </td>
+                `;
+
+                for (let d = 0; d < daysInMonth; d++) {
+                    const isToday = (d + 1 === realTodayDay);
+                    targetCells += `
+                        <td class="p-0 bg-indigo-50/30 ${isToday ? 'today-col' : ''}">
+                            <input type="number" 
+                                class="cell-input text-indigo-900 font-medium" 
+                                value="${exRecord.target[d] !== undefined ? exRecord.target[d] : ''}" 
+                                onchange="updateCellData('${ex.id}', 'target', ${d}, this.value)"
+                                placeholder="0" />
+                        </td>
+                    `;
+                }
+                targetTr.innerHTML = targetCells;
+
+                // Row 2: 每日达成 (Daily Actual)
+                const actualTr = document.createElement('tr');
+                actualTr.className = "hover:bg-slate-50/80 transition-colors";
+                let actualCells = `
+                    <td class="bg-emerald-50/60 font-semibold text-emerald-900 border-r border-slate-300 py-1 px-1">
+                        每日达成
+                    </td>
+                `;
+
+                for (let d = 0; d < daysInMonth; d++) {
+                    const isToday = (d + 1 === realTodayDay);
+                    actualCells += `
+                        <td class="p-0 bg-white ${isToday ? 'today-col' : ''}">
+                            <input type="number" 
+                                class="cell-input text-slate-800 font-bold" 
+                                value="${exRecord.actual[d] !== undefined ? exRecord.actual[d] : ''}" 
+                                onchange="updateCellData('${ex.id}', 'actual', ${d}, this.value)"
+                                placeholder="-" />
+                        </td>
+                    `;
+                }
+                actualTr.innerHTML = actualCells;
+
+                // Row 3: 完成情况 (Status Tick/Cross)
+                const statusTr = document.createElement('tr');
+                statusTr.className = "border-b-2 border-slate-300 hover:bg-slate-50/80 transition-colors";
+                let statusCells = `
+                    <td class="bg-slate-100 font-semibold text-slate-700 border-r border-slate-300 py-1 px-1">
+                        完成情况
+                    </td>
+                `;
+
+                for (let d = 0; d < daysInMonth; d++) {
+                    const isToday = (d + 1 === realTodayDay);
+                    const targetVal = parseFloat(exRecord.target[d]);
+                    const actualVal = parseFloat(exRecord.actual[d]);
+
+                    let statusSymbol = '';
+                    let symbolClass = '';
+
+                    // Compute completion tick or cross
+                    if (exRecord.actual[d] !== '' && !isNaN(actualVal)) {
+                        if (!isNaN(targetVal) && actualVal >= targetVal && targetVal > 0) {
+                            statusSymbol = '√';
+                            symbolClass = 'text-emerald-600 font-extrabold text-sm';
+                        } else {
+                            statusSymbol = '×';
+                            symbolClass = 'text-rose-500 font-extrabold text-sm';
+                        }
+                    }
+
+                    statusCells += `
+                        <td class="py-1 px-0 text-center select-none bg-slate-50/50 ${isToday ? 'today-col' : ''}">
+                            <span class="${symbolClass}">${statusSymbol}</span>
+                        </td>
+                    `;
+                }
+                statusTr.innerHTML = statusCells;
+
+                // Append 3 rows for each exercise
+                tbody.appendChild(targetTr);
+                tbody.appendChild(actualTr);
+                tbody.appendChild(statusTr);
+            });
+
+            calculateStats();
+        }
+
+        
+        // Update cell input
+        function updateCellData(exerciseId, type, dayIndex, value) {
+            const monthData = ensureCurrentMonthData();
+            if (!monthData.records[exerciseId]) return;
+
+            const parsedVal = value.trim() === '' ? '' : parseFloat(value);
+            monthData.records[exerciseId][type][dayIndex] = parsedVal;
+            saveData();
+
+            // Instant recalculation of completion status without full re-render
+            renderTable();
+
+            // Positive Feedback confetti trigger if today is completed!
+            const today = new Date();
+            if (today.getFullYear() === currentYear && (today.getMonth() + 1) === currentMonth) {
+                const todayIndex = today.getDate() - 1;
+                if (dayIndex === todayIndex && type === 'actual') {
+                    const target = parseFloat(monthData.records[exerciseId].target[dayIndex]);
+                    if (!isNaN(parsedVal) && !isNaN(target) && parsedVal >= target) {
+                        triggerConfetti();
+                        showToast(`太棒了！打卡达标: ${parsedVal}`, "success");
+                    }
+                }
+            }
+        }
+
+        // Quick Batch fill targets across all days of the month for an exercise
+        function quickBatchFillTarget(exerciseId) {
+            const monthData = ensureCurrentMonthData();
+            const firstDayVal = monthData.records[exerciseId].target[0];
+            const valToFill = prompt("请输入要批量填充到本月每天的目标数值：", firstDayVal || 30);
+            
+            if (valToFill !== null && !isNaN(parseFloat(valToFill))) {
+                const num = parseFloat(valToFill);
+                const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+                monthData.records[exerciseId].target = Array(daysInMonth).fill(num);
+                saveData();
+                renderTable();
+                showToast("已成功将目标应用至全月", "info");
+            }
+        }
+
+        // Calculate Monthly Statistics
+        function calculateStats() {
+            const monthData = ensureCurrentMonthData();
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+
+            let totalRecordedCells = 0;
+            let totalAchievedCells = 0;
+            
+            // Set for tracking active unique days where ALL target exercises were achieved
+            let dayCompletionMap = new Array(daysInMonth).fill(true);
+            let dayHasDataMap = new Array(daysInMonth).fill(false);
+
+            monthData.exercises.forEach(ex => {
+                const rec = monthData.records[ex.id];
+                if (!rec) return;
+
+                for (let d = 0; d < daysInMonth; d++) {
+                    const act = parseFloat(rec.actual[d]);
+                    const tar = parseFloat(rec.target[d]);
+
+                    if (rec.actual[d] !== '' && !isNaN(act)) {
+                        dayHasDataMap[d] = true;
+                        totalRecordedCells++;
+                        if (!isNaN(tar) && act >= tar && tar > 0) {
+                            totalAchievedCells++;
+                        } else {
+                            dayCompletionMap[d] = false;
+                        }
+                    } else {
+                        dayCompletionMap[d] = false;
+                    }
+                }
+            });
+
+            // Calculate achieved days (at least one item completed or all done)
+            let successDaysCount = 0;
+            for (let d = 0; d < daysInMonth; d++) {
+                if (dayHasDataMap[d] && dayCompletionMap[d]) {
+                    successDaysCount++;
+                }
+            }
+
+            // Calculate rate
+            const rate = totalRecordedCells > 0 ? Math.round((totalAchievedCells / totalRecordedCells) * 100) : 0;
+
+            // Calculate current streak
+            let streak = 0;
+            const today = new Date();
+            const isCurrentRealMonth = (today.getFullYear() === currentYear && (today.getMonth() + 1) === currentMonth);
+            const checkStartDay = isCurrentRealMonth ? today.getDate() - 1 : daysInMonth - 1;
+
+            for (let d = checkStartDay; d >= 0; d--) {
+                if (dayHasDataMap[d] && dayCompletionMap[d]) {
+                    streak++;
+                } else if (d === checkStartDay && !dayHasDataMap[d]) {
+                    // Skip today if unrecorded yet
+                    continue;
+                } else {
+                    break;
+                }
+            }
+
+            // UI Updates
+            document.getElementById('statSuccessDays').textContent = successDaysCount;
+            document.getElementById('progressDaysBar').style.width = `${Math.min(100, Math.round((successDaysCount / daysInMonth) * 100))}%`;
+            document.getElementById('statRate').textContent = `${rate}%`;
+            document.getElementById('statStreak').textContent = streak;
+        }
+
+        
+        // Add new custom exercise item
+        function addNewExercise() {
+            document.getElementById('addModal').classList.remove('hidden');
+            document.getElementById('addModal').classList.add('flex');
+            document.getElementById('newExName').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('addModal').classList.add('hidden');
+            document.getElementById('addModal').classList.remove('flex');
+            document.getElementById('newExName').value = '';
+            document.getElementById('newExUnit').value = '';
+            document.getElementById('newExDefaultTarget').value = '';
+        }
+
+        function confirmAddExercise() {
+            const name = document.getElementById('newExName').value.trim();
+            const unit = document.getElementById('newExUnit').value.trim() || '次';
+            const defaultTarget = parseFloat(document.getElementById('newExDefaultTarget').value) || 10;
+
+            if (!name) {
+                showToast("请输入运动项目名称", "warning");
+                return;
+            }
+
+            const newId = 'ex_' + Date.now();
+            const monthData = ensureCurrentMonthData();
+            const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+
+            const newEx = { id: newId, name, unit, defaultTarget };
+            monthData.exercises.push(newEx);
+            monthData.records[newId] = {
+                target: Array(daysInMonth).fill(defaultTarget),
+                actual: Array(daysInMonth).fill('')
+            };
+
+            saveData();
+            renderTable();
+            closeModal();
+            showToast(`已添加新项目：${name}`, "success");
+        }
+
+        // Delete Exercise
+        function deleteExercise(id) {
+            if (!confirm("确定要删除这个运动项目吗？删除后该项目本月记录将丢失。")) return;
+
+            const monthData = ensureCurrentMonthData();
+            monthData.exercises = monthData.exercises.filter(ex => ex.id !== id);
+            delete monthData.records[id];
+
+            saveData();
+            renderTable();
+            showToast("已删除运动项目", "info");
+        }
+
+        
+        // Export Table area to high quality image using html2canvas
+        function exportToImage() {
+            showToast("正在生成高清图片...", "info");
+            
+            const captureArea = document.getElementById('captureArea');
+            
+            // Add custom background styling for export
+            captureArea.classList.add('export-mode');
+
+            html2canvas(captureArea, {
+                scale: 2, // High resolution pixel ratio
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                scrollX: 0,
+                scrollY: 0
+            }).then(canvas => {
+                captureArea.classList.remove('export-mode');
+
+                // Trigger download
+                const link = document.createElement('a');
+                link.download = `每日运动记录表_${currentYear}年${currentMonth}月.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+
+                showToast("图片导出成功！", "success");
+            }).catch(err => {
+                captureArea.classList.remove('export-mode');
+                console.error("Export failed:", err);
+                showToast("导出失败，请重试", "warning");
+            });
+        }
+
+        // Confetti celebration animation
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 80,
+                    spread: 60,
+                    origin: { y: 0.7 }
+                });
+            }
+        }
+
+        function updateMotivationalQuote() {
+            const quoteEl = document.getElementById('motivationalQuote');
+            const randomQuote = MOTIVATION_QUOTES[Math.floor(Math.random() * MOTIVATION_QUOTES.length)];
+            quoteEl.textContent = randomQuote;
+        }
+
+        // Toast message banner
+        function showToast(message, type = "info") {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            let bgColor = "bg-slate-800 text-white";
+            if (type === "success") bgColor = "bg-emerald-600 text-white";
+            if (type === "warning") bgColor = "bg-rose-600 text-white";
+
+            toast.className = `${bgColor} px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium flex items-center gap-2 transform transition-all duration-300 translate-y-2 opacity-0`;
+            toast.innerHTML = `<span>${message}</span>`;
+
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
