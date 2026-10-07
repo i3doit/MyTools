@@ -2,773 +2,970 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>工具卡片管理</title>
-    <!-- FontAwesome 图标库 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #3b8a66;
-            --primary-hover: #2d6b4f;
-            --bg-color: #f4f6f8;
-            --card-bg: #ffffff;
-            --text-main: #333333;
-            --text-sub: #888888;
-            --border-color: #eef0f2;
-            --danger-color: #e74c3c;
-            --warning-bg: #fffbe6;
-            --warning-border: #ffe58f;
-        }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SQL 全能工具箱 - v7</title>
+    <meta name="description" content="基于本地 SQLite 驱动的轻量级工具箱导航，支持纯 SQL 增删改查与外部数据文件同步。">
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            padding: 20px;
-            color: var(--text-main);
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .section-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin: 15px 0 10px;
-            color: #555;
-        }
-
-        /* --- 工具卡片样式 --- */
-        .tool-card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            position: relative;
-        }
-
-        .card-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-        }
-
-        .card-title-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card-icon {
-            width: 36px;
-            height: 36px;
-            background: #eaf5f0;
-            color: var(--primary-color);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-        }
-
-        .card-info {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .card-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #111;
-        }
-
-        .card-filename {
-            font-size: 12px;
-            color: var(--text-sub);
-            margin-top: 2px;
-        }
-
-        .card-stats {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 12px;
-            color: var(--text-sub);
-        }
-
-        .card-stats span {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .card-time {
-            font-size: 12px;
-            color: #aaa;
-            margin-top: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        /* 标签 Badge */
-        .badge-group {
-            display: flex;
-            gap: 6px;
-        }
-
-        .badge {
-            font-size: 11px;
-            padding: 2px 8px;
-            border-radius: 10px;
-            background: #f0f0f0;
-            color: #666;
-        }
-
-        .badge.badge-primary {
-            background: #eaf5f0;
-            color: var(--primary-color);
-        }
-
-        .badge.badge-lock {
-            background: #fff0f0;
-            color: var(--danger-color);
-        }
-
-        /* 操作按钮网格 */
-        .card-actions {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .btn {
-            border: none;
-            outline: none;
-            background: #f7f9fa;
-            padding: 8px 0;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #444;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-        }
-
-        .btn:hover {
-            background: #edf0f2;
-        }
-
-        .btn-primary {
-            background: var(--primary-color);
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-hover);
-        }
-
-        .btn-disabled {
-            opacity: 0.5;
-            cursor: not-allowed !important;
-            background: #eee !important;
-            color: #aaa !important;
-        }
-
-        /* --- 弹窗 Modal 样式 --- */
-        .modal-mask {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s ease;
-        }
-
-        .modal-mask.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-container {
-            background: #fff;
-            width: 100%;
-            max-width: 500px;
-            border-top-left-radius: 16px;
-            border-top-right-radius: 16px;
-            padding: 20px;
-            max-height: 85vh;
-            overflow-y: auto;
-            transform: translateY(100%);
-            transition: transform 0.25s ease;
-        }
-
-        .modal-mask.active .modal-container {
-            transform: translateY(0);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
-
-        .modal-close {
-            font-size: 20px;
-            color: #999;
-            cursor: pointer;
-        }
-
-        /* Modal 内的工具信息 */
-        .modal-tool-info {
-            margin-bottom: 15px;
-        }
-        .modal-tool-name { font-size: 15px; font-weight: 600; }
-        .modal-tool-file { font-size: 12px; color: #888; }
-
-        /* 选项卡 Tab */
-        .tab-nav {
-            display: flex;
-            background: #f2f4f5;
-            border-radius: 20px;
-            padding: 3px;
-            margin-bottom: 15px;
-        }
-
-        .tab-item {
-            flex: 1;
-            text-align: center;
-            padding: 6px 0;
-            font-size: 13px;
-            border-radius: 18px;
-            cursor: pointer;
-            color: #666;
-            position: relative;
-        }
-
-        .tab-item.active {
-            background: #fff;
-            color: #111;
-            font-weight: 600;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        .tab-item .vip-tag {
-            font-size: 9px;
-            background: #333;
-            color: #fff;
-            padding: 1px 4px;
-            border-radius: 4px;
-            margin-left: 2px;
-        }
-
-        /* 访问方式网格 */
-        .access-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .access-card {
-            border: 1.5px solid var(--border-color);
-            border-radius: 10px;
-            padding: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .access-card.active {
-            border-color: var(--primary-color);
-            background: #eaf5f0;
-        }
-
-        .access-card-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .access-card-desc {
-            font-size: 11px;
-            color: #888;
-        }
-
-        /* 统一验证码输入区 */
-        .captcha-input-group {
-            margin-top: 10px;
-            display: flex;
-            gap: 8px;
-        }
-
-        .input-text {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            outline: none;
-            font-size: 13px;
-        }
-
-        .input-text:focus {
-            border-color: var(--primary-color);
-        }
-
-        .modal-tip {
-            font-size: 12px;
-            color: #e6a23c;
-            background: #fdf6ec;
-            padding: 8px 12px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-        }
-
-        .modal-footer-btn {
-            width: 100%;
-            padding: 12px 0;
-            background: #2c323f;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        /* 提示 Toast */
-        .toast {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.75);
-            color: #fff;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            z-index: 2000;
-            display: none;
-        }
-    </style>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide 图标库 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- sql.js (WebAssembly SQLite 引擎) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
 
-<div class="container">
-    <div class="section-title">已解锁工具</div>
-    
-    <!-- 已解锁卡片列表 -->
-    <div id="unlocked-list"></div>
-
-    <div class="section-title">未解锁工具</div>
-    
-    <!-- 未解锁卡片列表 -->
-    <div id="locked-list"></div>
-</div>
-
-<!-- 访问权限配置 模态弹窗 -->
-<div class="modal-mask" id="accessModal">
-    <div class="modal-container">
-        <div class="modal-header">
-            <span>访问权限</span>
-            <span class="modal-close" onclick="closeModal('accessModal')">&times;</span>
-        </div>
-        
-        <div class="modal-tool-info">
-            <div class="modal-tool-name" id="modalToolTitle">多语言翻译</div>
-            <div class="modal-tool-file" id="modalToolFile">LogicTrans9.html</div>
-        </div>
-
-        <!-- Tab 切换 -->
-        <div class="tab-nav">
-            <div class="tab-item active" onclick="switchTab('way')">访问方式</div>
-            <div class="tab-item" onclick="switchTab('code')">一码一发</div>
-            <div class="tab-item" onclick="switchTab('temp')">临时链接 <span class="vip-tag">VIP</span></div>
-        </div>
-
-        <!-- Tab 1: 访问方式 -->
-        <div id="tab-way" class="tab-content">
-            <p style="font-size:12px; color:#666; margin-bottom:10px;">选择一种访问方式，保存后生效：</p>
-            <div class="access-grid">
-                <div class="access-card" id="type-public" onclick="selectAccessType('public')">
-                    <div class="access-card-title">公开</div>
-                    <div class="access-card-desc">所有人可访问</div>
-                </div>
-                <div class="access-card" id="type-hidden" onclick="selectAccessType('hidden')">
-                    <div class="access-card-title">隐藏</div>
-                    <div class="access-card-desc">不在主页展示</div>
-                </div>
-                <div class="access-card" id="type-captcha" onclick="selectAccessType('captcha')">
-                    <div class="access-card-title">验证码</div>
-                    <div class="access-card-desc">统一验证码访问</div>
-                </div>
-                <div class="access-card" id="type-code_per_user" onclick="selectAccessType('code_per_user')">
-                    <div class="access-card-title">一码一发</div>
-                    <div class="access-card-desc">每人独立访问码</div>
-                </div>
-            </div>
-
-            <!-- 验证码类型时的额外编辑组件 -->
-            <div id="captcha-extra-panel" style="display: none; margin-bottom: 15px;">
-                <label style="font-size: 12px; color: #555;">设置统一验证码：</label>
-                <div class="captcha-input-group">
-                    <input type="text" id="inputCaptcha" class="input-text" placeholder="输入自定义验证码">
-                    <button class="btn" onclick="copyCaptcha()"><i class="fa-regular fa-copy"></i> 复制</button>
-                </div>
-            </div>
-
-            <button class="modal-footer-btn" onclick="saveAccessSettings()">保存访问方式</button>
-        </div>
-
-        <!-- Tab 2: 一码一发说明/配置 -->
-        <div id="tab-code" class="tab-content" style="display: none;">
-            <div id="code-not-available-tip" class="modal-tip" style="display:none;">
-                <i class="fa-solid fa-circle-exclamation"></i> 当前访问方式为“公开”或“隐藏”，一码一发设置不生效。
-            </div>
-            <div id="code-content">
-                <p style="font-size:12px; color:#666; margin-bottom:10px;">批量生成独立访问码：</p>
-                <div style="display:flex; gap:10px; margin-bottom:10px;">
-                    <input type="number" class="input-text" value="10" placeholder="生成数量">
-                    <button class="btn btn-primary" style="padding:0 15px;">生成访问码</button>
-                </div>
-                <div style="font-size:12px; color:#888;">已有访问码: 10 个 (已启用 10 / 已失效 0)</div>
-            </div>
-        </div>
-
-        <!-- Tab 3: 临时链接说明 -->
-        <div id="tab-temp" class="tab-content" style="display: none;">
-            <p style="font-size:12px; color:#666; margin-bottom:10px;">免验证码预览链接；正式交付请用验证码或一码一发。</p>
-            <button class="btn btn-primary" style="width:100%;">创建临时链接</button>
-        </div>
-    </div>
-</div>
-
-<!-- 锁定确认二次弹窗 -->
-<div class="modal-mask" id="lockConfirmModal">
-    <div class="modal-container" style="border-radius:16px; padding:24px; text-align:center;">
-        <h3 id="lockModalTitle" style="margin-bottom:12px;">锁定文件</h3>
-        <p id="lockModalDesc" style="font-size:13px; color:#666; margin-bottom:20px; line-height:1.5;">
-            锁定后「<span id="lockToolName"></span>」将无法删除，可避免误删影响已付费客户访问。是否锁定？
-        </p>
-        <div style="display:flex; gap:10px;">
-            <button class="btn" style="flex:1; padding:10px;" onclick="closeModal('lockConfirmModal')">取消</button>
-            <button class="btn btn-primary" style="flex:1; padding:10px;" onclick="confirmToggleLock()">确定</button>
-        </div>
-    </div>
-</div>
-
-<!-- Toast 提示 -->
-<div class="toast" id="toast"></div>
-
-<script>
-    // 模拟数据源
-    const toolsData = [
-        {
-            id: 1,
-            title: "多语言翻译",
-            fileName: "LogicTrans9.html",
-            isUnlocked: true,
-            views: 82,
-            likes: 0,
-            stars: 0,
-            releaseDate: "2026-03-13 00:52:32",
-            accessType: "hidden", // public, hidden, captcha, code_per_user
-            captchaCode: "",
-            isLocked: false
-        },
-        {
-            id: 2,
-            title: "红包抽奖工具",
-            fileName: "red-packets.html",
-            isUnlocked: true,
-            views: 400,
-            likes: 12,
-            stars: 5,
-            releaseDate: "2026-03-12 23:52:19",
-            accessType: "code_per_user",
-            captchaCode: "",
-            isLocked: true // 锁定防误删
-        },
-        {
-            id: 3,
-            title: "智能文案生成器",
-            fileName: "ai-writer.html",
-            isUnlocked: false,
-            views: 120,
-            likes: 3,
-            stars: 1,
-            releaseDate: "2026-03-10 12:00:00",
-            accessType: "public",
-            captchaCode: "",
-            isLocked: false
-        }
-    ];
-
-    let currentEditingId = null;
-    let tempSelectedType = "public";
-
-    // 初始化渲染
-    function render() {
-        const unlockedContainer = document.getElementById("unlocked-list");
-        const lockedContainer = document.getElementById("locked-list");
-        
-        unlockedContainer.innerHTML = "";
-        lockedContainer.innerHTML = "";
-
-        toolsData.forEach(tool => {
-            const cardHTML = createCardHTML(tool);
-            if (tool.isUnlocked) {
-                unlockedContainer.innerHTML += cardHTML;
-            } else {
-                lockedContainer.innerHTML += cardHTML;
-            }
-        });
-    }
-
-    // 生成卡片 HTML
-    function createCardHTML(tool) {
-        // 映射访问权限显示文案
-        const accessTextMap = {
-            'public': '公开',
-            'hidden': '隐藏',
-            'captcha': '验证码',
-            'code_per_user': '一码一发'
-        };
-
-        if (!tool.isUnlocked) {
-            // 未解锁卡片：新增链接（复制）功能Icon
-            return `
-            <div class="tool-card">
-                <div class="card-header">
-                    <div class="card-title-group">
-                        <div class="card-icon"><i class="fa-solid fa-lock"></i></div>
-                        <div class="card-info">
-                            <div class="card-title">${tool.title}</div>
-                            <div class="card-filename">${tool.fileName}</div>
+    <!-- 顶部导航栏 -->
+    <header id="headerBar" onclick="handleAdminUnlockClicks()" class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 select-none cursor-pointer py-2.5 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            
+            <!-- 标志与标题行 -->
+            <div class="flex items-center justify-between pointer-events-none">
+                <div class="flex items-center space-x-2.5">
+                    <div class="p-1.5 bg-indigo-600 rounded-lg text-white shadow-sm shrink-0">
+                        <i data-lucide="database" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <h1 class="text-base sm:text-lg font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent leading-tight">
+                                SQL 全能工具箱
+                            </h1>
+                            <span id="adminBadge" class="hidden px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded border border-red-200 whitespace-nowrap">
+                                已解锁管理
+                            </span>
                         </div>
+                        <span id="dbStatus" class="text-[10px] text-amber-500 font-medium block">SQLite 初始化中...</span>
                     </div>
-                    <div class="card-stats">
-                        <span><i class="fa-regular fa-eye"></i> ${tool.views}</span>
-                    </div>
-                </div>
-                <div class="card-time">发布 ${tool.releaseDate}</div>
-                <div class="card-actions">
-                    <button class="btn btn-primary" onclick="showToast('请先解锁工具')"><i class="fa-solid fa-share-nodes"></i> 分享</button>
-                    <button class="btn" onclick="copyText('https://dkfile.net/tool/${tool.id}')"><i class="fa-regular fa-copy"></i> 链接</button>
-                    <button class="btn" onclick="showToast('发起解锁申请')"><i class="fa-solid fa-key"></i> 解锁</button>
-                </div>
-            </div>`;
-        }
-
-        // 已解锁卡片：支持设置访问权限、锁定/解锁、删除
-        return `
-        <div class="tool-card">
-            <div class="card-header">
-                <div class="card-title-group">
-                    <div class="card-icon"><i class="fa-regular fa-file-code"></i></div>
-                    <div class="card-info">
-                        <div class="card-title">${tool.title}</div>
-                        <div class="card-filename">${tool.fileName}</div>
-                    </div>
-                </div>
-                <div class="card-stats">
-                    <span><i class="fa-regular fa-eye"></i> ${tool.views}</span>
-                    <span><i class="fa-regular fa-heart"></i> ${tool.likes}</span>
-                    <span><i class="fa-regular fa-star"></i> ${tool.stars}</span>
                 </div>
             </div>
             
-            <div class="card-time">
-                <span>发布 ${tool.releaseDate}</span>
-                <div class="badge-group">
-                    ${tool.isLocked ? '<span class="badge badge-lock"><i class="fa-solid fa-lock"></i> 已锁定</span>' : ''}
-                    <span class="badge badge-primary">${accessTextMap[tool.accessType]}</span>
-                </div>
-            </div>
+            <!-- 操作按钮组 -->
+            <div class="flex items-center justify-end flex-wrap gap-1.5 sm:gap-2" onclick="event.stopPropagation()">
+                <!-- 管理员模式下展示“添加工具” -->
+                <button id="addToolBtn" onclick="openModal()" class="hidden items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-lg text-xs font-medium transition shadow-sm whitespace-nowrap">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> 添加工具
+                </button>
+                
+                <!-- 导出最新的 SQL 初始化脚本 -->
+                <button id="exportSqlScriptBtn" onclick="exportSqlDumpScript()" title="导出最新 tools_init.sql 部署脚本" class="hidden p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition shrink-0">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                </button>
 
-            <div class="card-actions">
-                <button class="btn btn-primary" onclick="showToast('分享成功')">分享</button>
-                <button class="btn" onclick="copyText('https://dkfile.net/tool/${tool.id}')">链接</button>
-                <button class="btn" onclick="openAccessModal(${tool.id})">访问权限</button>
-                <button class="btn" onclick="showToast('添加备注')">添加备注</button>
-                <button class="btn" onclick="openLockConfirm(${tool.id})">${tool.isLocked ? '解锁' : '锁定'}</button>
-                <button class="btn ${tool.isLocked ? 'btn-disabled' : ''}" 
-                        onclick="${tool.isLocked ? "showToast('文件已锁定，不允许删除')" : `deleteTool(${tool.id})`}">
-                    删除
+                <!-- 导出二进制 SQLite 数据库 -->
+                <button onclick="exportSqlDb()" title="导出 SQLite 数据库文件 (.sqlite)" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition shrink-0">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                </button>
+                
+                <!-- 导入文件 -->
+                <label id="importBtn" title="导入 SQL / SQLite / JSON 文件" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer shrink-0">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    <input type="file" id="importFileInput" accept=".sql,.sqlite,.db,.json,application/x-sqlite3,text/plain,*/*" class="hidden" onchange="importFile(event)">
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-6">
+        
+        <!-- 搜索与筛选栏 -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-2 text-xs">
+                <span class="text-slate-500 font-medium">托管工具总数：</span>
+                <span id="toolCountBadge" class="px-2 py-0.5 bg-indigo-100 text-indigo-700 font-bold rounded-full">0</span>
+            </div>
+            
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <div class="relative flex-1 sm:w-60">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="renderTools()" placeholder="搜索工具名称或描述..." class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <select id="typeFilter" onchange="renderTools()" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="ALL">所有分类</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 区域 1：⭐ 推荐 / 收藏工具 -->
+        <section id="pinnedSection" class="space-y-3 hidden">
+            <div class="flex items-center justify-between border-b border-amber-200/60 pb-2">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-amber-500"><i data-lucide="star" class="w-4 h-4 fill-amber-400"></i></span>
+                    <h2 class="text-xs sm:text-sm font-bold text-slate-800">我的收藏 / 推荐工具</h2>
+                    <span id="pinnedCountBadge" class="text-[10px] px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded-full">0</span>
+                </div>
+                
+                <!-- 排序控制按钮 -->
+                <button id="toggleSortBtn" onclick="toggleSortMode()" class="flex items-center gap-1 text-[11px] text-amber-700 hover:text-amber-900 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md active:scale-95 transition">
+                    <i data-lucide="arrow-up-down" class="w-3 h-3"></i> <span id="sortBtnText">自定义排序</span>
                 </button>
             </div>
-        </div>`;
-    }
+            <div id="pinnedGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5"></div>
+        </section>
 
-    /* --- Modal 交互逻辑 --- */
-    function openAccessModal(id) {
-        currentEditingId = id;
-        const tool = toolsData.find(t => t.id === id);
-        
-        document.getElementById('modalToolTitle').innerText = tool.title;
-        document.getElementById('modalToolFile').innerText = tool.fileName;
-        document.getElementById('inputCaptcha').value = tool.captchaCode || '';
-        
-        tempSelectedType = tool.accessType;
-        selectAccessType(tempSelectedType);
+        <!-- 区域 2：所有工具 -->
+        <section class="space-y-3">
+            <div class="flex items-center gap-1.5 border-b border-slate-200 pb-2">
+                <span class="text-indigo-600"><i data-lucide="layout-grid" class="w-4 h-4"></i></span>
+                <h2 class="text-xs sm:text-sm font-bold text-slate-800">所有工具</h2>
+            </div>
+            <div id="toolsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5"></div>
+        </section>
 
-        switchTab('way');
-        document.getElementById('accessModal').classList.add('active');
-    }
+        <!-- 无数据提示 -->
+        <div id="emptyState" class="hidden text-center py-12">
+            <i data-lucide="folder-open" class="w-12 h-12 mx-auto text-slate-300 mb-2"></i>
+            <p class="text-slate-500 font-medium text-xs">没有找到相关工具</p>
+        </div>
+    </main>
 
-    function closeModal(modalId) {
-        document.getElementById(modalId).classList.remove('active');
-    }
+    <!-- 页脚 -->
+    <footer onclick="handleAdminUnlockClicks()" class="bg-white border-t border-slate-200 mt-auto py-4 text-center text-xs text-slate-500 select-none cursor-pointer">
+        <p>
+            © <span id="copyrightYear">2026</span> SQL 全能工具箱 | 
+            技术支持：<a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="text-indigo-600 hover:underline font-medium">艾兜兜儿</a>
+        </p>
+    </footer>
 
-    function switchTab(tabName) {
-        const tabs = document.querySelectorAll('.tab-item');
-        tabs.forEach(t => t.classList.remove('active'));
-
-        document.getElementById('tab-way').style.display = 'none';
-        document.getElementById('tab-code').style.display = 'none';
-        document.getElementById('tab-temp').style.display = 'none';
-
-        if(tabName === 'way') {
-            tabs[0].classList.add('active');
-            document.getElementById('tab-way').style.display = 'block';
-        } else if(tabName === 'code') {
-            tabs[1].classList.add('active');
-            document.getElementById('tab-code').style.display = 'block';
+    <!-- 新增 / 编辑 模态框 -->
+    <div id="toolModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
+            <div class="flex justify-between items-center px-5 py-3.5 border-b border-slate-100 bg-slate-50">
+                <h3 id="modalTitle" class="font-bold text-xs sm:text-sm text-slate-800">添加新工具</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
             
-            // 需求5：访问控制为“隐藏”、“公开”时，“一码一发”设置不生效
-            const tip = document.getElementById('code-not-available-tip');
-            const content = document.getElementById('code-content');
-            if (tempSelectedType === 'public' || tempSelectedType === 'hidden') {
-                tip.style.display = 'block';
-                content.style.opacity = '0.4';
-                content.style.pointerEvents = 'none';
+            <form id="toolForm" onsubmit="handleFormSubmit(event)" class="p-5 space-y-3 text-xs">
+                <input type="hidden" id="toolId">
+                
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">工具名称 <span class="text-red-500">*</span></label>
+                    <input type="text" id="toolName" required placeholder="例如：思维导图工具" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">工具地址 (URL) <span class="text-red-500">*</span></label>
+                    <input type="url" id="toolUrl" required placeholder="https://..." class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">工具类型</label>
+                        <input type="text" id="toolType" list="categoryDatalist" placeholder="选择或输入新类型" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <datalist id="categoryDatalist"></datalist>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">图标 URL <span class="text-slate-400 font-normal">(选填)</span></label>
+                        <input type="url" id="toolIcon" placeholder="留空自动识别" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">工具描述</label>
+                    <textarea id="toolDesc" rows="3" placeholder="简要描述工具的功能..." class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"></textarea>
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                    <input type="checkbox" id="toolPinned" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                    <label for="toolPinned" class="font-medium text-slate-700">设为推荐/收藏工具 (优先排序展示)</label>
+                </div>
+
+                <div id="draftAlert" class="hidden p-2 bg-amber-50 border border-amber-200 text-amber-700 rounded text-[11px]">
+                    已自动加载上次未保存的草稿内容。
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border border-slate-200 rounded-lg font-medium text-slate-600 hover:bg-slate-50">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 访问权限控制模态框 -->
+    <div id="accessModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-100">
+            <div class="flex justify-between items-center px-4 py-3 border-b border-slate-100 bg-slate-50">
+                <h3 class="font-bold text-xs sm:text-sm text-slate-800 flex items-center gap-1.5">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-indigo-600"></i> 设置工具访问权限与锁定
+                </h3>
+                <button onclick="closeAccessModal()" class="text-slate-400 hover:text-slate-600 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            
+            <form id="accessForm" onsubmit="handleAccessFormSubmit(event)" class="p-4 space-y-3.5 text-xs">
+                <input type="hidden" id="accessToolId">
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">访问控制方式</label>
+                    <select id="accessType" onchange="toggleAccessFields()" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50 font-medium">
+                        <option value="public">🌐 public (公开)</option>
+                        <option value="hidden">🙈 hidden (隐藏)</option>
+                        <option value="captcha">🔑 captcha (验证码)</option>
+                        <option value="code_per_user">🎫 code_per_user (一码一发)</option>
+                    </select>
+                </div>
+
+                <!-- 当类型为 captcha 时显示的验证码设置组件 -->
+                <div id="captchaGroup" class="space-y-1.5 hidden bg-amber-50/50 p-2.5 rounded-lg border border-amber-200/60">
+                    <label class="block font-semibold text-amber-800">自定义统一验证码</label>
+                    <div class="flex gap-1.5">
+                        <input type="text" id="unifiedCaptcha" placeholder="设置访问验证码..." class="flex-1 px-3 py-1.5 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none bg-white font-mono font-bold text-amber-900">
+                        <button type="button" onclick="copyUnifiedCaptchaFromModal()" class="px-2.5 py-1.5 bg-amber-200/60 hover:bg-amber-200 text-amber-800 font-semibold rounded-lg transition active:scale-95 flex items-center gap-1 shrink-0">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> 复制
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="isLocked" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                        <span class="font-bold text-slate-700">锁定该工具（禁止删除）</span>
+                    </label>
+                    <p class="text-[11px] text-slate-400 mt-1 pl-6">防止对关键配置工具、一码一发或验证码控制的工具误操作删除。</p>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeAccessModal()" class="px-3.5 py-1.5 border border-slate-200 rounded-lg font-medium text-slate-600 hover:bg-slate-50">取消</button>
+                    <button type="submit" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow-sm">保存控制选项</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 核心 JS 逻辑 -->
+    <script>
+        let db = null;
+        const DB_STORAGE_KEY = 'SQLITE_TOOLBOX_BYTES_V7';
+        const DRAFT_STORAGE_KEY = 'TOOLBOX_FORM_DRAFT';
+        const REMOTE_SQL_FILE = './tools_init.sql'; // 独立数据文件名
+
+        let isAdminUnlocked = false;
+        let isSortMode = false;
+        let clickCounter = 0;
+        let clickTimer = null;
+        let dragSrcIndex = null;
+        let currentPinnedData = [];
+
+        function initCopyrightYear() {
+            const startYear = 2026;
+            const currentYear = new Date().getFullYear();
+            const yearEl = document.getElementById('copyrightYear');
+            if (yearEl) {
+                yearEl.innerText = (currentYear > startYear) ? `${startYear}-${currentYear}` : `${startYear}`;
+            }
+        }
+
+        function resolveToolIcon(name, url, userIcon) {
+            if (userIcon && userIcon.trim() !== '') return userIcon.trim();
+
+            const searchStr = (name + ' ' + url).toLowerCase();
+            if (searchStr.includes('pdf')) return "https://cdn-icons-png.flaticon.com/512/337/337946.png";
+            if (searchStr.includes('qr') || searchStr.includes('二维码')) return "https://cdn-icons-png.flaticon.com/512/714/714390.png";
+            if (searchStr.includes('task') || searchStr.includes('plan') || searchStr.includes('任务') || searchStr.includes('计划')) return "https://cdn-icons-png.flaticon.com/512/2693/2693507.png";
+            if (searchStr.includes('mind') || searchStr.includes('脑图') || searchStr.includes('思维导图')) return "https://cdn-icons-png.flaticon.com/512/1149/1149168.png";
+            if (searchStr.includes('code') || searchStr.includes('代码') || searchStr.includes('run')) return "https://cdn-icons-png.flaticon.com/512/2920/2920277.png";
+            if (searchStr.includes('money') || searchStr.includes('cheque') || searchStr.includes('省钱') || searchStr.includes('支票')) return "https://cdn-icons-png.flaticon.com/512/2533/2533032.png";
+            if (searchStr.includes('pic') || searchStr.includes('cover') || searchStr.includes('sketch') || searchStr.includes('图片') || searchStr.includes('封面')) return "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+            if (searchStr.includes('emotion') || searchStr.includes('gif') || searchStr.includes('表情')) return "https://cdn-icons-png.flaticon.com/512/187/187150.png";
+            if (searchStr.includes('game') || searchStr.includes('tetris') || searchStr.includes('star') || searchStr.includes('游戏')) return "https://cdn-icons-png.flaticon.com/512/566/566312.png";
+            if (searchStr.includes('run') || searchStr.includes('running') || searchStr.includes('跑步')) return "https://cdn-icons-png.flaticon.com/512/2871/2871210.png";
+            if (searchStr.includes('english') || searchStr.includes('learn') || searchStr.includes('英语')) return "https://cdn-icons-png.flaticon.com/512/3048/3048122.png";
+
+            try {
+                const domain = new URL(url).hostname;
+                return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+            } catch (e) {
+                return "https://cdn-icons-png.flaticon.com/512/1006/1006771.png";
+            }
+        }
+
+        function handleAdminUnlockClicks() {
+            clickCounter++;
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => { clickCounter = 0; }, 1500);
+
+            if (clickCounter >= 5) {
+                clickCounter = 0;
+                isAdminUnlocked = !isAdminUnlocked;
+                alert(isAdminUnlocked ? "🔓 已成功解锁管理功能（新增、编辑、权限控制、锁定保护、拖拽排序）" : "🔒 已锁定管理功能");
+                updateAdminUI();
+            }
+        }
+
+        function updateAdminUI() {
+            const addBtn = document.getElementById('addToolBtn');
+            const exportSqlScriptBtn = document.getElementById('exportSqlScriptBtn');
+            const adminBadge = document.getElementById('adminBadge');
+
+            if (isAdminUnlocked) {
+                addBtn.classList.remove('hidden');
+                addBtn.classList.add('flex');
+                exportSqlScriptBtn.classList.remove('hidden');
+                adminBadge.classList.remove('hidden');
             } else {
-                tip.style.display = 'none';
-                content.style.opacity = '1';
-                content.style.pointerEvents = 'auto';
+                addBtn.classList.add('hidden');
+                addBtn.classList.remove('flex');
+                exportSqlScriptBtn.classList.add('hidden');
+                adminBadge.classList.add('hidden');
+                isSortMode = false;
             }
-        } else if(tabName === 'temp') {
-            tabs[2].classList.add('active');
-            document.getElementById('tab-temp').style.display = 'block';
+            renderTools();
         }
-    }
 
-    function selectAccessType(type) {
-        tempSelectedType = type;
-        const types = ['public', 'hidden', 'captcha', 'code_per_user'];
-        types.forEach(t => {
-            const el = document.getElementById(`type-${t}`);
-            if(el) el.classList.remove('active');
-        });
+        async function initSqlDb() {
+            initCopyrightYear();
+            try {
+                const SQL = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+                });
 
-        const activeEl = document.getElementById(`type-${type}`);
-        if(activeEl) activeEl.classList.add('active');
+                const savedBytes = localStorage.getItem(DB_STORAGE_KEY);
+                if (savedBytes) {
+                    const uInt8Array = new Uint8Array(JSON.parse(savedBytes));
+                    db = new SQL.Database(uInt8Array);
+                    ensureColumnsExist();
+                } else {
+                    db = new SQL.Database();
+                    createTables();
+                    await loadExternalSqlData(); // 从独立 SQL 文件加载初始化数据
+                }
 
-        // 需求6：若选择验证码方式，支持显示与编辑“统一验证码”
-        const captchaPanel = document.getElementById('captcha-extra-panel');
-        if (type === 'captcha') {
-            captchaPanel.style.display = 'block';
-        } else {
-            captchaPanel.style.display = 'none';
-        }
-    }
-
-    function saveAccessSettings() {
-        const tool = toolsData.find(t => t.id === currentEditingId);
-        if (tool) {
-            tool.accessType = tempSelectedType;
-            if (tempSelectedType === 'captcha') {
-                tool.captchaCode = document.getElementById('inputCaptcha').value.trim();
+                document.getElementById('dbStatus').innerText = 'SQLite Engine: Ready';
+                document.getElementById('dbStatus').className = 'text-[10px] text-emerald-600 font-medium block';
+                
+                updateCategories();
+                renderTools();
+                setupDraftListeners();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('dbStatus').innerText = 'SQLite 加载失败';
+                document.getElementById('dbStatus').className = 'text-[10px] text-red-500 font-medium block';
             }
-            // 根据需求：如果设置为验证码/一码一发，自动推荐锁定避免误删（或直接保存状态）
-            showToast('访问设置更新成功');
-            render();
-            closeModal('accessModal');
         }
-    }
 
-    function copyCaptcha() {
-        const val = document.getElementById('inputCaptcha').value;
-        if (!val) {
-            showToast('请先输入验证码');
-            return;
+        function createTables() {
+            db.run(`
+                CREATE TABLE IF NOT EXISTS tools (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    type TEXT DEFAULT '通用',
+                    icon TEXT,
+                    desc TEXT,
+                    is_pinned INTEGER DEFAULT 0,
+                    sort_order INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    access_type TEXT DEFAULT 'public',
+                    unified_captcha TEXT DEFAULT '',
+                    is_locked INTEGER DEFAULT 0
+                );
+            `);
+            persistSqlDb();
         }
-        copyText(val);
-    }
 
-    /* --- 锁定与删除逻辑 --- */
-    function openLockConfirm(id) {
-        currentEditingId = id;
-        const tool = toolsData.find(t => t.id === id);
-        
-        document.getElementById('lockModalTitle').innerText = tool.isLocked ? "解锁文件" : "锁定文件";
-        document.getElementById('lockToolName').innerText = tool.title;
-        document.getElementById('lockModalDesc').innerHTML = tool.isLocked 
-            ? `取消锁定后「${tool.title}」将恢复可删除状态。是否确认解锁？` 
-            : `锁定后「${tool.title}」将无法删除，可避免误删影响已付费客户访问。是否锁定？`;
+        function ensureColumnsExist() {
+            try { db.run(`ALTER TABLE tools ADD COLUMN access_type TEXT DEFAULT 'public';`); } catch (e) {}
+            try { db.run(`ALTER TABLE tools ADD COLUMN unified_captcha TEXT DEFAULT '';`); } catch (e) {}
+            try { db.run(`ALTER TABLE tools ADD COLUMN is_locked INTEGER DEFAULT 0;`); } catch (e) {}
+        }
+
+        async function loadExternalSqlData() {
+            try {
+                const response = await fetch(REMOTE_SQL_FILE);
+                if (response.ok) {
+                    const sqlScript = await response.text();
+                    db.run(sqlScript);
+                    ensureColumnsExist();
+                    persistSqlDb();
+                } else {
+                    console.warn("未找到 tools_init.sql，采用空白数据库");
+                }
+            } catch (e) {
+                console.warn("无法从网络获取初始化 SQL，请确保 tools_init.sql 在同一目录下", e);
+            }
+        }
+
+        function persistSqlDb() {
+            const data = db.export();
+            localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(Array.from(data)));
+        }
+
+        function toggleSortMode() {
+            isSortMode = !isSortMode;
+            const sortBtnText = document.getElementById('sortBtnText');
+            const sortBtn = document.getElementById('toggleSortBtn');
+
+            if (isSortMode) {
+                sortBtnText.innerText = "完成排序";
+                sortBtn.className = "flex items-center gap-1 text-[11px] text-white bg-indigo-600 border border-indigo-600 px-2.5 py-1 rounded-md active:scale-95 transition shadow-sm";
+            } else {
+                sortBtnText.innerText = "自定义排序";
+                sortBtn.className = "flex items-center gap-1 text-[11px] text-amber-700 hover:text-amber-900 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md active:scale-95 transition";
+            }
+            renderTools();
+        }
+
+        function renderTools() {
+            if (!db) return;
+
+            const searchKw = document.getElementById('searchInput').value.trim();
+            const filterType = document.getElementById('typeFilter').value;
+
+            let baseSql = `SELECT * FROM tools WHERE 1=1`;
+            let params = [];
+
+            // 非管理员且处于 hidden 状态的工具自动隐藏不渲染
+            if (!isAdminUnlocked) {
+                baseSql += ` AND (access_type IS NULL OR access_type != 'hidden')`;
+            }
+
+            if (searchKw) {
+                baseSql += ` AND (name LIKE ? OR desc LIKE ?)`;
+                params.push(`%${searchKw}%`, `%${searchKw}%`);
+            }
+            if (filterType !== 'ALL') {
+                baseSql += ` AND type = ?`;
+                params.push(filterType);
+            }
+
+            let pinnedSql = baseSql + ` AND is_pinned = 1 ORDER BY sort_order ASC, id DESC`;
+            let normalSql = baseSql + ` AND is_pinned = 0 ORDER BY sort_order ASC, id DESC`;
+
+            currentPinnedData = querySql(pinnedSql, params);
+            const normalItems = querySql(normalSql, params);
+
+            document.getElementById('toolCountBadge').innerText = currentPinnedData.length + normalItems.length;
+            document.getElementById('pinnedCountBadge').innerText = currentPinnedData.length;
+
+            const pinnedSection = document.getElementById('pinnedSection');
+            const pinnedGrid = document.getElementById('pinnedGrid');
+
+            if (currentPinnedData.length > 0) {
+                pinnedSection.classList.remove('hidden');
+                pinnedGrid.innerHTML = currentPinnedData.map((item, index) => createCardHtml(item, true, index, currentPinnedData.length)).join('');
+            } else {
+                pinnedSection.classList.add('hidden');
+                pinnedGrid.innerHTML = '';
+            }
+
+            const toolsGrid = document.getElementById('toolsGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (normalItems.length > 0) {
+                toolsGrid.innerHTML = normalItems.map((item, index) => createCardHtml(item, false, index, normalItems.length)).join('');
+            } else {
+                toolsGrid.innerHTML = '';
+            }
+
+            if (currentPinnedData.length === 0 && normalItems.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            lucide.createIcons();
+        }
+
+        function querySql(sql, params) {
+            const stmt = db.prepare(sql);
+            stmt.bind(params);
+            const list = [];
+            while (stmt.step()) {
+                list.push(stmt.getAsObject());
+            }
+            stmt.free();
+            return list;
+        }
+
+        function getAccessBadgeHtml(accessType) {
+            switch(accessType) {
+                case 'hidden':
+                    return `<span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 rounded text-[10px] font-medium flex items-center gap-0.5"><i data-lucide="eye-off" class="w-3 h-3"></i>隐藏</span>`;
+                case 'captcha':
+                    return `<span class="px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-[10px] font-medium flex items-center gap-0.5"><i data-lucide="key-round" class="w-3 h-3"></i>验证码</span>`;
+                case 'code_per_user':
+                    return `<span class="px-1.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded text-[10px] font-medium flex items-center gap-0.5"><i data-lucide="ticket" class="w-3 h-3"></i>一码一发</span>`;
+                case 'public':
+                default:
+                    return `<span class="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[10px] font-medium flex items-center gap-0.5"><i data-lucide="globe" class="w-3 h-3"></i>公开</span>`;
+            }
+        }
+
+        function createCardHtml(item, isPinned, index, total) {
+            const defaultIcon = resolveToolIcon(item.name, item.url, item.icon);
+            const accessType = item.access_type || 'public';
+            const isLocked = item.is_locked === 1;
+
+            return `
+            <div 
+                 draggable="${isSortMode && isPinned ? 'true' : 'false'}"
+                 ondragstart="handleDragStart(event, ${index})"
+                 ondragover="handleDragOver(event)"
+                 ondrop="handleDrop(event, ${index})"
+                 onclick="${isSortMode ? 'void(0)' : `window.open('${item.url}', '_blank')`}" 
+                 class="group relative bg-white rounded-xl border ${isPinned ? 'border-amber-300 ring-1 ring-amber-300/40' : 'border-slate-200'} p-3.5 hover:shadow-md active:bg-slate-50 transition cursor-pointer flex flex-col justify-between ${isSortMode && isPinned ? 'border-dashed border-indigo-400 bg-indigo-50/20' : ''}">
+                
+                ${isPinned ? `
+                    <div class="absolute -top-2 -right-2 bg-gradient-to-r from-amber-400 to-orange-400 text-white p-1 rounded-full shadow-sm" title="推荐/已收藏工具">
+                        <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    </div>
+                ` : ''}
+
+                <div>
+                    <div class="flex items-start gap-2.5">
+                        <img src="${defaultIcon}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1006/1006771.png'" class="w-9 h-9 rounded-lg object-cover border border-slate-100 p-0.5 shrink-0" alt="icon">
+                        <div class="overflow-hidden flex-1">
+                            <div class="flex items-center justify-between gap-1">
+                                <h3 class="font-bold text-slate-800 group-hover:text-indigo-600 transition truncate text-xs sm:text-sm">
+                                    ${escapeHtml(item.name)}
+                                </h3>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 shrink-0"></i>
+                            </div>
+                            <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span class="inline-block px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px] font-medium">
+                                    ${escapeHtml(item.type || '通用')}
+                                </span>
+                                ${getAccessBadgeHtml(accessType)}
+                                ${isLocked ? `<span class="px-1 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[10px]" title="已锁定（禁止删除）"><i data-lucide="lock" class="w-3 h-3"></i></span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-2 line-clamp-2 h-7 leading-relaxed">
+                        ${escapeHtml(item.desc || '点击卡片直接访问此工具网页')}
+                    </p>
+                </div>
+
+                ${accessType === 'captcha' && item.unified_captcha ? `
+                    <div class="mt-2 p-1.5 bg-amber-50/80 border border-amber-200/60 rounded-lg flex items-center justify-between text-[11px]" onclick="event.stopPropagation()">
+                        <span class="text-amber-800 font-mono truncate">验证码: <strong class="font-bold">${escapeHtml(item.unified_captcha)}</strong></span>
+                        <button onclick="copyToClipboard('${escapeHtml(item.unified_captcha)}', '验证码已复制')" class="px-1.5 py-0.5 bg-amber-200/70 hover:bg-amber-200 text-amber-900 rounded font-medium text-[10px] shrink-0 active:scale-95 transition">一键复制</button>
+                    </div>
+                ` : ''}
+
+                ${isSortMode && isPinned ? `
+                    <div class="mt-2.5 pt-2 border-t border-indigo-100 flex items-center justify-between" onclick="event.stopPropagation()">
+                        <span class="text-[10px] text-indigo-600 font-bold">可拖拽或箭头调整</span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="movePinnedOrder(${index}, -1)" ${index === 0 ? 'disabled class="opacity-30"' : 'class="p-1 text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 rounded"'} title="上移/前移"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i></button>
+                            <button onclick="movePinnedOrder(${index}, 1)" ${index === total - 1 ? 'disabled class="opacity-30"' : 'class="p-1 text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 rounded"'} title="下移/后移"><i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400" onclick="event.stopPropagation()">
+                        <div class="flex items-center gap-1">
+                            <button onclick="copyToClipboard('${escapeHtml(item.url)}', '链接已复制到剪贴板')" title="复制链接" class="p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100 transition">
+                                <i data-lucide="link" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button onclick="togglePin(${item.id}, ${item.is_pinned})" title="${item.is_pinned ? '取消收藏' : '添加到我的收藏'}" class="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded transition ${item.is_pinned ? 'bg-amber-50 text-amber-600 font-bold' : 'hover:bg-slate-100 text-slate-500'}">
+                                <i data-lucide="star" class="w-3 h-3 ${item.is_pinned ? 'fill-amber-400 text-amber-500' : ''}"></i>
+                                ${item.is_pinned ? '已收藏' : '收藏'}
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center gap-1">
+                            ${isAdminUnlocked ? `
+                                <button onclick="openAccessModal(${item.id})" title="设置访问控制与锁定" class="p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100 transition"><i data-lucide="shield" class="w-3.5 h-3.5"></i></button>
+                                <button onclick="editTool(${item.id})" title="修改工具信息" class="p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100 transition"><i data-lucide="file-pen" class="w-3.5 h-3.5"></i></button>
+                                ${!isLocked ? `
+                                    <button onclick="deleteTool(${item.id})" title="删除" class="p-1 text-slate-400 hover:text-red-500 rounded hover:bg-slate-100 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                                ` : `
+                                    <span title="已锁定防止删除" class="p-1 text-slate-300 cursor-not-allowed"><i data-lucide="lock" class="w-3.5 h-3.5"></i></span>
+                                `}
+                            ` : ''}
+                        </div>
+                    </div>
+                `}
+            </div>
+            `;
+        }
+
+        function copyToClipboard(text, successMsg = '已复制到剪贴板') {
+            navigator.clipboard.writeText(text).then(() => {
+                alert(successMsg);
+            }).catch(err => {
+                alert('复制失败，请手动选择复制');
+            });
+        }
+
+        function openAccessModal(id) {
+            const stmt = db.prepare(`SELECT * FROM tools WHERE id = ?`);
+            stmt.bind([id]);
+            if (stmt.step()) {
+                const tool = stmt.getAsObject();
+                document.getElementById('accessToolId').value = tool.id;
+                document.getElementById('accessType').value = tool.access_type || 'public';
+                document.getElementById('unifiedCaptcha').value = tool.unified_captcha || '';
+                document.getElementById('isLocked').checked = tool.is_locked === 1;
+
+                toggleAccessFields();
+                document.getElementById('accessModal').classList.remove('hidden');
+            }
+            stmt.free();
+        }
+
+        function closeAccessModal() {
+            document.getElementById('accessModal').classList.add('hidden');
+        }
+
+        function toggleAccessFields() {
+            const accessType = document.getElementById('accessType').value;
+            const captchaGroup = document.getElementById('captchaGroup');
             
-        document.getElementById('lockConfirmModal').classList.add('active');
-    }
-
-    function confirmToggleLock() {
-        const tool = toolsData.find(t => t.id === currentEditingId);
-        if (tool) {
-            tool.isLocked = !tool.isLocked;
-            showToast(tool.isLocked ? '工具已锁定' : '工具已解除锁定');
-            render();
-            closeModal('lockConfirmModal');
+            if (accessType === 'captcha') {
+                captchaGroup.classList.remove('hidden');
+            } else {
+                captchaGroup.classList.add('hidden');
+            }
         }
-    }
 
-    function deleteTool(id) {
-        const index = toolsData.findIndex(t => t.id === id);
-        if (index !== -1) {
-            toolsData.splice(index, 1);
-            showToast('删除成功');
-            render();
+        function copyUnifiedCaptchaFromModal() {
+            const captcha = document.getElementById('unifiedCaptcha').value.trim();
+            if (!captcha) {
+                alert("请先输入验证码内容");
+                return;
+            }
+            copyToClipboard(captcha, "统一验证码已成功复制！");
         }
-    }
 
-    /* --- 工具函数 --- */
-    function copyText(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            showToast('已复制到剪贴板');
-        }).catch(() => {
-            showToast('复制失败');
-        });
-    }
+        function handleAccessFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('accessToolId').value;
+            const accessType = document.getElementById('accessType').value;
+            const unifiedCaptcha = document.getElementById('unifiedCaptcha').value.trim();
+            const isLocked = document.getElementById('isLocked').checked ? 1 : 0;
 
-    function showToast(msg) {
-        const toast = document.getElementById('toast');
-        toast.innerText = msg;
-        toast.style.display = 'block';
-        setTimeout(() => {
-            toast.style.display = 'none';
-        }, 2000);
-    }
+            const stmt = db.prepare(`UPDATE tools SET access_type=?, unified_captcha=?, is_locked=? WHERE id=?`);
+            stmt.run([accessType, unifiedCaptcha, isLocked, id]);
+            stmt.free();
 
-    // 初始化运行
-    render();
-</script>
+            persistSqlDb();
+            renderTools();
+            closeAccessModal();
+        }
+
+        function handleDragStart(e, index) {
+            dragSrcIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDrop(e, targetIndex) {
+            e.preventDefault();
+            if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+                const movedItem = currentPinnedData.splice(dragSrcIndex, 1)[0];
+                currentPinnedData.splice(targetIndex, 0, movedItem);
+                savePinnedOrder();
+            }
+        }
+
+        function movePinnedOrder(index, direction) {
+            const targetIndex = index + direction;
+            if (targetIndex >= 0 && targetIndex < currentPinnedData.length) {
+                const temp = currentPinnedData[index];
+                currentPinnedData[index] = currentPinnedData[targetIndex];
+                currentPinnedData[targetIndex] = temp;
+                savePinnedOrder();
+            }
+        }
+
+        function savePinnedOrder() {
+            db.run("BEGIN TRANSACTION;");
+            const stmt = db.prepare(`UPDATE tools SET sort_order = ? WHERE id = ?`);
+            currentPinnedData.forEach((item, idx) => {
+                stmt.run([idx + 1, item.id]);
+            });
+            stmt.free();
+            db.run("COMMIT;");
+
+            persistSqlDb();
+            renderTools();
+        }
+
+        function setupDraftListeners() {
+            const fields = ['toolName', 'toolUrl', 'toolType', 'toolIcon', 'toolDesc', 'toolPinned'];
+            fields.forEach(fieldId => {
+                const el = document.getElementById(fieldId);
+                el.addEventListener('input', saveDraft);
+                el.addEventListener('change', saveDraft);
+            });
+        }
+
+        function saveDraft() {
+            if (document.getElementById('toolId').value) return;
+
+            const draft = {
+                name: document.getElementById('toolName').value,
+                url: document.getElementById('toolUrl').value,
+                type: document.getElementById('toolType').value,
+                icon: document.getElementById('toolIcon').value,
+                desc: document.getElementById('toolDesc').value,
+                isPinned: document.getElementById('toolPinned').checked
+            };
+            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        }
+
+        function loadDraftIfExist() {
+            if (document.getElementById('toolId').value) return;
+
+            const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+            const alertBox = document.getElementById('draftAlert');
+            if (saved) {
+                try {
+                    const draft = JSON.parse(saved);
+                    let hasContent = false;
+                    if (draft.name) { document.getElementById('toolName').value = draft.name; hasContent = true; }
+                    if (draft.url) { document.getElementById('toolUrl').value = draft.url; hasContent = true; }
+                    if (draft.type) { document.getElementById('toolType').value = draft.type; hasContent = true; }
+                    if (draft.icon) { document.getElementById('toolIcon').value = draft.icon; hasContent = true; }
+                    if (draft.desc) { document.getElementById('toolDesc').value = draft.desc; hasContent = true; }
+                    if (draft.isPinned !== undefined) document.getElementById('toolPinned').checked = draft.isPinned;
+
+                    if (hasContent) alertBox.classList.remove('hidden');
+                    else alertBox.classList.add('hidden');
+                } catch (e) {}
+            } else {
+                alertBox.classList.add('hidden');
+            }
+        }
+
+        function clearDraft() {
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+            document.getElementById('draftAlert').classList.add('hidden');
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('toolId').value;
+            const name = document.getElementById('toolName').value.trim();
+            const url = document.getElementById('toolUrl').value.trim();
+            const type = document.getElementById('toolType').value.trim() || '通用';
+            const rawIcon = document.getElementById('toolIcon').value.trim();
+            const desc = document.getElementById('toolDesc').value.trim();
+            const isPinned = document.getElementById('toolPinned').checked ? 1 : 0;
+
+            const finalIcon = resolveToolIcon(name, url, rawIcon);
+
+            if (id) {
+                const stmt = db.prepare(`UPDATE tools SET name=?, url=?, type=?, icon=?, desc=?, is_pinned=? WHERE id=?`);
+                stmt.run([name, url, type, finalIcon, desc, isPinned, id]);
+                stmt.free();
+            } else {
+                const stmt = db.prepare(`INSERT INTO tools (name, url, type, icon, desc, is_pinned, sort_order, created_at, access_type, unified_captcha, is_locked) VALUES (?, ?, ?, ?, ?, ?, 9999, datetime('now', 'localtime'), 'public', '', 0)`);
+                stmt.run([name, url, type, finalIcon, desc, isPinned]);
+                stmt.free();
+                clearDraft();
+            }
+
+            persistSqlDb();
+            updateCategories();
+            renderTools();
+            closeModal();
+        }
+
+        // 智能同步功能：导出包含增删改后续最新数据的 tools_init.sql 脚本
+        function exportSqlDumpScript() {
+            const allTools = querySql(`SELECT * FROM tools ORDER BY id ASC`, []);
+            
+            let sqlContent = `-- 初始化工具箱表结构\n`;
+            sqlContent += `CREATE TABLE IF NOT EXISTS tools (\n`;
+            sqlContent += `    id INTEGER PRIMARY KEY AUTOINCREMENT,\n`;
+            sqlContent += `    name TEXT NOT NULL,\n`;
+            sqlContent += `    url TEXT NOT NULL,\n`;
+            sqlContent += `    type TEXT DEFAULT '通用',\n`;
+            sqlContent += `    icon TEXT,\n`;
+            sqlContent += `    desc TEXT,\n`;
+            sqlContent += `    is_pinned INTEGER DEFAULT 0,\n`;
+            sqlContent += `    sort_order INTEGER DEFAULT 0,\n`;
+            sqlContent += `    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,\n`;
+            sqlContent += `    access_type VARCHAR(20) NOT NULL DEFAULT 'public',\n`;
+            sqlContent += `    unified_captcha VARCHAR(50) DEFAULT '',\n`;
+            sqlContent += `    is_locked TINYINT(1) NOT NULL DEFAULT 0\n`;
+            sqlContent += `);\n\n`;
+
+            sqlContent += `-- 清空旧数据\n`;
+            sqlContent += `DELETE FROM tools;\n\n`;
+            
+            if (allTools.length > 0) {
+                sqlContent += `INSERT INTO tools (id, name, url, type, icon, desc, is_pinned, sort_order, created_at, access_type, unified_captcha, is_locked) VALUES\n`;
+                const values = allTools.map(t => {
+                    const esc = (str) => (str || '').replace(/'/g, "''");
+                    return `(${t.id}, '${esc(t.name)}', '${esc(t.url)}', '${esc(t.type)}', '${esc(t.icon)}', '${esc(t.desc)}', ${t.is_pinned}, ${t.sort_order || t.id}, '${esc(t.created_at)}', '${esc(t.access_type || 'public')}', '${esc(t.unified_captcha || '')}', ${t.is_locked || 0})`;
+                }).join(',\n');
+                sqlContent += values + `;\n`;
+            }
+
+            const blob = new Blob([sqlContent], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `tools_init.sql`;
+            link.click();
+            alert("已成功导出最新 `tools_init.sql` 脚本！");
+        }
+
+        function deleteTool(id) {
+            const stmt = db.prepare(`SELECT is_locked FROM tools WHERE id = ?`);
+            stmt.bind([id]);
+            if (stmt.step()) {
+                const tool = stmt.getAsObject();
+                if (tool.is_locked === 1) {
+                    alert('该工具已设定为“锁定”状态，禁止删除！');
+                    stmt.free();
+                    return;
+                }
+            }
+            stmt.free();
+
+            if (confirm(`确认删除该工具卡片吗？`)) {
+                const delStmt = db.prepare(`DELETE FROM tools WHERE id = ?`);
+                delStmt.run([id]);
+                delStmt.free();
+
+                persistSqlDb();
+                updateCategories();
+                renderTools();
+            }
+        }
+
+        function togglePin(id, currentPin) {
+            const newPin = currentPin ? 0 : 1;
+            const stmt = db.prepare(`UPDATE tools SET is_pinned = ? WHERE id = ?`);
+            stmt.run([newPin, id]);
+            stmt.free();
+
+            persistSqlDb();
+            renderTools();
+        }
+
+        function editTool(id) {
+            const stmt = db.prepare(`SELECT * FROM tools WHERE id = ?`);
+            stmt.bind([id]);
+            
+            if (stmt.step()) {
+                const tool = stmt.getAsObject();
+                document.getElementById('modalTitle').innerText = `修改工具信息`;
+                document.getElementById('toolId').value = tool.id;
+                document.getElementById('toolName').value = tool.name;
+                document.getElementById('toolUrl').value = tool.url;
+                document.getElementById('toolType').value = tool.type || '';
+                document.getElementById('toolIcon').value = tool.icon || '';
+                document.getElementById('toolDesc').value = tool.desc || '';
+                document.getElementById('toolPinned').checked = tool.is_pinned === 1;
+
+                document.getElementById('draftAlert').classList.add('hidden');
+                document.getElementById('toolModal').classList.remove('hidden');
+            }
+            stmt.free();
+        }
+
+        function updateCategories() {
+            if (!db) return;
+            const select = document.getElementById('typeFilter');
+            const datalist = document.getElementById('categoryDatalist');
+            const current = select.value;
+
+            const res = db.exec(`SELECT DISTINCT type FROM tools WHERE type IS NOT NULL AND type != ''`);
+            let types = [];
+            if (res.length > 0 && res[0].values) {
+                types = res[0].values.map(v => v[0]);
+            }
+
+            select.innerHTML = `<option value="ALL">所有分类</option>` + 
+                types.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+            select.value = current;
+
+            datalist.innerHTML = types.map(t => `<option value="${escapeHtml(t)}">`).join('');
+        }
+
+        function exportSqlDb() {
+            const data = db.export();
+            const blob = new Blob([data], { type: 'application/x-sqlite3' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `toolbox_database_${Date.now()}.sqlite`;
+            link.click();
+        }
+
+        function importFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            if (file.name.endsWith('.sql')) {
+                reader.onload = function(e) {
+                    try {
+                        db.run(e.target.result);
+                        ensureColumnsExist();
+                        persistSqlDb();
+                        updateCategories();
+                        renderTools();
+                        alert('SQL 脚本数据导入成功！');
+                    } catch (err) {
+                        alert('SQL 脚本解析执行失败。');
+                    }
+                };
+                reader.readAsText(file);
+            } else if (file.name.endsWith('.json')) {
+                reader.onload = function(e) {
+                    try {
+                        const jsonArr = JSON.parse(e.target.result);
+                        if (Array.isArray(jsonArr)) {
+                            db.run("BEGIN TRANSACTION;");
+                            const stmt = db.prepare(`INSERT INTO tools (name, url, type, icon, desc, is_pinned, sort_order, created_at, access_type, unified_captcha, is_locked) VALUES (?, ?, ?, ?, ?, ?, 9999, datetime('now', 'localtime'), 'public', '', 0)`);
+                            jsonArr.forEach(item => {
+                                stmt.run([item.name, item.url, item.type || '通用', item.icon || '', item.desc || '', item.isPinned || item.is_pinned ? 1 : 0]);
+                            });
+                            stmt.free();
+                            db.run("COMMIT;");
+
+                            persistSqlDb();
+                            updateCategories();
+                            renderTools();
+                            alert('JSON 数据导入成功！');
+                        }
+                    } catch (err) {
+                        alert('JSON 格式有误。');
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                reader.onload = function(e) {
+                    try {
+                        const uInt8Array = new Uint8Array(e.target.result);
+                        db = new SQL.Database(uInt8Array);
+                        ensureColumnsExist();
+                        persistSqlDb();
+                        updateCategories();
+                        renderTools();
+                        alert('SQLite 数据库文件导入成功！');
+                    } catch (err) {
+                        alert('SQLite 文件读取错误。');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function openModal() {
+            document.getElementById('modalTitle').innerText = '添加新工具';
+            document.getElementById('toolForm').reset();
+            document.getElementById('toolId').value = '';
+            document.getElementById('toolModal').classList.remove('hidden');
+            loadDraftIfExist();
+        }
+
+        function closeModal() {
+            document.getElementById('toolModal').classList.add('hidden');
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        document.addEventListener('DOMContentLoaded', initSqlDb);
+    </script>
 </body>
 </html>
