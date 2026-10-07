@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工具卡片管理</title>
+    <!-- FontAwesome 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3b8a66;
+            --primary-hover: #2d6b4f;
+            --bg-color: #f4f6f8;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-sub: #888888;
+            --border-color: #eef0f2;
+            --danger-color: #e74c3c;
+            --warning-bg: #fffbe6;
+            --warning-border: #ffe58f;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            padding: 20px;
+            color: var(--text-main);
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 15px 0 10px;
+            color: #555;
+        }
+
+        /* --- 工具卡片样式 --- */
+        .tool-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+
+        .card-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            width: 36px;
+            height: 36px;
+            background: #eaf5f0;
+            color: var(--primary-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .card-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111;
+        }
+
+        .card-filename {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-top: 2px;
+        }
+
+        .card-stats {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .card-stats span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .card-time {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 标签 Badge */
+        .badge-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .badge.badge-primary {
+            background: #eaf5f0;
+            color: var(--primary-color);
+        }
+
+        .badge.badge-lock {
+            background: #fff0f0;
+            color: var(--danger-color);
+        }
+
+        /* 操作按钮网格 */
+        .card-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn {
+            border: none;
+            outline: none;
+            background: #f7f9fa;
+            padding: 8px 0;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #444;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .btn:hover {
+            background: #edf0f2;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-disabled {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            background: #eee !important;
+            color: #aaa !important;
+        }
+
+        /* --- 弹窗 Modal 样式 --- */
+        .modal-mask {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-mask.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-container {
+            background: #fff;
+            width: 100%;
+            max-width: 500px;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            padding: 20px;
+            max-height: 85vh;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.25s ease;
+        }
+
+        .modal-mask.active .modal-container {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .modal-close {
+            font-size: 20px;
+            color: #999;
+            cursor: pointer;
+        }
+
+        /* Modal 内的工具信息 */
+        .modal-tool-info {
+            margin-bottom: 15px;
+        }
+        .modal-tool-name { font-size: 15px; font-weight: 600; }
+        .modal-tool-file { font-size: 12px; color: #888; }
+
+        /* 选项卡 Tab */
+        .tab-nav {
+            display: flex;
+            background: #f2f4f5;
+            border-radius: 20px;
+            padding: 3px;
+            margin-bottom: 15px;
+        }
+
+        .tab-item {
+            flex: 1;
+            text-align: center;
+            padding: 6px 0;
+            font-size: 13px;
+            border-radius: 18px;
+            cursor: pointer;
+            color: #666;
+            position: relative;
+        }
+
+        .tab-item.active {
+            background: #fff;
+            color: #111;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .tab-item .vip-tag {
+            font-size: 9px;
+            background: #333;
+            color: #fff;
+            padding: 1px 4px;
+            border-radius: 4px;
+            margin-left: 2px;
+        }
+
+        /* 访问方式网格 */
+        .access-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .access-card {
+            border: 1.5px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .access-card.active {
+            border-color: var(--primary-color);
+            background: #eaf5f0;
+        }
+
+        .access-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .access-card-desc {
+            font-size: 11px;
+            color: #888;
+        }
+
+        /* 统一验证码输入区 */
+        .captcha-input-group {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-text {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            outline: none;
+            font-size: 13px;
+        }
+
+        .input-text:focus {
+            border-color: var(--primary-color);
+        }
+
+        .modal-tip {
+            font-size: 12px;
+            color: #e6a23c;
+            background: #fdf6ec;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .modal-footer-btn {
+            width: 100%;
+            padding: 12px 0;
+            background: #2c323f;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* 提示 Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            z-index: 2000;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="section-title">已解锁工具</div>
+    
+    <!-- 已解锁卡片列表 -->
+    <div id="unlocked-list"></div>
+
+    <div class="section-title">未解锁工具</div>
+    
+    <!-- 未解锁卡片列表 -->
+    <div id="locked-list"></div>
+</div>
+
+<!-- 访问权限配置 模态弹窗 -->
+<div class="modal-mask" id="accessModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <span>访问权限</span>
+            <span class="modal-close" onclick="closeModal('accessModal')">&times;</span>
+        </div>
+        
+        <div class="modal-tool-info">
+            <div class="modal-tool-name" id="modalToolTitle">多语言翻译</div>
+            <div class="modal-tool-file" id="modalToolFile">LogicTrans9.html</div>
+        </div>
+
+        <!-- Tab 切换 -->
+        <div class="tab-nav">
+            <div class="tab-item active" onclick="switchTab('way')">访问方式</div>
+            <div class="tab-item" onclick="switchTab('code')">一码一发</div>
+            <div class="tab-item" onclick="switchTab('temp')">临时链接 <span class="vip-tag">VIP</span></div>
+        </div>
+
+        <!-- Tab 1: 访问方式 -->
+        <div id="tab-way" class="tab-content">
+            <p style="font-size:12px; color:#666; margin-bottom:10px;">选择一种访问方式，保存后生效：</p>
+            <div class="access-grid">
+                <div class="access-card" id="type-public" onclick="selectAccessType('public')">
+                    <div class="access-card-title">公开</div>
+                    <div class="access-card-desc">所有人可访问</div>
+                </div>
+                <div class="access-card" id="type-hidden" onclick="selectAccessType('hidden')">
+                    <div class="access-card-title">隐藏</div>
+                    <div class="access-card-desc">不在主页展示</div>
+                </div>
+                <div class="access-card" id="type-captcha" onclick="selectAccessType('captcha')">
+                    <div class="access-card-title">验证码</div>
+                    <div class="access-card-desc">统一验证码访问</div>
+                </div>
+                <div class="access-card" id="type-code_per_user" onclick="selectAccessType('code_per_user')">
+                    <div class="access-card-title">一码一发</div>
+                    <div class="access-card-desc">每人独立访问码</div>
+                </div>
+            </div>
+
+            <!-- 验证码类型时的额外编辑组件 -->
+            <div id="captcha-extra-panel" style="display: none; margin-bottom: 15px;">
+                <label style="font-size: 12px; color: #555;">设置统一验证码：</label>
+                <div class="captcha-input-group">
+                    <input type="text" id="inputCaptcha" class="input-text" placeholder="输入自定义验证码">
+                    <button class="btn" onclick="copyCaptcha()"><i class="fa-regular fa-copy"></i> 复制</button>
+                </div>
+            </div>
+
+            <button class="modal-footer-btn" onclick="saveAccessSettings()">保存访问方式</button>
+        </div>
+
+        <!-- Tab 2: 一码一发说明/配置 -->
+        <div id="tab-code" class="tab-content" style="display: none;">
+            <div id="code-not-available-tip" class="modal-tip" style="display:none;">
+                <i class="fa-solid fa-circle-exclamation"></i> 当前访问方式为“公开”或“隐藏”，一码一发设置不生效。
+            </div>
+            <div id="code-content">
+                <p style="font-size:12px; color:#666; margin-bottom:10px;">批量生成独立访问码：</p>
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <input type="number" class="input-text" value="10" placeholder="生成数量">
+                    <button class="btn btn-primary" style="padding:0 15px;">生成访问码</button>
+                </div>
+                <div style="font-size:12px; color:#888;">已有访问码: 10 个 (已启用 10 / 已失效 0)</div>
+            </div>
+        </div>
+
+        <!-- Tab 3: 临时链接说明 -->
+        <div id="tab-temp" class="tab-content" style="display: none;">
+            <p style="font-size:12px; color:#666; margin-bottom:10px;">免验证码预览链接；正式交付请用验证码或一码一发。</p>
+            <button class="btn btn-primary" style="width:100%;">创建临时链接</button>
+        </div>
+    </div>
+</div>
+
+<!-- 锁定确认二次弹窗 -->
+<div class="modal-mask" id="lockConfirmModal">
+    <div class="modal-container" style="border-radius:16px; padding:24px; text-align:center;">
+        <h3 id="lockModalTitle" style="margin-bottom:12px;">锁定文件</h3>
+        <p id="lockModalDesc" style="font-size:13px; color:#666; margin-bottom:20px; line-height:1.5;">
+            锁定后「<span id="lockToolName"></span>」将无法删除，可避免误删影响已付费客户访问。是否锁定？
+        </p>
+        <div style="display:flex; gap:10px;">
+            <button class="btn" style="flex:1; padding:10px;" onclick="closeModal('lockConfirmModal')">取消</button>
+            <button class="btn btn-primary" style="flex:1; padding:10px;" onclick="confirmToggleLock()">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast 提示 -->
+<div class="toast" id="toast"></div>
+
+<script>
+    // 模拟数据源
+    const toolsData = [
+        {
+            id: 1,
+            title: "多语言翻译",
+            fileName: "LogicTrans9.html",
+            isUnlocked: true,
+            views: 82,
+            likes: 0,
+            stars: 0,
+            releaseDate: "2026-03-13 00:52:32",
+            accessType: "hidden", // public, hidden, captcha, code_per_user
+            captchaCode: "",
+            isLocked: false
+        },
+        {
+            id: 2,
+            title: "红包抽奖工具",
+            fileName: "red-packets.html",
+            isUnlocked: true,
+            views: 400,
+            likes: 12,
+            stars: 5,
+            releaseDate: "2026-03-12 23:52:19",
+            accessType: "code_per_user",
+            captchaCode: "",
+            isLocked: true // 锁定防误删
+        },
+        {
+            id: 3,
+            title: "智能文案生成器",
+            fileName: "ai-writer.html",
+            isUnlocked: false,
+            views: 120,
+            likes: 3,
+            stars: 1,
+            releaseDate: "2026-03-10 12:00:00",
+            accessType: "public",
+            captchaCode: "",
+            isLocked: false
+        }
+    ];
+
+    let currentEditingId = null;
+    let tempSelectedType = "public";
+
+    // 初始化渲染
+    function render() {
+        const unlockedContainer = document.getElementById("unlocked-list");
+        const lockedContainer = document.getElementById("locked-list");
+        
+        unlockedContainer.innerHTML = "";
+        lockedContainer.innerHTML = "";
+
+        toolsData.forEach(tool => {
+            const cardHTML = createCardHTML(tool);
+            if (tool.isUnlocked) {
+                unlockedContainer.innerHTML += cardHTML;
+            } else {
+                lockedContainer.innerHTML += cardHTML;
+            }
+        });
+    }
+
+    // 生成卡片 HTML
+    function createCardHTML(tool) {
+        // 映射访问权限显示文案
+        const accessTextMap = {
+            'public': '公开',
+            'hidden': '隐藏',
+            'captcha': '验证码',
+            'code_per_user': '一码一发'
+        };
+
+        if (!tool.isUnlocked) {
+            // 未解锁卡片：新增链接（复制）功能Icon
+            return `
+            <div class="tool-card">
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <div class="card-icon"><i class="fa-solid fa-lock"></i></div>
+                        <div class="card-info">
+                            <div class="card-title">${tool.title}</div>
+                            <div class="card-filename">${tool.fileName}</div>
+                        </div>
+                    </div>
+                    <div class="card-stats">
+                        <span><i class="fa-regular fa-eye"></i> ${tool.views}</span>
+                    </div>
+                </div>
+                <div class="card-time">发布 ${tool.releaseDate}</div>
+                <div class="card-actions">
+                    <button class="btn btn-primary" onclick="showToast('请先解锁工具')"><i class="fa-solid fa-share-nodes"></i> 分享</button>
+                    <button class="btn" onclick="copyText('https://dkfile.net/tool/${tool.id}')"><i class="fa-regular fa-copy"></i> 链接</button>
+                    <button class="btn" onclick="showToast('发起解锁申请')"><i class="fa-solid fa-key"></i> 解锁</button>
+                </div>
+            </div>`;
+        }
+
+        // 已解锁卡片：支持设置访问权限、锁定/解锁、删除
+        return `
+        <div class="tool-card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <div class="card-icon"><i class="fa-regular fa-file-code"></i></div>
+                    <div class="card-info">
+                        <div class="card-title">${tool.title}</div>
+                        <div class="card-filename">${tool.fileName}</div>
+                    </div>
+                </div>
+                <div class="card-stats">
+                    <span><i class="fa-regular fa-eye"></i> ${tool.views}</span>
+                    <span><i class="fa-regular fa-heart"></i> ${tool.likes}</span>
+                    <span><i class="fa-regular fa-star"></i> ${tool.stars}</span>
+                </div>
+            </div>
+            
+            <div class="card-time">
+                <span>发布 ${tool.releaseDate}</span>
+                <div class="badge-group">
+                    ${tool.isLocked ? '<span class="badge badge-lock"><i class="fa-solid fa-lock"></i> 已锁定</span>' : ''}
+                    <span class="badge badge-primary">${accessTextMap[tool.accessType]}</span>
+                </div>
+            </div>
+
+            <div class="card-actions">
+                <button class="btn btn-primary" onclick="showToast('分享成功')">分享</button>
+                <button class="btn" onclick="copyText('https://dkfile.net/tool/${tool.id}')">链接</button>
+                <button class="btn" onclick="openAccessModal(${tool.id})">访问权限</button>
+                <button class="btn" onclick="showToast('添加备注')">添加备注</button>
+                <button class="btn" onclick="openLockConfirm(${tool.id})">${tool.isLocked ? '解锁' : '锁定'}</button>
+                <button class="btn ${tool.isLocked ? 'btn-disabled' : ''}" 
+                        onclick="${tool.isLocked ? "showToast('文件已锁定，不允许删除')" : `deleteTool(${tool.id})`}">
+                    删除
+                </button>
+            </div>
+        </div>`;
+    }
+
+    /* --- Modal 交互逻辑 --- */
+    function openAccessModal(id) {
+        currentEditingId = id;
+        const tool = toolsData.find(t => t.id === id);
+        
+        document.getElementById('modalToolTitle').innerText = tool.title;
+        document.getElementById('modalToolFile').innerText = tool.fileName;
+        document.getElementById('inputCaptcha').value = tool.captchaCode || '';
+        
+        tempSelectedType = tool.accessType;
+        selectAccessType(tempSelectedType);
+
+        switchTab('way');
+        document.getElementById('accessModal').classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    function switchTab(tabName) {
+        const tabs = document.querySelectorAll('.tab-item');
+        tabs.forEach(t => t.classList.remove('active'));
+
+        document.getElementById('tab-way').style.display = 'none';
+        document.getElementById('tab-code').style.display = 'none';
+        document.getElementById('tab-temp').style.display = 'none';
+
+        if(tabName === 'way') {
+            tabs[0].classList.add('active');
+            document.getElementById('tab-way').style.display = 'block';
+        } else if(tabName === 'code') {
+            tabs[1].classList.add('active');
+            document.getElementById('tab-code').style.display = 'block';
+            
+            // 需求5：访问控制为“隐藏”、“公开”时，“一码一发”设置不生效
+            const tip = document.getElementById('code-not-available-tip');
+            const content = document.getElementById('code-content');
+            if (tempSelectedType === 'public' || tempSelectedType === 'hidden') {
+                tip.style.display = 'block';
+                content.style.opacity = '0.4';
+                content.style.pointerEvents = 'none';
+            } else {
+                tip.style.display = 'none';
+                content.style.opacity = '1';
+                content.style.pointerEvents = 'auto';
+            }
+        } else if(tabName === 'temp') {
+            tabs[2].classList.add('active');
+            document.getElementById('tab-temp').style.display = 'block';
+        }
+    }
+
+    function selectAccessType(type) {
+        tempSelectedType = type;
+        const types = ['public', 'hidden', 'captcha', 'code_per_user'];
+        types.forEach(t => {
+            const el = document.getElementById(`type-${t}`);
+            if(el) el.classList.remove('active');
+        });
+
+        const activeEl = document.getElementById(`type-${type}`);
+        if(activeEl) activeEl.classList.add('active');
+
+        // 需求6：若选择验证码方式，支持显示与编辑“统一验证码”
+        const captchaPanel = document.getElementById('captcha-extra-panel');
+        if (type === 'captcha') {
+            captchaPanel.style.display = 'block';
+        } else {
+            captchaPanel.style.display = 'none';
+        }
+    }
+
+    function saveAccessSettings() {
+        const tool = toolsData.find(t => t.id === currentEditingId);
+        if (tool) {
+            tool.accessType = tempSelectedType;
+            if (tempSelectedType === 'captcha') {
+                tool.captchaCode = document.getElementById('inputCaptcha').value.trim();
+            }
+            // 根据需求：如果设置为验证码/一码一发，自动推荐锁定避免误删（或直接保存状态）
+            showToast('访问设置更新成功');
+            render();
+            closeModal('accessModal');
+        }
+    }
+
+    function copyCaptcha() {
+        const val = document.getElementById('inputCaptcha').value;
+        if (!val) {
+            showToast('请先输入验证码');
+            return;
+        }
+        copyText(val);
+    }
+
+    /* --- 锁定与删除逻辑 --- */
+    function openLockConfirm(id) {
+        currentEditingId = id;
+        const tool = toolsData.find(t => t.id === id);
+        
+        document.getElementById('lockModalTitle').innerText = tool.isLocked ? "解锁文件" : "锁定文件";
+        document.getElementById('lockToolName').innerText = tool.title;
+        document.getElementById('lockModalDesc').innerHTML = tool.isLocked 
+            ? `取消锁定后「${tool.title}」将恢复可删除状态。是否确认解锁？` 
+            : `锁定后「${tool.title}」将无法删除，可避免误删影响已付费客户访问。是否锁定？`;
+            
+        document.getElementById('lockConfirmModal').classList.add('active');
+    }
+
+    function confirmToggleLock() {
+        const tool = toolsData.find(t => t.id === currentEditingId);
+        if (tool) {
+            tool.isLocked = !tool.isLocked;
+            showToast(tool.isLocked ? '工具已锁定' : '工具已解除锁定');
+            render();
+            closeModal('lockConfirmModal');
+        }
+    }
+
+    function deleteTool(id) {
+        const index = toolsData.findIndex(t => t.id === id);
+        if (index !== -1) {
+            toolsData.splice(index, 1);
+            showToast('删除成功');
+            render();
+        }
+    }
+
+    /* --- 工具函数 --- */
+    function copyText(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('已复制到剪贴板');
+        }).catch(() => {
+            showToast('复制失败');
+        });
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 2000);
+    }
+
+    // 初始化运行
+    render();
+</script>
+</body>
+</html>
