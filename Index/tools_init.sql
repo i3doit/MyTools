@@ -14,6 +14,16 @@ CREATE TABLE IF NOT EXISTS tools (
 -- 清空旧数据（如需重置）
 -- DELETE FROM tools;
 
+ALTER TABLE `tools` 
+-- 1. 访问控制方式：public(公开), hidden(隐藏), captcha(验证码), code_per_user(一码一发)
+ADD COLUMN `access_type` VARCHAR(20) NOT NULL DEFAULT 'public' COMMENT '访问控制方式: public|hidden|captcha|code_per_user',
+
+-- 2. 统一验证码内容 (当 access_type = 'captcha' 时生效)
+ADD COLUMN `unified_captcha` VARCHAR(50) DEFAULT '' COMMENT '自定义统一验证码',
+
+-- 3. 锁定状态：0-未锁定(允许删除), 1-锁定(禁止删除)
+ADD COLUMN `is_locked` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '锁定状态: 0未锁定 1已锁定';
+
 -- 插入默认 29 条工具初始化数据
 INSERT INTO tools (id, name, url, type, icon, desc, is_pinned, sort_order, created_at) VALUES 
 (1, 'SQL 全能工具箱首页', 'https://i3doit.github.io/MyTools/Index/index-sql7.html', '导航门户', 'https://cdn-icons-png.flaticon.com/512/1006/1006771.png', '本地 SQLite 驱动的通用工具导航集中页', 1, 1, '2026-10-07 10:00:00'),
