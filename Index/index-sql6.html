@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SQL 全能工具箱</title>
+    <meta name="description" content="基于本地 SQLite 驱动的轻量级工具箱导航，支持纯 SQL 增删改查。">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide 图标库 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- sql.js (WebAssembly SQLite 引擎) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <!-- 顶部导航栏 -->
+    <header id="headerBar" onclick="handleAdminUnlockClicks()" class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 select-none cursor-pointer py-2.5 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            
+            <!-- 标志与标题行 -->
+            <div class="flex items-center justify-between pointer-events-none">
+                <div class="flex items-center space-x-2.5">
+                    <div class="p-1.5 bg-indigo-600 rounded-lg text-white shadow-sm shrink-0">
+                        <i data-lucide="database" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <h1 class="text-base sm:text-lg font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent leading-tight">
+                                SQL 全能工具箱
+                            </h1>
+                            <span id="adminBadge" class="hidden px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded border border-red-200 whitespace-nowrap">
+                                已解锁管理
+                            </span>
+                        </div>
+                        <span id="dbStatus" class="text-[10px] text-amber-500 font-medium block">SQLite 初始化中...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 操作按钮组 -->
+            <div class="flex items-center justify-end flex-wrap gap-1.5 sm:gap-2" onclick="event.stopPropagation()">
+                <!-- 管理员模式下展示“添加工具” -->
+                <button id="addToolBtn" onclick="openModal()" class="hidden items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-lg text-xs font-medium transition shadow-sm whitespace-nowrap">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> 添加工具
+                </button>
+                
+                <!-- 导出带全量数据的 HTML 源码 -->
+                <button id="exportHtmlBtn" onclick="exportSelfContainedHtml()" title="导出完整源码部署到 GitHub" class="hidden p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition shrink-0">
+                    <i data-lucide="file-code" class="w-4 h-4"></i>
+                </button>
+
+                <!-- 导出 SQLite 数据库 -->
+                <button onclick="exportSqlDb()" title="导出 SQLite 数据库文件 (.sqlite)" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition shrink-0">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                </button>
+                
+                <!-- 导入文件 -->
+                <label id="importBtn" title="导入 SQLite / JSON 文件" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer shrink-0">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    <input type="file" id="importFileInput" accept=".sqlite,.db,.json,application/x-sqlite3,application/vnd.sqlite3,application/octet-stream,*/*" class="hidden" onchange="importFile(event)">
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-6">
+        
+        <!-- 搜索与筛选栏 -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-2 text-xs">
+                <span class="text-slate-500 font-medium">托管工具总数：</span>
+                <span id="toolCountBadge" class="px-2 py-0.5 bg-indigo-100 text-indigo-700 font-bold rounded-full">0</span>
+            </div>
+            
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <div class="relative flex-1 sm:w-60">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="renderTools()" placeholder="搜索工具名称或描述..." class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <select id="typeFilter" onchange="renderTools()" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="ALL">所有分类</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 区域 1：⭐ 推荐 / 收藏工具 -->
+        <section id="pinnedSection" class="space-y-3 hidden">
+            <div class="flex items-center justify-between border-b border-amber-200/60 pb-2">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-amber-500"><i data-lucide="star" class="w-4 h-4 fill-amber-400"></i></span>
+                    <h2 class="text-xs sm:text-sm font-bold text-slate-800">我的收藏 / 推荐工具</h2>
+                    <span id="pinnedCountBadge" class="text-[10px] px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded-full">0</span>
+                </div>
+                
+                <!-- 排序控制按钮 -->
+                <button id="toggleSortBtn" onclick="toggleSortMode()" class="flex items-center gap-1 text-[11px] text-amber-700 hover:text-amber-900 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md active:scale-95 transition">
+                    <i data-lucide="arrow-up-down" class="w-3 h-3"></i> <span id="sortBtnText">自定义排序</span>
+                </button>
+            </div>
+            <div id="pinnedGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5"></div>
+        </section>
+
+        <!-- 区域 2：所有工具 -->
+        <section class="space-y-3">
+            <div class="flex items-center gap-1.5 border-b border-slate-200 pb-2">
+                <span class="text-indigo-600"><i data-lucide="layout-grid" class="w-4 h-4"></i></span>
+                <h2 class="text-xs sm:text-sm font-bold text-slate-800">所有工具</h2>
+            </div>
+            <div id="toolsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5"></div>
+        </section>
+
+        <!-- 无数据提示 -->
+        <div id="emptyState" class="hidden text-center py-12">
+            <i data-lucide="folder-open" class="w-12 h-12 mx-auto text-slate-300 mb-2"></i>
+            <p class="text-slate-500 font-medium text-xs">没有找到相关工具</p>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer onclick="handleAdminUnlockClicks()" class="bg-white border-t border-slate-200 mt-auto py-4 text-center text-xs text-slate-500 select-none cursor-pointer">
+        <p>
+            © <span id="copyrightYear">2026</span> SQL 全能工具箱 | 
+            技术支持：<a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="text-indigo-600 hover:underline font-medium">艾兜兜儿</a>
+        </p>
+    </footer>
+
+    <!-- 新增 / 编辑 模态框 -->
+    <div id="toolModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
+            <div class="flex justify-between items-center px-5 py-3.5 border-b border-slate-100 bg-slate-50">
+                <h3 id="modalTitle" class="font-bold text-xs sm:text-sm text-slate-800">添加新工具</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <form id="toolForm" onsubmit="handleFormSubmit(event)" class="p-5 space-y-3 text-xs">
+                <input type="hidden" id="toolId">
+                
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">工具名称 <span class="text-red-500">*</span></label>
+                    <input type="text" id="toolName" required placeholder="例如：思维导图工具" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">工具地址 (URL) <span class="text-red-500">*</span></label>
+                    <input type="url" id="toolUrl" required placeholder="https://..." class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">工具类型</label>
+                        <!-- 优化点：支持下拉选择现有类型或输入新类型 -->
+                        <input type="text" id="toolType" list="categoryDatalist" placeholder="选择或输入新类型" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <datalist id="categoryDatalist"></datalist>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">图标 URL <span class="text-slate-400 font-normal">(选填)</span></label>
+                        <input type="url" id="toolIcon" placeholder="留空自动识别" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">工具描述</label>
+                    <textarea id="toolDesc" rows="3" placeholder="简要描述工具的功能..." class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"></textarea>
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                    <input type="checkbox" id="toolPinned" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                    <label for="toolPinned" class="font-medium text-slate-700">设为推荐/收藏工具 (优先排序展示)</label>
+                </div>
+
+                <div id="draftAlert" class="hidden p-2 bg-amber-50 border border-amber-200 text-amber-700 rounded text-[11px]">
+                    已自动加载上次未保存的草稿内容。
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border border-slate-200 rounded-lg font-medium text-slate-600 hover:bg-slate-50">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium">保存保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 脚本逻辑 -->
+    <script>
+        let db = null;
+        const DB_STORAGE_KEY = 'SQLITE_TOOLBOX_BYTES_V3';
+        const DRAFT_STORAGE_KEY = 'TOOLBOX_FORM_DRAFT';
+        
+        // 智能识别并去重后的 29 条默认工具数据
+        let seeded_tools = [
+            { id: 1, name: "SQL 全能工具箱首页", url: "https://i3doit.github.io/MyTools/Index/index-sql5.html", type: "导航门户", icon: "https://cdn-icons-png.flaticon.com/512/1006/1006771.png", desc: "本地 SQLite 驱动的通用工具导航集中页", is_pinned: 1, sort_order: 1, created_at: "2026-10-07 10:00:00" },
+            { id: 2, name: "PureDrop 工作室 (VIP)", url: "https://i3doit.github.io/MyTools/PureDrop/PureDropStudioPerVip.html", type: "高效办公", icon: "https://cdn-icons-png.flaticon.com/512/1043/1043444.png", desc: "PureDrop 沉浸式个人工作空间与效率面板", is_pinned: 1, sort_order: 2, created_at: "2026-10-07 10:05:00" },
+            { id: 3, name: "二维码生成器 Pro", url: "https://i3doit.github.io/MyTools/QRCode/QRCodePro1.html", type: "实用工具", icon: "https://cdn-icons-png.flaticon.com/512/714/714390.png", desc: "专业级高清二维码个性化生成与定制工具", is_pinned: 1, sort_order: 3, created_at: "2026-10-07 10:10:00" },
+            { id: 4, name: "AI 英语听力健身房", url: "https://i3doit.github.io/MyTools/AIEnglishLearning/EngAudioGym3.html", type: "学习教育", icon: "https://cdn-icons-png.flaticon.com/512/3048/3048122.png", desc: "智能 AI 驱动的英语听力与口语强化训练系统", is_pinned: 0, sort_order: 4, created_at: "2026-10-07 10:15:00" },
+            { id: 5, name: "DIY 表情包制作 Pro", url: "https://i3doit.github.io/MyTools/DiyEmotionGif/MyDiyEmotionPro4.html", type: "创意娱乐", icon: "https://cdn-icons-png.flaticon.com/512/187/187150.png", desc: "在线动图 GIF 与搞笑表情包高阶制作神器", is_pinned: 0, sort_order: 5, created_at: "2026-10-07 10:20:00" },
+            { id: 6, name: "Top3 核心任务规划 (VIP)", url: "https://i3doit.github.io/MyTools/TaskTop3/testTop3Vip2.0.html", type: "任务清单", icon: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png", desc: "聚焦每日 3 件最关键事项的高效精力管理工具", is_pinned: 0, sort_order: 6, created_at: "2026-10-07 10:25:00" },
+            { id: 7, name: "微信拼手气红包助手", url: "https://worthlist.vercel.app/red-packet/", type: "生活实用", icon: "https://cdn-icons-png.flaticon.com/512/2489/2489756.png", desc: "有趣的红包运气模拟与策略计算小工具", is_pinned: 0, sort_order: 7, created_at: "2026-10-07 10:30:00" },
+            { id: 8, name: "PlanPro 计划大师 v12", url: "https://i3doit.github.io/MyTools/Task/planPro12.html", type: "任务清单", icon: "https://cdn-icons-png.flaticon.com/512/1069/1069102.png", desc: "长短期目标拆解与时间维度计划管理系统", is_pinned: 0, sort_order: 8, created_at: "2026-10-07 10:35:00" },
+            { id: 9, name: "PlanPro 计划大师 v9", url: "https://i3doit.github.io/MyTools/Task/planPro9.html", type: "任务清单", icon: "https://cdn-icons-png.flaticon.com/512/1069/1069102.png", desc: "经典版任务进度跟踪与清单提醒工具", is_pinned: 0, sort_order: 9, created_at: "2026-10-07 10:40:00" },
+            { id: 10, name: "封面设计神器 (CoverMagic 4.0)", url: "https://i3doit.github.io/MyTools/CoverMagic/CoverMagic4.0.html", type: "图形设计", icon: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", desc: "文章与自媒体一键生成唯美高清封面工具", is_pinned: 0, sort_order: 10, created_at: "2026-10-07 10:45:00" },
+            { id: 11, name: "动漫描摹与速写绘图", url: "https://i3doit.github.io/MyTools/AnimeSketchMarker2.html", type: "图形设计", icon: "https://cdn-icons-png.flaticon.com/512/2970/2970785.png", desc: "在线动漫绘画学习与辅助线描画生成器", is_pinned: 0, sort_order: 11, created_at: "2026-10-07 10:50:00" },
+            { id: 12, name: "SBTI 人格性格测试", url: "https://i3doit.github.io/MyTools/SBTI/SBTI2.html", type: "趣味测试", icon: "https://cdn-icons-png.flaticon.com/512/3898/3898150.png", desc: "深入了解自我性格特质与行为模式的分析评测", is_pinned: 0, sort_order: 12, created_at: "2026-10-07 10:55:00" },
+            { id: 13, name: "KeepRun 跑步打卡记录", url: "https://i3doit.github.io/MyTools/KeepRun/KeepRun2.html", type: "健康运动", icon: "https://cdn-icons-png.flaticon.com/512/2871/2871210.png", desc: "记录日常跑步里程与运动目标的打卡应用", is_pinned: 0, sort_order: 13, created_at: "2026-10-07 11:00:00" },
+            { id: 14, name: "Top3 核心任务清单", url: "https://i3doit.github.io/MyTools/TaskTop3/taskTop3-2.html", type: "任务清单", icon: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png", desc: "简洁轻量版每日三大任务看板", is_pinned: 0, sort_order: 14, created_at: "2026-10-07 11:05:00" },
+            { id: 15, name: "MyPic 图片处理 Pro", url: "https://i3doit.github.io/MyTools/MyPic/MyPicProVip.html", type: "图形设计", icon: "https://cdn-icons-png.flaticon.com/512/1370/1370239.png", desc: "强大的在线图片压缩、水印添加与格式转换工具", is_pinned: 0, sort_order: 15, created_at: "2026-10-07 11:10:00" },
+            { id: 16, name: "省钱攒钱规划助手", url: "https://i3doit.github.io/MyTools/SaveMoney/saveMoneyPro2.2.html", type: "财务理财", icon: "https://cdn-icons-png.flaticon.com/512/2533/2533032.png", desc: "储蓄目标设定与日常消费预算管理工具", is_pinned: 0, sort_order: 16, created_at: "2026-10-07 11:15:00" },
+            { id: 17, name: "NOW 此时此刻专注时钟", url: "https://i3doit.github.io/MyTools/Now/now.html", type: "高效办公", icon: "https://cdn-icons-png.flaticon.com/512/2088/2088617.png", desc: "沉浸式全屏番茄钟与当下专注时钟", is_pinned: 0, sort_order: 17, created_at: "2026-10-07 11:20:00" },
+            { id: 18, name: "DIY 动图表情包基础版", url: "https://i3doit.github.io/MyTools/DiyEmotionGif/MyDiyEmotionPro2.html", type: "创意娱乐", icon: "https://cdn-icons-png.flaticon.com/512/187/187150.png", desc: "快捷生成对话聊天表情包", is_pinned: 0, sort_order: 18, created_at: "2026-10-07 11:25:00" },
+            { id: 19, name: "代码实时运行器 (RunCode)", url: "https://i3doit.github.io/MyTools/RunCode.html", type: "开发辅助", icon: "https://cdn-icons-png.flaticon.com/512/2920/2920277.png", desc: "在线直接编写和预览 HTML/JS/CSS 代码片段", is_pinned: 0, sort_order: 19, created_at: "2026-10-07 11:30:00" },
+            { id: 20, name: "支票与单据套打 2.0", url: "https://i3doit.github.io/MyTools/Cheque/Cheque2.0.html", type: "财务理财", icon: "https://cdn-icons-png.flaticon.com/512/2533/2533032.png", desc: "便捷的财务支票与票据格式套打工具", is_pinned: 0, sort_order: 20, created_at: "2026-10-07 11:35:00" },
+            { id: 21, name: "PDF 文档转处理助手", url: "https://i3doit.github.io/MyTools/PDF/pdf-doc2.html", type: "实用工具", icon: "https://cdn-icons-png.flaticon.com/512/337/337946.png", desc: "在线 PDF 查看、转换与分割工具", is_pinned: 0, sort_order: 21, created_at: "2026-10-07 11:40:00" },
+            { id: 22, name: "DK 自定义表情包", url: "https://i3doit.github.io/MyTools/Diy_Emotion/DKDiyEmotion.html", type: "创意娱乐", icon: "https://cdn-icons-png.flaticon.com/512/187/187150.png", desc: "个性化文字与图案表情包设计器", is_pinned: 0, sort_order: 22, created_at: "2026-10-07 11:45:00" },
+            { id: 23, name: "Word Counter 字数统计器", url: "https://i3doit.github.io/MyTools/Word-Counter/Word-Counter3.html", type: "高效办公", icon: "https://cdn-icons-png.flaticon.com/512/3096/3096673.png", desc: "中英文文本字数、字符数与阅读时长统计", is_pinned: 0, sort_order: 23, created_at: "2026-10-07 11:50:00" },
+            { id: 24, name: "快速二维码生成器", url: "https://i3doit.github.io/MyTools/QRCode/QRCode.html", type: "实用工具", icon: "https://cdn-icons-png.flaticon.com/512/714/714390.png", desc: "轻量极速文本链接生成二维码", is_pinned: 0, sort_order: 24, created_at: "2026-10-07 11:55:00" },
+            { id: 25, name: "日期计算与倒计时", url: "https://i3doit.github.io/MyTools/CaleDate.html", type: "生活实用", icon: "https://cdn-icons-png.flaticon.com/512/2838/2838779.png", desc: "计算两个日期相差天数与重要日子倒计时", is_pinned: 0, sort_order: 25, created_at: "2026-10-07 12:00:00" },
+            { id: 26, name: "AI 逻辑转换与分析", url: "https://i3doit.github.io/MyTools/AILogicTrans/LogicTrans9.html", type: "学习教育", icon: "https://cdn-icons-png.flaticon.com/512/2103/2103633.png", desc: "利用 AI 对复杂逻辑结构进行梳理和格式转化", is_pinned: 0, sort_order: 26, created_at: "2026-10-07 12:05:00" },
+            { id: 27, name: "生日备忘与提醒助手", url: "https://i3doit.github.io/MyTools/Birtheday/BirthMemo1.3.html", type: "生活实用", icon: "https://cdn-icons-png.flaticon.com/512/3159/3159408.png", desc: "亲朋好友生日阴历阳历转换与备忘管家", is_pinned: 0, sort_order: 27, created_at: "2026-10-07 12:10:00" },
+            { id: 28, name: "思维导图脑图绘制 (MindMapper)", url: "https://i3doit.github.io/MyTools/MindMapper/MindMapper.html", type: "高效办公", icon: "https://cdn-icons-png.flaticon.com/512/1149/1149168.png", desc: "极简树状结构思维导图在线创作", is_pinned: 0, sort_order: 28, created_at: "2026-10-07 12:15:00" },
+            { id: 29, name: "俄罗斯方块经典游戏", url: "https://i3doit.github.io/MyTools/Tetris/Tetris5.html", type: "创意娱乐", icon: "https://cdn-icons-png.flaticon.com/512/566/566312.png", desc: "经典休闲解压俄罗斯方块小游戏", is_pinned: 0, sort_order: 29, created_at: "2026-10-07 12:20:00" }
+        ];
+
+        let isAdminUnlocked = false;
+        let isSortMode = false;
+        let clickCounter = 0;
+        let clickTimer = null;
+        let dragSrcIndex = null;
+
+        // 动态更新版权年份 (2026 或 2026-当前年份)
+        function initCopyrightYear() {
+            const startYear = 2026;
+            const currentYear = new Date().getFullYear();
+            const yearEl = document.getElementById('copyrightYear');
+            if (yearEl) {
+                if (currentYear > startYear) {
+                    yearEl.innerText = `${startYear}-${currentYear}`;
+                } else {
+                    yearEl.innerText = `${startYear}`;
+                }
+            }
+        }
+
+        // 自动识别与智能推断图标 URL (功能点二)
+        function resolveToolIcon(name, url, userIcon) {
+            if (userIcon && userIcon.trim() !== '') {
+                return userIcon.trim();
+            }
+
+            const searchStr = (name + ' ' + url).toLowerCase();
+
+            if (searchStr.includes('pdf')) return "https://cdn-icons-png.flaticon.com/512/337/337946.png";
+            if (searchStr.includes('qr') || searchStr.includes('二维码')) return "https://cdn-icons-png.flaticon.com/512/714/714390.png";
+            if (searchStr.includes('task') || searchStr.includes('plan') || searchStr.includes('任务') || searchStr.includes('计划')) return "https://cdn-icons-png.flaticon.com/512/2693/2693507.png";
+            if (searchStr.includes('mind') || searchStr.includes('脑图') || searchStr.includes('思维导图')) return "https://cdn-icons-png.flaticon.com/512/1149/1149168.png";
+            if (searchStr.includes('code') || searchStr.includes('代码') || searchStr.includes('run')) return "https://cdn-icons-png.flaticon.com/512/2920/2920277.png";
+            if (searchStr.includes('money') || searchStr.includes('cheque') || searchStr.includes('省钱') || searchStr.includes('支票')) return "https://cdn-icons-png.flaticon.com/512/2533/2533032.png";
+            if (searchStr.includes('pic') || searchStr.includes('cover') || searchStr.includes('sketch') || searchStr.includes('图片') || searchStr.includes('封面')) return "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+            if (searchStr.includes('emotion') || searchStr.includes('gif') || searchStr.includes('表情')) return "https://cdn-icons-png.flaticon.com/512/187/187150.png";
+            if (searchStr.includes('game') || searchStr.includes('tetris') || searchStr.includes('star') || searchStr.includes('游戏')) return "https://cdn-icons-png.flaticon.com/512/566/566312.png";
+            if (searchStr.includes('run') || searchStr.includes('running') || searchStr.includes('跑步')) return "https://cdn-icons-png.flaticon.com/512/2871/2871210.png";
+            if (searchStr.includes('english') || searchStr.includes('learn') || searchStr.includes('英语')) return "https://cdn-icons-png.flaticon.com/512/3048/3048122.png";
+
+            try {
+                const domain = new URL(url).hostname;
+                return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+            } catch (e) {
+                return "https://cdn-icons-png.flaticon.com/512/1006/1006771.png";
+            }
+        }
+
+        function handleAdminUnlockClicks() {
+            clickCounter++;
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => { clickCounter = 0; }, 1500);
+
+            if (clickCounter >= 5) {
+                clickCounter = 0;
+                isAdminUnlocked = !isAdminUnlocked;
+                alert(isAdminUnlocked ? "🔓 已成功解锁管理功能（新增、编辑、删除、拖拽排序）" : "🔒 已锁定管理功能");
+                updateAdminUI();
+            }
+        }
+
+        function updateAdminUI() {
+            const addBtn = document.getElementById('addToolBtn');
+            const exportHtmlBtn = document.getElementById('exportHtmlBtn');
+            const adminBadge = document.getElementById('adminBadge');
+
+            if (isAdminUnlocked) {
+                addBtn.classList.remove('hidden');
+                addBtn.classList.add('flex');
+                exportHtmlBtn.classList.remove('hidden');
+                adminBadge.classList.remove('hidden');
+            } else {
+                addBtn.classList.add('hidden');
+                addBtn.classList.remove('flex');
+                exportHtmlBtn.classList.add('hidden');
+                adminBadge.classList.add('hidden');
+                isSortMode = false;
+            }
+            renderTools();
+        }
+
+        async function initSqlDb() {
+            initCopyrightYear();
+            try {
+                const SQL = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+                });
+
+                const savedBytes = localStorage.getItem(DB_STORAGE_KEY);
+                if (savedBytes) {
+                    const uInt8Array = new Uint8Array(JSON.parse(savedBytes));
+                    db = new SQL.Database(uInt8Array);
+                    try { db.run("ALTER TABLE tools ADD COLUMN sort_order INTEGER DEFAULT 0;"); } catch(e){}
+                } else {
+                    db = new SQL.Database();
+                    createTables();
+                    loadSeedData();
+                }
+
+                document.getElementById('dbStatus').innerText = 'SQLite Engine: Ready';
+                document.getElementById('dbStatus').className = 'text-[10px] text-emerald-600 font-medium block';
+                
+                updateCategories();
+                renderTools();
+                setupDraftListeners();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('dbStatus').innerText = 'SQLite 加载失败';
+                document.getElementById('dbStatus').className = 'text-[10px] text-red-500 font-medium block';
+            }
+        }
+
+        function createTables() {
+            db.run(`
+                CREATE TABLE IF NOT EXISTS tools (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    type TEXT DEFAULT '通用',
+                    icon TEXT,
+                    desc TEXT,
+                    is_pinned INTEGER DEFAULT 0,
+                    sort_order INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+            persistSqlDb();
+        }
+
+        function loadSeedData() {
+            const stmt = db.prepare(`
+                INSERT INTO tools (id, name, url, type, icon, desc, is_pinned, sort_order, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+            seeded_tools.forEach(t => {
+                stmt.run([t.id, t.name, t.url, t.type, t.icon, t.desc, t.is_pinned, t.sort_order || t.id, t.created_at]);
+            });
+            stmt.free();
+            persistSqlDb();
+        }
+
+        function persistSqlDb() {
+            const data = db.export();
+            localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(Array.from(data)));
+        }
+
+        function toggleSortMode() {
+            isSortMode = !isSortMode;
+            const sortBtnText = document.getElementById('sortBtnText');
+            const sortBtn = document.getElementById('toggleSortBtn');
+
+            if (isSortMode) {
+                sortBtnText.innerText = "完成排序";
+                sortBtn.className = "flex items-center gap-1 text-[11px] text-white bg-indigo-600 border border-indigo-600 px-2.5 py-1 rounded-md active:scale-95 transition shadow-sm";
+            } else {
+                sortBtnText.innerText = "自定义排序";
+                sortBtn.className = "flex items-center gap-1 text-[11px] text-amber-700 hover:text-amber-900 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md active:scale-95 transition";
+            }
+            renderTools();
+        }
+
+        let currentPinnedData = [];
+
+        function renderTools() {
+            if (!db) return;
+
+            const searchKw = document.getElementById('searchInput').value.trim();
+            const filterType = document.getElementById('typeFilter').value;
+
+            let baseSql = `SELECT * FROM tools WHERE 1=1`;
+            let params = [];
+
+            if (searchKw) {
+                baseSql += ` AND (name LIKE ? OR desc LIKE ?)`;
+                params.push(`%${searchKw}%`, `%${searchKw}%`);
+            }
+            if (filterType !== 'ALL') {
+                baseSql += ` AND type = ?`;
+                params.push(filterType);
+            }
+
+            let pinnedSql = baseSql + ` AND is_pinned = 1 ORDER BY sort_order ASC, id DESC`;
+            let normalSql = baseSql + ` AND is_pinned = 0 ORDER BY sort_order ASC, id DESC`;
+
+            currentPinnedData = querySql(pinnedSql, params);
+            const normalItems = querySql(normalSql, params);
+
+            document.getElementById('toolCountBadge').innerText = currentPinnedData.length + normalItems.length;
+            document.getElementById('pinnedCountBadge').innerText = currentPinnedData.length;
+
+            const pinnedSection = document.getElementById('pinnedSection');
+            const pinnedGrid = document.getElementById('pinnedGrid');
+
+            if (currentPinnedData.length > 0) {
+                pinnedSection.classList.remove('hidden');
+                pinnedGrid.innerHTML = currentPinnedData.map((item, index) => createCardHtml(item, true, index, currentPinnedData.length)).join('');
+            } else {
+                pinnedSection.classList.add('hidden');
+                pinnedGrid.innerHTML = '';
+            }
+
+            const toolsGrid = document.getElementById('toolsGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (normalItems.length > 0) {
+                toolsGrid.innerHTML = normalItems.map((item, index) => createCardHtml(item, false, index, normalItems.length)).join('');
+            } else {
+                toolsGrid.innerHTML = '';
+            }
+
+            if (currentPinnedData.length === 0 && normalItems.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            lucide.createIcons();
+        }
+
+        function querySql(sql, params) {
+            const stmt = db.prepare(sql);
+            stmt.bind(params);
+            const list = [];
+            while (stmt.step()) {
+                list.push(stmt.getAsObject());
+            }
+            stmt.free();
+            return list;
+        }
+
+        // 功能点一：未解锁时右下角为“收藏/取消收藏”；解锁后额外显示“修改/删除”
+        function createCardHtml(item, isPinned, index, total) {
+            const defaultIcon = resolveToolIcon(item.name, item.url, item.icon);
+            
+            return `
+            <div 
+                 draggable="${isSortMode && isPinned ? 'true' : 'false'}"
+                 ondragstart="handleDragStart(event, ${index})"
+                 ondragover="handleDragOver(event)"
+                 ondrop="handleDrop(event, ${index})"
+                 onclick="${isSortMode ? 'void(0)' : `window.open('${item.url}', '_blank')`}" 
+                 class="group relative bg-white rounded-xl border ${isPinned ? 'border-amber-300 ring-1 ring-amber-300/40' : 'border-slate-200'} p-3.5 hover:shadow-md active:bg-slate-50 transition cursor-pointer flex flex-col justify-between ${isSortMode && isPinned ? 'border-dashed border-indigo-400 bg-indigo-50/20' : ''}">
+                
+                ${isPinned ? `
+                    <div class="absolute -top-2 -right-2 bg-gradient-to-r from-amber-400 to-orange-400 text-white p-1 rounded-full shadow-sm" title="推荐/已收藏工具">
+                        <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    </div>
+                ` : ''}
+
+                <div>
+                    <div class="flex items-start gap-2.5">
+                        <img src="${defaultIcon}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1006/1006771.png'" class="w-9 h-9 rounded-lg object-cover border border-slate-100 p-0.5 shrink-0" alt="icon">
+                        <div class="overflow-hidden flex-1">
+                            <div class="flex items-center justify-between gap-1">
+                                <h3 class="font-bold text-slate-800 group-hover:text-indigo-600 transition truncate text-xs sm:text-sm">
+                                    ${escapeHtml(item.name)}
+                                </h3>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 shrink-0"></i>
+                            </div>
+                            <span class="inline-block px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px] mt-0.5 font-medium">
+                                ${escapeHtml(item.type || '通用')}
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-2 line-clamp-2 h-7 leading-relaxed">
+                        ${escapeHtml(item.desc || '点击卡片直接访问此工具网页')}
+                    </p>
+                </div>
+
+                ${isSortMode && isPinned ? `
+                    <div class="mt-2.5 pt-2 border-t border-indigo-100 flex items-center justify-between" onclick="event.stopPropagation()">
+                        <span class="text-[10px] text-indigo-600 font-bold">可拖拽或箭头调整</span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="movePinnedOrder(${index}, -1)" ${index === 0 ? 'disabled class="opacity-30"' : 'class="p-1 text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 rounded"'} title="上移/前移"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i></button>
+                            <button onclick="movePinnedOrder(${index}, 1)" ${index === total - 1 ? 'disabled class="opacity-30"' : 'class="p-1 text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 rounded"'} title="下移/后移"><i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400" onclick="event.stopPropagation()">
+                        <span class="text-[10px]">${item.created_at ? item.created_at.split(' ')[0] : ''}</span>
+                        
+                        <div class="flex items-center gap-1">
+                            <!-- 任何模式均可直接快捷收藏/取消收藏 -->
+                            <button onclick="togglePin(${item.id}, ${item.is_pinned})" title="${item.is_pinned ? '取消收藏' : '添加到我的收藏'}" class="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded transition ${item.is_pinned ? 'bg-amber-50 text-amber-600 font-bold' : 'hover:bg-slate-100 text-slate-500'}">
+                                <i data-lucide="star" class="w-3 h-3 ${item.is_pinned ? 'fill-amber-400 text-amber-500' : ''}"></i>
+                                ${item.is_pinned ? '已收藏' : '收藏'}
+                            </button>
+
+                            <!-- 解锁管理员模式后才额外显示的编辑和删除功能 -->
+                            ${isAdminUnlocked ? `
+                                <button onclick="editTool(${item.id})" title="修改" class="p-1 text-slate-400 hover:text-indigo-600 rounded transition"><i data-lucide="file-pen" class="w-3.5 h-3.5"></i></button>
+                                <button onclick="deleteTool(${item.id})" title="删除" class="p-1 text-slate-400 hover:text-red-500 rounded transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `}
+            </div>
+            `;
+        }
+
+        function handleDragStart(e, index) {
+            dragSrcIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDrop(e, targetIndex) {
+            e.preventDefault();
+            if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+                const movedItem = currentPinnedData.splice(dragSrcIndex, 1)[0];
+                currentPinnedData.splice(targetIndex, 0, movedItem);
+                savePinnedOrder();
+            }
+        }
+
+        function movePinnedOrder(index, direction) {
+            const targetIndex = index + direction;
+            if (targetIndex >= 0 && targetIndex < currentPinnedData.length) {
+                const temp = currentPinnedData[index];
+                currentPinnedData[index] = currentPinnedData[targetIndex];
+                currentPinnedData[targetIndex] = temp;
+                savePinnedOrder();
+            }
+        }
+
+        function savePinnedOrder() {
+            db.run("BEGIN TRANSACTION;");
+            const stmt = db.prepare(`UPDATE tools SET sort_order = ? WHERE id = ?`);
+            currentPinnedData.forEach((item, idx) => {
+                stmt.run([idx + 1, item.id]);
+            });
+            stmt.free();
+            db.run("COMMIT;");
+
+            persistSqlDb();
+            renderTools();
+        }
+
+        function setupDraftListeners() {
+            const fields = ['toolName', 'toolUrl', 'toolType', 'toolIcon', 'toolDesc', 'toolPinned'];
+            fields.forEach(fieldId => {
+                const el = document.getElementById(fieldId);
+                el.addEventListener('input', saveDraft);
+                el.addEventListener('change', saveDraft);
+            });
+        }
+
+        function saveDraft() {
+            if (document.getElementById('toolId').value) return;
+
+            const draft = {
+                name: document.getElementById('toolName').value,
+                url: document.getElementById('toolUrl').value,
+                type: document.getElementById('toolType').value,
+                icon: document.getElementById('toolIcon').value,
+                desc: document.getElementById('toolDesc').value,
+                isPinned: document.getElementById('toolPinned').checked
+            };
+            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        }
+
+        function loadDraftIfExist() {
+            if (document.getElementById('toolId').value) return;
+
+            const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+            const alertBox = document.getElementById('draftAlert');
+            if (saved) {
+                try {
+                    const draft = JSON.parse(saved);
+                    let hasContent = false;
+                    if (draft.name) { document.getElementById('toolName').value = draft.name; hasContent = true; }
+                    if (draft.url) { document.getElementById('toolUrl').value = draft.url; hasContent = true; }
+                    if (draft.type) { document.getElementById('toolType').value = draft.type; hasContent = true; }
+                    if (draft.icon) { document.getElementById('toolIcon').value = draft.icon; hasContent = true; }
+                    if (draft.desc) { document.getElementById('toolDesc').value = draft.desc; hasContent = true; }
+                    if (draft.isPinned !== undefined) document.getElementById('toolPinned').checked = draft.isPinned;
+
+                    if (hasContent) {
+                        alertBox.classList.remove('hidden');
+                    } else {
+                        alertBox.classList.add('hidden');
+                    }
+                } catch (e) {}
+            } else {
+                alertBox.classList.add('hidden');
+            }
+        }
+
+        function clearDraft() {
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+            document.getElementById('draftAlert').classList.add('hidden');
+        }
+
+        // 功能点二和三：智能处理 Icon 与新分类保存
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('toolId').value;
+            const name = document.getElementById('toolName').value.trim();
+            const url = document.getElementById('toolUrl').value.trim();
+            const type = document.getElementById('toolType').value.trim() || '通用';
+            const rawIcon = document.getElementById('toolIcon').value.trim();
+            const desc = document.getElementById('toolDesc').value.trim();
+            const isPinned = document.getElementById('toolPinned').checked ? 1 : 0;
+
+            // 自动推断合适图标
+            const finalIcon = resolveToolIcon(name, url, rawIcon);
+
+            if (id) {
+                const stmt = db.prepare(`UPDATE tools SET name=?, url=?, type=?, icon=?, desc=?, is_pinned=? WHERE id=?`);
+                stmt.run([name, url, type, finalIcon, desc, isPinned, id]);
+                stmt.free();
+            } else {
+                const stmt = db.prepare(`INSERT INTO tools (name, url, type, icon, desc, is_pinned, sort_order, created_at) VALUES (?, ?, ?, ?, ?, ?, 9999, datetime('now', 'localtime'))`);
+                stmt.run([name, url, type, finalIcon, desc, isPinned]);
+                stmt.free();
+                clearDraft();
+            }
+
+            persistSqlDb();
+            updateCategories();
+            renderTools();
+            closeModal();
+        }
+
+        function exportSelfContainedHtml() {
+            const allTools = querySql(`SELECT * FROM tools ORDER BY id ASC`, []);
+            const currentHtml = document.documentElement.outerHTML;
+
+            const seededJson = JSON.stringify(allTools, null, 12);
+            const updatedHtml = currentHtml.replace(
+                /let seeded_tools = \[[\s\S]*?\];/,
+                `let seeded_tools = ${seededJson};`
+            );
+
+            const blob = new Blob([updatedHtml], { type: 'text/html;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `index.html`;
+            link.click();
+            alert("已成功导出包含最新数据的 index.html！提交至 GitHub Pages 即可永久生效。");
+        }
+
+        function deleteTool(id) {
+            if (confirm(`确认删除该工具卡片吗？`)) {
+                const stmt = db.prepare(`DELETE FROM tools WHERE id = ?`);
+                stmt.run([id]);
+                stmt.free();
+
+                persistSqlDb();
+                updateCategories();
+                renderTools();
+            }
+        }
+
+        function togglePin(id, currentPin) {
+            const newPin = currentPin ? 0 : 1;
+            const stmt = db.prepare(`UPDATE tools SET is_pinned = ? WHERE id = ?`);
+            stmt.run([newPin, id]);
+            stmt.free();
+
+            persistSqlDb();
+            renderTools();
+        }
+
+        function editTool(id) {
+            const stmt = db.prepare(`SELECT * FROM tools WHERE id = ?`);
+            stmt.bind([id]);
+            
+            if (stmt.step()) {
+                const tool = stmt.getAsObject();
+                document.getElementById('modalTitle').innerText = `修改工具信息`;
+                document.getElementById('toolId').value = tool.id;
+                document.getElementById('toolName').value = tool.name;
+                document.getElementById('toolUrl').value = tool.url;
+                document.getElementById('toolType').value = tool.type || '';
+                document.getElementById('toolIcon').value = tool.icon || '';
+                document.getElementById('toolDesc').value = tool.desc || '';
+                document.getElementById('toolPinned').checked = tool.is_pinned === 1;
+
+                document.getElementById('draftAlert').classList.add('hidden');
+                document.getElementById('toolModal').classList.remove('hidden');
+            }
+            stmt.free();
+        }
+
+        // 动态加载更新分类选择项与 Datalist 智能提示 (功能点三)
+        function updateCategories() {
+            if (!db) return;
+            const select = document.getElementById('typeFilter');
+            const datalist = document.getElementById('categoryDatalist');
+            const current = select.value;
+
+            const res = db.exec(`SELECT DISTINCT type FROM tools WHERE type IS NOT NULL AND type != ''`);
+            let types = [];
+            if (res.length > 0 && res[0].values) {
+                types = res[0].values.map(v => v[0]);
+            }
+
+            // 更新筛选下拉列表
+            select.innerHTML = `<option value="ALL">所有分类</option>` + 
+                types.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+            select.value = current;
+
+            // 更新弹窗中的输入智能提示数据源
+            datalist.innerHTML = types.map(t => `<option value="${escapeHtml(t)}">`).join('');
+        }
+
+        function exportSqlDb() {
+            const data = db.export();
+            const blob = new Blob([data], { type: 'application/x-sqlite3' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `toolbox_database_${Date.now()}.sqlite`;
+            link.click();
+        }
+
+        function importFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            if (file.name.endsWith('.json')) {
+                reader.onload = function(e) {
+                    try {
+                        const jsonArr = JSON.parse(e.target.result);
+                        if (Array.isArray(jsonArr)) {
+                            db.run("BEGIN TRANSACTION;");
+                            const stmt = db.prepare(`INSERT INTO tools (name, url, type, icon, desc, is_pinned, sort_order, created_at) VALUES (?, ?, ?, ?, ?, ?, 9999, datetime('now', 'localtime'))`);
+                            jsonArr.forEach(item => {
+                                stmt.run([item.name, item.url, item.type || '通用', item.icon || '', item.desc || '', item.isPinned || item.is_pinned ? 1 : 0]);
+                            });
+                            stmt.free();
+                            db.run("COMMIT;");
+
+                            persistSqlDb();
+                            updateCategories();
+                            renderTools();
+                            alert('JSON 数据已成功导入！');
+                        }
+                    } catch (err) {
+                        alert('JSON 数据格式有误。');
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                reader.onload = function(e) {
+                    try {
+                        const uInt8Array = new Uint8Array(e.target.result);
+                        db = new SQL.Database(uInt8Array);
+                        persistSqlDb();
+                        updateCategories();
+                        renderTools();
+                        alert('SQLite 数据库同步导入成功！');
+                    } catch (err) {
+                        alert('SQLite 数据库读取错误。');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function openModal() {
+            document.getElementById('modalTitle').innerText = '添加新工具';
+            document.getElementById('toolForm').reset();
+            document.getElementById('toolId').value = '';
+            document.getElementById('toolModal').classList.remove('hidden');
+            loadDraftIfExist();
+        }
+
+        function closeModal() {
+            document.getElementById('toolModal').classList.add('hidden');
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        document.addEventListener('DOMContentLoaded', initSqlDb);
+    </script>
+</body>
+</html>
