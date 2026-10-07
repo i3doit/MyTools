@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL版全能工具箱 - 个人与团队高效工具导航</title>
+    <meta name="description" content="基于本地 SQLite 驱动的轻量级工具箱导航，支持纯 SQL 增删改查。">
+    <meta name="keywords" content="工具箱, 开发者工具, SQLite, WebAssembly, 导航">
+
+    <!-- Tailwind CSS (无依赖 CDN，商业免费) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide 图标库 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- sql.js (WebAssembly SQLite 引擎) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- 顶部导航栏 -->
+    <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-indigo-600 rounded-lg text-white">
+                    <i data-lucide="database" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+                        SQL 全能工具箱
+                    </h1>
+                    <span id="dbStatus" class="text-[10px] text-amber-500 font-medium">SQLite 初始化中...</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button onclick="openModal()" class="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition shadow-sm">
+                    <i data-lucide="plus" class="w-4 h-4"></i> 添加工具
+                </button>
+                <button onclick="exportSqlDb()" title="导出 SQLite 数据库文件 (.sqlite)" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                </button>
+                <label title="导入 SQLite / JSON 文件" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer">
+                    <i data-lucide="upload" class="w-5 h-5"></i>
+                    <input type="file" id="importFileInput" accept=".sqlite,.db,.json" class="hidden" onchange="importFile(event)">
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- 统计栏与筛选 -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div class="flex items-center gap-2">
+                <span class="text-slate-500 text-sm">本地 SQL 托管工具总数：</span>
+                <span id="toolCountBadge" class="px-2.5 py-0.5 bg-indigo-100 text-indigo-700 font-semibold rounded-full text-xs">0</span>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                <!-- 搜索框 -->
+                <div class="relative flex-1 sm:w-64">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="renderTools()" placeholder="通过 SQL 模糊匹配..." class="w-full pl-9 pr-4 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <!-- 分类筛选 -->
+                <select id="typeFilter" onchange="renderTools()" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="ALL">所有分类</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 豆腐块布局 (Grid) -->
+        <div id="toolsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+
+        <!-- 空数据提示 -->
+        <div id="emptyState" class="hidden text-center py-16">
+            <i data-lucide="folder-open" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
+            <p class="text-slate-500 font-medium">暂无匹配的工具数据</p>
+        </div>
+    </main>
+
+    <!-- 编辑 / 添加 工具模态框 -->
+    <div id="toolModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden border border-slate-100">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-100">
+                <h3 id="modalTitle" class="font-bold text-slate-800">添加新工具 (SQL INSERT)</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <form id="toolForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+                <input type="hidden" id="toolId">
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">工具名称 <span class="text-red-500">*</span></label>
+                    <input type="text" id="toolName" required placeholder="例如：JSON Parser" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">工具地址 (URL) <span class="text-red-500">*</span></label>
+                    <input type="url" id="toolUrl" required placeholder="https://..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">工具类型</label>
+                        <input type="text" id="toolType" placeholder="开发/设计" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">图标 URL</label>
+                        <input type="url" id="toolIcon" placeholder="https://..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">工具描述</label>
+                    <textarea id="toolDesc" rows="3" placeholder="描述工具功能..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none"></textarea>
+                </div>
+
+                <div class="flex items-center gap-2 pt-2">
+                    <input type="checkbox" id="toolPinned" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                    <label for="toolPinned" class="text-xs font-medium text-slate-700">置顶优先展示 (is_pinned = 1)</label>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium">执行 SQL 保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SQL 引擎及业务脚本 -->
+    <script>
+        let db = null;
+        const DB_STORAGE_KEY = 'SQLITE_TOOLBOX_BYTES';
+
+        // 初始化 SQL.js WebAssembly 数据库
+        async function initSqlDb() {
+            try {
+                const SQL = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+                });
+
+                const savedBytes = localStorage.getItem(DB_STORAGE_KEY);
+                if (savedBytes) {
+                    // 从 LocalStorage 载入已有 SQLite 数据库文件字节流
+                    const uInt8Array = new Uint8Array(JSON.parse(savedBytes));
+                    db = new SQL.Database(uInt8Array);
+                } else {
+                    // 创建全新的内存数据库
+                    db = new SQL.Database();
+                    createTables();
+                    seedInitialData();
+                }
+
+                document.getElementById('dbStatus').innerText = 'SQLite Engine: Ready';
+                document.getElementById('dbStatus').className = 'text-[10px] text-emerald-600 font-medium';
+                
+                updateCategories();
+                renderTools();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('dbStatus').innerText = 'SQLite 加载失败';
+                document.getElementById('dbStatus').className = 'text-[10px] text-red-500 font-medium';
+            }
+        }
+
+        // 1. 创建标准 SQL 数据库表定义 (数据建模)
+        function createTables() {
+            const createTableSql = `
+                CREATE TABLE IF NOT EXISTS tools (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    type TEXT DEFAULT '通用',
+                    icon TEXT,
+                    desc TEXT,
+                    is_pinned INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+            `;
+            db.run(createTableSql);
+            persistSqlDb();
+        }
+
+        // 插入初始化种子数据
+        function seedInitialData() {
+            const stmt = db.prepare(`
+                INSERT INTO tools (name, url, type, icon, desc, is_pinned, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
+            `);
+            stmt.run(["JSON Formatter", "https://jsonformatter.org", "开发辅助", "https://cdn-icons-png.flaticon.com/512/136/136525.png", "在线 JSON 格式化与解析工具", 1]);
+            stmt.run(["Unsplash 图片", "https://unsplash.com", "设计素材", "https://unsplash.com/favicon.ico", "高质量无版权图片素材库", 0]);
+            stmt.free();
+            persistSqlDb();
+        }
+
+        // 2. 将二进制 SQLite 数据库保存到 LocalStorage 持久化
+        function persistSqlDb() {
+            const data = db.export();
+            const buffer = Array.from(data);
+            localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(buffer));
+        }
+
+        // 3. 执行 SQL SELECT 查询并渲染豆腐块布局
+        function renderTools() {
+            if (!db) return;
+
+            const searchKw = document.getElementById('searchInput').value.trim();
+            const filterType = document.getElementById('typeFilter').value;
+
+            // 构建带有条件的 SQL 查询 (按置顶 + 时间倒序)
+            let sql = `SELECT * FROM tools WHERE 1=1`;
+            let params = [];
+
+            if (searchKw) {
+                sql += ` AND (name LIKE ? OR desc LIKE ?)`;
+                params.push(`%${searchKw}%`, `%${searchKw}%`);
+            }
+            if (filterType !== 'ALL') {
+                sql += ` AND type = ?`;
+                params.push(filterType);
+            }
+
+            // 倒序排列：优先排列 is_pinned，其次是 created_at 最新在前
+            sql += ` ORDER BY is_pinned DESC, created_at DESC`;
+
+            const stmt = db.prepare(sql);
+            stmt.bind(params);
+
+            const grid = document.getElementById('toolsGrid');
+            const empty = document.getElementById('emptyState');
+            let count = 0;
+            let htmlCards = '';
+
+            while (stmt.step()) {
+                count++;
+                const row = stmt.getAsObject();
+                const defaultIcon = "https://cdn-icons-png.flaticon.com/512/1006/1006771.png";
+
+                htmlCards += `
+                <div class="group relative bg-white rounded-xl border ${row.is_pinned ? 'border-amber-300 ring-1 ring-amber-300/50' : 'border-slate-200'} p-4 hover:shadow-lg transition duration-200 flex flex-col justify-between">
+                    ${row.is_pinned ? `
+                        <div class="absolute -top-2 -right-2 bg-gradient-to-r from-amber-400 to-orange-400 text-white p-1 rounded-full shadow-sm" title="推荐/置顶">
+                            <i data-lucide="bookmark" class="w-3.5 h-3.5 fill-current"></i>
+                        </div>
+                    ` : ''}
+                    
+                    <div>
+                        <div class="flex items-start gap-3">
+                            <img src="${row.icon || defaultIcon}" onerror="this.src='${defaultIcon}'" class="w-10 h-10 rounded-lg object-cover border border-slate-100 p-0.5 shrink-0" alt="icon">
+                            <div class="overflow-hidden flex-1">
+                                <a href="${row.url}" target="_blank" class="font-semibold text-slate-800 hover:text-indigo-600 transition truncate block text-sm">
+                                    ${escapeHtml(row.name)}
+                                </a>
+                                <span class="inline-block px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px] mt-1 font-medium">
+                                    ${escapeHtml(row.type || '通用')}
+                                </span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-3 line-clamp-2 h-8 leading-relaxed">
+                            ${escapeHtml(row.desc || '暂无描述信息')}
+                        </p>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                        <span>${row.created_at ? row.created_at.split(' ')[0] : ''}</span>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="togglePin(${row.id}, ${row.is_pinned})" title="切换置顶" class="p-1 hover:text-amber-500 rounded transition"><i data-lucide="pin" class="w-3.5 h-3.5"></i></button>
+                            <button onclick="editTool(${row.id})" title="编辑 SQL 条目" class="p-1 hover:text-slate-700 rounded transition"><i data-lucide="file-pen" class="w-3.5 h-3.5"></i></button>
+                            <button onclick="deleteTool(${row.id})" title="SQL DELETE" class="p-1 hover:text-red-500 rounded transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }
+            stmt.free();
+
+            document.getElementById('toolCountBadge').innerText = count;
+            if (count === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+            } else {
+                empty.classList.add('hidden');
+                grid.innerHTML = htmlCards;
+            }
+
+            lucide.createIcons();
+        }
+
+        // 4. 执行 SQL INSERT / UPDATE 动态添加或修改工具
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('toolId').value;
+            const name = document.getElementById('toolName').value.trim();
+            const url = document.getElementById('toolUrl').value.trim();
+            const type = document.getElementById('toolType').value.trim() || '通用';
+            const icon = document.getElementById('toolIcon').value.trim();
+            const desc = document.getElementById('toolDesc').value.trim();
+            const isPinned = document.getElementById('toolPinned').checked ? 1 : 0;
+
+            if (id) {
+                // 使用 SQL UPDATE 语句更新数据
+                const stmt = db.prepare(`
+                    UPDATE tools 
+                    SET name = ?, url = ?, type = ?, icon = ?, desc = ?, is_pinned = ? 
+                    WHERE id = ?
+                `);
+                stmt.run([name, url, type, icon, desc, isPinned, id]);
+                stmt.free();
+            } else {
+                // 使用 SQL INSERT 语句插入数据 (created_at 使用 SQLite 内置函数自动生成)
+                const stmt = db.prepare(`
+                    INSERT INTO tools (name, url, type, icon, desc, is_pinned, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
+                `);
+                stmt.run([name, url, type, icon, desc, isPinned]);
+                stmt.free();
+            }
+
+            persistSqlDb();
+            updateCategories();
+            renderTools();
+            closeModal();
+        }
+
+        // 5. 执行 SQL DELETE 删除数据
+        function deleteTool(id) {
+            if (confirm(`确认要从本地 SQL 数据库中删除 ID 为 ${id} 的工具吗？`)) {
+                const stmt = db.prepare(`DELETE FROM tools WHERE id = ?`);
+                stmt.run([id]);
+                stmt.free();
+
+                persistSqlDb();
+                updateCategories();
+                renderTools();
+            }
+        }
+
+        // 切换置顶状态 (SQL UPDATE)
+        function togglePin(id, currentPin) {
+            const newPin = currentPin ? 0 : 1;
+            const stmt = db.prepare(`UPDATE tools SET is_pinned = ? WHERE id = ?`);
+            stmt.run([newPin, id]);
+            stmt.free();
+
+            persistSqlDb();
+            renderTools();
+        }
+
+        // 编辑模式：根据 ID 进行 SQL SELECT
+        function editTool(id) {
+            const stmt = db.prepare(`SELECT * FROM tools WHERE id = ?`);
+            stmt.bind([id]);
+            
+            if (stmt.step()) {
+                const tool = stmt.getAsObject();
+                document.getElementById('modalTitle').innerText = `编辑工具 (ID: ${tool.id})`;
+                document.getElementById('toolId').value = tool.id;
+                document.getElementById('toolName').value = tool.name;
+                document.getElementById('toolUrl').value = tool.url;
+                document.getElementById('toolType').value = tool.type || '';
+                document.getElementById('toolIcon').value = tool.icon || '';
+                document.getElementById('toolDesc').value = tool.desc || '';
+                document.getElementById('toolPinned').checked = tool.is_pinned === 1;
+
+                document.getElementById('toolModal').classList.remove('hidden');
+            }
+            stmt.free();
+        }
+
+        // 动态查询所有分类用于下拉筛选项 (SQL DISTINCT)
+        function updateCategories() {
+            if (!db) return;
+            const select = document.getElementById('typeFilter');
+            const current = select.value;
+
+            const res = db.exec(`SELECT DISTINCT type FROM tools WHERE type IS NOT NULL AND type != ''`);
+            let types = [];
+            if (res.length > 0 && res[0].values) {
+                types = res[0].values.map(v => v[0]);
+            }
+
+            select.innerHTML = `<option value="ALL">所有分类</option>` + 
+                types.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+            select.value = current;
+        }
+
+        // 导出 SQLite 数据库文件二进制
+        function exportSqlDb() {
+            const data = db.export();
+            const blob = new Blob([data], { type: 'application/x-sqlite3' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `toolbox_database_${Date.now()}.sqlite`;
+            link.click();
+        }
+
+        // 导入文件 (支持 .sqlite 数据库文件和 .json 文件)
+        function importFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            
+            if (file.name.endsWith('.json')) {
+                // 读取 JSON 并用 SQL INSERT 写入 SQLite
+                reader.onload = function(e) {
+                    try {
+                        const jsonArr = JSON.parse(e.target.result);
+                        if (Array.isArray(jsonArr)) {
+                            db.run("BEGIN TRANSACTION;");
+                            const stmt = db.prepare(`INSERT INTO tools (name, url, type, icon, desc, is_pinned, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))`);
+                            jsonArr.forEach(item => {
+                                stmt.run([item.name, item.url, item.type || '通用', item.icon || '', item.desc || '', item.isPinned ? 1 : 0]);
+                            });
+                            stmt.free();
+                            db.run("COMMIT;");
+
+                            persistSqlDb();
+                            updateCategories();
+                            renderTools();
+                            alert('JSON 数据已成功导入 SQLite 数据库！');
+                        }
+                    } catch (err) {
+                        alert('JSON 数据解析失败。');
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                // 读取二进制 .sqlite 文件并直接覆盖当前数据库
+                reader.onload = function(e) {
+                    try {
+                        const uInt8Array = new Uint8Array(e.target.result);
+                        db = new SQL.Database(uInt8Array);
+                        persistSqlDb();
+                        updateCategories();
+                        renderTools();
+                        alert('SQLite 数据库恢复成功！');
+                    } catch (err) {
+                        alert('SQLite 数据库文件损坏或格式有误！');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        // 弹窗控制
+        function openModal() {
+            document.getElementById('modalTitle').innerText = '添加新工具 (SQL INSERT)';
+            document.getElementById('toolForm').reset();
+            document.getElementById('toolId').value = '';
+            document.getElementById('toolModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('toolModal').classList.add('hidden');
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        document.addEventListener('DOMContentLoaded', initSqlDb);
+    </script>
+</body>
+</html>
