@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量关键词替换工具</title>
+    <style>
+        :root {
+            --bg-color: #1e2022;
+            --card-bg: #282a2d;
+            --border-color: #3f4246;
+            --text-color: #d1d5db;
+            --text-muted: #9ca3af;
+            --accent-color: #4f46e5;
+            --accent-hover: #4338ca;
+            --highlight-bg: #374151;
+            --highlight-change: #059669;
+            --danger-color: #dc2626;
+            --danger-hover: #b91c1c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            color: #e5e7eb;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* 规则设置区域 */
+        .rules-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px 20px;
+        }
+
+        .rules-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .rules-header h2 {
+            font-size: 1.1rem;
+            color: #e5e7eb;
+        }
+
+        .rule-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .rule-row input {
+            flex: 1;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text-color);
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .rule-row input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .btn-secondary {
+            background-color: #4b5563;
+        }
+
+        .btn-secondary:hover {
+            background-color: #374151;
+        }
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 0.8rem;
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        /* 主工作区：双面板布局 */
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            height: 550px;
+        }
+
+        .panel-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(0,0,0,0.1);
+        }
+
+        .panel-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .panel-body {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            border: none;
+            color: var(--text-color);
+            padding: 15px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* 原文与对比模式下的渲染层 */
+        .preview-layer {
+            width: 100%;
+            height: 100%;
+            padding: 15px;
+            overflow-y: auto;
+            font-family: inherit;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            display: none;
+        }
+
+        .preview-layer.active {
+            display: block;
+        }
+
+        .highlight-deleted {
+            background-color: rgba(220, 38, 38, 0.3);
+            color: #fca5a5;
+            text-decoration: line-through;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        .highlight-added {
+            background-color: rgba(5, 150, 105, 0.3);
+            color: #6ee7b7;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        /* 提示信息 */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>批量关键词替换工具</h1>
+        <p>高效率、大容量文本处理 | 护眼暗色模式</p>
+    </header>
+
+    <!-- 替换规则配置 -->
+    <div class="rules-card">
+        <div class="rules-header">
+            <h2>替换规则配置</h2>
+            <button class="btn btn-secondary btn-sm" onclick="addRuleRow()">+ 添加新规则</button>
+        </div>
+        <div id="rules-container">
+            <div class="rule-row">
+                <input type="text" class="rule-find" placeholder="待查找关键词...">
+                <input type="text" class="rule-replace" placeholder="替换为...">
+                <button class="btn btn-danger btn-sm" onclick="removeRuleRow(this)">删除</button>
+            </div>
+        </div>
+        <div class="actions-bar">
+            <button class="btn" onclick="executeReplace()">一键替换</button>
+            <button class="btn btn-secondary" onclick="toggleDiffMode()" id="diff-btn">开启对比模式</button>
+        </div>
+    </div>
+
+    <!-- 文本编辑与对比面板 -->
+    <div class="workspace">
+        <!-- 原文面板 -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3>原始数据</h3>
+                <button class="btn btn-danger btn-sm" onclick="clearInput()">快捷清空</button>
+            </div>
+            <div class="panel-body">
+                <textarea id="input-text" placeholder="请在此处粘贴或输入原始文本内容..."></textarea>
+            </div>
+        </div>
+
+        <!-- 修改后面板 -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3 id="output-title">修改后数据</h3>
+                <div>
+                    <button class="btn btn-sm" onclick="copyOutput()">一键复制文本</button>
+                </div>
+            </div>
+            <div class="panel-body">
+                <textarea id="output-text" placeholder="替换后的内容将显示在这里..." readonly></textarea>
+                <div id="preview-diff" class="preview-layer"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast">已成功复制到剪贴板！</div>
+
+<script>
+    let isDiffMode = false;
+
+    // 添加替换规则行
+    function addRuleRow() {
+        const container = document.getElementById('rules-container');
+        const row = document.createElement('div');
+        row.className = 'rule-row';
+        row.innerHTML = `
+            <input type="text" class="rule-find" placeholder="待查找关键词...">
+            <input type="text" class="rule-replace" placeholder="替换为...">
+            <button class="btn btn-danger btn-sm" onclick="removeRuleRow(this)">删除</button>
+        `;
+        container.appendChild(row);
+    }
+
+    // 删除替换规则行
+    function removeRuleRow(button) {
+        const container = document.getElementById('rules-container');
+        if (container.children.length > 1) {
+            button.parentElement.remove();
+        } else {
+            showToast("至少保留一条替换规则！");
+        }
+    }
+
+    // 清空原文
+    function clearInput() {
+        document.getElementById('input-text').value = '';
+        document.getElementById('output-text').value = '';
+        document.getElementById('preview-diff').innerHTML = '';
+        showToast("已清空原始数据");
+    }
+
+    // 转义 HTML 字符，防止 XSS 攻击与格式破坏
+    function escapeHtml(str) {
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // 获取当前所有替换规则
+    function getRules() {
+        const finds = document.querySelectorAll('.rule-find');
+        const replaces = document.querySelectorAll('.rule-replace');
+        const rules = [];
+
+        finds.forEach((findInput, index) => {
+            const findVal = findInput.value;
+            const replaceVal = replaces[index].value;
+            if (findVal.length > 0) {
+                rules.push({
+                    find: findVal,
+                    replace: replaceVal
+                });
+            }
+        });
+
+        return rules;
+    }
+
+    // 执行替换逻辑
+    function executeReplace() {
+        const inputText = document.getElementById('input-text').value;
+        const rules = getRules();
+
+        if (!inputText) {
+            showToast("请输入需要处理的内容！");
+            return;
+        }
+
+        let resultText = inputText;
+        let diffHtml = escapeHtml(inputText);
+
+        // 逐条正则全局替换
+        rules.forEach(rule => {
+            const escapedFind = rule.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedFind, 'g');
+            
+            // 纯文本替换
+            resultText = resultText.replace(regex, rule.replace);
+
+            // 对比视图 HTML 渲染
+            const escapedRuleFind = escapeHtml(rule.find).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const diffRegex = new RegExp(escapedRuleFind, 'g');
+            const replacementHtml = `<span class="highlight-deleted">${escapeHtml(rule.find)}</span><span class="highlight-added">${escapeHtml(rule.replace)}</span>`;
+            diffHtml = diffHtml.replace(diffRegex, replacementHtml);
+        });
+
+        // 写入无格式的纯文本到结果框
+        document.getElementById('output-text').value = resultText;
+        // 写入高亮视图
+        document.getElementById('preview-diff').innerHTML = diffHtml;
+
+        showToast("替换完成！");
+    }
+
+    // 切换对比模式
+    function toggleDiffMode() {
+        isDiffMode = !isDiffMode;
+        const textarea = document.getElementById('output-text');
+        const preview = document.getElementById('preview-diff');
+        const btn = document.getElementById('diff-btn');
+
+        if (isDiffMode) {
+            textarea.style.display = 'none';
+            preview.classList.add('active');
+            btn.innerText = '关闭对比模式';
+            btn.style.backgroundColor = '#059669';
+        } else {
+            textarea.style.display = 'block';
+            preview.classList.remove('active');
+            btn.innerText = '开启对比模式';
+            btn.style.backgroundColor = '#4b5563';
+        }
+    }
+
+    // 一键复制纯文本内容（不带格式）
+    function copyOutput() {
+        const outputText = document.getElementById('output-text').value;
+
+        if (!outputText) {
+            showToast("没有可复制的内容！");
+            return;
+        }
+
+        // 使用 Clipboard API 强制写为 plain/text
+        navigator.clipboard.writeText(outputText).then(() => {
+            showToast("已复制修改后的纯文本内容！");
+        }).catch(err => {
+            // 兼容性降级处理
+            const textarea = document.getElementById('output-text');
+            textarea.style.display = 'block';
+            textarea.select();
+            document.execCommand('copy');
+            if (isDiffMode) textarea.style.display = 'none';
+            showToast("已复制修改后的纯文本内容！");
+        });
+    }
+
+    // 简单 Toast 提示
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.innerText = message;
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 2000);
+    }
+</script>
+
+</body>
+</html>
