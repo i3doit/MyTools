@@ -186,11 +186,65 @@
         let db = null;
         const DB_STORAGE_KEY = 'SQLITE_TOOLBOX_BYTES_V3';
         const DRAFT_STORAGE_KEY = 'TOOLBOX_FORM_DRAFT';
-        
+    
         let seeded_tools = [
-            { id: 1, name: "JSON Formatter", url: "https://jsonformatter.org", type: "开发辅助", icon: "https://cdn-icons-png.flaticon.com/512/136/136525.png", desc: "在线 JSON 格式化与解析校验工具", is_pinned: 1, sort_order: 1, created_at: "2026-10-07 10:00:00" },
-            { id: 2, name: "Unsplash 图片", url: "https://unsplash.com", type: "设计素材", icon: "https://unsplash.com/favicon.ico", desc: "高质量无版权图片素材库，支持免费使用", is_pinned: 0, sort_order: 2, created_at: "2026-10-07 11:30:00" }
+            { 
+                id: 1, 
+                name: "代码运行器 (RunCode)", 
+                url: "https://i3doit.github.io/MyTools/RunCode.html", 
+                type: "开发辅助", 
+                icon: "https://cdn-icons-png.flaticon.com/512/2920/2920277.png", 
+                desc: "在线轻量级代码实时运行与预览工具", 
+                is_pinned: 1, 
+                sort_order: 1, 
+                created_at: "2026-10-07 10:00:00" 
+            },
+            { 
+                id: 2, 
+                name: "封面设计神器 (CoverMagic 4.0)", 
+                url: "https://i3doit.github.io/MyTools/CoverMagic/CoverMagic4.0.html", 
+                type: "设计图形", 
+                icon: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", 
+                desc: "高效自媒体与文章封面图生成制作工具", 
+                is_pinned: 1, 
+                sort_order: 2, 
+                created_at: "2026-10-07 10:05:00" 
+            },
+            { 
+                id: 3, 
+                name: "支票套打工具 (Cheque 2.0)", 
+                url: "https://i3doit.github.io/MyTools/Cheque/Cheque2.0.html", 
+                type: "办公财务", 
+                icon: "https://cdn-icons-png.flaticon.com/512/2533/2533032.png", 
+                desc: "便捷的支票与财务单据打印生成工具", 
+                is_pinned: 0, 
+                sort_order: 3, 
+                created_at: "2026-10-07 10:10:00" 
+            },
+            { 
+                id: 4, 
+                name: "二维码生成器 (QRCode Pro)", 
+                url: "https://i3doit.github.io/MyTools/QRCode/QRCodePro1.html", 
+                type: "实用工具", 
+                icon: "https://cdn-icons-png.flaticon.com/512/714/714390.png", 
+                desc: "专业的高清二维码生成与样式定制工具", 
+                is_pinned: 0, 
+                sort_order: 4, 
+                created_at: "2026-10-07 10:15:00" 
+            },
+            { 
+                id: 5, 
+                name: "PureDrop 工作室 (VIP)", 
+                url: "https://i3doit.github.io/MyTools/PureDrop/PureDropStudioPerVip.html", 
+                type: "高效工作", 
+                icon: "https://cdn-icons-png.flaticon.com/512/1043/1043444.png", 
+                desc: "PureDrop 专享版沉浸式个人工作空间", 
+                is_pinned: 0, 
+                sort_order: 5, 
+                created_at: "2026-10-07 10:20:00" 
+            }
         ];
+
 
         let isAdminUnlocked = false;
         let isSortMode = false;
