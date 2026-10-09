@@ -46,4 +46,4 @@ INSERT INTO tools (id, name, url, type, icon, desc, is_pinned, sort_order, creat
 (27, '生日备忘与提醒助手', 'https://i3doit.github.io/MyTools/Birtheday/BirthMemo1.3.html', '生活实用', 'https://cdn-icons-png.flaticon.com/512/3159/3159408.png', '亲朋好友生日阴历阳历转换与备忘管家', 0, 27, '2026-10-07 12:10:00', 'public', '', 0),
 (28, '思维导图脑图绘制 (MindMapper)', 'https://i3doit.github.io/MyTools/MindMapper/MindMapper.html', '高效办公', 'https://cdn-icons-png.flaticon.com/512/1149/1149168.png', '极简树状结构思维导图在线创作', 0, 28, '2026-10-07 12:15:00', 'public', '', 0),
 (29, '俄罗斯方块经典游戏', 'https://i3doit.github.io/MyTools/Tetris/Tetris5.html', '创意娱乐', 'https://cdn-icons-png.flaticon.com/512/566/566312.png', '经典休闲解压俄罗斯方块小游戏', 0, 29, '2026-10-07 12:20:00', 'public', '', 0),
-(30, '关键词工作台', 'https://i3doit.github.io/MyTools/keywords/keywords-replace.html', '高效办公', '', '每一处修改，都清清楚楚。保留内容的原有格式。支持查找、替换、核对、复制，批量替换，也能逐个确认。', 1, 1, '2026-10-09 11:44:00', 'public', '', 0);
+(30, '关键词工作台', 'https://i3doit.github.io/MyTools/keywords/keywords-replace3.html', '高效办公', '', '每一处修改，都清清楚楚。保留内容的原有格式。支持查找、替换、核对、复制，批量替换，也能逐个确认。', 1, 1, '2026-10-09 11:44:00', 'public', '', 0);
