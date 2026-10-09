@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS tools (
 );
 -- 清空旧数据（如需重置）
 -- DELETE FROM tools;
--- 插入默认 29 条工具初始化数据
+-- 插入默认 31 条工具初始化数据
 INSERT INTO tools (id, name, url, type, icon, desc, is_pinned, sort_order, created_at, access_type, unified_captcha, is_locked) VALUES 
 (1, 'SQL 全能工具箱首页', 'https://i3doit.github.io/MyTools/Index/index-sql7.html', '导航门户', 'https://cdn-icons-png.flaticon.com/512/1006/1006771.png', '本地 SQLite 驱动的通用工具导航集中页', 1, 1, '2026-10-07 20:00:00', 'public', '', 0),
 (2, 'PureDrop 工作室 (VIP)', 'https://i3doit.github.io/MyTools/PureDrop/PureDropStudioPerVip.html', '高效办公', 'https://cdn-icons-png.flaticon.com/512/1043/1043444.png', 'PureDrop 沉浸式个人工作空间与效率面板', 1, 2, '2026-10-07 20:05:00', 'public', '', 0),
@@ -46,4 +46,5 @@ INSERT INTO tools (id, name, url, type, icon, desc, is_pinned, sort_order, creat
 (27, '生日备忘与提醒助手', 'https://i3doit.github.io/MyTools/Birtheday/BirthMemo1.3.html', '生活实用', 'https://cdn-icons-png.flaticon.com/512/3159/3159408.png', '亲朋好友生日阴历阳历转换与备忘管家', 0, 27, '2026-10-07 12:10:00', 'public', '', 0),
 (28, '思维导图脑图绘制 (MindMapper)', 'https://i3doit.github.io/MyTools/MindMapper/MindMapper.html', '高效办公', 'https://cdn-icons-png.flaticon.com/512/1149/1149168.png', '极简树状结构思维导图在线创作', 0, 28, '2026-10-07 12:15:00', 'public', '', 0),
 (29, '俄罗斯方块经典游戏', 'https://i3doit.github.io/MyTools/Tetris/Tetris5.html', '创意娱乐', 'https://cdn-icons-png.flaticon.com/512/566/566312.png', '经典休闲解压俄罗斯方块小游戏', 0, 29, '2026-10-07 12:20:00', 'public', '', 0),
-(30, '关键词工作台', 'https://i3doit.github.io/MyTools/keywords/keywords-replace3.html', '高效办公', '', '每一处修改，都清清楚楚。保留内容的原有格式。支持查找、替换、核对、复制，批量替换，也能逐个确认。', 1, 1, '2026-10-09 11:44:00', 'public', '', 0);
+(30, '关键词工作台', 'https://i3doit.github.io/MyTools/keywords/keywords-replace3.html', '高效办公', '', '每一处修改，都清清楚楚。保留内容的原有格式。支持查找、替换、核对、复制，批量替换，也能逐个确认。', 1, 1, '2026-10-09 11:44:00', 'public', '', 0),
+(31, 'Codex 中文教程与中文指南-Stormzhang', 'https://coding.stormzhang.ai', '学习教育', '', '全网最全的中文 AI 教程：Claude Code 和 Codex 的中文教程，作者——Stormzhang', 1, 1, '2026-10-09 11:44:00', 'public', '', 0);
