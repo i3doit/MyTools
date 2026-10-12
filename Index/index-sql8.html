@@ -1,0 +1,113 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MyTools · 发现趁手的好工具</title><meta name="description" content="实用、轻量的在线工具集。搜索、分类浏览与个人收藏，快速找到趁手的工具。"><link rel="stylesheet" href="./home.css"><script defer src="./vendor/sql-wasm.js"></script><script defer src="./vendor/lucide.js"></script><script defer src="./home.js"></script></head><body>
+<header id="headerBar"><div class="header-inner"><a class="brand" href="./index-sql8.html"><span class="brand-icon"><i data-lucide="command"></i></span>MyTools<span class="brand-sub">工具集</span></a><div class="header-actions"><span id="dbStatus" role="status">正在加载工具…</span><span id="adminBadge" class="hidden">本地管理</span><button id="addToolBtn" class="hidden" onclick="openModal()">添加工具</button><button id="exportSqlScriptBtn" class="hidden" onclick="exportSqlDumpScript()">导出 SQL</button><button data-db disabled onclick="exportSqlDb()" title="导出 SQLite 备份" aria-label="导出 SQLite 备份"><i data-lucide="download"></i></button><label class="import-button" title="导入 SQL / SQLite / JSON"><i data-lucide="upload"></i><input aria-label="导入数据文件" type="file" id="importFileInput" accept=".sql,.sqlite,.db,.json" onchange="importFile(event)"></label><button onclick="handleAdminUnlockClicks()" title="连续点击五次切换本地管理" aria-label="连续点击五次切换本地管理"><i data-lucide="settings-2"></i></button></div></div></header>
+<main><section class="hero"><div class="eyebrow"><span></span>让日常，多一点效率</div><h1>好工具，让事情<span>简单一点。</span></h1><p>从灵感到行动，找到属于你的趁手工具。</p><div class="search-row"><div class="search-box"><i data-lucide="search"></i><input aria-label="搜索工具" id="searchInput" placeholder="搜索工具、功能或关键词…" oninput="clearTimeout(searchTimer);searchTimer=setTimeout(renderTools,150)"><button aria-label="清空搜索" onclick="resetSearch()">×</button><kbd>Ctrl K</kbd></div><select aria-label="筛选分类" id="typeFilter" onchange="renderTools()"><option value="ALL">所有分类</option></select></div><div class="hero-note"><span><i data-lucide="zap"></i>即开即用</span><span><i data-lucide="bookmark"></i>收藏常用工具</span><span><b id="toolCountBadge">0</b> 个匹配工具</span></div></section>
+<nav id="categoryChips" aria-label="工具分类" class="categories"></nav><div class="status-line"><span id="loadMessage" role="status"></span><button data-db disabled onclick="refreshRemote()"><i data-lucide="refresh-cw"></i>刷新数据</button></div>
+<section id="pinnedSection" class="hidden"><div class="section-heading"><div><span class="section-kicker">YOUR SHORTCUTS</span><h2>收藏与推荐 <span id="pinnedCountBadge">0</span></h2></div><button id="toggleSortBtn" onclick="toggleSortMode()"><i data-lucide="arrow-up-down"></i><span id="sortBtnText">自定义排序</span></button></div><div id="pinnedGrid" class="tool-grid"></div></section>
+<section><div class="section-heading"><div><span class="section-kicker">EXPLORE THE TOOLBOX</span><h2>探索工具</h2></div><span id="resultCount">正在加载</span></div><div id="toolsGrid" class="tool-grid"></div></section>
+<div id="emptyState" class="hidden empty"><i data-lucide="search-x"></i><h3>暂时没有可显示的工具</h3><p>试试其他关键词，或重新加载数据。</p><button onclick="resetSearch()">清除筛选</button><button onclick="initSqlDb()">重新加载</button></div></main>
+<footer><span>© <span id="copyrightYear">2026</span> MyTools · 每一个小工具，都是一点小助力。</span><a href="https://mp.weixin.qq.com/s/uHh9gx2sUMOOjIhKyIbx4A" target="_blank" rel="noopener noreferrer">艾兜兜儿 ↗</a></footer><div id="toast" class="hidden" role="status"></div>
+    <div id="toolModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
+            <div class="flex justify-between items-center px-5 py-3.5 border-b border-slate-100 bg-slate-50">
+                <h3 id="modalTitle" class="font-bold text-xs sm:text-sm text-slate-800">添加新工具</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <form id="toolForm" onsubmit="handleFormSubmit(event)" class="p-5 space-y-3 text-xs">
+                <input type="hidden" id="toolId">
+                
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">工具名称 <span class="text-red-500">*</span></label>
+                    <input type="text" id="toolName" required placeholder="例如：思维导图工具" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">工具地址 (URL) <span class="text-red-500">*</span></label>
+                    <input type="url" id="toolUrl" required placeholder="https://..." class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">工具类型</label>
+                        <input type="text" id="toolType" list="categoryDatalist" placeholder="选择或输入新类型" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <datalist id="categoryDatalist"></datalist>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">图标 URL <span class="text-slate-400 font-normal">(选填)</span></label>
+                        <input type="url" id="toolIcon" placeholder="留空自动识别" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1">工具描述</label>
+                    <textarea id="toolDesc" rows="3" placeholder="简要描述工具的功能..." class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"></textarea>
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                    <input type="checkbox" id="toolPinned" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                    <label for="toolPinned" class="font-medium text-slate-700">设为推荐/收藏工具 (优先排序展示)</label>
+                </div>
+
+                <div id="draftAlert" class="hidden p-2 bg-amber-50 border border-amber-200 text-amber-700 rounded text-[11px]">
+                    已自动加载上次未保存的草稿内容。
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border border-slate-200 rounded-lg font-medium text-slate-600 hover:bg-slate-50">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 访问权限控制模态框 -->
+    <div id="accessModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-100">
+            <div class="flex justify-between items-center px-4 py-3 border-b border-slate-100 bg-slate-50">
+                <h3 class="font-bold text-xs sm:text-sm text-slate-800 flex items-center gap-1.5">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-indigo-600"></i> 设置工具访问权限与锁定
+                </h3>
+                <button onclick="closeAccessModal()" class="text-slate-400 hover:text-slate-600 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            
+            <form id="accessForm" onsubmit="handleAccessFormSubmit(event)" class="p-4 space-y-3.5 text-xs">
+                <input type="hidden" id="accessToolId">
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">访问控制方式</label>
+                    <select id="accessType" onchange="toggleAccessFields()" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50 font-medium">
+                        <option value="public">🌐 public (公开)</option>
+                        <option value="hidden">🙈 hidden (隐藏)</option>
+                        <option value="captcha">🔑 captcha (验证码)</option>
+                        <option value="code_per_user">🎫 code_per_user (一码一发)</option>
+                    </select>
+                </div>
+
+                <!-- 当类型为 captcha 时显示的验证码设置组件 -->
+                <div id="captchaGroup" class="space-y-1.5 hidden bg-amber-50/50 p-2.5 rounded-lg border border-amber-200/60">
+                    <label class="block font-semibold text-amber-800">自定义统一验证码</label>
+                    <div class="flex gap-1.5">
+                        <input type="text" id="unifiedCaptcha" placeholder="设置访问验证码..." class="flex-1 px-3 py-1.5 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none bg-white font-mono font-bold text-amber-900">
+                        <button type="button" onclick="copyUnifiedCaptchaFromModal()" class="px-2.5 py-1.5 bg-amber-200/60 hover:bg-amber-200 text-amber-800 font-semibold rounded-lg transition active:scale-95 flex items-center gap-1 shrink-0">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> 复制
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="isLocked" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                        <span class="font-bold text-slate-700">锁定该工具（禁止删除）</span>
+                    </label>
+                    <p class="text-[11px] text-slate-400 mt-1 pl-6">防止对关键配置工具、一码一发或验证码控制的工具误操作删除。</p>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeAccessModal()" class="px-3.5 py-1.5 border border-slate-200 rounded-lg font-medium text-slate-600 hover:bg-slate-50">取消</button>
+                    <button type="submit" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow-sm">保存控制选项</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body></html>
